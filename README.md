@@ -50,6 +50,26 @@ written up in [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
 5. **Share.** Detected impacts are appended to a write-only `events` log;
    merged hazards are written to the public `hazards` table.
 
+## A map with consequences
+
+A hazard is not a pin that sits there forever. Tap one and you get its record —
+how many passes confirm it, how many phones, when it was first and last seen,
+how long it has been visible. Two actions change it:
+
+- **Still there** re-confirms it, another pass, seen now, confidence up.
+- **Fixed now** reports it repaired; once enough people agree the hazard turns
+  green on the map.
+
+That loop is what stops the map being a snapshot: it records the road getting
+worse and getting better.
+
+## Yours
+
+Open it and the app finds your street, names the area, and starts a tally that
+lives on your device: trips taken, impacts felt, distance travelled, hazards
+confirmed. No account, nothing to sign up for — but it is unmistakably yours.
+See [ADR-0005](docs/adr/0005-ownership-without-accounts.md).
+
 ## Repository layout
 
 ```

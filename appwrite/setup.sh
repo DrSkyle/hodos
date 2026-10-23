@@ -36,6 +36,7 @@ HAZARD_COLUMNS=(
   '{"key":"firstSeen","type":"datetime","required":true}'
   '{"key":"lastSeen","type":"datetime","required":true}'
   '{"key":"published","type":"boolean","required":true}'
+  '{"key":"fixedVotes","type":"integer","default":0}'
 )
 
 to_args() {
@@ -71,5 +72,11 @@ appwrite tablesdb create-table \
   --permissions 'read("any")' \
   --indexes '{"key":"published","type":"key","attributes":["published"]}' \
   "${HAZARD_COLUMN_ARGS[@]}" -f
+
+echo "== column: hazards.fixedVotes =="
+appwrite tablesdb create-integer-column \
+  --database-id "${DATABASE_ID}" \
+  --table-id hazards \
+  --key fixedVotes --required=false --xdefault 0 -f || true
 
 echo "Done."

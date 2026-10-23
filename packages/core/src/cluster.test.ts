@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clusterImpacts } from "./cluster";
+import { clusterImpacts, hazardStatus } from "./cluster";
 import type { ObservedImpact } from "./types";
 
 const T0 = Date.parse("2026-10-23T10:00:00Z");
@@ -81,5 +81,15 @@ describe("clusterImpacts", () => {
     const fresh = clusterImpacts(impacts, { now: T0 })[0]?.confidence ?? 0;
     const stale = clusterImpacts(impacts, { now: T0 + 180 * 86_400_000 })[0]?.confidence ?? 0;
     expect(stale).toBeLessThan(fresh);
+  });
+
+  it("treats a hazard as fixed once enough repair reports agree", () => {
+    const hazards = clusterImpacts(
+      [impact({ deviceId: "a" }), impact({ deviceId: "b" }), impact({ deviceId: "c" })],
+      { now: T0 },
+    );
+    const hazard = hazards[0]!;
+    expect(hazardStatus(hazard)).toBe("open");
+    expect(hazardStatus({ ...hazard, fixedVotes: 2 })).toBe("fixed");
   });
 });

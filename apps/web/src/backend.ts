@@ -18,6 +18,7 @@ interface AppwriteRow {
   firstSeen: string;
   lastSeen: string;
   published: boolean;
+  fixedVotes?: number;
 }
 
 function tablesUrl(table: string): string {
@@ -46,6 +47,7 @@ function toHazard(row: AppwriteRow): HazardRecord {
     firstSeen: Date.parse(row.firstSeen),
     lastSeen: Date.parse(row.lastSeen),
     published: row.published,
+    fixedVotes: row.fixedVotes ?? 0,
   };
 }
 
@@ -116,6 +118,7 @@ function toData(hazard: Hazard): Record<string, unknown> {
     firstSeen: new Date(hazard.firstSeen).toISOString(),
     lastSeen: new Date(hazard.lastSeen).toISOString(),
     published: hazard.published,
+    fixedVotes: hazard.fixedVotes,
   };
 }
 
@@ -147,6 +150,7 @@ export async function upsertHazard(upsert: HazardUpsert): Promise<void> {
     firstSeen: Math.min(existing.firstSeen, incoming.firstSeen),
     lastSeen: Math.max(existing.lastSeen, incoming.lastSeen),
     published: existing.published || incoming.published,
+    fixedVotes: existing.fixedVotes,
   };
   const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${upsert.rowId}`, {
     method: "PATCH",
@@ -156,4 +160,44 @@ export async function upsertHazard(upsert: HazardUpsert): Promise<void> {
   if (!res.ok) {
     throw new Error(`updateHazard failed: ${res.status} ${await res.text()}`);
   }
+}
+
+/** Re-confirm a hazard still exists: another pass, seen now. */
+export async function confirmHazard(rowId: string): Promise<HazardRecord | null> {
+  const existing = await getRow(rowId);
+  if (existing === null) {
+    return null;
+  }
+  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${rowId}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({
+      data: {
+        passCount: existing.passCount + 1,
+        lastSeen: new Date().toISOString(),
+        confidence: Math.min(1, Math.round((existing.confidence + 0.05) * 1000) / 1000),
+      },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`confirmHazard failed: ${res.status}`);
+  }
+  return getRow(rowId);
+}
+
+/** Report a hazard repaired. */
+export async function markFixed(rowId: string): Promise<HazardRecord | null> {
+  const existing = await getRow(rowId);
+  if (existing === null) {
+    return null;
+  }
+  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${rowId}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({ data: { fixedVotes: existing.fixedVotes + 1 } }),
+  });
+  if (!res.ok) {
+    throw new Error(`markFixed failed: ${res.status}`);
+  }
+  return getRow(rowId);
 }
