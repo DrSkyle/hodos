@@ -375,7 +375,7 @@ public final class MotionDetector {
     double sampleRate = 1000.0 / Math.max(1, intervalMs);
     double[] filtered = filter(vertical, designBandpass(BAND_LOW_HZ, BAND_HIGH_HZ, sampleRate));
     int windowSamples = (int) Math.max(5, Math.round(NOISE_WINDOW_MS / Math.max(1, intervalMs)));
-    int stride = Math.max(1, Math.round(windowSamples / 20.0));
+    int stride = (int) Math.max(1, Math.round(windowSamples / 20.0));
     double[] floor = robustFloor(filtered, windowSamples, stride);
 
     String mode = resolveMode(fixes);
