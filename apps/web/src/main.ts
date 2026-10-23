@@ -1,5 +1,5 @@
 import "./styles.css";
-import { clusterImpacts, hazardStatus, type ObservedImpact } from "@hodos/core";
+import { clusterImpacts, hazardStatus, passedHazards, type ObservedImpact } from "@hodos/core";
 import { deviceId, newTripId, rowIdFor } from "./device";
 import { HazardMap, severityLabel } from "./map";
 import { CaptureSession, type SessionSnapshot } from "./session";
@@ -317,7 +317,12 @@ function openDetail(record: HazardRecord): void {
       <div><dt>Last seen</dt><dd>${relativeTime(record.lastSeen)}</dd></div>
       <div><dt>Visible for</dt><dd>${days} ${days === 1 ? "day" : "days"}</dd></div>
       <div><dt>Confidence</dt><dd>${Math.round(record.confidence * 100)}%</dd></div>
-      <div><dt>Status</dt><dd>${status === "fixed" ? "Reported fixed" : "Open"}</dd></div>
+      ${
+        record.clearPasses > 0
+          ? `<div><dt>Travelled since, felt nothing</dt><dd>${record.clearPasses} ${record.clearPasses === 1 ? "phone" : "phones"}</dd></div>`
+          : ""
+      }
+      <div><dt>Status</dt><dd>${status === "fixed" ? (record.fixedVotes >= 2 ? "Reported fixed" : "Looks repaired") : "Open"}</dd></div>
     </dl>
     <div class="detail-actions">
       <button class="ghost" data-action="confirm">Still there</button>
@@ -505,6 +510,7 @@ async function endTrip(): Promise<void> {
   if (session === null) {
     return;
   }
+  const track = session.getTrack();
   const impacts = await session.stop();
   session = null;
   recordButton.textContent = "Start trip";
@@ -548,6 +554,33 @@ async function endTrip(): Promise<void> {
   }
 
   const confirmed = clusters.filter((hazard) => hazard.published).length;
+
+  // Evidence in the other direction: hazards this trip went past without
+  // feeling. That is what lets a repaired road drop off the map by itself.
+  const known = hazards.filter((hazard) => hazard.published);
+  const cleared = passedHazards(track, known, impacts);
+  for (const hazard of cleared) {
+    try {
+      await appendEvent({
+        deviceId: id,
+        tripId: trip,
+        recordedAt: new Date().toISOString(),
+        lat: hazard.lat,
+        lng: hazard.lng,
+        accuracy: 6,
+        speedKph: 0,
+        magnitude: 0,
+        severity: 1,
+        kind: hazard.kind,
+        confidence: 0.8,
+        mode: "vehicle",
+        observation: "pass",
+        hazardRef: hazard.rowId,
+      });
+    } catch {
+      /* a missed pass must not fail the trip */
+    }
+  }
   const travelledM = lastSnapshot?.travelledM ?? 0;
   const lastFix = lastSnapshot?.lastFix ?? null;
   me.trips.push({

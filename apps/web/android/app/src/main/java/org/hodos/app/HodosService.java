@@ -407,6 +407,84 @@ public class HodosService extends Service implements SensorEventListener {
     }
     recordTrip(finished.size(), hazards.size(), confirmed);
     updateNotification("Waiting for a journey");
+
+    List<MotionDetector.Hazard> known = fetchPublishedHazards();
+    List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(fixes, known, finished);
+    for (MotionDetector.Hazard hazard : cleared) {
+      postPass(device, trip, hazard);
+    }
+  }
+
+  private List<MotionDetector.Hazard> fetchPublishedHazards() {
+    List<MotionDetector.Hazard> hazards = new ArrayList<>();
+    try {
+      HttpURLConnection connection =
+          open("GET", "tables/hazards/rows?queries[]="
+              + java.net.URLEncoder.encode(
+                  "{\"method\":\"limit\",\"values\":[500]}", StandardCharsets.UTF_8.name()));
+      if (connection == null) {
+        return hazards;
+      }
+      if (connection.getResponseCode() != 200) {
+        connection.disconnect();
+        return hazards;
+      }
+      StringBuilder body = new StringBuilder();
+      try (BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          body.append(line);
+        }
+      }
+      connection.disconnect();
+      JSONArray rows = new JSONObject(body.toString()).optJSONArray("rows");
+      if (rows == null) {
+        return hazards;
+      }
+      for (int i = 0; i < rows.length(); i++) {
+        JSONObject row = rows.getJSONObject(i);
+        if (!row.optBoolean("published", false)) {
+          continue;
+        }
+        MotionDetector.Hazard hazard = new MotionDetector.Hazard();
+        hazard.id = row.optString("$id");
+        hazard.lat = row.optDouble("lat");
+        hazard.lng = row.optDouble("lng");
+        hazard.kind = row.optString("kind");
+        hazards.add(hazard);
+      }
+    } catch (Exception ignored) {
+      /* the pass calculation is best effort */
+    }
+    return hazards;
+  }
+
+  private boolean postPass(String device, String trip, MotionDetector.Hazard hazard) {
+    try {
+      JSONObject data = new JSONObject();
+      data.put("deviceId", device);
+      data.put("tripId", trip);
+      data.put("recordedAt", isoTime(System.currentTimeMillis()));
+      data.put("lat", hazard.lat);
+      data.put("lng", hazard.lng);
+      data.put("accuracy", 6);
+      data.put("speedKph", 0);
+      data.put("magnitude", 0);
+      data.put("severity", 1);
+      data.put("kind", hazard.kind);
+      data.put("confidence", 0.8);
+      data.put("mode", "vehicle");
+      data.put("observation", "pass");
+      data.put("hazardRef", hazard.id);
+      JSONObject body = new JSONObject();
+      body.put("rowId", "unique()");
+      body.put("data", data);
+      return send("POST", "tables/events/rows", body) < 400;
+    } catch (Exception error) {
+      return false;
+    }
   }
 
   private void recordTrip(int impacts, int locations, int confirmed) {

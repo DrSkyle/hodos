@@ -20,6 +20,7 @@ interface AppwriteRow {
   published: boolean;
   fixedVotes?: number;
   dayCount?: number;
+  clearPasses?: number;
 }
 
 function tablesUrl(table: string): string {
@@ -50,6 +51,7 @@ function toHazard(row: AppwriteRow): HazardRecord {
     lastSeen: Date.parse(row.lastSeen),
     published: row.published,
     fixedVotes: row.fixedVotes ?? 0,
+    clearPasses: row.clearPasses ?? 0,
   };
 }
 
@@ -66,6 +68,10 @@ export interface EventInput {
   kind: string;
   confidence: number;
   mode: string;
+  /** "impact" for something felt, "pass" for travelling a hazard silently. */
+  observation?: string;
+  /** The hazard a silent pass relates to. */
+  hazardRef?: string;
 }
 
 /** Append one observation to the private, write-only event log. */
@@ -124,6 +130,7 @@ function toData(hazard: Hazard): Record<string, unknown> {
     lastSeen: new Date(hazard.lastSeen).toISOString(),
     published: hazard.published,
     fixedVotes: hazard.fixedVotes,
+    clearPasses: hazard.clearPasses,
   };
 }
 
@@ -156,6 +163,7 @@ export async function upsertHazard(upsert: HazardUpsert): Promise<void> {
     lastSeen: Math.max(existing.lastSeen, incoming.lastSeen),
     published: existing.published || incoming.published,
     fixedVotes: existing.fixedVotes,
+    clearPasses: existing.clearPasses,
   };
   const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${upsert.rowId}`, {
     method: "PATCH",

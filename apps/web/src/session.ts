@@ -30,6 +30,7 @@ export class CaptureSession {
   private recording = false;
   private error: string | null = null;
   private travelledM = 0;
+  private track: GeoFix[] = [];
 
   constructor(private readonly onUpdate: (snapshot: SessionSnapshot) => void) {}
 
@@ -39,6 +40,7 @@ export class CaptureSession {
     this.impacts = [];
     this.error = null;
     this.travelledM = 0;
+    this.track = [];
     this.recording = true;
     this.stopMotion = startMotion((sample) => this.samples.push(sample));
     this.stopGeo = startGeolocation(
@@ -81,6 +83,15 @@ export class CaptureSession {
       }
     }
     this.fixes.push(fix);
+    this.track.push(fix);
+    if (this.track.length > 5000) {
+      this.track.splice(0, 2500);
+    }
+  }
+
+  /** The whole journey's positions, kept for judging silent passes. */
+  getTrack(): GeoFix[] {
+    return [...this.track];
   }
 
   private analyze(): void {
