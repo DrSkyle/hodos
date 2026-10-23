@@ -142,7 +142,7 @@ function rowIdFor(lat, lng) {
   return `${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
 }
 
-function buildHazard(cluster, now, silentPasses) {
+function buildHazard(cluster, now, silentPasses, fixReports) {
   const events = cluster.events;
   const devices = new Set(events.map((event) => event.deviceId));
   const days = new Set(events.map((event) => String(event.recordedAt).slice(0, 10)));
@@ -163,12 +163,18 @@ function buildHazard(cluster, now, silentPasses) {
 
   const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng);
 
-  // A pass only counts if it happened after the last time anyone felt this
-  // hazard, so a fresh impact resets the evidence that it has been repaired.
+  // A pass or a fix report only counts if it happened after the last time
+  // anyone felt this hazard, so a fresh impact resets the evidence that it has
+  // been repaired.
   const clearDevices = new Set(
     silentPasses
       .filter((pass) => pass.hazardRef === rowId && Date.parse(pass.recordedAt) > lastSeen)
       .map((pass) => pass.deviceId),
+  );
+  const fixDevices = new Set(
+    fixReports
+      .filter((report) => report.hazardRef === rowId && Date.parse(report.recordedAt) > lastSeen)
+      .map((report) => report.deviceId),
   );
 
   return {
@@ -187,6 +193,7 @@ function buildHazard(cluster, now, silentPasses) {
       lastSeen: new Date(lastSeen).toISOString(),
       published: passCount >= PUBLISH_MIN_PASSES && deviceCount >= PUBLISH_MIN_DEVICES,
       clearPasses: clearDevices.size,
+      fixedVotes: fixDevices.size,
     },
   };
 }
@@ -213,9 +220,6 @@ async function writeHazard(hazard, existingByRowId) {
     return res.ok ? "created" : `create failed ${res.status}`;
   }
   const payload = { ...hazard.data };
-  if (typeof existing.fixedVotes === "number" && existing.fixedVotes > 0) {
-    payload.fixedVotes = existing.fixedVotes;
-  }
   const res = await fetch(`${rowsUrl("hazards")}/${hazard.rowId}`, {
     method: "PATCH",
     headers: headers(),
@@ -240,12 +244,17 @@ module.exports = async ({ res, log }) => {
     const now = Date.now();
     const sinceIso = new Date(now - LOOKBACK_DAYS * MS_PER_DAY).toISOString();
     const events = await fetchEvents(sinceIso);
-    const incidents = events.filter((event) => event.observation !== "pass");
+    const incidents = events.filter(
+      (event) => event.observation !== "pass" && event.observation !== "fix",
+    );
     const silentPasses = events.filter((event) => event.observation === "pass");
-    log(`read ${events.length} events (${incidents.length} impacts, ${silentPasses.length} passes)`);
+    const fixReports = events.filter((event) => event.observation === "fix");
+    log(
+      `read ${events.length} events (${incidents.length} impacts, ${silentPasses.length} passes, ${fixReports.length} fix reports)`,
+    );
 
     const clusters = clusterEvents(incidents);
-    const hazards = clusters.map((cluster) => buildHazard(cluster, now, silentPasses));
+    const hazards = clusters.map((cluster) => buildHazard(cluster, now, silentPasses, fixReports));
     const existing = await listHazards();
     const existingByRowId = new Map(existing.map((row) => [row.$id, row]));
 
