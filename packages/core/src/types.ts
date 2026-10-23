@@ -100,4 +100,6 @@ export interface Hazard {
   published: boolean;
   /** How many people have reported this hazard fixed. */
   fixedVotes: number;
+  /** Passes in which a Device travelled this hazard and felt nothing. */
+  clearPasses: number;
 }

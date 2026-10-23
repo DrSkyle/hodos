@@ -109,6 +109,7 @@ export function clusterImpacts(
       lastSeen,
       published: passCount >= cfg.publishMinPasses && deviceCount >= cfg.publishMinDevices,
       fixedVotes: 0,
+      clearPasses: 0,
     };
   });
 }
@@ -118,7 +119,19 @@ export type HazardStatus = "open" | "fixed";
 /** Fix reports needed before a hazard is considered repaired. */
 export const FIXED_VOTE_THRESHOLD = 2;
 
-/** The life stage of a hazard, derived from how many people report it fixed. */
+/** Silent passes needed before a hazard is considered repaired by absence. */
+export const CLEAR_PASS_THRESHOLD = 3;
+
+/**
+ * The life stage of a hazard. A hazard is repaired either because people said
+ * so, or because enough of them have since travelled it and felt nothing.
+ */
 export function hazardStatus(hazard: Hazard): HazardStatus {
-  return hazard.fixedVotes >= FIXED_VOTE_THRESHOLD ? "fixed" : "open";
+  if (hazard.fixedVotes >= FIXED_VOTE_THRESHOLD) {
+    return "fixed";
+  }
+  if (hazard.clearPasses >= CLEAR_PASS_THRESHOLD) {
+    return "fixed";
+  }
+  return "open";
 }

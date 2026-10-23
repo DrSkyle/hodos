@@ -545,6 +545,44 @@ public final class MotionDetector {
     return hazards;
   }
 
+  private static final double PASS_DISTANCE_M = 22;
+  private static final double PASS_IMPACT_DISTANCE_M = 25;
+  private static final double PASS_MAX_FIX_ACCURACY_M = 25;
+
+  /**
+   * Hazards this journey travelled past without feeling anything: the negative
+   * observation that lets a repaired road drop off the map on its own.
+   */
+  public static List<Hazard> passedHazards(
+      List<Fix> fixes, List<Hazard> known, List<Impact> impacts) {
+    List<Hazard> passed = new ArrayList<>();
+    for (Hazard hazard : known) {
+      boolean travelled = false;
+      for (Fix fix : fixes) {
+        if (fix.accuracy <= PASS_MAX_FIX_ACCURACY_M
+            && haversineMeters(fix.lat, fix.lng, hazard.lat, hazard.lng) <= PASS_DISTANCE_M) {
+          travelled = true;
+          break;
+        }
+      }
+      if (!travelled) {
+        continue;
+      }
+      boolean felt = false;
+      for (Impact impact : impacts) {
+        if (haversineMeters(impact.lat, impact.lng, hazard.lat, hazard.lng)
+            <= PASS_IMPACT_DISTANCE_M) {
+          felt = true;
+          break;
+        }
+      }
+      if (!felt) {
+        passed.add(hazard);
+      }
+    }
+    return passed;
+  }
+
   private static String majority(List<String> values) {
     String best = "pothole";
     int bestCount = -1;

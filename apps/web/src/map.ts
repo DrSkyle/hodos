@@ -22,6 +22,7 @@ function hazardFeatureCollection(records: HazardRecord[]): GeoJSON.FeatureCollec
         confidence: record.confidence,
         published: record.published,
         fixed: hazardStatus(record) === "fixed",
+        clearPasses: record.clearPasses,
       },
     })),
   };
@@ -130,6 +131,7 @@ export class HazardMap {
         lastSeen: 0,
         published: Boolean(feature.properties?.published),
         fixedVotes: feature.properties?.fixed === true ? 2 : 0,
+        clearPasses: Number(feature.properties?.clearPasses ?? 0),
       };
       this.onSelect?.(record);
     });

@@ -7,9 +7,12 @@
  * triggered by the app at the end of a trip.
  */
 
-const ENDPOINT = process.env.APPWRITE_FUNCTION_ENDPOINT || process.env.APPWRITE_ENDPOINT;
-const PROJECT = process.env.APPWRITE_FUNCTION_PROJECT_ID || process.env.APPWRITE_PROJECT_ID;
-const KEY = process.env.APPWRITE_FUNCTION_API_KEY || process.env.APPWRITE_API_KEY;
+const ENDPOINT =
+  process.env.HODOS_ENDPOINT ||
+  process.env.APPWRITE_FUNCTION_API_ENDPOINT ||
+  process.env.APPWRITE_FUNCTION_ENDPOINT;
+const PROJECT = process.env.HODOS_PROJECT_ID || process.env.APPWRITE_FUNCTION_PROJECT_ID;
+const KEY = process.env.HODOS_API_KEY || process.env.APPWRITE_FUNCTION_API_KEY;
 
 const DATABASE_ID = process.env.HODOS_DATABASE_ID || "hodos";
 const LOOKBACK_DAYS = Number(process.env.HODOS_LOOKBACK_DAYS || 120);
@@ -139,7 +142,7 @@ function rowIdFor(lat, lng) {
   return `${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
 }
 
-function buildHazard(cluster, now) {
+function buildHazard(cluster, now, silentPasses) {
   const events = cluster.events;
   const devices = new Set(events.map((event) => event.deviceId));
   const days = new Set(events.map((event) => String(event.recordedAt).slice(0, 10)));
@@ -158,8 +161,18 @@ function buildHazard(cluster, now) {
   const recency = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
   const belief = Math.min(1, 0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
 
+  const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng);
+
+  // A pass only counts if it happened after the last time anyone felt this
+  // hazard, so a fresh impact resets the evidence that it has been repaired.
+  const clearDevices = new Set(
+    silentPasses
+      .filter((pass) => pass.hazardRef === rowId && Date.parse(pass.recordedAt) > lastSeen)
+      .map((pass) => pass.deviceId),
+  );
+
   return {
-    rowId: rowIdFor(cluster.centre.lat, cluster.centre.lng),
+    rowId,
     data: {
       hazardId: `${cluster.centre.lat.toFixed(4)}:${cluster.centre.lng.toFixed(4)}`,
       lat: Number(cluster.centre.lat.toFixed(6)),
@@ -173,6 +186,7 @@ function buildHazard(cluster, now) {
       firstSeen: new Date(firstSeen).toISOString(),
       lastSeen: new Date(lastSeen).toISOString(),
       published: passCount >= PUBLISH_MIN_PASSES && deviceCount >= PUBLISH_MIN_DEVICES,
+      clearPasses: clearDevices.size,
     },
   };
 }
@@ -210,19 +224,28 @@ async function writeHazard(hazard, existingByRowId) {
   return res.ok ? "updated" : `update failed ${res.status}`;
 }
 
-export default async ({ res, log }) => {
+module.exports = async ({ res, log }) => {
   if (!ENDPOINT || !PROJECT || !KEY) {
-    log("missing Appwrite environment");
+    log(
+      `missing environment: endpoint=${Boolean(ENDPOINT)} project=${Boolean(PROJECT)} key=${Boolean(KEY)}`,
+    );
+    log(
+      `available: ${Object.keys(process.env)
+        .filter((name) => name.startsWith("APPWRITE"))
+        .join(",")}`,
+    );
     return res.json({ ok: false, error: "missing environment" }, 500);
   }
   try {
     const now = Date.now();
     const sinceIso = new Date(now - LOOKBACK_DAYS * MS_PER_DAY).toISOString();
     const events = await fetchEvents(sinceIso);
-    log(`read ${events.length} events`);
+    const incidents = events.filter((event) => event.observation !== "pass");
+    const silentPasses = events.filter((event) => event.observation === "pass");
+    log(`read ${events.length} events (${incidents.length} impacts, ${silentPasses.length} passes)`);
 
-    const clusters = clusterEvents(events);
-    const hazards = clusters.map((cluster) => buildHazard(cluster, now));
+    const clusters = clusterEvents(incidents);
+    const hazards = clusters.map((cluster) => buildHazard(cluster, now, silentPasses));
     const existing = await listHazards();
     const existingByRowId = new Map(existing.map((row) => [row.$id, row]));
 

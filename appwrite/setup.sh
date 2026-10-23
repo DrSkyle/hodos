@@ -24,6 +24,8 @@ EVENT_COLUMNS=(
   '{"key":"kind","type":"enum","elements":["pothole","speed_bump","rough_pavement"],"required":true}'
   '{"key":"confidence","type":"double","default":0}'
   '{"key":"mode","type":"enum","elements":["vehicle","pedestrian"]}'
+  '{"key":"observation","type":"enum","elements":["impact","pass"],"default":"impact"}'
+  '{"key":"hazardRef","type":"string","size":64}'
 )
 
 HAZARD_COLUMNS=(
@@ -40,6 +42,7 @@ HAZARD_COLUMNS=(
   '{"key":"lastSeen","type":"datetime","required":true}'
   '{"key":"published","type":"boolean","required":true}'
   '{"key":"fixedVotes","type":"integer","default":0}'
+  '{"key":"clearPasses","type":"integer","default":0}'
 )
 
 PROFILE_COLUMNS=(
@@ -99,5 +102,11 @@ appwrite tablesdb create-float-column --database-id "${DATABASE_ID}" --table-id 
   --key confidence --required=false --xdefault 0 -f || true
 appwrite tablesdb create-enum-column --database-id "${DATABASE_ID}" --table-id events \
   --key mode --elements vehicle --elements pedestrian --required=false -f || true
+appwrite tablesdb create-integer-column --database-id "${DATABASE_ID}" --table-id hazards \
+  --key clearPasses --required=false --xdefault 0 -f || true
+appwrite tablesdb create-enum-column --database-id "${DATABASE_ID}" --table-id events \
+  --key observation --elements impact --elements pass --required=false -f || true
+appwrite tablesdb create-string-column --database-id "${DATABASE_ID}" --table-id events \
+  --key hazardRef --size 64 --required=false -f || true
 
 echo "Done."

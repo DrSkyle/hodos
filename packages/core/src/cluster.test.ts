@@ -125,4 +125,14 @@ describe("clusterImpacts", () => {
     expect(hazardStatus(hazard)).toBe("open");
     expect(hazardStatus({ ...hazard, fixedVotes: 2 })).toBe("fixed");
   });
+
+  it("treats a hazard as fixed once enough silent passes agree", () => {
+    const hazards = clusterImpacts(
+      [impact({ deviceId: "a" }), impact({ deviceId: "b" }), impact({ deviceId: "c" })],
+      { now: T0 },
+    );
+    const hazard = hazards[0]!;
+    expect(hazardStatus({ ...hazard, clearPasses: 2 })).toBe("open");
+    expect(hazardStatus({ ...hazard, clearPasses: 3 })).toBe("fixed");
+  });
 });
