@@ -1,0 +1,67 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web assets
+        run: pnpm --filter @hodos/web build
+
+      - name: Sync Capacitor
+        run: pnpm --filter @hodos/web exec cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd apps/web/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hodos-debug-apk
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: Hodos — latest APK
+          body: |
+            Installable Android build of Hodos, produced from the latest `main`.
+
+            Download `app-debug.apk`, allow installation from your browser's file
+            manager, and open it. Hodos asks for motion and location access when you
+            start a trip.
+          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
