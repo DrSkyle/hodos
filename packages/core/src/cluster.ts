@@ -94,6 +94,17 @@ export function clusterImpacts(
       firstSeen,
       lastSeen,
       published: passCount >= cfg.publishMinPasses && deviceCount >= cfg.publishMinDevices,
+      fixedVotes: 0,
     };
   });
+}
+
+export type HazardStatus = "open" | "fixed";
+
+/** Fix reports needed before a hazard is considered repaired. */
+export const FIXED_VOTE_THRESHOLD = 2;
+
+/** The life stage of a hazard, derived from how many people report it fixed. */
+export function hazardStatus(hazard: Hazard): HazardStatus {
+  return hazard.fixedVotes >= FIXED_VOTE_THRESHOLD ? "fixed" : "open";
 }

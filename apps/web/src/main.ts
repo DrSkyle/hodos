@@ -1,37 +1,65 @@
 import "./styles.css";
-import { clusterImpacts, type ObservedImpact } from "@hodos/core";
+import { clusterImpacts, hazardStatus, type ObservedImpact } from "@hodos/core";
 import { deviceId, newTripId, rowIdFor } from "./device";
 import { HazardMap, severityLabel } from "./map";
 import { CaptureSession, type SessionSnapshot } from "./session";
 import { requestMotionAccess } from "./sensors";
-import { appendEvent, listHazards, upsertHazard, type HazardRecord } from "./backend";
+import {
+  appendEvent,
+  confirmHazard,
+  listHazards,
+  markFixed,
+  upsertHazard,
+  type HazardRecord,
+} from "./backend";
+import { describeArea } from "./places";
+import { formatDistance, loadMe, relativeTime, saveMe, spanDays, tally } from "./me";
 
-const app = document.querySelector<HTMLDivElement>("#app");
-if (app === null) {
-  throw new Error("missing #app");
+function need<T extends Element>(selector: string): T {
+  const element = document.querySelector<T>(selector);
+  if (element === null) {
+    throw new Error(`missing ${selector}`);
+  }
+  return element;
 }
+
+const app = need<HTMLDivElement>("#app");
 
 app.innerHTML = `
   <header class="bar">
-    <div class="wordmark">
-      <span class="dot"></span>
-      <h1>Hodos</h1>
-    </div>
+    <button class="brand" data-view="map">
+      <span class="glyph" aria-hidden="true"></span>
+      <span class="brand-text">
+        <strong>Hodos</strong>
+        <em id="area-line">your neighbourhood</em>
+      </span>
+    </button>
     <nav class="tabs">
       <button data-view="map" class="tab is-active">Map</button>
       <button data-view="drive" class="tab">Drive</button>
-      <button data-view="about" class="tab">About</button>
+      <button data-view="you" class="tab">You</button>
     </nav>
   </header>
 
   <main>
-    <section data-panel="map" class="panel is-active">
-      <div id="map" class="map"></div>
+    <section data-panel="map" class="panel">
+      <div class="map-wrap">
+        <div id="map" class="map"></div>
+        <div id="map-empty" class="empty-card" hidden>
+          <p class="eyebrow">Nothing confirmed here yet</p>
+          <h2>Be the first on your street</h2>
+          <p>Hodos wants three passes from two phones before it puts a hazard on the map. Take the first one.</p>
+          <button class="primary" data-view="drive">Start mapping</button>
+        </div>
+      </div>
       <aside class="sheet">
+        <p class="eyebrow">Your neighbourhood</p>
+        <h2 id="area-name">Locating you...</h2>
+        <p id="area-sub" class="sub">Finding your street.</p>
         <div class="stats" id="map-stats"></div>
         <div class="row">
-          <button id="locate" class="ghost">My location</button>
-          <button id="export" class="ghost">Export report</button>
+          <button id="locate" class="ghost">Find me</button>
+          <button id="report" class="ghost">Road report</button>
         </div>
         <ul id="hazard-list" class="list"></ul>
       </aside>
@@ -39,10 +67,12 @@ app.innerHTML = `
 
     <section data-panel="drive" class="panel">
       <div class="drive">
+        <p class="eyebrow">Recording</p>
+        <h2 id="drive-title">Map a route</h2>
         <p class="lede">
-          Mount your phone, tap start, and drive. Hodos reads the road from the
-          motion sensors, works out where the potholes are, and adds them to the
-          map. You never file a report.
+          Mount your phone so it sits flat and steady, then travel your normal route.
+          Keep this screen open &mdash; the browser will not sense in the background.
+          You never file a report.
         </p>
         <button id="record" class="record">Start trip</button>
         <div class="stats big" id="drive-stats"></div>
@@ -51,42 +81,58 @@ app.innerHTML = `
       </div>
     </section>
 
-    <section data-panel="about" class="panel">
-      <div class="about">
-        <h2>What Hodos is</h2>
-        <p>
-          Hodos turns the phones already travelling your streets into a road-condition
-          sensor. Impacts are detected on-device; a hazard only appears on the public
-          map once several independent passes corroborate it.
-        </p>
-        <h2>Privacy</h2>
-        <p>
-          No accounts. The device identifier is random and rotates daily. Raw sensor
-          traces never leave the phone &mdash; only the detected impact, coarsened to the
-          road, is sent. The observation log is write-only; nobody can read the raw
-          traces back out.
-        </p>
-        <h2>What it is not</h2>
-        <p>
-          Hodos reads potholes, speed bumps and rough pavement. It is a map, not a
-          substitute for a road authority.
-        </p>
+    <section data-panel="you" class="panel">
+      <div class="you">
+        <p class="eyebrow">Yours</p>
+        <h2 id="you-area">Your street</h2>
+        <p id="you-sub" class="sub"></p>
+        <div class="stats big" id="you-stats"></div>
+        <h3 class="section-title">Recent trips</h3>
+        <ul id="trip-list" class="list"></ul>
+        <button id="report-you" class="ghost wide">Download road report</button>
+        <section class="about">
+          <h3 class="section-title">What Hodos is</h3>
+          <p>Hodos turns the phones already travelling your streets into a road-condition
+          sensor. A hazard reaches this map only after several independent passes from
+          different phones agree on it, so what you see has been corroborated, not simply
+          claimed.</p>
+          <h3 class="section-title">Privacy</h3>
+          <p>No accounts. The device identifier is random and rotates daily. Raw sensor
+          traces never leave the phone &mdash; only the detected impact, placed on the road,
+          is sent. The observation log is write-only.</p>
+        </section>
       </div>
     </section>
   </main>
+
+  <div id="scrim" class="scrim" hidden></div>
+  <article id="detail" class="detail" hidden></article>
 `;
 
-const hazardMap = new HazardMap(document.querySelector<HTMLDivElement>("#map") as HTMLElement);
+const hazardMap = new HazardMap(need<HTMLDivElement>("#map"), (record) => openDetail(record));
+const areaLine = need<HTMLElement>("#area-line");
+const areaName = need<HTMLElement>("#area-name");
+const areaSub = need<HTMLElement>("#area-sub");
+const mapStats = need<HTMLElement>("#map-stats");
+const hazardList = need<HTMLUListElement>("#hazard-list");
+const mapEmpty = need<HTMLElement>("#map-empty");
+const driveStats = need<HTMLElement>("#drive-stats");
+const driveStatus = need<HTMLElement>("#drive-status");
+const driveTitle = need<HTMLElement>("#drive-title");
+const tripResult = need<HTMLElement>("#trip-result");
+const recordButton = need<HTMLButtonElement>("#record");
+const youArea = need<HTMLElement>("#you-area");
+const youSub = need<HTMLElement>("#you-sub");
+const youStats = need<HTMLElement>("#you-stats");
+const tripList = need<HTMLUListElement>("#trip-list");
+const detail = need<HTMLElement>("#detail");
+const scrim = need<HTMLElement>("#scrim");
 
-const mapStats = document.querySelector<HTMLDivElement>("#map-stats");
-const hazardList = document.querySelector<HTMLUListElement>("#hazard-list");
-const driveStats = document.querySelector<HTMLDivElement>("#drive-stats");
-const driveStatus = document.querySelector<HTMLParagraphElement>("#drive-status");
-const tripResult = document.querySelector<HTMLDivElement>("#trip-result");
-const recordButton = document.querySelector<HTMLButtonElement>("#record");
-
+let me = loadMe();
 let hazards: HazardRecord[] = [];
 let session: CaptureSession | null = null;
+let lastSnapshot: SessionSnapshot | null = null;
+let currentRowId = "";
 
 function switchView(view: string): void {
   for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
@@ -97,83 +143,296 @@ function switchView(view: string): void {
   }
 }
 
-for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
-  tab.addEventListener("click", () => switchView(tab.dataset.view ?? "map"));
+document.addEventListener("click", (event) => {
+  const trigger = (event.target as HTMLElement).closest<HTMLElement>("[data-view]");
+  if (trigger !== null && trigger.dataset.view !== undefined) {
+    switchView(trigger.dataset.view);
+  }
+});
+
+function stat(value: string | number, label: string, tone = ""): string {
+  return `<div class="stat ${tone}"><span class="k">${value}</span><span class="v">${label}</span></div>`;
+}
+
+function renderMe(): void {
+  const summary = tally(me);
+  const where = me.area ?? "your neighbourhood";
+  areaLine.textContent = where;
+  areaName.textContent = me.area ?? "Your neighbourhood";
+  areaSub.textContent =
+    summary.trips === 0
+      ? "You have not mapped a route yet. Everything you record stays yours."
+      : `You have mapped ${summary.confirmed} confirmed ${summary.confirmed === 1 ? "hazard" : "hazards"} here.`;
+  youArea.textContent = me.area ?? "Your street";
+  youSub.textContent =
+    summary.trips === 0
+      ? "Nothing recorded yet."
+      : `Last trip ${relativeTime(summary.lastTripAt)}.`;
+  youStats.innerHTML = [
+    stat(summary.trips, "trips"),
+    stat(summary.impacts, "impacts felt"),
+    stat(summary.confirmed, "hazards confirmed", "accent"),
+    stat(formatDistance(summary.distanceM), "travelled"),
+  ].join("");
+  tripList.innerHTML =
+    me.trips.length === 0
+      ? `<li class="empty">Your trips will appear here, on this device only.</li>`
+      : [...me.trips]
+          .reverse()
+          .slice(0, 12)
+          .map(
+            (trip) => `
+        <li>
+          <span class="sev sev-${trip.confirmed > 0 ? 1 : 2}">${relativeTime(trip.at)}</span>
+          <span class="kind">${trip.impacts} impacts &middot; ${formatDistance(trip.distanceM)}</span>
+          <span class="meta">${trip.confirmed} confirmed &middot; ${trip.locations} locations</span>
+        </li>`,
+          )
+          .join("");
 }
 
 function renderHazards(): void {
   const published = hazards.filter((hazard) => hazard.published);
+  const open = published.filter((hazard) => hazardStatus(hazard) === "open");
   hazardMap.setHazards(published);
-  if (mapStats !== null) {
-    mapStats.innerHTML = `
-      <div class="stat"><span class="k">${published.length}</span><span class="v">mapped</span></div>
-      <div class="stat"><span class="k">${published.reduce((sum, h) => sum + h.passCount, 0)}</span><span class="v">passes</span></div>
-      <div class="stat"><span class="k">${published.reduce((sum, h) => sum + h.deviceCount, 0)}</span><span class="v">devices</span></div>
-    `;
-  }
-  if (hazardList === null) {
-    return;
-  }
-  const ranked = [...published].sort((a, b) => b.severity - a.severity || b.confidence - a.confidence);
+  mapEmpty.hidden = published.length > 0;
+  mapStats.innerHTML = [
+    stat(open.length, "open"),
+    stat(published.length - open.length, "fixed", "fixed"),
+    stat(published.reduce((sum, hazard) => sum + hazard.deviceCount, 0), "phones"),
+  ].join("");
+  const ranked = [...published].sort(
+    (a, b) =>
+      Number(hazardStatus(a) === "fixed") - Number(hazardStatus(b) === "fixed") ||
+      b.severity - a.severity ||
+      b.confidence - a.confidence,
+  );
   hazardList.innerHTML =
     ranked.length === 0
-      ? `<li class="empty">No hazards confirmed yet. Drive a route to contribute.</li>`
+      ? `<li class="empty">No hazards confirmed yet.</li>`
       : ranked
-          .slice(0, 50)
-          .map(
-            (hazard) => `
+          .slice(0, 60)
+          .map((hazard) => {
+            const status = hazardStatus(hazard);
+            return `
         <li>
-          <span class="sev sev-${hazard.severity}">${severityLabel(hazard.severity)}</span>
-          <span class="kind">${hazard.kind.replace("_", " ")}</span>
-          <span class="meta">${hazard.passCount} passes &middot; ${Math.round(hazard.confidence * 100)}%</span>
-        </li>`,
-          )
+          <button class="list-item" data-row-id="${hazard.rowId}">
+            <span class="sev sev-${hazard.severity}">${severityLabel(hazard.severity)}</span>
+            <span class="kind">${hazard.kind.replace("_", " ")}${status === "fixed" ? ' <em class="tag-fixed">fixed</em>' : ""}</span>
+            <span class="meta">${hazard.passCount} passes &middot; ${hazard.deviceCount} phones &middot; ${Math.round(hazard.confidence * 100)}%</span>
+          </button>
+        </li>`;
+          })
           .join("");
+}
+
+hazardList.addEventListener("click", (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLElement>("[data-row-id]");
+  const rowId = button?.dataset.rowId;
+  if (rowId === undefined) {
+    return;
+  }
+  const record = hazards.find((hazard) => hazard.rowId === rowId);
+  if (record !== undefined) {
+    hazardMap.focus(record.lat, record.lng);
+    openDetail(record);
+  }
+});
+
+function openDetail(record: HazardRecord): void {
+  currentRowId = record.rowId;
+  const status = hazardStatus(record);
+  const days = spanDays(record.firstSeen, record.lastSeen);
+  detail.innerHTML = `
+    <header class="detail-head">
+      <span class="sev sev-${record.severity}">${severityLabel(record.severity)}</span>
+      <h3>${record.kind.replace("_", " ")}</h3>
+      <button class="icon" data-close aria-label="Close">&#10005;</button>
+    </header>
+    <dl class="facts">
+      <div><dt>Confirmed by</dt><dd>${record.passCount} passes from ${record.deviceCount} ${record.deviceCount === 1 ? "phone" : "phones"}</dd></div>
+      <div><dt>First seen</dt><dd>${relativeTime(record.firstSeen)}</dd></div>
+      <div><dt>Last seen</dt><dd>${relativeTime(record.lastSeen)}</dd></div>
+      <div><dt>Visible for</dt><dd>${days} ${days === 1 ? "day" : "days"}</dd></div>
+      <div><dt>Confidence</dt><dd>${Math.round(record.confidence * 100)}%</dd></div>
+      <div><dt>Status</dt><dd>${status === "fixed" ? "Reported fixed" : "Open"}</dd></div>
+    </dl>
+    <div class="detail-actions">
+      <button class="ghost" data-action="confirm">Still there</button>
+      <button class="ghost danger" data-action="fix" ${status === "fixed" ? "disabled" : ""}>Fixed now</button>
+    </div>
+    <p class="hint">Your answer updates the map for everyone.</p>
+  `;
+  openSheet();
+}
+
+function openReport(): void {
+  currentRowId = "";
+  const published = hazards.filter((hazard) => hazard.published);
+  const open = published.filter((hazard) => hazardStatus(hazard) === "open");
+  const area = me.area ?? "Your neighbourhood";
+  const lines = [
+    `Road report — ${area}`,
+    `Generated ${new Date().toISOString().slice(0, 10)} with Hodos`,
+    "",
+    `${open.length} open ${open.length === 1 ? "hazard" : "hazards"} of ${published.length} mapped, from ${published.reduce((sum, h) => sum + h.passCount, 0)} independent passes.`,
+    "",
+    "Severity | Type | Passes | Phones | Confidence | Latitude | Longitude",
+    ...open
+      .sort((a, b) => b.severity - a.severity)
+      .map(
+        (h) =>
+          `${severityLabel(h.severity)} | ${h.kind.replace("_", " ")} | ${h.passCount} | ${h.deviceCount} | ${Math.round(h.confidence * 100)}% | ${h.lat.toFixed(6)} | ${h.lng.toFixed(6)}`,
+      ),
+    "",
+    "Each hazard was detected passively and confirmed by independent passes.",
+  ];
+  const text = lines.join("\n");
+  detail.innerHTML = `
+    <header class="detail-head">
+      <h3>Road report</h3>
+      <button class="icon" data-close aria-label="Close">&#10005;</button>
+    </header>
+    <pre class="report">${text.replace(/</g, "&lt;")}</pre>
+    <div class="detail-actions">
+      <button class="ghost" data-action="download">Download</button>
+      <button class="ghost" data-action="share">Share</button>
+    </div>
+  `;
+  detail.dataset.report = text;
+  openSheet();
+}
+
+function openSheet(): void {
+  scrim.hidden = false;
+  detail.hidden = false;
+  requestAnimationFrame(() => detail.classList.add("is-open"));
+}
+
+function closeSheet(): void {
+  detail.classList.remove("is-open");
+  scrim.hidden = true;
+  window.setTimeout(() => {
+    detail.hidden = true;
+    delete detail.dataset.report;
+  }, 180);
+}
+
+scrim.addEventListener("click", closeSheet);
+
+detail.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+  if (target.closest("[data-close]") !== null) {
+    closeSheet();
+    return;
+  }
+  const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
+  const rowId = currentRowId === "" ? undefined : currentRowId;
+  if (action === "download") {
+    downloadReport(detail.dataset.report ?? "");
+    return;
+  }
+  if (action === "share") {
+    void shareReport(detail.dataset.report ?? "");
+    return;
+  }
+  if (rowId === undefined || action === undefined) {
+    return;
+  }
+  if (action === "confirm") {
+    void confirmHazard(rowId).then(refreshHazards);
+  } else if (action === "fix") {
+    void markFixed(rowId).then(refreshHazards);
+  }
+  closeSheet();
+});
+
+function downloadReport(text: string): void {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `hodos-report-${new Date().toISOString().slice(0, 10)}.txt`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+async function shareReport(text: string): Promise<void> {
+  if (navigator.share !== undefined) {
+    try {
+      await navigator.share({ title: "Hodos road report", text });
+      return;
+    } catch {
+      /* fall through to download */
+    }
+  }
+  downloadReport(text);
 }
 
 async function refreshHazards(): Promise<void> {
   try {
     hazards = await listHazards();
     renderHazards();
-  } catch (error) {
-    if (driveStatus !== null) {
-      driveStatus.textContent = `Could not reach the map service: ${(error as Error).message}`;
+    if (!detail.hidden && currentRowId !== "") {
+      const fresh = hazards.find((hazard) => hazard.rowId === currentRowId);
+      if (fresh !== undefined) {
+        openDetail(fresh);
+      }
     }
+  } catch (error) {
+    driveStatus.textContent = `Could not reach the map service: ${(error as Error).message}`;
   }
 }
 
 function renderDrive(snapshot: SessionSnapshot): void {
+  lastSnapshot = snapshot;
   hazardMap.setTripImpacts(snapshot.impacts);
   if (snapshot.lastFix !== null) {
     hazardMap.setUserPosition(snapshot.lastFix.lat, snapshot.lastFix.lng);
   }
-  if (driveStats !== null) {
-    driveStats.innerHTML = `
-      <div class="stat"><span class="k">${snapshot.impacts.length}</span><span class="v">impacts</span></div>
-      <div class="stat"><span class="k">${snapshot.speedKph === null ? "-" : Math.round(snapshot.speedKph)}</span><span class="v">km/h</span></div>
-      <div class="stat"><span class="k">${snapshot.accuracy === null ? "-" : Math.round(snapshot.accuracy)}</span><span class="v">m accuracy</span></div>
-    `;
+  driveStats.innerHTML = [
+    stat(snapshot.impacts.length, "impacts"),
+    stat(snapshot.speedKph === null ? "—" : Math.round(snapshot.speedKph), "km/h"),
+    stat(formatDistance(snapshot.travelledM), "travelled"),
+  ].join("");
+}
+
+async function locate(): Promise<void> {
+  if (!("geolocation" in navigator)) {
+    return;
   }
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      hazardMap.setUserPosition(latitude, longitude);
+      hazardMap.focus(latitude, longitude);
+      me.centre = { lat: latitude, lng: longitude };
+      saveMe(me);
+      void describeArea(latitude, longitude).then((name) => {
+        if (name !== null) {
+          me.area = name;
+          saveMe(me);
+          renderMe();
+        }
+      });
+    },
+    () => {
+      /* location refused or unavailable */
+    },
+    { enableHighAccuracy: true, timeout: 10_000 },
+  );
 }
 
 async function startTrip(): Promise<void> {
-  if (recordButton === null) {
-    return;
-  }
   const granted = await requestMotionAccess();
   if (!granted) {
-    if (driveStatus !== null) {
-      driveStatus.textContent =
-        "Motion access was refused. Grant it in the browser or system settings and try again.";
-    }
+    driveStatus.textContent =
+      "Motion access was refused. Grant it in the browser or system settings, then try again.";
     return;
   }
-  if (tripResult !== null) {
-    tripResult.innerHTML = "";
-  }
-  if (driveStatus !== null) {
-    driveStatus.textContent = "Recording. Keep this screen open while you travel.";
-  }
+  tripResult.innerHTML = "";
+  driveTitle.textContent = "Recording";
+  driveStatus.textContent = "Recording. Keep this screen open while you travel.";
   session = new CaptureSession(renderDrive);
   await session.start();
   recordButton.textContent = "End trip";
@@ -181,16 +440,15 @@ async function startTrip(): Promise<void> {
 }
 
 async function endTrip(): Promise<void> {
-  if (recordButton === null || session === null) {
+  if (session === null) {
     return;
   }
   const impacts = await session.stop();
   session = null;
   recordButton.textContent = "Start trip";
   recordButton.classList.remove("is-recording");
-  if (driveStatus !== null) {
-    driveStatus.textContent = "Saving your contributions...";
-  }
+  driveTitle.textContent = "Map a route";
+  driveStatus.textContent = "Saving your contributions...";
 
   const id = deviceId();
   const trip = newTripId();
@@ -225,20 +483,31 @@ async function endTrip(): Promise<void> {
     }
   }
 
-  if (driveStatus !== null) {
-    driveStatus.textContent = "";
+  const confirmed = clusters.filter((hazard) => hazard.published).length;
+  const travelledM = lastSnapshot?.travelledM ?? 0;
+  const lastFix = lastSnapshot?.lastFix ?? null;
+  me.trips.push({
+    at: Date.now(),
+    impacts: impacts.length,
+    locations: clusters.length,
+    confirmed,
+    distanceM: travelledM,
+  });
+  if (lastFix !== null) {
+    me.centre = { lat: lastFix.lat, lng: lastFix.lng };
   }
-  if (tripResult !== null) {
-    const confirming = clusters.filter((hazard) => hazard.published).length;
-    tripResult.innerHTML = `
-      <p><strong>${impacts.length}</strong> impacts detected, <strong>${uploaded}</strong> logged,
-      <strong>${clusters.length}</strong> road locations updated, <strong>${confirming}</strong> now confirmed on the public map.</p>
-    `;
-  }
+  saveMe(me);
+  renderMe();
+
+  driveStatus.textContent = "";
+  tripResult.innerHTML = `
+    <p><strong>${impacts.length}</strong> impacts felt over <strong>${formatDistance(travelledM)}</strong>.
+    <strong>${clusters.length}</strong> road locations updated, <strong>${confirmed}</strong> now confirmed on the map.</p>
+  `;
   await refreshHazards();
 }
 
-recordButton?.addEventListener("click", () => {
+recordButton.addEventListener("click", () => {
   if (session === null) {
     void startTrip();
   } else {
@@ -246,51 +515,19 @@ recordButton?.addEventListener("click", () => {
   }
 });
 
-document.querySelector<HTMLButtonElement>("#locate")?.addEventListener("click", () => {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      hazardMap.setUserPosition(position.coords.latitude, position.coords.longitude);
-      hazardMap.focus(position.coords.latitude, position.coords.longitude);
-    },
-    () => {
-      /* location refused */
-    },
-  );
-});
+need<HTMLButtonElement>("#locate").addEventListener("click", () => void locate());
+need<HTMLButtonElement>("#report").addEventListener("click", openReport);
+need<HTMLButtonElement>("#report-you").addEventListener("click", openReport);
 
-function buildReport(): string {
-  const published = hazards.filter((hazard) => hazard.published);
-  const lines = [
-    "# Hodos road hazard report",
-    "",
-    `Generated: ${new Date().toISOString()}`,
-    `Hazards: ${published.length}`,
-    "",
-    "| Severity | Kind | Passes | Devices | Confidence | Latitude | Longitude |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
-    ...published
-      .sort((a, b) => b.severity - a.severity)
-      .map(
-        (h) =>
-          `| ${severityLabel(h.severity)} | ${h.kind.replace("_", " ")} | ${h.passCount} | ${h.deviceCount} | ${Math.round(h.confidence * 100)}% | ${h.lat.toFixed(6)} | ${h.lng.toFixed(6)} |`,
-      ),
-    "",
-    "Hazards are confirmed by independent passes, each detected on-device.",
-  ];
-  return lines.join("\n");
+if (me.centre !== null) {
+  hazardMap.centreOn(me.centre.lat, me.centre.lng);
 }
 
-document.querySelector<HTMLButtonElement>("#export")?.addEventListener("click", () => {
-  const blob = new Blob([buildReport()], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `hodos-report-${new Date().toISOString().slice(0, 10)}.md`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-});
-
+renderMe();
 void refreshHazards();
+if (me.centre === null) {
+  void locate();
+}
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {

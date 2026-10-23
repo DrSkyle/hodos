@@ -67,4 +67,6 @@ export interface Hazard {
   lastSeen: number;
   /** Whether the hazard has enough corroboration to appear on the public map. */
   published: boolean;
+  /** How many people have reported this hazard fixed. */
+  fixedVotes: number;
 }

@@ -1,7 +1,7 @@
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HazardRecord } from "./backend";
-import type { Hazard, Impact } from "@hodos/core";
+import { hazardStatus, type Hazard, type Impact } from "@hodos/core";
 import { CONFIG } from "./config";
 
 const SEVERITY_LABEL = ["Minor", "Moderate", "Severe"];
@@ -20,6 +20,7 @@ function hazardFeatureCollection(records: HazardRecord[]): GeoJSON.FeatureCollec
         deviceCount: record.deviceCount,
         confidence: record.confidence,
         published: record.published,
+        fixed: hazardStatus(record) === "fixed",
       },
     })),
   };
@@ -36,15 +37,16 @@ function impactFeatureCollection(impacts: Impact[]): GeoJSON.FeatureCollection {
   };
 }
 
-const SEVERITY_COLOR: maplibregl.ExpressionSpecification = [
-  "match",
-  ["get", "severity"],
-  3,
-  "#f87171",
-  2,
-  "#fbbf24",
-  "#2dd4bf",
+const HAZARD_COLOR: maplibregl.ExpressionSpecification = [
+  "case",
+  ["==", ["get", "fixed"], true],
+  "#34d399",
+  ["match", ["get", "severity"], 3, "#f87171", 2, "#fbbf24", "#2dd4bf"],
 ];
+
+function isFixed(): maplibregl.ExpressionSpecification {
+  return ["==", ["get", "fixed"], true];
+}
 
 export class HazardMap {
   private readonly map: maplibregl.Map;
@@ -77,8 +79,8 @@ export class HazardMap {
       source: "hazards",
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["get", "confidence"], 0, 6, 1, 18],
-        "circle-color": SEVERITY_COLOR,
-        "circle-opacity": 0.18,
+        "circle-color": HAZARD_COLOR,
+        "circle-opacity": ["case", isFixed(), 0.08, 0.18],
       },
     });
     this.map.addLayer({
@@ -87,9 +89,10 @@ export class HazardMap {
       source: "hazards",
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["get", "passCount"], 1, 3, 20, 8],
-        "circle-color": SEVERITY_COLOR,
+        "circle-color": HAZARD_COLOR,
         "circle-stroke-color": "#0b0f14",
         "circle-stroke-width": 1.5,
+        "circle-opacity": ["case", isFixed(), 0.45, 1],
       },
     });
 
@@ -124,6 +127,7 @@ export class HazardMap {
         firstSeen: 0,
         lastSeen: 0,
         published: Boolean(feature.properties?.published),
+        fixedVotes: feature.properties?.fixed === true ? 2 : 0,
       };
       this.onSelect?.(record);
     });
