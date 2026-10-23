@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Provision the Hodos backend on Appwrite (TablesDB).
 #
-# Creates the `hodos` database, the `events` and `hazards` tables, their
-# columns, and indexes. Safe to re-run: every step uses --force and updates
-# existing resources in place.
+# Creates the `hodos` database, the `events`, `hazards` and `profiles` tables,
+# their columns, indexes and permissions. Safe to re-run: table and column
+# creation tolerates already-exists.
 #
 # Requires an authenticated Appwrite CLI linked to the target project
 # (see appwrite.config.json).
@@ -22,6 +22,8 @@ EVENT_COLUMNS=(
   '{"key":"magnitude","type":"double","required":true}'
   '{"key":"severity","type":"integer","required":true}'
   '{"key":"kind","type":"enum","elements":["pothole","speed_bump","rough_pavement"],"required":true}'
+  '{"key":"confidence","type":"double","default":0}'
+  '{"key":"mode","type":"enum","elements":["vehicle","pedestrian"]}'
 )
 
 HAZARD_COLUMNS=(
@@ -32,11 +34,16 @@ HAZARD_COLUMNS=(
   '{"key":"severity","type":"integer","required":true}'
   '{"key":"passCount","type":"integer","required":true}'
   '{"key":"deviceCount","type":"integer","required":true}'
+  '{"key":"dayCount","type":"integer","default":0}'
   '{"key":"confidence","type":"double","required":true}'
   '{"key":"firstSeen","type":"datetime","required":true}'
   '{"key":"lastSeen","type":"datetime","required":true}'
   '{"key":"published","type":"boolean","required":true}'
   '{"key":"fixedVotes","type":"integer","default":0}'
+)
+
+PROFILE_COLUMNS=(
+  '{"key":"data","type":"longtext","required":true}'
 )
 
 to_args() {
@@ -52,6 +59,7 @@ to_args() {
 
 mapfile -d '' -t EVENT_COLUMN_ARGS < <(to_args --columns "${EVENT_COLUMNS[@]}")
 mapfile -d '' -t HAZARD_COLUMN_ARGS < <(to_args --columns "${HAZARD_COLUMNS[@]}")
+mapfile -d '' -t PROFILE_COLUMN_ARGS < <(to_args --columns "${PROFILE_COLUMNS[@]}")
 
 echo "== database: ${DATABASE_ID} =="
 appwrite tablesdb create --database-id "${DATABASE_ID}" --name "Hodos" -f || true
@@ -62,21 +70,34 @@ appwrite tablesdb create-table \
   --table-id events \
   --name "Events" \
   --permissions 'create("any")' \
-  "${EVENT_COLUMN_ARGS[@]}" -f
+  "${EVENT_COLUMN_ARGS[@]}" -f || true
 
 echo "== table: hazards =="
 appwrite tablesdb create-table \
   --database-id "${DATABASE_ID}" \
   --table-id hazards \
   --name "Hazards" \
-  --permissions 'read("any")' \
+  --permissions 'read("any")' 'create("any")' 'update("any")' \
   --indexes '{"key":"published","type":"key","attributes":["published"]}' \
-  "${HAZARD_COLUMN_ARGS[@]}" -f
+  "${HAZARD_COLUMN_ARGS[@]}" -f || true
 
-echo "== column: hazards.fixedVotes =="
-appwrite tablesdb create-integer-column \
+echo "== table: profiles (private per identity, row security) =="
+appwrite tablesdb create-table \
   --database-id "${DATABASE_ID}" \
-  --table-id hazards \
+  --table-id profiles \
+  --name "Profiles" \
+  --row-security \
+  --permissions 'create("users")' \
+  "${PROFILE_COLUMN_ARGS[@]}" -f || true
+
+echo "== columns added after first provisioning =="
+appwrite tablesdb create-integer-column --database-id "${DATABASE_ID}" --table-id hazards \
   --key fixedVotes --required=false --xdefault 0 -f || true
+appwrite tablesdb create-integer-column --database-id "${DATABASE_ID}" --table-id hazards \
+  --key dayCount --required=false --xdefault 0 -f || true
+appwrite tablesdb create-float-column --database-id "${DATABASE_ID}" --table-id events \
+  --key confidence --required=false --xdefault 0 -f || true
+appwrite tablesdb create-enum-column --database-id "${DATABASE_ID}" --table-id events \
+  --key mode --elements vehicle --elements pedestrian --required=false -f || true
 
 echo "Done."

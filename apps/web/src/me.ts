@@ -42,6 +42,17 @@ export function saveMe(me: Me): void {
   }
 }
 
+/** Reconcile a local tally with the one held for this identity. */
+export function mergeMe(local: Me, remote: Me): Me {
+  const newer = remote.trips.length >= local.trips.length ? remote : local;
+  const older = newer === local ? remote : local;
+  return {
+    area: newer.area ?? older.area,
+    centre: newer.centre ?? older.centre,
+    trips: newer.trips,
+  };
+}
+
 export function distanceOf(fixes: GeoFix[]): number {
   const ordered = [...fixes].sort((a, b) => a.t - b.t);
   let total = 0;

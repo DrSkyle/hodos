@@ -19,6 +19,7 @@ interface AppwriteRow {
   lastSeen: string;
   published: boolean;
   fixedVotes?: number;
+  dayCount?: number;
 }
 
 function tablesUrl(table: string): string {
@@ -43,6 +44,7 @@ function toHazard(row: AppwriteRow): HazardRecord {
     severity: row.severity as Hazard["severity"],
     passCount: row.passCount,
     deviceCount: row.deviceCount,
+    dayCount: row.dayCount ?? 1,
     confidence: row.confidence,
     firstSeen: Date.parse(row.firstSeen),
     lastSeen: Date.parse(row.lastSeen),
@@ -62,6 +64,8 @@ export interface EventInput {
   magnitude: number;
   severity: number;
   kind: string;
+  confidence: number;
+  mode: string;
 }
 
 /** Append one observation to the private, write-only event log. */
@@ -114,6 +118,7 @@ function toData(hazard: Hazard): Record<string, unknown> {
     severity: hazard.severity,
     passCount: hazard.passCount,
     deviceCount: hazard.deviceCount,
+    dayCount: hazard.dayCount,
     confidence: hazard.confidence,
     firstSeen: new Date(hazard.firstSeen).toISOString(),
     lastSeen: new Date(hazard.lastSeen).toISOString(),

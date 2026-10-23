@@ -39,11 +39,21 @@ function mode<T>(values: T[], fallback: T): T {
   return best;
 }
 
+function dayOf(t: number): string {
+  return new Date(t).toISOString().slice(0, 10);
+}
+
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/** Group corroborating impacts into hazards, scoring each by confidence. */
+/**
+ * Group corroborating impacts into hazards.
+ *
+ * Confidence blends three independent kinds of evidence: how many passes, how
+ * many distinct Devices, and how clean each detection was. A hazard observed
+ * once but very cleanly still ranks below one seen repeatedly.
+ */
 export function clusterImpacts(
   impacts: ObservedImpact[],
   options: Partial<ClusterOptions> = {},
@@ -69,15 +79,18 @@ export function clusterImpacts(
   return groups.map((group) => {
     const center = centroid(group);
     const deviceCount = new Set(group.map((impact) => impact.deviceId)).size;
+    const dayCount = new Set(group.map((impact) => dayOf(impact.t))).size;
     const passCount = group.length;
     const lastSeen = Math.max(...group.map((impact) => impact.t));
     const firstSeen = Math.min(...group.map((impact) => impact.t));
 
     const passFactor = Math.min(1, passCount / cfg.publishMinPasses);
     const deviceFactor = Math.min(1, deviceCount / cfg.publishMinDevices);
+    const quality = group.reduce((sum, impact) => sum + impact.confidence, 0) / group.length;
     const ageDays = Math.max(0, (cfg.now - lastSeen) / MS_PER_DAY);
     const recency = Math.pow(0.5, ageDays / cfg.halfLifeDays);
-    const confidence = Math.round(clamp01((0.65 * passFactor + 0.35 * deviceFactor) * recency) * 1000) / 1000;
+    const belief = clamp01(0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
+    const confidence = Math.round(clamp01(belief * recency) * 1000) / 1000;
 
     return {
       id: `${center.lat.toFixed(4)}:${center.lng.toFixed(4)}`,
@@ -90,6 +103,7 @@ export function clusterImpacts(
       severity: Math.max(...group.map((impact) => impact.severity)) as Severity,
       passCount,
       deviceCount,
+      dayCount,
       confidence,
       firstSeen,
       lastSeen,

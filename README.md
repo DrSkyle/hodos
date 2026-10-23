@@ -36,18 +36,27 @@ written up in [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
 
 1. **Sample.** While a trip is recording, `DeviceMotionEvent` and the
    Geolocation API stream accelerometer samples and position fixes.
-2. **Detect.** On the phone, `@hodos/core` removes gravity with a low-pass
-   filter, projects the residual onto the gravity vector to isolate vertical
-   acceleration, and picks peaks above a threshold. A speed gate, a debounce
-   window and a position-accuracy gate suppress the obvious false positives.
-3. **Attribute.** Each impact is graded by magnitude (minor / moderate /
-   severe) and classified as a pothole or a speed bump by how long the
-   elevation lasts.
-4. **Corroborate.** Impacts within a merge distance collapse into one
+2. **Detect.** On the phone, `@hodos/core` estimates and removes gravity, then
+   band-passes the vertical residual to 0.5–6 Hz — the band road impacts live
+   in. Engine vibration and body shake sit above it; cornering, braking and
+   gradient sit below. Detection thresholds ride a **rolling, spike-resistant
+   noise floor**, so a quiet car on a smooth road and a noisy car on a rough one
+   both work, and regular footfalls raise the floor enough to suppress
+   themselves.
+3. **Attribute.** Each candidate event is characterised — peak, rise time,
+   pulse width, lobe count, jerk, and how much of it was lateral rather than
+   vertical — and **classified** as a pothole, a speed bump, or rough pavement.
+   A kerb strike or a swerve is mostly lateral and is rejected outright. An
+   event that does not look like any defect is dropped.
+4. **Grade.** Severity is read from the **speed-normalised** magnitude, so a
+   shallow pothole taken at 60 km/h is not automatically "severe". Each impact
+   carries its own confidence, derived from the classifier's margin, the signal
+   above the noise floor, and the GPS accuracy at that moment.
+5. **Corroborate.** Impacts within a merge distance collapse into one
    *Hazard*. A hazard is only published to the public map once it has enough
    independent passes from distinct devices (default: 3 passes, 2 devices).
    Confidence fades with age.
-5. **Share.** Detected impacts are appended to a write-only `events` log;
+6. **Share.** Detected impacts are appended to a write-only `events` log;
    merged hazards are written to the public `hazards` table.
 
 ## A map with consequences
@@ -65,10 +74,17 @@ worse and getting better.
 
 ## Yours
 
-Open it and the app finds your street, names the area, and starts a tally that
-lives on your device: trips taken, impacts felt, distance travelled, hazards
-confirmed. No account, nothing to sign up for — but it is unmistakably yours.
-See [ADR-0005](docs/adr/0005-ownership-without-accounts.md).
+Open it and the app finds your street, names the area, and starts a tally:
+trips taken, impacts felt, distance travelled, hazards confirmed. No sign-up
+screen, no email, no password prompt — but it is unmistakably yours, and it
+survives a new phone.
+
+That works because the app quietly creates a real identity on first run and
+hands you a **recovery code**. The code *is* the account: paste it on another
+device and your street and tally come back. Keep it, and nothing is lost; lose
+it, and you have lost what you were told you would lose. The tally itself lives
+in a row only your identity can read. See
+[ADR-0006](docs/adr/0006-anonymous-identity-and-recovery-code.md).
 
 ## Repository layout
 
