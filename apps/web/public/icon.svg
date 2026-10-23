@@ -1,12 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Hodos">
-  <rect width="512" height="512" rx="112" fill="#0b0f14" />
-  <path
-    d="M256 92c-58 0-104 46-104 104 0 78 104 224 104 224s104-146 104-224c0-58-46-104-104-104z"
-    fill="none"
-    stroke="#2dd4bf"
-    stroke-width="26"
-    stroke-linejoin="round"
-  />
-  <circle cx="256" cy="196" r="34" fill="#2dd4bf" />
-  <path d="M196 400h120" stroke="#1e2937" stroke-width="22" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="tile" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#16212e" />
+      <stop offset="1" stop-color="#080b10" />
+    </linearGradient>
+    <radialGradient id="find" cx="0.34" cy="0.26" r="0.85">
+      <stop offset="0" stop-color="#ffd77a" />
+      <stop offset="1" stop-color="#f2a01d" />
+    </radialGradient>
+  </defs>
+
+  <rect class="tile" width="512" height="512" rx="116" fill="url(#tile)" />
+
+  <g class="glyph">
+    <path d="M150 432 L238 80" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" fill="none" />
+    <path d="M362 432 L274 80" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" fill="none" />
+
+    <g stroke="#2dd4bf" stroke-width="10" stroke-linecap="round" fill="none">
+      <path d="M256 112 L256 138" />
+      <path d="M256 164 L256 190" />
+      <path d="M256 322 L256 348" />
+      <path d="M256 374 L256 400" />
+    </g>
+
+    <circle cx="256" cy="256" r="40" fill="url(#find)" />
+  </g>
 </svg>
