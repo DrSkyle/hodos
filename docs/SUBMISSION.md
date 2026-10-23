@@ -134,5 +134,5 @@ Suggested shot list:
 ## Links
 
 - **Code:** https://github.com/DrSkyle/hodos
-- **Live app:** https://hodos-9b6.pages.dev
+- **Live app:** https://hodos.devilabs.dev
 - **Android APK:** the `apk-latest` release on the repository
