@@ -7,7 +7,7 @@ sensor. Mount a phone, tap start, drive. The app reads the road from the motion
 sensors, works out where the potholes, speed bumps and rough patches are, and
 adds them to a shared map. Nobody files a report.
 
-- **Web app:** https://hodos-9b6.pages.dev
+- **Web app:** https://hodos.devilabs.dev
 - **Android app:** built by CI, attached to the [`apk-latest` release](../../releases)
 - **Backend:** Appwrite (TablesDB), project `elpis`, database `hodos`
 
