@@ -178,6 +178,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@capacitor/core':
+        specifier: ^6.2.0
+        version: 6.2.2
       '@hodos/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -189,9 +192,6 @@ importers:
         specifier: ^6.2.0
         version: 6.2.2(@capacitor/core@6.2.2)
       '@capacitor/cli':
-        specifier: ^6.2.0
-        version: 6.2.2
-      '@capacitor/core':
         specifier: ^6.2.0
         version: 6.2.2
       typescript:

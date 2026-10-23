@@ -15,6 +15,13 @@ import {
 import { describeArea } from "./places";
 import { formatDistance, loadMe, mergeMe, relativeTime, saveMe, spanDays, tally } from "./me";
 import { establishSession, loadProfile, saveProfile } from "./account";
+import type { TripRecord } from "./me";
+import {
+  automaticAvailable,
+  automaticEnabled,
+  pullAutomaticTrips,
+  setAutomatic,
+} from "./auto";
 import {
   isValidCode,
   loadIdentity,
@@ -78,10 +85,23 @@ app.innerHTML = `
       <div class="drive">
         <p class="eyebrow">Recording</p>
         <h2 id="drive-title">Map a route</h2>
+        <div id="auto-card" class="auto-card" hidden>
+          <div class="auto-head">
+            <div>
+              <p class="eyebrow">Automatic</p>
+              <h3 id="auto-title">Always mapping</h3>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="auto-toggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p id="auto-copy" class="sub"></p>
+        </div>
         <p class="lede">
-          Mount your phone so it sits flat and steady, then travel your normal route.
-          Keep this screen open &mdash; the browser will not sense in the background.
-          You never file a report.
+          Or map a route right now. A browser cannot sense in the background, so a manual
+          trip needs this screen open &mdash; automatic mode above is the one that just
+          happens on its own. Either way you never file a report.
         </p>
         <button id="record" class="record">Start trip</button>
         <div class="stats big" id="drive-stats"></div>
@@ -163,6 +183,9 @@ const copyCode = need<HTMLButtonElement>("#copy-code");
 const restoreInput = need<HTMLInputElement>("#restore-input");
 const restoreGo = need<HTMLButtonElement>("#restore-go");
 const restoreStatus = need<HTMLElement>("#restore-status");
+const autoCard = need<HTMLElement>("#auto-card");
+const autoToggle = need<HTMLInputElement>("#auto-toggle");
+const autoCopy = need<HTMLElement>("#auto-copy");
 
 let me = loadMe();
 let identity: Identity = loadIdentity() ?? { code: newCode() };
@@ -565,6 +588,53 @@ if (me.centre !== null) {
   hazardMap.centreOn(me.centre.lat, me.centre.lng);
 }
 
+async function renderAutomatic(): Promise<void> {
+  if (!automaticAvailable()) {
+    autoCard.hidden = true;
+    return;
+  }
+  autoCard.hidden = false;
+  const on = await automaticEnabled();
+  autoToggle.checked = on;
+  autoCopy.textContent = on
+    ? "On. It starts itself when you set off and stops when you park. Location must be set to \u201cAllow all the time\u201d, and battery optimisation should be off for Hodos."
+    : "Arm it once. After that Hodos starts and stops by itself when you drive \u2014 no tapping, no remembering.";
+}
+
+autoToggle.addEventListener("change", () => {
+  const wanted = autoToggle.checked;
+  autoToggle.disabled = true;
+  autoCopy.textContent = wanted ? "Arming..." : "Turning off...";
+  void setAutomatic(wanted).then((actual) => {
+    autoToggle.checked = actual;
+    autoToggle.disabled = false;
+    void renderAutomatic();
+  });
+});
+
+async function mergeAutomaticTrips(): Promise<void> {
+  const trips = await pullAutomaticTrips();
+  if (trips.length === 0) {
+    return;
+  }
+  const seen = new Set(me.trips.map((trip) => trip.at));
+  let added = 0;
+  for (const trip of trips) {
+    if (!seen.has(trip.at)) {
+      me.trips.push(trip);
+      seen.add(trip.at);
+      added += 1;
+    }
+  }
+  if (added === 0) {
+    return;
+  }
+  me.trips.sort((a, b) => a.at - b.at);
+  saveMe(me);
+  renderMe();
+  void saveProfile(JSON.stringify(me));
+}
+
 async function bootstrapIdentity(): Promise<void> {
   const ok = await establishSession(identity.code);
   if (!ok) {
@@ -583,6 +653,7 @@ async function bootstrapIdentity(): Promise<void> {
     }
   }
   void saveProfile(JSON.stringify(me));
+  await mergeAutomaticTrips();
 }
 
 copyCode.addEventListener("click", () => {
@@ -630,6 +701,7 @@ restoreGo.addEventListener("click", () => {
 renderMe();
 void refreshHazards();
 void bootstrapIdentity();
+void renderAutomatic();
 if (me.centre === null) {
   void locate();
 }
