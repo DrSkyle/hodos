@@ -68,13 +68,17 @@ export interface EventInput {
   kind: string;
   confidence: number;
   mode: string;
-  /** "impact" for something felt, "pass" for travelling a hazard silently. */
+  /** "impact" for something felt, "pass" for travelling a hazard silently, "fix" for a repair report. */
   observation?: string;
-  /** The hazard a silent pass relates to. */
+  /** The hazard a pass, confirmation or fix relates to. */
   hazardRef?: string;
 }
 
-/** Append one observation to the private, write-only event log. */
+/**
+ * Append one observation to the write-only event log. Clients never write the
+ * map directly: the log is the only thing a Device contributes to, and the
+ * aggregation function derives every hazard from it.
+ */
 export async function appendEvent(event: EventInput): Promise<void> {
   const res = await fetch(tablesUrl(CONFIG.appwrite.eventsTable), {
     method: "POST",
@@ -97,120 +101,15 @@ export async function listHazards(): Promise<HazardRecord[]> {
   return (body.rows ?? []).map(toHazard);
 }
 
-export interface HazardUpsert {
-  rowId: string;
-  hazard: Hazard;
-}
-
-async function getRow(rowId: string): Promise<HazardRecord | null> {
-  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${rowId}`, {
-    headers: headers(),
-  });
-  if (res.status === 404) {
-    return null;
-  }
-  if (!res.ok) {
-    throw new Error(`getRow failed: ${res.status}`);
-  }
-  return toHazard((await res.json()) as AppwriteRow);
-}
-
-function toData(hazard: Hazard): Record<string, unknown> {
-  return {
-    hazardId: hazard.id,
-    lat: hazard.lat,
-    lng: hazard.lng,
-    kind: hazard.kind,
-    severity: hazard.severity,
-    passCount: hazard.passCount,
-    deviceCount: hazard.deviceCount,
-    dayCount: hazard.dayCount,
-    confidence: hazard.confidence,
-    firstSeen: new Date(hazard.firstSeen).toISOString(),
-    lastSeen: new Date(hazard.lastSeen).toISOString(),
-    published: hazard.published,
-    fixedVotes: hazard.fixedVotes,
-    clearPasses: hazard.clearPasses,
-  };
-}
-
-/**
- * Merge a locally detected hazard into the public map. The counters of the
- * existing row are added to the incoming cluster's, then the merged row is
- * written back.
- */
-export async function upsertHazard(upsert: HazardUpsert): Promise<void> {
-  const existing = await getRow(upsert.rowId);
-  const incoming = upsert.hazard;
-  if (existing === null) {
-    const res = await fetch(tablesUrl(CONFIG.appwrite.hazardsTable), {
+/** Ask the aggregation function to recompute the map from the event log. */
+export async function runAggregation(): Promise<void> {
+  try {
+    await fetch(`${CONFIG.appwrite.endpoint}/functions/hodos-aggregate/executions`, {
       method: "POST",
       headers: headers(),
-      body: JSON.stringify({ rowId: upsert.rowId, data: toData(incoming) }),
+      body: JSON.stringify({ async: true }),
     });
-    if (!res.ok) {
-      throw new Error(`createHazard failed: ${res.status} ${await res.text()}`);
-    }
-    return;
+  } catch {
+    /* the hourly schedule will catch up */
   }
-  const merged: Hazard = {
-    ...incoming,
-    passCount: existing.passCount + incoming.passCount,
-    deviceCount: Math.max(existing.deviceCount, incoming.deviceCount),
-    severity: Math.max(existing.severity, incoming.severity) as Hazard["severity"],
-    confidence: Math.max(existing.confidence, incoming.confidence),
-    firstSeen: Math.min(existing.firstSeen, incoming.firstSeen),
-    lastSeen: Math.max(existing.lastSeen, incoming.lastSeen),
-    published: existing.published || incoming.published,
-    fixedVotes: existing.fixedVotes,
-    clearPasses: existing.clearPasses,
-  };
-  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${upsert.rowId}`, {
-    method: "PATCH",
-    headers: headers(),
-    body: JSON.stringify({ data: toData(merged) }),
-  });
-  if (!res.ok) {
-    throw new Error(`updateHazard failed: ${res.status} ${await res.text()}`);
-  }
-}
-
-/** Re-confirm a hazard still exists: another pass, seen now. */
-export async function confirmHazard(rowId: string): Promise<HazardRecord | null> {
-  const existing = await getRow(rowId);
-  if (existing === null) {
-    return null;
-  }
-  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${rowId}`, {
-    method: "PATCH",
-    headers: headers(),
-    body: JSON.stringify({
-      data: {
-        passCount: existing.passCount + 1,
-        lastSeen: new Date().toISOString(),
-        confidence: Math.min(1, Math.round((existing.confidence + 0.05) * 1000) / 1000),
-      },
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`confirmHazard failed: ${res.status}`);
-  }
-  return getRow(rowId);
-}
-
-/** Report a hazard repaired. */
-export async function markFixed(rowId: string): Promise<HazardRecord | null> {
-  const existing = await getRow(rowId);
-  if (existing === null) {
-    return null;
-  }
-  const res = await fetch(`${tablesUrl(CONFIG.appwrite.hazardsTable)}/${rowId}`, {
-    method: "PATCH",
-    headers: headers(),
-    body: JSON.stringify({ data: { fixedVotes: existing.fixedVotes + 1 } }),
-  });
-  if (!res.ok) {
-    throw new Error(`markFixed failed: ${res.status}`);
-  }
-  return getRow(rowId);
 }

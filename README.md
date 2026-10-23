@@ -86,6 +86,20 @@ it, and you have lost what you were told you would lose. The tally itself lives
 in a row only your identity can read. See
 [ADR-0006](docs/adr/0006-anonymous-identity-and-recovery-code.md).
 
+## The data
+
+Everything the phones find is structured and visible. The **Data** tab lists
+every hazard with the evidence behind it — passes, distinct phones, days
+observed, confidence, silent passes, repair reports — and exports the whole set
+as **CSV** or **JSON** (the JSON is self-describing). Field-by-field meanings and
+the privacy treatment of each one are in [`docs/DATA.md`](docs/DATA.md).
+
+## How it could earn
+
+Short version: sell the ward report, publish the data open, and never monetise
+the people who contribute. The longer reasoning is in
+[`docs/SUSTAINABILITY.md`](docs/SUSTAINABILITY.md).
+
 ## Repository layout
 
 ```

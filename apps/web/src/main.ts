@@ -1,17 +1,10 @@
 import "./styles.css";
 import { clusterImpacts, hazardStatus, passedHazards, type ObservedImpact } from "@hodos/core";
-import { deviceId, newTripId, rowIdFor } from "./device";
+import { deviceId, newTripId } from "./device";
 import { HazardMap, severityLabel } from "./map";
 import { CaptureSession, type SessionSnapshot } from "./session";
 import { requestMotionAccess } from "./sensors";
-import {
-  appendEvent,
-  confirmHazard,
-  listHazards,
-  markFixed,
-  upsertHazard,
-  type HazardRecord,
-} from "./backend";
+import { appendEvent, listHazards, runAggregation, type HazardRecord } from "./backend";
 import { describeArea } from "./places";
 import { formatDistance, loadMe, mergeMe, relativeTime, saveMe, spanDays, tally } from "./me";
 import { establishSession, loadProfile, saveProfile } from "./account";
@@ -53,6 +46,7 @@ app.innerHTML = `
     <nav class="tabs">
       <button data-view="map" class="tab is-active">Map</button>
       <button data-view="drive" class="tab">Drive</button>
+      <button data-view="data" class="tab">Data</button>
       <button data-view="you" class="tab">You</button>
     </nav>
   </header>
@@ -107,6 +101,44 @@ app.innerHTML = `
         <div class="stats big" id="drive-stats"></div>
         <p id="drive-status" class="status"></p>
         <div id="trip-result" class="result"></div>
+      </div>
+    </section>
+
+    <section data-panel="data" class="panel">
+      <div class="data-view">
+        <p class="eyebrow">Open data</p>
+        <h2>Everything the phones have found</h2>
+        <p class="sub">
+          One row per hazard, with the evidence behind it. This is the same data the
+          map draws, structured so it can be checked, analysed or handed to a road
+          authority.
+        </p>
+        <div class="stats big" id="data-stats"></div>
+        <div class="row">
+          <button id="export-csv" class="ghost">Download CSV</button>
+          <button id="export-json" class="ghost">Download JSON</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th class="num">Passes</th>
+                <th class="num">Phones</th>
+                <th class="num">Days</th>
+                <th class="num">Conf.</th>
+                <th class="num">Silent passes</th>
+                <th>Last seen</th>
+                <th class="num">Latitude</th>
+                <th class="num">Longitude</th>
+              </tr>
+            </thead>
+            <tbody id="data-body"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="data-empty" hidden>No hazards yet. The first trip will fill this in.</p>
       </div>
     </section>
 
@@ -186,6 +218,9 @@ const restoreStatus = need<HTMLElement>("#restore-status");
 const autoCard = need<HTMLElement>("#auto-card");
 const autoToggle = need<HTMLInputElement>("#auto-toggle");
 const autoCopy = need<HTMLElement>("#auto-copy");
+const dataStats = need<HTMLElement>("#data-stats");
+const dataBody = need<HTMLElement>("#data-body");
+const dataEmpty = need<HTMLElement>("#data-empty");
 
 let me = loadMe();
 let identity: Identity = loadIdentity() ?? { code: newCode() };
@@ -301,6 +336,137 @@ hazardList.addEventListener("click", (event) => {
   }
 });
 
+const DATA_COLUMNS = [
+  "hazardId",
+  "kind",
+  "severity",
+  "status",
+  "lat",
+  "lng",
+  "passCount",
+  "deviceCount",
+  "dayCount",
+  "confidence",
+  "clearPasses",
+  "fixedVotes",
+  "firstSeen",
+  "lastSeen",
+] as const;
+
+function rankedHazards(): HazardRecord[] {
+  return [...hazards].sort(
+    (a, b) => Number(hazardStatus(a) === "fixed") - Number(hazardStatus(b) === "fixed") || b.severity - a.severity,
+  );
+}
+
+function renderData(): void {
+  const all = hazards;
+  const repaired = all.filter((hazard) => hazardStatus(hazard) === "fixed").length;
+  const count = (kind: string) => all.filter((hazard) => hazard.kind === kind).length;
+  dataStats.innerHTML = [
+    stat(all.length, "hazards"),
+    stat(all.length - repaired, "open"),
+    stat(repaired, "repaired", "fixed"),
+    stat(count("pothole"), "potholes"),
+    stat(count("speed_bump"), "speed bumps"),
+    stat(count("rough_pavement"), "rough patches"),
+  ].join("");
+  dataEmpty.hidden = all.length > 0;
+  dataBody.innerHTML = rankedHazards()
+    .map(
+      (hazard) => `
+      <tr>
+        <td>${hazard.kind.replace("_", " ")}</td>
+        <td><span class="sev sev-${hazard.severity}">${severityLabel(hazard.severity)}</span></td>
+        <td>${hazardStatus(hazard) === "fixed" ? "repaired" : "open"}</td>
+        <td class="num">${hazard.passCount}</td>
+        <td class="num">${hazard.deviceCount}</td>
+        <td class="num">${hazard.dayCount}</td>
+        <td class="num">${Math.round(hazard.confidence * 100)}%</td>
+        <td class="num">${hazard.clearPasses}</td>
+        <td>${relativeTime(hazard.lastSeen)}</td>
+        <td class="num">${hazard.lat.toFixed(5)}</td>
+        <td class="num">${hazard.lng.toFixed(5)}</td>
+      </tr>`,
+    )
+    .join("");
+}
+
+interface HazardRow extends Record<string, string | number> {
+  hazardId: string;
+}
+
+function dataRecords(): HazardRow[] {
+  return rankedHazards().map((hazard) => ({
+    hazardId: hazard.id,
+    kind: hazard.kind,
+    severity: hazard.severity,
+    status: hazardStatus(hazard),
+    lat: Number(hazard.lat.toFixed(6)),
+    lng: Number(hazard.lng.toFixed(6)),
+    passCount: hazard.passCount,
+    deviceCount: hazard.deviceCount,
+    dayCount: hazard.dayCount,
+    confidence: hazard.confidence,
+    clearPasses: hazard.clearPasses,
+    fixedVotes: hazard.fixedVotes,
+    firstSeen: new Date(hazard.firstSeen).toISOString(),
+    lastSeen: new Date(hazard.lastSeen).toISOString(),
+  }));
+}
+
+function saveFile(name: string, mime: string, text: string): void {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function toCsv(rows: HazardRow[]): string {
+  const header = DATA_COLUMNS.join(",");
+  const lines = rows.map((row) =>
+    DATA_COLUMNS.map((key) => {
+      const value = String(row[key] ?? "");
+      return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+    }).join(","),
+  );
+  return [header, ...lines].join("\n");
+}
+
+function stamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+need<HTMLButtonElement>("#export-csv").addEventListener("click", () => {
+  saveFile(`hodos-hazards-${stamp()}.csv`, "text/csv", toCsv(dataRecords()));
+});
+
+need<HTMLButtonElement>("#export-json").addEventListener("click", () => {
+  const payload = {
+    dataset: "hodos.hazards.v1",
+    generatedAt: new Date().toISOString(),
+    fields: {
+      hazardId: "stable id, rounded coordinate pair",
+      kind: "pothole | speed_bump | rough_pavement",
+      severity: "1 minor, 2 moderate, 3 severe (speed-normalised)",
+      status: "open | fixed",
+      passCount: "impacts that corroborate this hazard",
+      deviceCount: "distinct anonymous devices",
+      dayCount: "distinct calendar days observed",
+      confidence: "0..1, blends passes, devices, detection quality and recency",
+      clearPasses: "silent passes since the last impact",
+      fixedVotes: "distinct devices reporting it repaired",
+      firstSeen: "ISO 8601",
+      lastSeen: "ISO 8601",
+    },
+    records: dataRecords(),
+  };
+  saveFile(`hodos-hazards-${stamp()}.json`, "application/json", JSON.stringify(payload, null, 2));
+});
+
 function openDetail(record: HazardRecord): void {
   currentRowId = record.rowId;
   const status = hazardStatus(record);
@@ -407,12 +573,69 @@ detail.addEventListener("click", (event) => {
     return;
   }
   if (action === "confirm") {
-    void confirmHazard(rowId).then(refreshHazards);
+    void recordConfirmation(rowId);
   } else if (action === "fix") {
-    void markFixed(rowId).then(refreshHazards);
+    void recordFix(rowId);
   }
   closeSheet();
 });
+
+async function recordConfirmation(rowId: string): Promise<void> {
+  const hazard = hazards.find((candidate) => candidate.rowId === rowId);
+  if (hazard === undefined) {
+    return;
+  }
+  try {
+    await appendEvent({
+      deviceId: deviceId(),
+      tripId: newTripId(),
+      recordedAt: new Date().toISOString(),
+      lat: hazard.lat,
+      lng: hazard.lng,
+      accuracy: 6,
+      speedKph: 0,
+      magnitude: 0,
+      severity: hazard.severity,
+      kind: hazard.kind,
+      confidence: 0.9,
+      mode: "vehicle",
+      hazardRef: rowId,
+    });
+    await runAggregation();
+    window.setTimeout(() => void refreshHazards(), 2500);
+  } catch {
+    /* the report is best effort */
+  }
+}
+
+async function recordFix(rowId: string): Promise<void> {
+  const hazard = hazards.find((candidate) => candidate.rowId === rowId);
+  if (hazard === undefined) {
+    return;
+  }
+  try {
+    await appendEvent({
+      deviceId: deviceId(),
+      tripId: newTripId(),
+      recordedAt: new Date().toISOString(),
+      lat: hazard.lat,
+      lng: hazard.lng,
+      accuracy: 6,
+      speedKph: 0,
+      magnitude: 0,
+      severity: 1,
+      kind: hazard.kind,
+      confidence: 0.9,
+      mode: "vehicle",
+      observation: "fix",
+      hazardRef: rowId,
+    });
+    await runAggregation();
+    window.setTimeout(() => void refreshHazards(), 2500);
+  } catch {
+    /* the report is best effort */
+  }
+}
 
 function downloadReport(text: string): void {
   const blob = new Blob([text], { type: "text/plain" });
@@ -440,6 +663,7 @@ async function refreshHazards(): Promise<void> {
   try {
     hazards = await listHazards();
     renderHazards();
+    renderData();
     if (!detail.hidden && currentRowId !== "") {
       const fresh = hazards.find((hazard) => hazard.rowId === currentRowId);
       if (fresh !== undefined) {
@@ -545,13 +769,6 @@ async function endTrip(): Promise<void> {
 
   const observed: ObservedImpact[] = impacts.map((impact) => ({ ...impact, deviceId: id }));
   const clusters = clusterImpacts(observed, { now: Date.now() });
-  for (const hazard of clusters) {
-    try {
-      await upsertHazard({ rowId: rowIdFor(hazard.lat, hazard.lng), hazard });
-    } catch {
-      /* best-effort merge */
-    }
-  }
 
   const confirmed = clusters.filter((hazard) => hazard.published).length;
 
@@ -581,6 +798,7 @@ async function endTrip(): Promise<void> {
       /* a missed pass must not fail the trip */
     }
   }
+  await runAggregation();
   const travelledM = lastSnapshot?.travelledM ?? 0;
   const lastFix = lastSnapshot?.lastFix ?? null;
   me.trips.push({
@@ -603,6 +821,7 @@ async function endTrip(): Promise<void> {
     <strong>${clusters.length}</strong> road locations updated, <strong>${confirmed}</strong> now confirmed on the map.</p>
   `;
   await refreshHazards();
+  window.setTimeout(() => void refreshHazards(), 2500);
 }
 
 recordButton.addEventListener("click", () => {
@@ -732,6 +951,7 @@ restoreGo.addEventListener("click", () => {
 });
 
 renderMe();
+renderData();
 void refreshHazards();
 void bootstrapIdentity();
 void renderAutomatic();
