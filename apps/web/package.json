@@ -1,0 +1,25 @@
+{
+  "name": "@hodos/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "sync:android": "cap sync android"
+  },
+  "dependencies": {
+    "@hodos/core": "workspace:*",
+    "maplibre-gl": "^4.7.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

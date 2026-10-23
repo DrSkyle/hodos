@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Android / Capacitor
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+*.jks
+*.keystore
+!android/app/debug.keystore
+.capacitor/
+
+# Appwrite
+appwrite/.appwrite/
+appwrite/appwrite.config.json
+appwrite/.agents/
+appwrite/.claude/
+
+# Tooling state
+.commandcode/
+.scratch/

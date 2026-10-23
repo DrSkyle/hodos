@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Hodos">
+  <rect width="512" height="512" rx="112" fill="#0b0f14" />
+  <path
+    d="M256 92c-58 0-104 46-104 104 0 78 104 224 104 224s104-146 104-224c0-58-46-104-104-104z"
+    fill="none"
+    stroke="#2dd4bf"
+    stroke-width="26"
+    stroke-linejoin="round"
+  />
+  <circle cx="256" cy="196" r="34" fill="#2dd4bf" />
+  <path d="M196 400h120" stroke="#1e2937" stroke-width="22" stroke-linecap="round" />
+</svg>

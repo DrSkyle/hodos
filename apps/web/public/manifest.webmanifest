@@ -1,0 +1,20 @@
+{
+  "name": "Hodos",
+  "short_name": "Hodos",
+  "description": "Passive, crowdsourced road-hazard mapping for your neighborhood.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "categories": ["navigation", "utilities", "social"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
