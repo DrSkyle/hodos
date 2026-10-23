@@ -13,7 +13,16 @@ import {
   type HazardRecord,
 } from "./backend";
 import { describeArea } from "./places";
-import { formatDistance, loadMe, relativeTime, saveMe, spanDays, tally } from "./me";
+import { formatDistance, loadMe, mergeMe, relativeTime, saveMe, spanDays, tally } from "./me";
+import { establishSession, loadProfile, saveProfile } from "./account";
+import {
+  isValidCode,
+  loadIdentity,
+  newCode,
+  normaliseCode,
+  saveIdentity,
+  type Identity,
+} from "./identity";
 
 function need<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -87,6 +96,27 @@ app.innerHTML = `
         <h2 id="you-area">Your street</h2>
         <p id="you-sub" class="sub"></p>
         <div class="stats big" id="you-stats"></div>
+        <h3 class="section-title">Your code</h3>
+        <p class="sub" id="code-sub">
+          Keep this. It is the only thing that brings your map back on a new phone.
+        </p>
+        <div class="code-row">
+          <code id="code-value"></code>
+          <button id="copy-code" class="ghost">Copy</button>
+        </div>
+        <details class="restore">
+          <summary>Restore on another device</summary>
+          <div class="restore-body">
+            <input
+              id="restore-input"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"
+            />
+            <button id="restore-go" class="ghost">Restore</button>
+          </div>
+          <p class="hint" id="restore-status"></p>
+        </details>
         <h3 class="section-title">Recent trips</h3>
         <ul id="trip-list" class="list"></ul>
         <button id="report-you" class="ghost wide">Download road report</button>
@@ -127,8 +157,16 @@ const youStats = need<HTMLElement>("#you-stats");
 const tripList = need<HTMLUListElement>("#trip-list");
 const detail = need<HTMLElement>("#detail");
 const scrim = need<HTMLElement>("#scrim");
+const codeValue = need<HTMLElement>("#code-value");
+const codeSub = need<HTMLElement>("#code-sub");
+const copyCode = need<HTMLButtonElement>("#copy-code");
+const restoreInput = need<HTMLInputElement>("#restore-input");
+const restoreGo = need<HTMLButtonElement>("#restore-go");
+const restoreStatus = need<HTMLElement>("#restore-status");
 
 let me = loadMe();
+let identity: Identity = loadIdentity() ?? { code: newCode() };
+saveIdentity(identity);
 let hazards: HazardRecord[] = [];
 let session: CaptureSession | null = null;
 let lastSnapshot: SessionSnapshot | null = null;
@@ -156,6 +194,7 @@ function stat(value: string | number, label: string, tone = ""): string {
 
 function renderMe(): void {
   const summary = tally(me);
+  codeValue.textContent = identity.code;
   const where = me.area ?? "your neighbourhood";
   areaLine.textContent = where;
   areaName.textContent = me.area ?? "Your neighbourhood";
@@ -466,6 +505,8 @@ async function endTrip(): Promise<void> {
         magnitude: impact.magnitude,
         severity: impact.severity,
         kind: impact.kind,
+        confidence: impact.confidence,
+        mode: impact.mode,
       });
       uploaded += 1;
     } catch {
@@ -498,6 +539,7 @@ async function endTrip(): Promise<void> {
   }
   saveMe(me);
   renderMe();
+  void saveProfile(JSON.stringify(me));
 
   driveStatus.textContent = "";
   tripResult.innerHTML = `
@@ -523,8 +565,71 @@ if (me.centre !== null) {
   hazardMap.centreOn(me.centre.lat, me.centre.lng);
 }
 
+async function bootstrapIdentity(): Promise<void> {
+  const ok = await establishSession(identity.code);
+  if (!ok) {
+    codeSub.textContent =
+      "Your code is saved on this phone. It will sync the next time this device is online.";
+    return;
+  }
+  const remote = await loadProfile();
+  if (remote !== null) {
+    try {
+      me = mergeMe(me, JSON.parse(remote) as typeof me);
+      saveMe(me);
+      renderMe();
+    } catch {
+      /* an unreadable profile must not lose the local one */
+    }
+  }
+  void saveProfile(JSON.stringify(me));
+}
+
+copyCode.addEventListener("click", () => {
+  void navigator.clipboard
+    ?.writeText(identity.code)
+    .then(() => {
+      copyCode.textContent = "Copied";
+      window.setTimeout(() => {
+        copyCode.textContent = "Copy";
+      }, 1500);
+    })
+    .catch(() => {
+      copyCode.textContent = "Select it";
+    });
+});
+
+restoreGo.addEventListener("click", () => {
+  const candidate = normaliseCode(restoreInput.value);
+  if (!isValidCode(candidate)) {
+    restoreStatus.textContent = "That code is not the right shape.";
+    return;
+  }
+  restoreStatus.textContent = "Restoring...";
+  void establishSession(candidate).then(async (ok) => {
+    if (!ok) {
+      restoreStatus.textContent = "Could not restore that code.";
+      return;
+    }
+    identity = { code: candidate };
+    saveIdentity(identity);
+    const remote = await loadProfile();
+    if (remote !== null) {
+      try {
+        me = mergeMe(me, JSON.parse(remote) as typeof me);
+      } catch {
+        /* ignore malformed remote copy */
+      }
+    }
+    saveMe(me);
+    renderMe();
+    restoreStatus.textContent = "Restored.";
+  });
+});
+
 renderMe();
 void refreshHazards();
+void bootstrapIdentity();
 if (me.centre === null) {
   void locate();
 }

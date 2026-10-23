@@ -3,6 +3,7 @@ import { clusterImpacts, hazardStatus } from "./cluster";
 import type { ObservedImpact } from "./types";
 
 const T0 = Date.parse("2026-10-23T10:00:00Z");
+const DAY = 86_400_000;
 
 function impact(overrides: Partial<ObservedImpact> = {}): ObservedImpact {
   return {
@@ -10,10 +11,14 @@ function impact(overrides: Partial<ObservedImpact> = {}): ObservedImpact {
     lat: 27.7172,
     lng: 85.324,
     accuracy: 8,
-    speedKph: 30,
+    speedKph: 36,
     magnitude: 6,
+    normalised: 6,
     severity: 1,
     kind: "pothole",
+    confidence: 0.8,
+    mode: "vehicle",
+    features: { peak: 6, riseMs: 40, widthMs: 90, lobes: 1, jerk: 200, lateralRatio: 0.2 },
     deviceId: "device-a",
     ...overrides,
   };
@@ -32,6 +37,18 @@ describe("clusterImpacts", () => {
     expect(hazards[0]?.deviceCount).toBe(3);
     expect(hazards[0]?.published).toBe(true);
     expect(hazards[0]?.confidence).toBeGreaterThan(0.5);
+  });
+
+  it("counts the distinct days a hazard was seen", () => {
+    const impacts = [
+      impact({ t: T0, deviceId: "a" }),
+      impact({ t: T0 + 3600_000, deviceId: "b" }),
+      impact({ t: T0 + DAY, deviceId: "c" }),
+      impact({ t: T0 + 2 * DAY, deviceId: "d" }),
+    ];
+    const hazards = clusterImpacts(impacts, { now: T0 + 2 * DAY });
+    expect(hazards[0]?.dayCount).toBe(3);
+    expect(hazards[0]?.passCount).toBe(4);
   });
 
   it("separates distant impacts into distinct hazards", () => {
@@ -61,6 +78,26 @@ describe("clusterImpacts", () => {
     expect(hazards[0]?.published).toBe(false);
   });
 
+  it("ranks a clean, corroborated hazard above a shaky one", () => {
+    const clean = clusterImpacts(
+      [
+        impact({ deviceId: "a", confidence: 0.95 }),
+        impact({ deviceId: "b", confidence: 0.95 }),
+        impact({ deviceId: "c", confidence: 0.95 }),
+      ],
+      { now: T0 },
+    )[0];
+    const shaky = clusterImpacts(
+      [
+        impact({ deviceId: "a", confidence: 0.2 }),
+        impact({ deviceId: "b", confidence: 0.2 }),
+        impact({ deviceId: "c", confidence: 0.2 }),
+      ],
+      { now: T0 },
+    )[0];
+    expect(clean?.confidence).toBeGreaterThan(shaky?.confidence ?? 0);
+  });
+
   it("takes the maximum severity and the majority kind", () => {
     const impacts = [
       impact({ deviceId: "a", severity: 1, kind: "pothole" }),
@@ -73,13 +110,9 @@ describe("clusterImpacts", () => {
   });
 
   it("fades confidence as a hazard goes stale", () => {
-    const impacts = [
-      impact({ deviceId: "a" }),
-      impact({ deviceId: "b" }),
-      impact({ deviceId: "c" }),
-    ];
+    const impacts = [impact({ deviceId: "a" }), impact({ deviceId: "b" }), impact({ deviceId: "c" })];
     const fresh = clusterImpacts(impacts, { now: T0 })[0]?.confidence ?? 0;
-    const stale = clusterImpacts(impacts, { now: T0 + 180 * 86_400_000 })[0]?.confidence ?? 0;
+    const stale = clusterImpacts(impacts, { now: T0 + 180 * DAY })[0]?.confidence ?? 0;
     expect(stale).toBeLessThan(fresh);
   });
 

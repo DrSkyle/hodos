@@ -641,3 +641,93 @@ button.record.is-recording {
     display: none;
   }
 }
+
+/* ---------- identity ---------- */
+
+.code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.code-row code {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--ink);
+  color: var(--teal);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.code-row .ghost {
+  flex: none;
+  width: auto;
+  padding: 12px 16px;
+}
+
+.restore {
+  margin: 0 0 22px;
+}
+
+.restore summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+.restore summary::-webkit-details-marker {
+  display: none;
+}
+
+.restore summary::before {
+  content: "+ ";
+  color: var(--faint);
+}
+
+.restore[open] summary::before {
+  content: "\2212  ";
+}
+
+.restore-body {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.restore-body input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--ink);
+  color: var(--text);
+}
+
+.restore-body input:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.restore-body .ghost {
+  flex: none;
+  width: auto;
+  padding: 11px 16px;
+}
+
+.restore .hint {
+  text-align: left;
+  margin-top: 6px;
+}

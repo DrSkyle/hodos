@@ -1,117 +1,103 @@
-import type { GeoFix, HazardKind, Impact, MotionSample, Severity } from "./types";
+import { classify, DEFAULT_CLASSIFY_OPTIONS, type ClassifyOptions } from "./classify";
+import { extractFeatures, type ResidualSeries } from "./features";
+import { clamp, designBandpass, filter, median, medianInterval, robustFloor } from "./signal";
+import type { GeoFix, Impact, MotionSample, Severity, TravelMode } from "./types";
 
-export interface DetectOptions {
-  /** Minimum ground speed (km/h). Slower impacts are presumed to be walking or stationary. */
+export interface ModeOptions {
+  /** Impact magnitude (m/s^2) that always passes, however quiet the road. */
+  absoluteFloor: number;
+  /** Multiple of the rolling noise floor that must be exceeded. */
+  noiseK: number;
+  /** Below this ground speed (km/h) an impact in this mode is ignored. */
   minSpeedKph: number;
-  /** Vertical acceleration above gravity (m/s^2) required to register an impact. */
-  peakThreshold: number;
-  /** Minimum gap (milliseconds) between two accepted impacts. */
+}
+
+export interface DetectOptions extends ClassifyOptions {
+  bandLowHz: number;
+  bandHighHz: number;
+  /** Window (ms) over which the noise floor is estimated. */
+  noiseWindowMs: number;
+  /** Minimum gap (ms) between accepted impacts. */
   debounceMs: number;
-  /** Maximum time (milliseconds) between an impact and its nearest position fix. */
+  /** Maximum time (ms) between an impact and its nearest position fix. */
   maxFixAgeMs: number;
   /** Impacts whose nearest fix is coarser than this (metres) are discarded. */
   maxFixAccuracyM: number;
-  /** Magnitude (m/s^2) at or above which an impact is moderate. */
-  moderateMagnitude: number;
-  /** Magnitude (m/s^2) at or above which an impact is severe. */
-  severeMagnitude: number;
-  /** Elevated vertical signal lasting at least this long (milliseconds) reads as a speed bump. */
-  bumpMinDurationMs: number;
+  vehicle: ModeOptions;
+  pedestrian: ModeOptions;
+  /** At or above this speed (km/h) the Device is treated as a vehicle. */
+  walkingMaxKph: number;
+  /** Speed (km/h) at which impact gain is 1. */
+  speedReferenceKph: number;
+  /** Speed-normalised magnitude at which an impact becomes moderate. */
+  moderateNormalised: number;
+  /** Speed-normalised magnitude at which an impact becomes severe. */
+  severeNormalised: number;
+  /** Fraction of the threshold at which an event is considered over. */
+  releaseFraction: number;
+  /** Per-sample coefficient of the gravity low-pass filter. */
+  gravityAlpha: number;
 }
 
 export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
-  minSpeedKph: 12,
-  peakThreshold: 3.9,
-  debounceMs: 2000,
+  ...DEFAULT_CLASSIFY_OPTIONS,
+  bandLowHz: 0.5,
+  bandHighHz: 6,
+  noiseWindowMs: 2000,
+  debounceMs: 1500,
   maxFixAgeMs: 3000,
   maxFixAccuracyM: 50,
-  moderateMagnitude: 8,
-  severeMagnitude: 15,
-  bumpMinDurationMs: 140,
+  vehicle: { absoluteFloor: 1.6, noiseK: 3, minSpeedKph: 12 },
+  pedestrian: { absoluteFloor: 0.9, noiseK: 4.5, minSpeedKph: 1 },
+  walkingMaxKph: 10,
+  speedReferenceKph: 35,
+  moderateNormalised: 6,
+  severeNormalised: 12,
+  releaseFraction: 0.5,
+  gravityAlpha: 0.02,
 };
 
-/** Smoothing factor for the gravity low-pass filter (per sample). */
-const GRAVITY_ALPHA = 0.08;
-/** An event is considered over once the signal falls below this fraction of the threshold. */
-const RELEASE_FRACTION = 0.5;
-
-interface SeriesPoint {
-  t: number;
-  vhp: number;
-}
-
-interface Peak {
-  t: number;
-  magnitude: number;
-  durationMs: number;
-}
-
-function verticalSeries(samples: MotionSample[]): SeriesPoint[] {
+function residuals(samples: MotionSample[], alpha: number): ResidualSeries {
   const first = samples[0];
   if (first === undefined) {
-    return [];
+    return { times: [], vertical: [], lateral: [] };
   }
   let gx = first.ax;
   let gy = first.ay;
   let gz = first.az;
-  const series: SeriesPoint[] = [];
-  for (const s of samples) {
-    gx += GRAVITY_ALPHA * (s.ax - gx);
-    gy += GRAVITY_ALPHA * (s.ay - gy);
-    gz += GRAVITY_ALPHA * (s.az - gz);
+  const times: number[] = [];
+  const vertical: number[] = [];
+  const lateral: number[] = [];
+  for (const sample of samples) {
+    gx += alpha * (sample.ax - gx);
+    gy += alpha * (sample.ay - gy);
+    gz += alpha * (sample.az - gz);
     const gmag = Math.hypot(gx, gy, gz) || 1;
-    const hx = s.ax - gx;
-    const hy = s.ay - gy;
-    const hz = s.az - gz;
-    const vhp = (hx * gx + hy * gy + hz * gz) / gmag;
-    series.push({ t: s.t, vhp });
+    const hx = sample.ax - gx;
+    const hy = sample.ay - gy;
+    const hz = sample.az - gz;
+    const v = (hx * gx + hy * gy + hz * gz) / gmag;
+    const hmag = Math.hypot(hx, hy, hz);
+    times.push(sample.t);
+    vertical.push(v);
+    lateral.push(Math.sqrt(Math.max(0, hmag * hmag - v * v)));
   }
-  return series;
+  return { times, vertical, lateral };
 }
 
-function findPeaks(series: SeriesPoint[], options: DetectOptions): Peak[] {
-  const peaks: Peak[] = [];
-  let inEvent = false;
-  let eventStart = 0;
-  let peakValue = 0;
-  let peakTime = 0;
-  let lastEmitTime = Number.NEGATIVE_INFINITY;
-
-  const close = (endTime: number): void => {
-    const durationMs = endTime - eventStart;
-    inEvent = false;
-    if (peakValue >= options.peakThreshold && peakTime - lastEmitTime >= options.debounceMs) {
-      peaks.push({ t: peakTime, magnitude: peakValue, durationMs });
-      lastEmitTime = peakTime;
-    }
-  };
-
-  for (const point of series) {
-    if (!inEvent) {
-      if (point.vhp >= options.peakThreshold) {
-        inEvent = true;
-        eventStart = point.t;
-        peakValue = point.vhp;
-        peakTime = point.t;
-      }
-      continue;
-    }
-    if (point.vhp > peakValue) {
-      peakValue = point.vhp;
-      peakTime = point.t;
-    }
-    if (point.vhp < options.peakThreshold * RELEASE_FRACTION) {
-      close(point.t);
-    }
+/** The Device is a vehicle when it is moving at vehicle speed. */
+export function resolveMode(fixes: GeoFix[], walkingMaxKph: number): TravelMode {
+  const speeds = fixes
+    .map((fix) => fix.speed)
+    .filter((speed): speed is number => speed !== null && Number.isFinite(speed))
+    .map((speed) => speed * 3.6);
+  if (speeds.length === 0) {
+    return "vehicle";
   }
-  if (inEvent) {
-    const last = series[series.length - 1];
-    close(last ? last.t : eventStart);
-  }
-  return peaks;
+  return median(speeds) >= walkingMaxKph ? "vehicle" : "pedestrian";
 }
 
-function nearestFix(fixes: GeoFix[], t: number, options: DetectOptions): GeoFix | null {
+function nearestFix(fixes: GeoFix[], t: number, maxAgeMs: number): GeoFix | null {
   let best: GeoFix | null = null;
   let bestDelta = Number.POSITIVE_INFINITY;
   for (const fix of fixes) {
@@ -121,32 +107,30 @@ function nearestFix(fixes: GeoFix[], t: number, options: DetectOptions): GeoFix 
       best = fix;
     }
   }
-  if (best === null || bestDelta > options.maxFixAgeMs) {
+  if (best === null || bestDelta > maxAgeMs) {
     return null;
   }
   return best;
 }
 
-function severityOf(magnitude: number, options: DetectOptions): Severity {
-  if (magnitude >= options.severeMagnitude) {
+function severityOf(normalised: number, cfg: DetectOptions): Severity {
+  if (normalised >= cfg.severeNormalised) {
     return 3;
   }
-  if (magnitude >= options.moderateMagnitude) {
+  if (normalised >= cfg.moderateNormalised) {
     return 2;
   }
   return 1;
 }
 
-function kindOf(durationMs: number, options: DetectOptions): HazardKind {
-  return durationMs >= options.bumpMinDurationMs ? "speed_bump" : "pothole";
-}
-
 /**
  * Detect road impacts from a window of motion samples and position fixes.
  *
- * Gravity is removed per-axis with a low-pass filter, the residual is projected
- * onto the estimated gravity vector to isolate vertical acceleration, and peaks
- * above the threshold are emitted (debounced, speed-gated, and position-matched).
+ * The vertical residual is band-passed to the band road impacts live in, a
+ * rolling noise floor sets a threshold that adapts to the road and the vehicle,
+ * and each candidate event is characterised and classified before it is kept.
+ * Because the threshold rises with whatever is regular in the signal, a
+ * pedestrian's footfalls lift the floor and suppress themselves.
  */
 export function detectImpacts(
   samples: MotionSample[],
@@ -158,27 +142,89 @@ export function detectImpacts(
   if (ordered.length === 0) {
     return [];
   }
-  const peaks = findPeaks(verticalSeries(ordered), cfg);
+
+  const series = residuals(ordered, cfg.gravityAlpha);
+  const intervalMs = medianInterval(series.times, 20);
+  const sampleRate = 1000 / Math.max(1, intervalMs);
+  const coefficients = designBandpass(cfg.bandLowHz, cfg.bandHighHz, sampleRate);
+  const filtered = filter(series.vertical, coefficients);
+  const windowSamples = Math.max(5, Math.round(cfg.noiseWindowMs / Math.max(1, intervalMs)));
+  const stride = Math.max(1, Math.round(windowSamples / 20));
+  const floor = robustFloor(filtered, windowSamples, stride);
+
+  const mode = resolveMode(fixes, cfg.walkingMaxKph);
+  const modeCfg = mode === "vehicle" ? cfg.vehicle : cfg.pedestrian;
+  const span = Math.max(2, Math.round(250 / Math.max(1, intervalMs)));
+
   const impacts: Impact[] = [];
-  for (const peak of peaks) {
-    const fix = nearestFix(fixes, peak.t, cfg);
+  let lastEmit = Number.NEGATIVE_INFINITY;
+  let i = 0;
+
+  while (i < ordered.length) {
+    const threshold = Math.max(modeCfg.absoluteFloor, modeCfg.noiseK * (floor[i] ?? 0));
+    if (Math.abs(filtered[i] ?? 0) < threshold) {
+      i += 1;
+      continue;
+    }
+    let peakIndex = i;
+    let j = i;
+    while (j < ordered.length) {
+      const t = Math.max(modeCfg.absoluteFloor, modeCfg.noiseK * (floor[j] ?? 0));
+      if (Math.abs(filtered[j] ?? 0) < t * cfg.releaseFraction) {
+        break;
+      }
+      if (Math.abs(filtered[j] ?? 0) > Math.abs(filtered[peakIndex] ?? 0)) {
+        peakIndex = j;
+      }
+      j += 1;
+    }
+    i = Math.max(j, i + 1);
+
+    const peakTime = series.times[peakIndex] ?? 0;
+    if (peakTime - lastEmit < cfg.debounceMs) {
+      continue;
+    }
+
+    const fix = nearestFix(fixes, peakTime, cfg.maxFixAgeMs);
     if (fix === null || fix.accuracy > cfg.maxFixAccuracyM) {
       continue;
     }
     const speedKph = (fix.speed ?? 0) * 3.6;
-    if (speedKph < cfg.minSpeedKph) {
+    if (speedKph < modeCfg.minSpeedKph) {
       continue;
     }
+
+    const features = extractFeatures(series, peakIndex, span, span);
+    const classification = classify(features, cfg);
+    if (classification === null) {
+      continue;
+    }
+
+    const snr = clamp(features.peak / Math.max(floor[peakIndex] ?? 0.1, 0.1) / 8, 0, 1);
+    const accuracyFactor = clamp(1 - fix.accuracy / 40, 0, 1);
+    const confidence = Number(
+      clamp(0.55 * classification.score + 0.3 * snr + 0.15 * accuracyFactor, 0, 1).toFixed(3),
+    );
+
+    const gain = clamp(speedKph / cfg.speedReferenceKph, 0.6, 1.8);
+    const normalised = Number((features.peak / gain).toFixed(2));
+
     impacts.push({
-      t: peak.t,
+      t: peakTime,
       lat: fix.lat,
       lng: fix.lng,
       accuracy: fix.accuracy,
       speedKph,
-      magnitude: Number(peak.magnitude.toFixed(2)),
-      severity: severityOf(peak.magnitude, cfg),
-      kind: kindOf(peak.durationMs, cfg),
+      magnitude: features.peak,
+      normalised,
+      severity: severityOf(normalised, cfg),
+      kind: classification.kind,
+      confidence,
+      mode,
+      features,
     });
+    lastEmit = peakTime;
   }
+
   return impacts;
 }
