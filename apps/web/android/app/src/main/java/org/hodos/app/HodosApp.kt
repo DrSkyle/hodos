@@ -172,7 +172,7 @@ fun HodosApp(
                                         Spacer(Modifier.height(5.dp))
                                         Text(
                                             if (hazards.isEmpty()) "No confirmed hazards yet"
-                                            else "${hazards.count { !it.fixed }} open road hazards",
+                                            else "${hazards.count { !it.fixed }} open hazards",
                                             fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
                                             letterSpacing = (-0.5).sp
                                         )
