@@ -16,6 +16,15 @@ Turn on automatic mapping, keep your phone with you and drive as you normally wo
 - **Interactive map** with nearby hazards, severity and supporting reports
 - **Community updates** to confirm a hazard or report a repair
 - **Offline support** for cached hazards and queued road observations
+- **Nearby offline map regions** (20 km around your location, zoom 8–13): automatic on validated Wi-Fi after location permission, with manual save and removal controls
+
+## Offline maps
+
+The native Android Mapping screen offers a **Wi-Fi-only** automatic map download after a user-authorized location fix. The saved square region extends approximately 20 km from the center in each direction (zoom 8–13). Two recent regions are retained; earlier ones are deleted as you move. Users can disable automatic downloads, save the nearby area manually, or remove packs. Hodos keeps locally cached hazard records independently of map tiles.
+
+Basemaps use [OpenFreeMap](https://openfreemap.org/) under its [offline tile-download terms](https://openfreemap.org/tos/). Each pack is paused before 2,400 tiles or 45 MiB, and all map requests are limited to four parallel connections with an application-identifying User-Agent. The build does **not** use bulk downloads from CARTO or OpenStreetMap's public tile server.
+
+Offline regions are only guaranteed at the downloaded zoom levels and after the on-device download is shown as complete. Downloading stops over cellular, and storage use is visible in the Mapping tab. Hazard sharing, new hazards, and unmapped locations still require connectivity.
 
 ## Development
 
