@@ -80,6 +80,10 @@ internal object OfflineMaps {
         state = state.copy(autoEnabled = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getBoolean("auto_wifi", true))
         try {
+            // MapLibre's HTTP implementation reads the MapLibre singleton from
+            // its static initializer. Initialize MapLibre BEFORE touching
+            // HttpRequestUtil, or Android crashes with ExceptionInInitializerError.
+            MapLibre.getInstance(app)
             // One network client for all MapLibre requests, including offline packs.
             // Provider's parallel-request policy is enforced by OkHttp's dispatcher.
             val dispatcher = Dispatcher().apply {
@@ -96,14 +100,14 @@ internal object OfflineMaps {
                         .build())
                 }.build()
             HttpRequestUtil.setOkHttpClient(client)
-            MapLibre.getInstance(app)
             manager = OfflineManager.getInstance(app)
             // A hard SDK limit for the two retained packs.
             manager.setOfflineMapboxTileCountLimit(LIMIT_TILES * KEEP_REGIONS)
             initialized = true
             watchConnectivity()
             load()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is VirtualMachineError) throw e
             Log.e(TAG, "Could not initialize offline maps", e)
             state = state.copy(status = "Offline map storage unavailable")
         }
