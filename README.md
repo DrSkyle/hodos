@@ -1,168 +1,98 @@
 # Hodos
 
-**Passive, crowdsourced road-hazard mapping for your neighborhood.**
+**The road maps itself.**
 
-Hodos turns the phones already travelling your streets into a road-condition
-sensor. Mount a phone, tap start, drive. The app reads the road from the motion
-sensors, works out where the potholes, speed bumps and rough patches are, and
-adds them to a shared map. Nobody files a report.
+Hodos is an Android-first, open-source project for passively mapping potholes,
+speed bumps and rough pavement. When people travel normal routes, their phones
+detect likely road defects locally, append compact observations to a shared
+event log, and corroborate hazards before publishing them on a public map.
 
-- **Web app:** https://hodos.devilabs.dev
-- **Android app:** built by CI, attached to the [latest release](../../releases/latest)
-- **Backend:** Appwrite (TablesDB), project `elpis`, database `hodos`
+**Website:** [hodos.devilabs.dev](https://hodos.devilabs.dev) — the landing page, not an interactive web app.
 
----
+**Android APK:** [latest existing release](https://github.com/DrSkyle/hodos/releases/latest).
+The new Kotlin interface is developed on a separate branch while build and
+real-device compatibility are checked. **Do not assume the existing release is
+the new native version.**
 
-## Why
+## Android-first architecture
 
-Most road-condition data is either surveyed by fleets (expensive) or collected
-by hand (biased — people report what is near home, never the arterial they
-drive past). Hodos sits in the middle: the sensors already exist, in everyone's
-pocket, and the detection is passive.
+- **Kotlin / Jetpack Compose / Material 3** — mobile navigation, map-first screens,
+  journey history, native sheets and large accessible touch targets.
+- **MapLibre Native** — vector map and interactive hazard markers on Android.
+- **Existing Java motion pipeline** — accelerometer + location samples and
+  passive automatic trip detection in an Android foreground service.
+- **Appwrite** — publicly readable aggregated hazards, append-only events,
+  private profiles in the previous Capacitor app.
+- **Offline map cache** — browse previously fetched hazards without a network.
+  Offline event upload queue is not implemented yet.
 
-## How it works
+The website is a lightweight product landing page powered by Vite.
+The original browser app source is preserved temporarily in
+\`apps/web/src/main.ts\` for account and recovery-code migration.
 
-```
- phone sensors            on-device                 shared
- ─────────────            ─────────                 ──────
- accelerometer  ──►  impact detection  ──►  event log (write-only)
- GPS            ──►  (core/detect)           hazard map (public)
-                     clustering + scoring
-                     (core/cluster)
-```
+## Build
 
-1. **Sample.** While a trip is recording, `DeviceMotionEvent` and the
-   Geolocation API stream accelerometer samples and position fixes.
-2. **Detect.** On the phone, `@hodos/core` estimates and removes gravity, then
-   band-passes the vertical residual to 0.5–6 Hz — the band road impacts live
-   in. Engine vibration and body shake sit above it; cornering, braking and
-   gradient sit below. Detection thresholds ride a **rolling, spike-resistant
-   noise floor**, so a quiet car on a smooth road and a noisy car on a rough one
-   both work, and regular footfalls raise the floor enough to suppress
-   themselves.
-3. **Attribute.** Each candidate event is characterised — peak, rise time,
-   pulse width, lobe count, jerk, and how much of it was lateral rather than
-   vertical — and **classified** as a pothole, a speed bump, or rough pavement.
-   A kerb strike or a swerve is mostly lateral and is rejected outright. An
-   event that does not look like any defect is dropped.
-4. **Grade.** Severity is read from the **speed-normalised** magnitude, so a
-   shallow pothole taken at 60 km/h is not automatically "severe". Each impact
-   carries its own confidence, derived from the classifier's margin, the signal
-   above the noise floor, and the GPS accuracy at that moment.
-5. **Corroborate.** Impacts within a merge distance collapse into one
-   *Hazard*. A hazard is only published to the public map once it has enough
-   independent passes from distinct devices (default: 3 passes, 2 devices).
-   Confidence fades with age.
-6. **Share.** Detected impacts are appended to a write-only `events` log;
-   merged hazards are written to the public `hazards` table.
+Android (JDK 17, Android SDK 35):
 
-## A map with consequences
+\`\`\`sh
+cd apps/web/android
+./gradlew :app:assembleDebug
+\`\`\`
 
-A hazard is not a pin that sits there forever. Tap one and you get its record —
-how many passes confirm it, how many phones, when it was first and last seen,
-how long it has been visible. Two actions change it:
+Website:
 
-- **Still there** re-confirms it, another pass, seen now, confidence up.
-- **Fixed now** reports it repaired; once enough people agree the hazard turns
-  green on the map.
-
-That loop is what stops the map being a snapshot: it records the road getting
-worse and getting better.
-
-## Yours
-
-Open it and the app finds your street, names the area, and starts a tally:
-trips taken, impacts felt, distance travelled, hazards confirmed. No sign-up
-screen, no email, no password prompt — but it is unmistakably yours, and it
-survives a new phone.
-
-That works because the app quietly creates a real identity on first run and
-hands you a **recovery code**. The code *is* the account: paste it on another
-device and your street and tally come back. Keep it, and nothing is lost; lose
-it, and you have lost what you were told you would lose. The tally itself lives
-in a row only your identity can read. See
-[ADR-0006](docs/adr/0006-anonymous-identity-and-recovery-code.md).
-
-## The data
-
-Everything the phones find is structured and visible. The **Data** tab lists
-every hazard with the evidence behind it — passes, distinct phones, days
-observed, confidence, silent passes, repair reports — and exports the whole set
-as **CSV** or **JSON** (the JSON is self-describing). Field-by-field meanings and
-the privacy treatment of each one are in [`docs/DATA.md`](docs/DATA.md).
-
-## Repository layout
-
-```
-packages/core/     domain logic: impact detection, clustering, confidence (tested)
-apps/web/          the app: capture session, MapLibre map, report export, PWA
-apps/web/android/  Capacitor Android project (built to an APK in CI)
-appwrite/          backend provisioning script and configuration
-docs/              spec, privacy policy, ADRs, submission material
-```
-
-## Quick start
-
-```bash
+\`\`\`sh
 pnpm install
-pnpm --filter @hodos/core test      # domain logic, 15 tests
-pnpm --filter @hodos/web dev        # http://localhost:5173
-```
-
-The web app talks to the live Appwrite backend by default. Point it elsewhere
-with environment variables:
-
-```bash
-VITE_APPWRITE_ENDPOINT=https://sgp.cloud.appwrite.io/v1 \
-VITE_APPWRITE_PROJECT_ID=<project-id> \
-pnpm --filter @hodos/web dev
-```
-
-### Backend
-
-```bash
-cd appwrite
-appwrite login                  # or link an existing project
-./setup.sh                      # creates database, tables, indexes, permissions
-```
-
-### Android
-
-```bash
 pnpm --filter @hodos/web build
-pnpm --filter @hodos/web exec cap sync android
-cd apps/web/android && ./gradlew assembleDebug
-```
+\`\`\`
 
-CI does this automatically on every push to `main` and publishes the APK to the
-latest release.
+Tests:
+
+\`\`\`sh
+pnpm -r test
+pnpm -r typecheck
+\`\`\`
+
+**Android build and release cautions:** see [docs/ANDROID.md](docs/ANDROID.md)
+for permission flows, manual acceptance, old identity migration and signing.
+CI debug APKs are for testing; stable installation needs a consistent release key.
+
+## Core design
+
+1. **Sense locally.** The device estimates gravity and band-passes the vertical
+   residual, suppressing motion that looks unlike a road defect.
+2. **Classify.** Peak, pulse shape, jerk and lateral motion help differentiate
+   potholes, speed bumps and rough pavement.
+3. **Append evidence.** The phone sends compact observations to a write-only
+   log, rather than directly changing the shared hazard map.
+4. **Aggregate.** The backend combines corroborated observations from
+   independent devices; recently clear journeys and repair reports help
+   mark hazards resolved.
+5. **Explain.** Users can inspect confidence, how many journeys confirmed a
+   hazard, and its current reported status.
+
+## Source layout
+
+\`\`\`text
+apps/web/android/  native Android app, including preserved Java detector
+apps/web/          responsive product landing site and migration-era web code
+packages/core/     domain algorithm and test coverage
+appwrite/          provisioning and aggregation
+docs/              research, privacy, architecture, release checklist
+\`\`\`
 
 ## Privacy
 
-No accounts. A random device identifier that rotates daily. Raw sensor traces
-never leave the phone — only the detected impact, coarsened to the road, is
-sent. The observation log is write-only. See [`docs/PRIVACY.md`](docs/PRIVACY.md).
+Raw accelerometer readings stay on the device. Hodos submits road observations
+with locations needed for the shared map. Activity recognition, background
+location and a foreground service are used only with explicit Android
+permissions. Read [the privacy policy](docs/PRIVACY.md) and
+[data dictionary](docs/DATA.md).
 
-## Limitations, stated plainly
+## Status
 
-- **Browser background sensing is impossible.** The W3C spec only fires motion
-  and location events while the page is visible, so recording needs the screen
-  on. This is written up in [`docs/research/`](docs/research) and
-  [ADR-0001](docs/adr/0001-foreground-recording-session.md).
-- Hazard merging is currently done by the client. That is simple and works, but
-  it is gameable and can drop counts under concurrency; the intended upgrade is
-  server-side aggregation over the `events` log. See
-  [ADR-0003](docs/adr/0003-appwrite-datastore-and-client-merge.md).
-- The detector is tuned from published accelerometer research, not from a
-  large local dataset. Thresholds are configurable in
-  `packages/core/src/detect.ts`.
+A native UI refactor is underway. Deployment to \`main\` and a stable signed APK
+are deliberately held until CI, migration and device tests succeed. The
+original recovery-code identity must remain recoverable for existing users.
 
-## Accessibility and use of AI
-
-Hodos is built to run on any phone that has a browser, and installs as an app
-without an app store. AI coding assistants were used during development and
-that is disclosed in the submission, as the event rules require.
-
-## Licence
-
-MIT.
+MIT licensed. Hodos is a project by Devilabs.
