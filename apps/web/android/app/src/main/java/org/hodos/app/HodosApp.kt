@@ -233,10 +233,7 @@ fun HodosApp(
                             icon = {
                                 if (tab == Screen.MAP || tab == Screen.MAPPING) {
                                     Image(
-                                        painter = painterResource(
-                                            if (tab == Screen.MAP) R.drawable.hodos_icon_square
-                                            else R.drawable.hodos_icon_round
-                                        ),
+                                        painter = painterResource(R.drawable.hodos_brand_icon),
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp))
@@ -812,13 +809,15 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
 
 @Composable
 private fun HodosBrand() {
-    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF123D31)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
-            painter = painterResource(R.drawable.hodos_wordmark),
-            contentDescription = "Hodos · Safer roads, brighter paths",
+            painter = painterResource(R.drawable.hodos_brand_icon),
+            contentDescription = "Hodos forest road icon",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.width(156.dp).height(50.dp)
-                .padding(horizontal = 9.dp, vertical = 10.dp)
+            modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp))
         )
+        Spacer(Modifier.width(10.dp))
+        Text("hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold,
+            letterSpacing = (-1.2).sp, color = Ink)
     }
 }

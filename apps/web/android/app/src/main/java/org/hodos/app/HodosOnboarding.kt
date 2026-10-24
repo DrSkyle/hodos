@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,14 +72,15 @@ fun HodosOnboarding(
                         .padding(horizontal = 26.dp, vertical = 20.dp)
                 ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = RoundedCornerShape(15.dp), color = Forest) {
-                        Image(
-                            painter = painterResource(R.drawable.hodos_wordmark),
-                            contentDescription = "Hodos · Safer roads, brighter paths",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.width(178.dp).height(56.dp).padding(horizontal = 10.dp, vertical = 9.dp)
-                        )
-                    }
+                    Image(
+                        painter = painterResource(R.drawable.hodos_brand_icon),
+                        contentDescription = "Hodos forest road icon",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(54.dp).clip(RoundedCornerShape(14.dp))
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text("hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = (-1.3).sp, color = Ink)
                     Spacer(Modifier.weight(1f))
                     if (step < pages.lastIndex) {
                         TextButton(onClick = onFinish) { Text("Skip", color = Muted) }
@@ -171,10 +173,7 @@ private fun OnboardingArtwork(step: Int) {
     ) {
         Box {
             Image(
-                painter = painterResource(
-                    if (step == 1) R.drawable.hodos_icon_round
-                    else R.drawable.hodos_icon_square
-                ),
+                painter = painterResource(R.drawable.hodos_brand_icon),
                 contentDescription = "Forest, mountains and the winding Hodos road",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
