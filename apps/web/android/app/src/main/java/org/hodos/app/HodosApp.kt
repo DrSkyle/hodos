@@ -56,6 +56,27 @@ private val Danger = Color(0xFFCB4E43)
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
 
+private object DemoData {
+    val hazards = listOf(
+        RoadHazard("sample-01", 27.7191, 85.3201, "pothole", 3, 12, 8, 0.87, 1, false, "Sample"),
+        RoadHazard("sample-02", 27.7134, 85.3234, "rough_pavement", 2, 9, 5, 0.76, 0, false, "Sample"),
+        RoadHazard("sample-03", 27.7216, 85.3305, "speed_bump", 1, 15, 9, 0.83, 0, false, "Sample"),
+        RoadHazard("sample-04", 27.7089, 85.3157, "pothole", 3, 7, 4, 0.79, 1, false, "Sample"),
+        RoadHazard("sample-05", 27.7253, 85.3118, "pothole", 2, 11, 6, 0.85, 3, true, "Sample"),
+        RoadHazard("sample-06", 27.7162, 85.3388, "rough_pavement", 1, 5, 3, 0.65, 0, false, "Sample"),
+        RoadHazard("sample-07", 27.7278, 85.3231, "speed_bump", 2, 18, 11, 0.88, 0, false, "Sample"),
+        RoadHazard("sample-08", 27.7106, 85.3335, "pothole", 3, 6, 3, 0.74, 0, false, "Sample")
+    )
+    val trips: List<RoadTrip> get() {
+        val now = System.currentTimeMillis()
+        return listOf(
+            RoadTrip(now - 3_600_000L, 4, 3, 2, 12_400.0),
+            RoadTrip(now - 86_400_000L, 3, 2, 1, 8_250.0),
+            RoadTrip(now - 172_800_000L, 5, 4, 3, 17_900.0)
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HodosApp(
@@ -82,6 +103,10 @@ fun HodosApp(
     var filterVisible by remember { mutableStateOf(false) }
     var severity by remember { mutableStateOf("All") }
     var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
+    var demoMode by remember { mutableStateOf(false) }
+    var demoHazards by remember { mutableStateOf(DemoData.hazards) }
+    val mapHazards = if (demoMode) demoHazards else hazards
+    val displayedTrips = if (demoMode) DemoData.trips else trips
 
     LaunchedEffect(locateRequest, refreshSignal) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -92,8 +117,8 @@ fun HodosApp(
         }
     }
 
-    val visibleHazards = remember(hazards, query, severity, lastKnownLocation) {
-        hazards.filter { hazard ->
+    val visibleHazards = remember(mapHazards, query, severity, lastKnownLocation) {
+        mapHazards.filter { hazard ->
             val matchSeverity = when (severity) {
                 "High" -> hazard.severity >= 3 && !hazard.fixed
                 "Medium" -> hazard.severity == 2 && !hazard.fixed
@@ -191,19 +216,19 @@ fun HodosApp(
                                         Text("Nearby hazards", fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
                                         Text(
                                             if (visibleHazards.isEmpty()) "No matching road hazards"
-                                            else "${visibleHazards.size} on the shared map",
+                                            else if (demoMode) "${visibleHazards.size} sample hazards" else "${visibleHazards.size} on the shared map",
                                             color = Muted, fontSize = 12.sp
                                         )
                                     }
-                                    IconButton(onClick = onRefresh, enabled = !loading) {
-                                        if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    IconButton(onClick = { if (demoMode) demoHazards = DemoData.hazards else onRefresh() }, enabled = demoMode || !loading) {
+                                        if (loading && !demoMode) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                                         else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards")
                                     }
                                 }
                                 Spacer(Modifier.height(14.dp))
                                 if (visibleHazards.isEmpty()) {
                                     Text(
-                                        if (hazards.isEmpty()) "As independent journeys confirm road defects, you'll see them here."
+                                        if (mapHazards.isEmpty()) "As independent journeys confirm road defects, you'll see them here."
                                         else "Try another search or severity filter.",
                                         color = Muted, fontSize = 13.sp
                                     )
@@ -252,6 +277,24 @@ fun HodosApp(
                                         Icon(Icons.Outlined.FilterList, contentDescription = "Filter hazards")
                                     }
                                 }
+                                Spacer(Modifier.height(8.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            demoMode = !demoMode
+                                            demoHazards = DemoData.hazards
+                                            selected = null
+                                            query = ""
+                                            severity = "All"
+                                            filterVisible = false
+                                        },
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = if (demoMode) Forest else Color.White,
+                                            contentColor = if (demoMode) Color.White else Forest
+                                        )
+                                    ) { Text(if (demoMode) "Exit demo" else "Try demo", fontWeight = FontWeight.SemiBold) }
+                                    if (demoMode) Text("SAMPLE DATA · NO UPLOADS", fontSize = 10.sp, color = Forest, fontWeight = FontWeight.Bold)
+                                }
                                 if (filterVisible) {
                                     Spacer(Modifier.height(8.dp))
                                     Surface(shape = RoundedCornerShape(20.dp), color = Color.White, shadowElevation = 4.dp) {
@@ -269,7 +312,7 @@ fun HodosApp(
                                         }
                                     }
                                 }
-                                if (offline) {
+                                if (offline && !demoMode) {
                                     Spacer(Modifier.height(8.dp))
                                     Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF1DE)) {
                                         Text("Offline · showing saved hazards", Modifier.padding(11.dp), color = Ink, fontSize = 12.sp)
@@ -289,9 +332,12 @@ fun HodosApp(
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
-                        armed, trips, onToggle = onToggle, onRefresh = onRefresh
+                        if (demoMode) false else armed, displayedTrips,
+                        onToggle = { if (!demoMode) onToggle(it) },
+                        onRefresh = { if (!demoMode) onRefresh() },
+                        demoMode = demoMode
                     )
-                    Screen.YOU -> YouScreen(trips, hazards.size)
+                    Screen.YOU -> YouScreen(displayedTrips, mapHazards.size, demoMode)
                 }
             }
         }
@@ -381,7 +427,7 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
 }
 
 @Composable
-private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Boolean) -> Unit, onRefresh: () -> Unit) {
+private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Boolean) -> Unit, onRefresh: () -> Unit, demoMode: Boolean = false) {
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
@@ -390,7 +436,7 @@ private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Bool
         item {
             Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
             Spacer(Modifier.height(7.dp))
-            Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
+            Text(if (demoMode) "Sample journeys for the demo. Nothing is recorded." else "Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
         }
         item {
             Surface(shape = RoundedCornerShape(25.dp), color = Mist) {
@@ -399,11 +445,11 @@ private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Bool
                         Icon(Icons.Outlined.DirectionsCar, null, tint = Forest, modifier = Modifier.size(30.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(if (armed) "Detection is on" else "Automatic mapping is off", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text(if (armed) "Detecting when a journey starts" else "Enable it to detect road hazards", color = Muted, fontSize = 12.sp)
+                            Text(if (demoMode) "Demo only" else if (armed) "Detection is on" else "Automatic mapping is off", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Text(if (demoMode) "Sample data; no active mapping" else if (armed) "Detecting when a journey starts" else "Enable it to detect road hazards", color = Muted, fontSize = 12.sp)
                         }
                         Switch(
-                            checked = armed, onCheckedChange = onToggle,
+                            checked = armed, onCheckedChange = onToggle, enabled = !demoMode,
                             colors = SwitchDefaults.colors(checkedTrackColor = Forest)
                         )
                     }
@@ -460,7 +506,7 @@ private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Bool
 }
 
 @Composable
-private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
+private fun YouScreen(trips: List<RoadTrip>, hazards: Int, demoMode: Boolean = false) {
     val total = trips.sumOf { it.impacts }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
@@ -470,7 +516,7 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
         item {
             Spacer(Modifier.height(12.dp))
             Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
-            Text("Every journey makes the roads a little better understood.", color = Muted)
+            Text(if (demoMode) "DEMO · Sample journeys and hazards" else "Every journey makes the roads a little better understood.", color = Muted)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
