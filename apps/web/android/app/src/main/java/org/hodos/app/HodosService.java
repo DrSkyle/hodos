@@ -95,6 +95,9 @@ public class HodosService extends Service implements SensorEventListener {
   public int onStartCommand(Intent intent, int flags, int startId) {
     String action = intent == null ? null : intent.getAction();
     if (ACTION_DISABLE.equals(action)) {
+      // Finish and persist an active journey before tearing down the service.
+      // Previously, switching mapping off silently discarded collected impacts.
+      endTrip();
       stopEverything();
       stopForeground(true);
       stopSelf();
@@ -283,6 +286,12 @@ public class HodosService extends Service implements SensorEventListener {
         if (sample.t >= cutoff) window.add(sample);
       }
     }
+    // A stationary journey must end even when no more accelerometer samples
+    // arrive (for example after screen-off sensor throttling).
+    if (System.currentTimeMillis() - lastMovementAt > STOP_AFTER_STILL_MS) {
+      endTrip();
+      return;
+    }
     if (window.size() < 25) {
       return;
     }
@@ -384,10 +393,9 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route) {
-    if (finished.isEmpty()) {
-      recordTrip(0, 0, 0);
-      return;
-    }
+    // Even a smooth trip can supply valuable negative evidence for a hazard.
+    // Do not skip pass observations just because the motion detector found
+    // no new impacts on this particular journey.
     String device = deviceId();
     String trip = UUID.randomUUID().toString();
     int logged = 0;
