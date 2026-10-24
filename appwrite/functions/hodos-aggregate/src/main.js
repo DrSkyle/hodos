@@ -74,6 +74,30 @@ async function fetchEvents(sinceIso) {
   return events;
 }
 
+/** Reject malformed or out-of-window observations before spatial aggregation. */
+function validEvent(event, sinceMs, now) {
+  if (!event || typeof event !== "object") return false;
+  const lat = Number(event.lat);
+  const lng = Number(event.lng);
+  const accuracy = Number(event.accuracy);
+  const severity = Number(event.severity);
+  const time = Date.parse(event.recordedAt);
+  const confidence = event.confidence == null ? 0.5 : Number(event.confidence);
+  const kinds = ["pothole", "speed_bump", "rough_pavement"];
+  const observations = ["impact", "pass", "fix"];
+  const observation = event.observation || "impact";
+  return Number.isFinite(lat) && Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
+    Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 100 &&
+    Number.isInteger(severity) && severity >= 1 && severity <= 3 &&
+    Number.isFinite(time) && time >= sinceMs && time <= now + 5 * 60000 &&
+    Number.isFinite(confidence) && confidence >= 0 && confidence <= 1 &&
+    typeof event.deviceId === "string" && event.deviceId.length > 0 &&
+    kinds.includes(event.kind) && observations.includes(observation) &&
+    (observation === "impact" ||
+      (typeof event.hazardRef === "string" && event.hazardRef.length > 0));
+}
+
 /** Greedy spatial clustering with a cell index, so it stays linear in practice. */
 function clusterEvents(events) {
   const cell = 0.00015; // ~16 m
@@ -166,14 +190,18 @@ function buildHazard(cluster, now, silentPasses, fixReports) {
   // A pass or a fix report only counts if it happened after the last time
   // anyone felt this hazard, so a fresh impact resets the evidence that it has
   // been repaired.
+  const closeToHazard = (event) =>
+    haversine({ lat: Number(event.lat), lng: Number(event.lng) }, cluster.centre) <= 50;
   const clearDevices = new Set(
     silentPasses
-      .filter((pass) => pass.hazardRef === rowId && Date.parse(pass.recordedAt) > lastSeen)
+      .filter((pass) =>
+        pass.hazardRef === rowId && Date.parse(pass.recordedAt) > lastSeen && closeToHazard(pass))
       .map((pass) => pass.deviceId),
   );
   const fixDevices = new Set(
     fixReports
-      .filter((report) => report.hazardRef === rowId && Date.parse(report.recordedAt) > lastSeen)
+      .filter((report) =>
+        report.hazardRef === rowId && Date.parse(report.recordedAt) > lastSeen && closeToHazard(report))
       .map((report) => report.deviceId),
   );
 
@@ -243,7 +271,11 @@ module.exports = async ({ res, log }) => {
   try {
     const now = Date.now();
     const sinceIso = new Date(now - LOOKBACK_DAYS * MS_PER_DAY).toISOString();
-    const events = await fetchEvents(sinceIso);
+    const incoming = await fetchEvents(sinceIso);
+    const events = incoming.filter((event) => validEvent(event, now - LOOKBACK_DAYS * MS_PER_DAY, now));
+    if (incoming.length !== events.length) {
+      log(`rejected ${incoming.length - events.length} malformed observations`);
+    }
     const incidents = events.filter(
       (event) => event.observation !== "pass" && event.observation !== "fix",
     );
@@ -289,3 +321,7 @@ module.exports = async ({ res, log }) => {
     return res.json({ ok: false, error: String(error) }, 500);
   }
 };
+
+
+// Export deterministic domain helpers for the repository's regression tests.
+module.exports.testing = { validEvent, clusterEvents, buildHazard, rowIdFor };
