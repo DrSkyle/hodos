@@ -128,6 +128,7 @@ fun RoadMap(
             result.setStyle(
                 Style.Builder().fromUri("https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json")
             ) { style ->
+                try {
                 style.addSource(GeoJsonSource(
                     "hodos-hazards", FeatureCollection.fromFeatures(emptyArray<Feature>())
                 ))
@@ -171,6 +172,10 @@ fun RoadMap(
                         latestOnSelect(hazard)
                         true
                     } else false
+                }
+                } catch (error: Throwable) {
+                    rendererFailed = true
+                    Log.e("HodosRoadMap", "Map style initialization failed", error)
                 }
             }
             } catch (error: Throwable) {
