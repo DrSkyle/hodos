@@ -1,23 +1,35 @@
-# Hodos privacy policy
+# Privacy policy
 
-*Updated 24 October 2026*
+*Hodos · Updated 24 October 2026*
 
-Hodos is an Android road-hazard mapping app. Automatic mapping requires permission to read location, motion sensors and activity recognition while the background mapping service is enabled. You can disable it in the app or revoke permissions in Android settings; the public map is browsable without enabling recording.
+Hodos uses your phone's motion sensors and location to identify possible road defects. You can view the hazard map without enabling automatic mapping.
 
-## Data collected
+## Location and motion
 
-The phone analyzes accelerometer readings and location fixes locally. **Raw accelerometer streams and full travel routes are not uploaded.** Compact road events may be sent to Appwrite: timestamp, coordinates, GPS accuracy, estimated speed, estimated defect type and severity, detector score, observation type (impact, clear-road pass or repair), a random journey ID and a random installation ID.
+When automatic mapping is enabled, Hodos reads motion and location signals to recognize journeys and detect unusual road impacts. The analysis runs on your phone. We do not upload raw accelerometer samples or complete GPS routes.
 
-Location observations are potentially sensitive even without names. The installation ID is a pseudonym stored on your device and **persists for the life of the installation**, so submissions may be linked across journeys. It is not your advertising ID or a value derived from an email or phone number. The server currently accepts client-supplied pseudonyms, and cannot guarantee each corresponds to a unique physical device.
+For each road observation, Hodos may send a location, time, GPS accuracy, estimated speed, hazard type, severity and detection score. Repair reports and clear-road observations can be linked to a known hazard.
 
-## Storage and access
+## Identifiers
 
-Public aggregated hazard records are readable by anyone. The individual observation log is not publicly readable through the client API. Hodos caches recently fetched hazard data and up to 50 local trip summaries. Events queued for upload are stored in an app-private SQLite database **without separate application-level encryption**. Standard platform device backups may affect local data retention.
+The app creates a random installation identifier and a separate identifier for each journey. The installation identifier persists in local app data and accompanies submitted observations so that repeated reports can be compared. It does not come from your name, phone number or advertising ID.
 
-The server currently aggregates up to 120 days of event history; this calculation window is **not a deletion policy**. An automatic deletion schedule for stored event records has not yet been implemented. Uninstalling Hodos or clearing its local data does not erase already submitted server observations.
+Submitted identifiers are pseudonymous, not independently verified proof of unique devices.
 
-No advertising or analytics SDK is intentionally included in the native app. Hosting providers may handle technical connection metadata as necessary to operate the service.
+## Storage
 
-## Your choices
+Observations are stored in Appwrite. Individual observations are not publicly readable through the app; the resulting aggregated hazard map is public.
 
-You can browse without contributing observations, disable automatic mapping at any time, and clear local app data through Android settings. For questions about a submitted observation or a server-side deletion request, contact the project maintainers privately using the contact information on [GitHub](https://github.com/DrSkyle/hodos). Avoid posting sensitive locations publicly.
+On your phone, Hodos keeps up to 50 journey summaries and a cache of downloaded map hazards. Automatic observations awaiting upload are kept in app-private SQLite storage. This queue does not currently have separate application-level encryption.
+
+The aggregation service examines a rolling 120-day window. That window does **not** automatically delete older observations; a server-side event deletion schedule has not yet been established.
+
+## Your controls
+
+You can turn off automatic mapping in Hodos or revoke its location and activity-recognition permissions through Android settings. You can also clear local app data or uninstall the app. Doing so removes locally stored information but does not delete observations already sent to the server.
+
+Hodos does not intentionally include advertising or third-party analytics SDKs. Hosting providers may process technical connection data needed to operate their services.
+
+## Contact
+
+For questions about your data or a deletion request, contact the maintainers through the [Hodos repository](https://github.com/DrSkyle/hodos). Please avoid sharing sensitive locations in public issues.

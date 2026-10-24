@@ -2,30 +2,31 @@
 
 **The road maps itself.**
 
-Hodos is an open-source Android app that uses motion and location measurements to identify likely potholes, speed bumps and rough pavement during ordinary journeys. Repeated road observations contribute to a shared map that people can explore and improve.
+Hodos is an Android app that maps potential potholes, speed bumps and rough pavement from motion readings collected during everyday journeys.
 
-**[Website](https://hodos.devilabs.dev)** · **[Android downloads](https://github.com/DrSkyle/hodos/releases)** · **[Report an issue](https://github.com/DrSkyle/hodos/issues)**
+Turn on automatic mapping, keep your phone with you and drive as you normally would. Hodos checks for unusual road impacts on the device and sends compact observations to a shared map. Repeated observations help distinguish road hazards from one-off bumps.
+
+[Website](https://hodos.devilabs.dev) · [Android releases](https://github.com/DrSkyle/hodos/releases) · [Privacy](docs/PRIVACY.md)
 
 ## Features
 
-- **Automatic mapping:** opt-in journey detection using Android activity recognition and on-device motion analysis.
-- **Community map:** browse road hazards, confidence scores, severity and reports.
-- **Feedback:** confirm a hazard or report a repair.
-- **Offline support:** cache public hazards and queue automatic observations for later upload.
-- **Privacy controls:** raw motion samples stay on your phone; only compact geolocated observations are shared.
-
-Hodos is in **beta**. Detection is heuristic rather than field-validated: vehicle type, phone placement, speed and sensor variation affect the results. Confidence is a relative score, not a calibrated probability. The app is not a replacement for safe driving or road inspections. Submitted installation IDs are pseudonymous and cannot yet be verified as unique physical devices.
+- **Automatic road mapping** with Android activity recognition and on-device sensor processing
+- **Interactive map** with nearby hazards, severity and supporting reports
+- **Community updates** to confirm a hazard or report a repair
+- **Offline support** for cached hazards and queued road observations
 
 ## Development
 
-Android (JDK 17, Android SDK 35):
+The Android app uses Kotlin, Jetpack Compose and MapLibre. The website is built with Vite. Appwrite stores road observations and generates the public hazard map.
+
+**Build the Android app** with JDK 17 and Android SDK 35:
 
 ```sh
 cd apps/web/android
-./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Website and domain tests (Node 20+, pnpm):
+**Build and test the website and shared detection code** with Node.js and pnpm:
 
 ```sh
 pnpm install
@@ -35,8 +36,10 @@ node --test appwrite/functions/hodos-aggregate/src/main.test.js
 pnpm --filter @hodos/web build
 ```
 
-Source: `apps/web/android/` contains the Android app, `apps/web/` contains the landing page, `packages/core/` contains signal-processing reference code and tests, and `appwrite/functions/` contains the road-map aggregation service.
+The code lives in `apps/web/android`, `apps/web`, `packages/core` and `appwrite/functions`.
 
-Read the [privacy policy](docs/PRIVACY.md). Contributions and test reports are welcome through GitHub Issues.
+Hodos identifies *potential* hazards. Results depend on the phone, vehicle, mounting position and road conditions; they aren't a substitute for attention at the wheel or professional road inspections.
 
-Hodos is built by **Devilabs** and licensed under [MIT](LICENSE).
+[Contribute or report a problem](https://github.com/DrSkyle/hodos/issues).
+
+Developed by **Devilabs** · [MIT License](LICENSE)
