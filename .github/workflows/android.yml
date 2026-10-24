@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/onboarding-and-location-recovery]
     paths:
       - "apps/web/android/**"
       - ".github/workflows/android.yml"
@@ -69,21 +69,21 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1
-          name: Hodos 1.1.1
+          tag_name: v1.1.2
+          name: Hodos 1.1.2
           body: |
-            Improved location handling, privacy controls, automatic mapping
-            and adaptive Hodos branding.
+            Native onboarding, improved map location with platform fallbacks,
+            and clearer location settings recovery.
           files: apps/web/android/app/build/outputs/apk/release/app-release.apk
           prerelease: true
       - name: Publish debug-signed beta APK when no release key is configured
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && (env.HODOS_KEYSTORE_BASE64 == '' || env.HODOS_STORE_PASSWORD == '' || env.HODOS_KEY_ALIAS == '' || env.HODOS_KEY_PASSWORD == '') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1-beta.1
-          name: Hodos 1.1.1 beta
+          tag_name: v1.1.2-beta.1
+          name: Hodos 1.1.2 beta
           body: |
-            Android beta with real journey controls, location fixes, and refreshed adaptive icons.
+            Android beta with native onboarding, permission recovery, and improved location fallback.
             
             **This APK is debug-signed, not a stable production release.**
             It may not install over versions signed with another key; keep a copy
