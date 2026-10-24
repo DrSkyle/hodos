@@ -126,7 +126,7 @@ fun RoadMap(
             result.uiSettings.isRotateGesturesEnabled = false
             result.uiSettings.setAttributionMargins(12, 0, 12, 170)
             result.setStyle(
-                Style.Builder().fromUri("https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json")
+                Style.Builder().fromUri("https://tiles.openfreemap.org/styles/liberty")
             ) { style ->
                 try {
                 style.addSource(GeoJsonSource(
