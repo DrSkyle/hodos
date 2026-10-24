@@ -30,15 +30,21 @@ export async function automaticEnabled(): Promise<boolean> {
   }
 }
 
-export async function setAutomatic(on: boolean): Promise<boolean> {
+export interface AutomaticResult {
+  enabled: boolean;
+  error?: string;
+}
+
+export async function setAutomatic(on: boolean): Promise<AutomaticResult> {
   if (!automaticAvailable()) {
-    return false;
+    return { enabled: false, error: "Automatic mapping lives in the Android app." };
   }
   try {
     const result = on ? await Hodos.enable() : await Hodos.disable();
-    return result.enabled;
-  } catch {
-    return false;
+    return { enabled: result.enabled };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { enabled: false, error: message };
   }
 }
 

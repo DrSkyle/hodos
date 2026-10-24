@@ -30,3 +30,9 @@ appwrite/.claude/
 # Tooling state
 .commandcode/
 .scratch/
+
+# Internal material: not part of the public repo
+internal/
+
+# Screenshot scratch
+brand/preview/
