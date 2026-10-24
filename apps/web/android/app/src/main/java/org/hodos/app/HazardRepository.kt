@@ -71,7 +71,7 @@ class HazardRepository(context: Context) {
         .header("Content-Type", "application/json")
 
     fun savedHazards(): List<RoadHazard> =
-        decode(prefs.getString("hazards-cache-v1", null) ?: return emptyList())
+        decode(prefs.getString("hazards-cache-v1", null).orEmpty())
 
     suspend fun refreshHazards(): Result<List<RoadHazard>> = withContext(Dispatchers.IO) {
         runCatching {
@@ -93,7 +93,7 @@ class HazardRepository(context: Context) {
                 val row = rows.optJSONObject(i) ?: continue
                 if (!row.optBoolean("published")) continue
                 add(RoadHazard(
-                    id = row.optString("$id"),
+                    id = row.optString(36.toChar().toString() + "id"),
                     lat = row.optDouble("lat"),
                     lng = row.optDouble("lng"),
                     kind = row.optString("kind", "pothole"),
@@ -164,6 +164,7 @@ class HazardRepository(context: Context) {
                     if (!response.isSuccessful) error("Couldn't send observation (${response.code})")
                 }
                 requestAggregation()
+                Unit
             }
         }
 
