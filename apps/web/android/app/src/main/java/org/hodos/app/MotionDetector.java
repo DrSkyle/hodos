@@ -548,37 +548,65 @@ public final class MotionDetector {
   private static final double PASS_DISTANCE_M = 22;
   private static final double PASS_IMPACT_DISTANCE_M = 25;
   private static final double PASS_MAX_FIX_ACCURACY_M = 25;
+  private static final double PASS_MIN_SPEED_MS = 2.5; // cycling or driving, not parking
+  private static final double PASS_MAX_SPEED_MS = 45.0;
+  private static final double PASS_MIN_DISPLACEMENT_M = 4.0;
+  private static final long PASS_MIN_INTERVAL_MS = 500;
+  private static final long PASS_MAX_INTERVAL_MS = 20000;
+
+  private static boolean reliableMovingFix(Fix fix) {
+    return fix != null && fix.t > 0 && fix.hasSpeed
+        && Double.isFinite(fix.lat) && Math.abs(fix.lat) <= 90
+        && Double.isFinite(fix.lng) && Math.abs(fix.lng) <= 180
+        && Double.isFinite(fix.accuracy) && fix.accuracy >= 0
+        && fix.accuracy <= PASS_MAX_FIX_ACCURACY_M
+        && Double.isFinite(fix.speed) && fix.speed >= PASS_MIN_SPEED_MS
+        && fix.speed <= PASS_MAX_SPEED_MS;
+  }
 
   /**
-   * Hazards this journey travelled past without feeling anything: the negative
-   * observation that lets a repaired road drop off the map on its own.
+   * A single GPS point beside a hazard is NOT evidence of a clear road: the
+   * phone might be parked, GPS might drift, or the sensor may have stopped.
+   * Require two distinct, accurate, moving fixes close to the hazard before
+   * reporting a clear passage. When in doubt, preserve the hazard.
    */
   public static List<Hazard> passedHazards(
       List<Fix> fixes, List<Hazard> known, List<Impact> impacts) {
     List<Hazard> passed = new ArrayList<>();
     for (Hazard hazard : known) {
-      boolean travelled = false;
-      for (Fix fix : fixes) {
-        if (fix.accuracy <= PASS_MAX_FIX_ACCURACY_M
-            && haversineMeters(fix.lat, fix.lng, hazard.lat, hazard.lng) <= PASS_DISTANCE_M) {
-          travelled = true;
-          break;
-        }
-      }
-      if (!travelled) {
+      if (hazard == null || !Double.isFinite(hazard.lat) || !Double.isFinite(hazard.lng)
+          || Math.abs(hazard.lat) > 90 || Math.abs(hazard.lng) > 180) {
         continue;
       }
+      Fix previous = null;
+      boolean travelled = false;
+      for (Fix fix : fixes) {
+        if (!reliableMovingFix(fix) ||
+            haversineMeters(fix.lat, fix.lng, hazard.lat, hazard.lng) > PASS_DISTANCE_M) {
+          continue;
+        }
+        if (previous != null) {
+          long elapsed = fix.t - previous.t;
+          if (elapsed >= PASS_MIN_INTERVAL_MS && elapsed <= PASS_MAX_INTERVAL_MS
+              && haversineMeters(previous.lat, previous.lng, fix.lat, fix.lng)
+                  >= PASS_MIN_DISPLACEMENT_M) {
+            travelled = true;
+            break;
+          }
+        }
+        previous = fix;
+      }
+      if (!travelled) continue;
       boolean felt = false;
       for (Impact impact : impacts) {
-        if (haversineMeters(impact.lat, impact.lng, hazard.lat, hazard.lng)
-            <= PASS_IMPACT_DISTANCE_M) {
+        if (impact != null && Double.isFinite(impact.lat) && Double.isFinite(impact.lng)
+            && haversineMeters(impact.lat, impact.lng, hazard.lat, hazard.lng)
+                <= PASS_IMPACT_DISTANCE_M) {
           felt = true;
           break;
         }
       }
-      if (!felt) {
-        passed.add(hazard);
-      }
+      if (!felt) passed.add(hazard);
     }
     return passed;
   }

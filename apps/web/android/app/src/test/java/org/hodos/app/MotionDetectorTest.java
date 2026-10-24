@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
@@ -32,5 +33,78 @@ public final class MotionDetectorTest {
   @Test public void haversineHasExpectedScale() {
     assertEquals(0.0, MotionDetector.haversineMeters(27.7172, 85.324, 27.7172, 85.324), 0.001);
     assertEquals(111195.0, MotionDetector.haversineMeters(0, 0, 1, 0), 100);
+  }
+
+  private static final long START = 1_700_000_000_000L;
+
+  private static MotionDetector.Fix movingFix(
+      long deltaMs, double latDelta, double accuracy, double speed, boolean hasSpeed) {
+    return new MotionDetector.Fix(START + deltaMs, 27.7172 + latDelta, 85.324,
+        accuracy, speed, hasSpeed);
+  }
+
+  private static MotionDetector.Hazard knownHazard() {
+    MotionDetector.Hazard h = new MotionDetector.Hazard();
+    h.lat = 27.7172;
+    h.lng = 85.324;
+    h.kind = "pothole";
+    return h;
+  }
+
+  private static List<MotionDetector.Hazard> clearPasses(
+      List<MotionDetector.Fix> route, List<MotionDetector.Impact> impacts) {
+    return MotionDetector.passedHazards(route,
+        Collections.singletonList(knownHazard()), impacts);
+  }
+
+  @Test public void confirmedMovingPassProducesNegativeEvidence() {
+    assertEquals(1, clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 6, 9.0, true),
+        movingFix(2000, 0.00007, 6, 9.0, true)), Collections.emptyList()).size());
+  }
+
+  @Test public void singleFixDoesNotPretendRoadIsClear() {
+    assertTrue(clearPasses(Collections.singletonList(
+        movingFix(0, 0, 5, 10, true)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void parkedPhoneCannotEraseKnownHazard() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00005, 5, 0, true),
+        movingFix(2000, 0.00005, 5, 0, true)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void locationJitterWithoutActualProgressIsNotAFullPass() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, 0, 5, 9, true),
+        movingFix(2000, 0, 5, 9, true)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void inaccurateOrSpeedlessGpsDoesNotClearRoad() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 80, 9, true),
+        movingFix(2000, 0.00007, 80, 9, true)), Collections.emptyList()).isEmpty());
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, false),
+        movingFix(2000, 0.00007, 5, 9, false)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void implausibleGpsAndLargeTimeGapsDoNotClearRoad() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 100, true),
+        movingFix(2000, 0.00007, 5, 100, true)), Collections.emptyList()).isEmpty());
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(90_000, 0.00007, 5, 9, true)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void feltImpactOverridesOtherwiseClearPass() {
+    MotionDetector.Impact impact = new MotionDetector.Impact();
+    impact.lat = 27.7172;
+    impact.lng = 85.324;
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(2000, 0.00007, 5, 9, true)),
+        Collections.singletonList(impact)).isEmpty());
   }
 }

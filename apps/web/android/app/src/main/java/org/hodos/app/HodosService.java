@@ -283,9 +283,15 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (impacts) { impacts.clear(); }
     updateNotification("Mapping your route");
 
-    Sensor accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-    if (accelerometer != null) {
-      sensors.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+    Sensor accelerometer =
+        sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    if (accelerometer == null ||
+        !sensors.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)) {
+      // Never claim a clear road if the device cannot measure road impacts.
+      sampling = false;
+      getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", false).apply();
+      updateNotification("Accelerometer unavailable · trip not recorded");
+      return;
     }
 
     LocationRequest request =
@@ -378,8 +384,10 @@ public class HodosService extends Service implements SensorEventListener {
 
     List<MotionDetector.Impact> finished;
     List<MotionDetector.Fix> route;
+    int motionSamples;
     synchronized (impacts) { finished = new ArrayList<>(impacts); }
     synchronized (fixes) { route = new ArrayList<>(fixes); }
+    synchronized (samples) { motionSamples = samples.size(); }
     // Persist the evidence BEFORE returning to Android or stopping the
     // foreground service. Previously, the just-finished trip only reached
     // SQLite on a detached thread, so Android could kill the process first.
@@ -391,7 +399,8 @@ public class HodosService extends Service implements SensorEventListener {
     updateNotification("Waiting for a journey");
     // Network I/O remains off the service/main thread. Stored impacts are
     // safe to retry using their stable SQLite row IDs.
-    new Thread(() -> upload(finished, route, device, trip), "hodos-trip-upload").start();
+    new Thread(() -> upload(finished, route, device, trip, motionSamples),
+        "hodos-trip-upload").start();
   }
 
   private void stopEverything() {
@@ -453,7 +462,7 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
-                      String device, String trip) {
+                      String device, String trip, int motionSamples) {
     // Observed impacts are ALREADY in the durable outbox. This worker must
     // never enqueue them twice. Its only responsibilities are local summary,
     // optional clear-road evidence and best-effort network synchronization.
@@ -474,10 +483,14 @@ public class HodosService extends Service implements SensorEventListener {
     recordTrip(finished.size(), hazards.size(), confirmed, distanceMetres(route));
     updateNotification("Waiting for a journey");
 
-    List<MotionDetector.Hazard> known = fetchPublishedHazards();
-    List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(route, known, finished);
-    for (MotionDetector.Hazard hazard : cleared) {
-      postPass(device, trip, hazard);
+    // A location-only trip cannot prove a smooth road. Require enough real
+    // accelerometer coverage before making any negative claims.
+    if (motionSamples >= 100) {
+      List<MotionDetector.Hazard> known = fetchPublishedHazards();
+      List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(route, known, finished);
+      for (MotionDetector.Hazard hazard : cleared) {
+        postPass(device, trip, hazard);
+      }
     }
     if (flushQueuedEvents() > 0) {
       triggerAggregation();
