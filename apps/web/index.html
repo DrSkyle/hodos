@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f5f6f0" />
-  <meta name="description" content="Hodos is an Android app that quietly discovers potholes and rough roads as people travel. No manual reporting, just a shared map grounded in real journeys." />
+  <meta name="description" content="Hodos maps potholes and road hazards using independent observations from everyday Android journeys. Explore safer roads together." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos — The road maps itself" />
   <meta property="og:description" content="An open-source, Android-first map of the roads we travel." />
@@ -23,34 +23,52 @@
       <strong>hodos<span class="dot">.</span></strong>
     </a>
     <nav class="header-links" aria-label="Main navigation">
+      <a href="#features">Features</a>
       <a href="#how">How it works</a>
-      <a href="#principles">Our principles</a>
+      <a href="#impact">Impact</a>
+      <a href="#faq">FAQ</a>
       <a class="github-link" href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
   <main id="main">
-    <section class="hero wrapper">
-      <div class="hero-copy">
-        <div class="announcement"><span class="live-dot"></span> An open map, made by the journeys we already take</div>
-        <h1>The road<br />maps <em>itself.</em></h1>
-        <p class="hero-lede">Every pothole has a story. Your phone can help tell it—quietly, automatically, and together with everyone else on the road.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases/latest" target="_blank" rel="noopener noreferrer">
-            <span class="android-mark" aria-hidden="true">↓</span> Download for Android <span aria-hidden="true">↗</span>
-          </a>
-          <a class="btn btn-text" href="#how">See how it works <span aria-hidden="true">↘</span></a>
-        </div>
-        <div class="small-print"><span aria-hidden="true">✳</span> No manual reports &nbsp;·&nbsp; No account needed to start &nbsp;·&nbsp; Open source</div>
+
+    <section class="hero-reimagined" aria-labelledby="hero-title">
+      <div class="landscape" aria-hidden="true">
+        <svg viewBox="0 0 1600 780" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d5e4e8"/><stop offset="1" stop-color="#eaf1ee"/></linearGradient>
+            <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#adc8be"/><stop offset="1" stop-color="#b2c5b6"/></linearGradient>
+          </defs>
+          <path d="M-30 520L95 365 180 425 302 261 423 448 540 319 645 455 782 278 880 438 1028 302 1130 467 1260 300 1402 425 1530 297 1650 448V790H-30Z" fill="url(#ridge)" opacity=".62"/>
+          <path d="M-40 610L130 465 290 525 437 421 577 536 732 445 848 548 1012 415 1154 558 1320 432 1482 538 1630 418V800H-40Z" fill="url(#hill)" opacity=".5"/>
+          <path d="M-30 700Q145 575 320 664T730 682Q980 595 1190 692T1630 640V790H-30Z" fill="#a1b8a5" opacity=".35"/>
+          <path d="M-70 825Q205 670 555 800" fill="none" stroke="#f6f7ed" stroke-width="128" opacity=".8"/>
+          <path d="M-70 825Q205 670 555 800" fill="none" stroke="#bfcbba" stroke-width="2" stroke-dasharray="15 22"/>
+        </svg>
       </div>
-      <div class="visual" aria-label="An illustrated preview of the Hodos Android map interface">
-        <div class="visual-orbit orbit-a"></div><div class="visual-orbit orbit-b"></div>
-        <span class="visual-side-label">A QUIETER WAY TO MAP ROADS — EST. 2026</span>
-        <div class="phone">
-          <div class="phone-status"><span>9:41</span><span class="status-symbols">● ▰ ▮</span></div>
-          <div class="phone-app">
-            <div class="phone-header"><span class="app-mark">⌁</span><div><b>Hodos</b><small>The road maps itself</small></div><span class="phone-refresh">↻</span></div>
-            <div class="phone-map">
-              <svg viewBox="0 0 336 455" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <div class="hero-reimagined-inner wrapper">
+        <div class="hero-intro">
+          <p class="hero-eyebrow">SAFER ROADS, TOGETHER</p>
+          <h1 id="hero-title">Hodos<span>The road maps itself.</span></h1>
+          <p class="hero-reimagined-lede">Your everyday journeys can make every road safer. Hodos uses your phone's motion sensors to detect likely potholes, learn from repeated trips and build a shared road-hazard map.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download the current Hodos Android release">
+              <span class="android-mark" aria-hidden="true">↓</span> Download for Android <span aria-hidden="true">↗</span>
+            </a>
+            <a class="btn btn-text" href="#how">How it works <span aria-hidden="true">→</span></a>
+          </div>
+          <div class="hero-benefits" id="features">
+            <article><span class="benefit-icon" aria-hidden="true">⌁</span><strong>Automatic detection</strong><p>Simply carry your phone. We do the mapping.</p></article>
+            <article><span class="benefit-icon" aria-hidden="true">◎</span><strong>Real-world map</strong><p>Explore hazards backed by actual journeys.</p></article>
+            <article><span class="benefit-icon" aria-hidden="true">♥</span><strong>Community impact</strong><p>Make local roads better, together.</p></article>
+          </div>
+        </div>
+
+        <div class="showcase-phones" aria-label="Previews of Hodos Android map, automatic mapping and hazard information">
+          <div class="showcase-phone showcase-phone--map">
+            <div class="showcase-screen map-screen">
+              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
+              <div class="showcase-map-content"><svg viewBox="0 0 336 455" class="showcase-map-art" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect width="336" height="455" fill="#e5ebe0"/>
                 <path d="M0 90L140 0H225L0 244Z M336 110L130 365L0 455 M336 302L210 455" fill="#d5e4d0"/>
                 <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#f9faf5" stroke-width="32" fill="none"/>
@@ -71,20 +89,71 @@
                 <g><circle cx="119" cy="368" r="17" fill="#be873f" opacity=".14"/><circle cx="119" cy="368" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
                 <g><circle cx="160" cy="227" r="14" fill="#4b83d2" opacity=".2"/><circle cx="160" cy="227" r="7" fill="#4b83d2" stroke="white" stroke-width="3"/></g>
               </svg>
+                <span class="map-point map-point--one">!</span><span class="map-point map-point--two">!</span>
+                <span class="map-point map-point--three">!</span><span class="map-point map-point--four">!</span>
+                <span class="map-point map-point--location"></span>
+              </div>
+              <div class="showcase-map-search"><span aria-hidden="true">⌕</span> Search road hazards <span aria-hidden="true">☷</span></div>
+              <span class="showcase-location" aria-hidden="true">⌾</span>
+              <div class="showcase-hazard-sheet"><span class="sheet-handle"></span><div class="sheet-title">Nearby hazards <span>See all →</span></div>
+                <div class="mock-hazard"><span class="hazard-icon">!</span><div><b>Large pothole</b><small>High severity · independently confirmed</small></div><span>›</span></div>
+                <div class="mock-hazard"><span class="hazard-icon orange">!</span><div><b>Rough pavement</b><small>Medium severity · recently seen</small></div><span>›</span></div>
+              </div>
+              <div class="showcase-nav"><span class="active">◈ <small>Map</small></span><span>⌁ <small>Mapping</small></span><span>◉ <small>You</small></span></div>
             </div>
-            <div class="phone-location">⌾</div>
-            <div class="phone-sheet">
-              <div class="phone-grab"></div>
-              <small>ROADS AROUND YOU</small>
-              <strong>4 road hazards</strong>
-              <span>Tap a marker to explore the record</span>
-            </div>
-            <div class="phone-navigation"><span class="active">◈<small>Map</small></span><span>▤<small>Mapping</small></span><span>○<small>You</small></span></div>
           </div>
-          <div class="home-indicator"></div>
+
+          <div class="showcase-phone showcase-phone--mapping">
+            <div class="showcase-screen mapping-screen">
+              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
+              <div class="phone-toolbar"><span>‹</span><strong>Automatic mapping</strong></div>
+              <div class="mapping-card"><div class="mapping-icon">↟</div><span class="mock-switch" aria-label="Illustration of enabled mapping"></span><h3>Detection is on</h3><p>Hodos is watching for your next journey, quietly in the background.</p></div>
+              <div class="permission-card"><b>♧ &nbsp; Permissions</b><small>Location and motion help Hodos learn from your road trips.</small><span>›</span></div>
+              <div class="trip-heading"><b>Recent journeys</b><span>See all</span></div>
+              <div class="mock-trip"><span class="trip-map">⌁</span><div><b>Today, 5:24 PM</b><small>12.4 km · detected road hazards</small></div><span>›</span></div>
+              <div class="mock-trip"><span class="trip-map second">⌁</span><div><b>Yesterday, 8:17 AM</b><small>Regular route · road observations</small></div><span>›</span></div>
+              <div class="mock-trip"><span class="trip-map third">⌁</span><div><b>Previous journey</b><small>Your contributions stay on device</small></div><span>›</span></div>
+              <div class="showcase-nav"><span>◈ <small>Map</small></span><span class="active">⌁ <small>Mapping</small></span><span>◉ <small>You</small></span></div>
+            </div>
+          </div>
+
+          <div class="showcase-phone showcase-phone--detail">
+            <div class="showcase-screen detail-screen">
+              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
+              <div class="phone-toolbar"><span>‹</span><strong>Hazard details</strong></div>
+              <div class="road-texture" aria-hidden="true"><svg viewBox="0 0 350 150" preserveAspectRatio="none"><rect width="350" height="150" fill="#555e5a"/><g fill="none" stroke="#222b2a" stroke-width="4"><path d="M12 25L80 45 110 20 154 40 194 12 238 35 284 14 355 22"/><path d="M0 110L54 96 92 123 138 82 181 110 225 74 282 115 350 89"/><path d="M110 20L138 82M194 12L181 110M238 35L225 74M54 96L80 45"/></g><path d="M110 59Q160 30 230 55T274 96Q213 121 151 99T110 59Z" fill="#1c2627"/><path d="M135 68Q170 51 228 68T253 87Q209 96 166 87T135 68Z" fill="#6c8785" opacity=".75"/></svg></div>
+              <div class="detail-content"><span class="severity-tag">High severity</span><h3>Large pothole</h3><p>Road hazard · Last seen recently</p>
+                <div class="detail-stats"><div><b>12</b><small>Passes</small></div><div><b>8</b><small>Devices</small></div><div><b>Open</b><small>Status</small></div></div>
+                <div class="detail-actions"><span>Still there</span><strong>✓ &nbsp; Mark fixed</strong></div>
+                <div class="detail-map"><svg viewBox="0 0 336 455" class="detail-map-art" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="336" height="455" fill="#e5ebe0"/>
+                <path d="M0 90L140 0H225L0 244Z M336 110L130 365L0 455 M336 302L210 455" fill="#d5e4d0"/>
+                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#f9faf5" stroke-width="32" fill="none"/>
+                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#c6d2c5" stroke-width="1.3" fill="none" stroke-dasharray="6 9"/>
+                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#fbfcf9" stroke-width="21" fill="none"/>
+                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#cfdbcf" stroke-width="1.4" fill="none"/>
+                <path d="M-30 330C85 288 180 250 360 180" stroke="#fff" stroke-width="8" fill="none"/>
+                <path d="M-20 330C85 288 180 250 360 180" stroke="#d8e2d5" stroke-width="1" fill="none"/>
+                <g font-size="9" font-family="sans-serif" fill="#849588" letter-spacing="1">
+                  <text x="50" y="70" transform="rotate(-40 50 70)">RING ROAD</text>
+                  <text x="150" y="166" transform="rotate(-8 150 166)">MAIN STREET</text>
+                  <text x="214" y="378" transform="rotate(-44 214 378)">SOUTH ROAD</text>
+                  <text x="43" y="430">YOUR NEIGHBOURHOOD</text>
+                </g>
+                <g><circle cx="103" cy="163" r="17" fill="#bd533e" opacity=".14"/><circle cx="103" cy="163" r="8" fill="#bd533e" stroke="white" stroke-width="3"/></g>
+                <g><circle cx="237" cy="109" r="17" fill="#be873f" opacity=".16"/><circle cx="237" cy="109" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
+                <g><circle cx="199" cy="273" r="17" fill="#23795c" opacity=".14"/><circle cx="199" cy="273" r="8" fill="#23795c" stroke="white" stroke-width="3"/></g>
+                <g><circle cx="119" cy="368" r="17" fill="#be873f" opacity=".14"/><circle cx="119" cy="368" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
+                <g><circle cx="160" cy="227" r="14" fill="#4b83d2" opacity=".2"/><circle cx="160" cy="227" r="7" fill="#4b83d2" stroke="white" stroke-width="3"/></g>
+              </svg></div>
+                <div class="activity-label"><b>Evidence</b><span>Independent journeys</span></div>
+                <div class="activity-row"><span>✓</span> Road observations corroborated</div>
+                <div class="activity-row"><span>◎</span> Community can report repairs</div>
+              </div>
+            </div>
+          </div>
+          <p class="showcase-caption">App interface preview · Sample hazards shown for illustration</p>
         </div>
-        <div class="map-note"><span class="note-pin">●</span><strong>Pothole detected</strong><span>Confirmed by multiple journeys</span></div>
-        <div class="visual-caption">Interface illustration — not live road data</div>
       </div>
     </section>
 
@@ -110,6 +179,8 @@
         <div><b>03</b><div><h3>The project is open source.</h3><p>Read the code, inspect the decisions, and help improve how your roads are represented.</p></div></div>
       </div>
     </div></section>
+    <section class="impact wrapper" id="impact"><div><span class="overline">OUR IMPACT</span><h2>Small signals.<br />Safer journeys.</h2></div><p>Road defects rarely appear on ordinary maps. Hodos turns everyday trips into evidence others can use. Nothing is published as a confirmed hazard until independent journeys support it.</p></section>
+    <section class="faq wrapper" id="faq"><span class="overline">QUESTIONS</span><h2>Good to know.</h2><details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos sends compact geolocated road observations when it detects a potential hazard; your raw accelerometer stream stays on the device.</p></details><details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore already confirmed road hazards without enabling automatic mapping.</p></details><details><summary>How does a pothole become visible on the map?</summary><p>The backend combines observations from multiple trips and independent devices before publishing a hazard. You can also submit a repair report for an existing hazard.</p></details><details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first. The current release and source code are available on GitHub.</p></details></section>
     <section class="closing wrapper"><div><span class="overline">ROAD BY ROAD</span><h2>Better roads start with<br />better <em>information.</em></h2></div><a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases/latest" target="_blank" rel="noopener noreferrer">Get Hodos for Android ↗</a></section>
   </main>
   <footer class="footer wrapper"><span>© <span id="year">2026</span> Hodos · A Devilabs project</span><div><a href="https://github.com/DrSkyle/hodos">Source code ↗</a><a href="https://github.com/DrSkyle/hodos/blob/main/docs/PRIVACY.md">Privacy ↗</a></div></footer>
