@@ -59,6 +59,8 @@ public class HodosService extends Service implements SensorEventListener {
 
   public static final String ACTION_ENABLE = "org.hodos.app.ENABLE";
   public static final String ACTION_DISABLE = "org.hodos.app.DISABLE";
+  public static final String ACTION_START_TRIP = "org.hodos.app.START_TRIP";
+  public static final String ACTION_END_TRIP = "org.hodos.app.END_TRIP";
 
   private static final String CHANNEL_ID = "hodos.mapping";
   private static final int NOTIFICATION_ID = 4711;
@@ -105,6 +107,23 @@ public class HodosService extends Service implements SensorEventListener {
       stopForeground(true);
       stopSelf();
       return START_NOT_STICKY;
+    }
+
+    if (ACTION_START_TRIP.equals(action) || ACTION_END_TRIP.equals(action)) {
+      if (!getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+        stopSelf();
+        return START_NOT_STICKY;
+      }
+      startForegroundCompat();
+      if (ACTION_START_TRIP.equals(action)) {
+        if (!sampling) {
+          lastMovementAt = System.currentTimeMillis();
+          startTrip();
+        }
+      } else {
+        endTrip();
+      }
+      return START_STICKY;
     }
 
     if ("org.hodos.app.ACTIVITY".equals(action)) {
@@ -256,6 +275,7 @@ public class HodosService extends Service implements SensorEventListener {
       return;
     }
     sampling = true;
+    lastMovementAt = System.currentTimeMillis();
     getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", true).apply();
     tripStartedAt = System.currentTimeMillis();
     synchronized (samples) { samples.clear(); }
