@@ -115,12 +115,7 @@ app.innerHTML = `
         <div class="meters" id="data-meters" hidden>
           <div class="meter-row">
             <span class="meter-label">type</span>
-            <div class="bar">
-              <span class="seg seg-pothole" id="bar-pothole"></span>
-              <span class="seg seg-bump" id="bar-bump"></span>
-              <span class="seg seg-rough" id="bar-rough"></span>
-            </div>
-            <span class="meter-fig" id="meter-type"></span>
+            <span class="meter-text" id="meter-type"></span>
           </div>
           <div class="meter-row">
             <span class="meter-label">status</span>
@@ -131,10 +126,18 @@ app.innerHTML = `
             <span class="meter-fig" id="meter-status"></span>
           </div>
           <p class="legend">
-            <span><i class="key key-pothole"></i>potholes</span>
-            <span><i class="key key-bump"></i>speed bumps</span>
-            <span><i class="key key-rough"></i>rough</span>
+            <span><i class="key key-minor"></i>minor</span>
+            <span><i class="key key-moderate"></i>moderate</span>
+            <span><i class="key key-severe"></i>severe</span>
           </p>
+        </div>
+
+        <div class="records-head">
+          <span></span>
+          <span>hazard</span>
+          <span>evidence</span>
+          <span>state</span>
+          <span>conf.</span>
         </div>
 
         <ol class="records" id="data-records"></ol>
@@ -149,8 +152,7 @@ app.innerHTML = `
             The map is free and always will be. If this goes to a road authority, name the
             ward so the source is on record.
           </span>
-        </footer>
-      </div>
+        </footer>      </div>
     </section>
 
     <section data-panel="you" class="panel">
@@ -235,11 +237,12 @@ const dataList = need<HTMLElement>("#data-records");
 const dataEmpty = need<HTMLElement>("#data-empty");
 const meterType = need<HTMLElement>("#meter-type");
 const meterStatus = need<HTMLElement>("#meter-status");
-const barPothole = need<HTMLElement>("#bar-pothole");
-const barBump = need<HTMLElement>("#bar-bump");
-const barRough = need<HTMLElement>("#bar-rough");
 const barOpen = need<HTMLElement>("#bar-open");
 const barRepaired = need<HTMLElement>("#bar-repaired");
+
+function kindLabel(kind: string): string {
+  return kind === "rough_pavement" ? "rough patch" : kind.replace("_", " ");
+}
 
 let me = loadMe();
 let identity: Identity = loadIdentity() ?? { code: newCode() };
@@ -255,6 +258,9 @@ function switchView(view: string): void {
   }
   for (const panel of document.querySelectorAll<HTMLElement>("[data-panel]")) {
     panel.classList.toggle("is-active", panel.dataset.panel === view);
+  }
+  if (location.hash.slice(1) !== view) {
+    history.replaceState(null, "", `#${view}`);
   }
 }
 
@@ -394,12 +400,10 @@ function renderData(): void {
 
   dataMeters.hidden = all.length === 0;
   const share = (value: number) => `${all.length === 0 ? 0 : (value / all.length) * 100}%`;
-  barPothole.style.width = share(potholes);
-  barBump.style.width = share(bumps);
-  barRough.style.width = share(rough);
   barOpen.style.width = share(open);
   barRepaired.style.width = share(repaired);
-  meterType.textContent = `${potholes} · ${bumps} · ${rough}`;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  meterType.textContent = `${plural(potholes, "pothole", "potholes")} · ${plural(bumps, "speed bump", "speed bumps")} · ${plural(rough, "rough patch", "rough patches")}`;
   meterStatus.textContent = `${open} open · ${repaired} repaired`;
 
   dataEmpty.hidden = all.length > 0;
@@ -411,7 +415,7 @@ function renderData(): void {
       return `
         <li class="record" data-row-id="${hazard.rowId}">
           <i class="pip sev-${hazard.severity}"></i>
-          <span class="record-kind">${hazard.kind.replace("_", " ")}</span>
+          <span class="record-kind">${kindLabel(hazard.kind)}</span>
           <span class="record-meta">${hazard.passCount} ${hazard.passCount === 1 ? "pass" : "passes"} · ${hazard.deviceCount} ${hazard.deviceCount === 1 ? "phone" : "phones"} · ${hazard.dayCount} ${hazard.dayCount === 1 ? "day" : "days"}</span>
           <span class="record-mark ${status === "fixed" ? "is-repaired" : "is-open"}">${mark}</span>
           <span class="record-conf">${Math.round(hazard.confidence * 100)}<small>%</small></span>
@@ -996,6 +1000,10 @@ restoreGo.addEventListener("click", () => {
 renderMe();
 renderData();
 void refreshHazards();
+const initialView = location.hash.replace("#", "");
+if (["map", "drive", "data", "you"].includes(initialView)) {
+  switchView(initialView);
+}
 void bootstrapIdentity();
 void renderAutomatic();
 if (me.centre === null) {
