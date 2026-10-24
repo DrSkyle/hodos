@@ -256,6 +256,11 @@ public class HodosService extends Service implements SensorEventListener {
           public void onLocationResult(LocationResult result) {
             Location last = result.getLastLocation();
             if (last != null) {
+              // Transitions arrive only when motion class changes; GPS speed
+              // keeps long journeys active between transitions.
+              if (last.hasSpeed() && last.getSpeed() >= 2.5f) {
+                lastMovementAt = System.currentTimeMillis();
+              }
               synchronized (fixes) {
                 fixes.add(new MotionDetector.Fix(
                     last.getTime(), last.getLatitude(), last.getLongitude(),
@@ -418,7 +423,7 @@ public class HodosService extends Service implements SensorEventListener {
         confirmed++;
       }
     }
-    recordTrip(finished.size(), hazards.size(), confirmed);
+    recordTrip(finished.size(), hazards.size(), confirmed, distanceMetres(route));
     updateNotification("Waiting for a journey");
 
     List<MotionDetector.Hazard> known = fetchPublishedHazards();
@@ -503,7 +508,28 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
-  private void recordTrip(int impacts, int locations, int confirmed) {
+  private static double distanceMetres(List<MotionDetector.Fix> route) {
+    double total = 0;
+    MotionDetector.Fix previous = null;
+    float[] result = new float[1];
+    for (MotionDetector.Fix fix : route) {
+      if (!Double.isFinite(fix.lat) || !Double.isFinite(fix.lng) ||
+          Math.abs(fix.lat) > 90 || Math.abs(fix.lng) > 180 ||
+          fix.accuracy < 0 || fix.accuracy > 50) continue;
+      if (previous != null && fix.t > previous.t) {
+        Location.distanceBetween(previous.lat, previous.lng, fix.lat, fix.lng, result);
+        double elapsed = (fix.t - previous.t) / 1000.0;
+        // Ignore impossible GPS leaps while allowing location sampling jitter.
+        if (result[0] >= 0 && result[0] <= elapsed * 45 + 30) {
+          total += result[0];
+        }
+      }
+      previous = fix;
+    }
+    return Math.round(total);
+  }
+
+  private void recordTrip(int impacts, int locations, int confirmed, double distanceM) {
     SharedPreferences prefs = getSharedPreferences("hodos", MODE_PRIVATE);
     try {
       JSONArray trips = new JSONArray(prefs.getString("autoTrips", "[]"));
@@ -512,7 +538,7 @@ public class HodosService extends Service implements SensorEventListener {
       trip.put("impacts", impacts);
       trip.put("locations", locations);
       trip.put("confirmed", confirmed);
-      trip.put("distanceM", 0);
+      trip.put("distanceM", distanceM);
       trips.put(trip);
       JSONArray trimmed = new JSONArray();
       for (int i = Math.max(0, trips.length() - 50); i < trips.length(); i++) {
