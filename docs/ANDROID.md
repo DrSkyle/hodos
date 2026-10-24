@@ -10,6 +10,7 @@ not a second app that has to stay in sync with native UI.
 - Existing Java `MotionDetector` + `HodosService` for low-level motion analysis
 - OkHttp for Appwrite TablesDB and event reporting
 - SharedPreferences for service flags, device identifiers, offline map cache and local trips
+- SQLite outbox for idempotent, queued road observations when the network is unavailable
 
 The original browser UI code still exists under `apps/web/src/main.ts` during
 migration, but the domain now loads `apps/web/src/landing.ts`. Do not package the
@@ -34,7 +35,8 @@ Debug APK: `app/build/outputs/apk/debug/app-debug.apk`.
    starts and ends, and the foreground notification is visible.
 3. Confirm the Appwrite event-append and aggregation APIs work on device.
 4. Test airplane mode and unreliable networks; the map caches last good
-   hazard rows, but **observations currently need a network connection**.
+   hazard rows. Automatic observations queue in private SQLite storage and are retried
+   when mapping is enabled; manual hazard confirmations require connectivity.
 5. Validate map markers, map attribution, touchscreen targets, TalkBack,
    reduced-motion preferences and battery use on actual devices.
 6. **Migration gate:** the existing Capacitor release stored recovery identities
@@ -56,7 +58,7 @@ samples stay on-device. Public hazards are cached for offline browsing.
 
 ## Future milestones
 
-- Encrypted durable upload queue for background events when offline
+- Encrypt queued location observations at rest and add WorkManager retries independent of the mapping service
 - Migrate the existing account and recovery-code identity and profile syncing
 - User-initiated location follow mode and accessible marker filtering
 - Benchmark detector parity, battery efficiency, repair event lifecycle
