@@ -1,50 +1,23 @@
 # Hodos privacy policy
 
-Hodos maps road defects without knowing who found them.
+*Updated 24 October 2026*
 
-## What is collected
+Hodos is an Android road-hazard mapping app. Automatic mapping requires permission to read location, motion sensors and activity recognition while the background mapping service is enabled. You can disable it in the app or revoke permissions in Android settings; the public map is browsable without enabling recording.
 
-When you record a trip, Hodos reads two things:
+## Data collected
 
-- **Motion** from the phone's accelerometer, to feel impacts.
-- **Location**, to know where each impact is.
+The phone analyzes accelerometer readings and location fixes locally. **Raw accelerometer streams and full travel routes are not uploaded.** Compact road events may be sent to Appwrite: timestamp, coordinates, GPS accuracy, estimated speed, estimated defect type and severity, detector score, observation type (impact, clear-road pass or repair), a random journey ID and a random installation ID.
 
-Impacts — a position, a magnitude, a severity, the time, and the estimated
-speed — are sent to the server. **Raw sensor traces are never sent.** Detection
-runs on the phone; only the conclusion leaves it.
+Location observations are potentially sensitive even without names. The installation ID is a pseudonym stored on your device and **persists for the life of the installation**, so submissions may be linked across journeys. It is not your advertising ID or a value derived from an email or phone number. The server currently accepts client-supplied pseudonyms, and cannot guarantee each corresponds to a unique physical device.
 
-## What is never collected
+## Storage and access
 
-- No name, no email, no phone number, no account.
-- No raw accelerometer or GPS traces.
-- No advertising identifiers, no third-party trackers, no analytics SDKs.
-- No location history beyond the individual impacts you contribute.
+Public aggregated hazard records are readable by anyone. The individual observation log is not publicly readable through the client API. Hodos caches recently fetched hazard data and up to 50 local trip summaries. Events queued for upload are stored in an app-private SQLite database **without separate application-level encryption**. Standard platform device backups may affect local data retention.
 
-## The device identifier
+The server currently aggregates up to 120 days of event history; this calculation window is **not a deletion policy**. An automatic deletion schedule for stored event records has not yet been implemented. Uninstalling Hodos or clearing its local data does not erase already submitted server observations.
 
-To tell corroborating observations apart, Hodos stores a random identifier on
-your device. It contains nothing about you, and it **rotates every 24 hours**.
-It is not linked to any account, and it is not sent anywhere except alongside
-the impacts it labels.
+No advertising or analytics SDK is intentionally included in the native app. Hosting providers may handle technical connection metadata as necessary to operate the service.
 
-## Coarsening
+## Your choices
 
-Before an impact is stored it is reduced to a point on the road. The public map
-shows merged hazards, not the path you drove, and only hazards confirmed by
-several independent passes from distinct devices are shown at all.
-
-## The event log
-
-The `events` table is write-only. A client can append an observation and can
-never read the log back. Only the server-side aggregation process can read it.
-
-## Your control
-
-Recording only happens while you have explicitly started a trip, and stops when
-you end it. Uninstalling the app or clearing site data removes the local
-identifier. There is no server-side profile to delete, because none is kept.
-
-## Questions
-
-This is a student project built for Neighborhood Hacks 2026. If you have a
-privacy question, open an issue on the repository.
+You can browse without contributing observations, disable automatic mapping at any time, and clear local app data through Android settings. For questions about a submitted observation or a server-side deletion request, contact the project maintainers privately using the contact information on [GitHub](https://github.com/DrSkyle/hodos). Avoid posting sensitive locations publicly.

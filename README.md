@@ -2,97 +2,41 @@
 
 **The road maps itself.**
 
-Hodos is an Android-first, open-source project for passively mapping potholes,
-speed bumps and rough pavement. When people travel normal routes, their phones
-detect likely road defects locally, append compact observations to a shared
-event log, and corroborate hazards before publishing them on a public map.
+Hodos is an open-source Android app that uses motion and location measurements to identify likely potholes, speed bumps and rough pavement during ordinary journeys. Repeated road observations contribute to a shared map that people can explore and improve.
 
-**Website:** [hodos.devilabs.dev](https://hodos.devilabs.dev) — the landing page, not an interactive web app.
+**[Website](https://hodos.devilabs.dev)** · **[Android downloads](https://github.com/DrSkyle/hodos/releases)** · **[Report an issue](https://github.com/DrSkyle/hodos/issues)**
 
-**Android APK:** [latest existing release](https://github.com/DrSkyle/hodos/releases/latest).
-The new Kotlin interface is developed on a separate branch while build and
-real-device compatibility are checked. **Do not assume the existing release is
-the new native version.**
+## Features
 
-## Android-first architecture
+- **Automatic mapping:** opt-in journey detection using Android activity recognition and on-device motion analysis.
+- **Community map:** browse road hazards, confidence scores, severity and reports.
+- **Feedback:** confirm a hazard or report a repair.
+- **Offline support:** cache public hazards and queue automatic observations for later upload.
+- **Privacy controls:** raw motion samples stay on your phone; only compact geolocated observations are shared.
 
-- **Kotlin / Jetpack Compose / Material 3** — mobile navigation, map-first screens,
-  journey history, native sheets and large accessible touch targets.
-- **MapLibre Native** — vector map and interactive hazard markers on Android.
-- **Existing Java motion pipeline** — accelerometer + location samples and
-  passive automatic trip detection in an Android foreground service.
-- **Appwrite** — publicly readable aggregated hazards, append-only events,
-  private profiles in the previous Capacitor app.
-- **Offline map cache** — browse previously fetched hazards without a network.
-  Automatic journey observations are saved in a durable SQLite outbox and retried while mapping is enabled. Manual confirmation actions still require connectivity.
+Hodos is in **beta**. Detection is heuristic rather than field-validated: vehicle type, phone placement, speed and sensor variation affect the results. Confidence is a relative score, not a calibrated probability. The app is not a replacement for safe driving or road inspections. Submitted installation IDs are pseudonymous and cannot yet be verified as unique physical devices.
 
-The website is a lightweight product landing page powered by Vite.
-The original browser app source is preserved temporarily in
-\`apps/web/src/main.ts\` for account and recovery-code migration.
-
-## Build
+## Development
 
 Android (JDK 17, Android SDK 35):
 
-\`\`\`sh
+```sh
 cd apps/web/android
 ./gradlew :app:assembleDebug
-\`\`\`
+```
 
-Website:
+Website and domain tests (Node 20+, pnpm):
 
-\`\`\`sh
+```sh
 pnpm install
-pnpm --filter @hodos/web build
-\`\`\`
-
-Tests:
-
-\`\`\`sh
-pnpm -r test
 pnpm -r typecheck
-\`\`\`
+pnpm -r test
+node --test appwrite/functions/hodos-aggregate/src/main.test.js
+pnpm --filter @hodos/web build
+```
 
-**Android build and release cautions:** see [docs/ANDROID.md](docs/ANDROID.md)
-for permission flows, manual acceptance, old identity migration and signing.
-CI debug APKs are for testing; stable installation needs a consistent release key.
+Source: `apps/web/android/` contains the Android app, `apps/web/` contains the landing page, `packages/core/` contains signal-processing reference code and tests, and `appwrite/functions/` contains the road-map aggregation service.
 
-## Core design
+Read the [privacy policy](docs/PRIVACY.md). Contributions and test reports are welcome through GitHub Issues.
 
-1. **Sense locally.** The device estimates gravity and band-passes the vertical
-   residual, suppressing motion that looks unlike a road defect.
-2. **Classify.** Peak, pulse shape, jerk and lateral motion help differentiate
-   potholes, speed bumps and rough pavement.
-3. **Append evidence.** The phone sends compact observations to a write-only
-   log, rather than directly changing the shared hazard map.
-4. **Aggregate.** The backend combines corroborated observations from
-   independent devices; recently clear journeys and repair reports help
-   mark hazards resolved.
-5. **Explain.** Users can inspect confidence, how many journeys confirmed a
-   hazard, and its current reported status.
-
-## Source layout
-
-\`\`\`text
-apps/web/android/  native Android app, including preserved Java detector
-apps/web/          responsive product landing site and migration-era web code
-packages/core/     domain algorithm and test coverage
-appwrite/          provisioning and aggregation
-docs/              research, privacy, architecture, release checklist
-\`\`\`
-
-## Privacy
-
-Raw accelerometer readings stay on the device. Hodos submits road observations
-with locations needed for the shared map. Activity recognition, background
-location and a foreground service are used only with explicit Android
-permissions. Read [the privacy policy](docs/PRIVACY.md) and
-[data dictionary](docs/DATA.md).
-
-## Status
-
-The native map and landing-page refresh are under development on a dedicated branch. Deployment to \`main\` and a stable signed APK
-are deliberately held until CI, migration and device tests succeed. The
-original recovery-code identity must remain recoverable for existing users.
-
-MIT licensed. Hodos is a project by Devilabs.
+Hodos is built by **Devilabs** and licensed under [MIT](LICENSE).
