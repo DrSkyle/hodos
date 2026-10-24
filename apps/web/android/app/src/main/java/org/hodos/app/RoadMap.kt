@@ -68,6 +68,7 @@ fun RoadMap(
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var ready by remember { mutableStateOf(false) }
+    var userFix by remember { mutableStateOf<Location?>(null) }
 
     DisposableEffect(mapView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -169,10 +170,20 @@ fun RoadMap(
         }
     }
 
+    LaunchedEffect(userFix, ready) {
+        val fix = userFix
+        if (fix != null && ready) {
+            map?.style?.getSourceAs<GeoJsonSource>("hodos-user-location")
+                ?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(
+                    Feature.fromGeometry(Point.fromLngLat(fix.longitude, fix.latitude))
+                )))
+        }
+    }
+
     // Only resolve a position after an explicit location-button press.
     // AOSP phones can still locate using Android's providers when Play
     // services are unavailable or return null.
-    DisposableEffect(locateRequest, ready) {
+    DisposableEffect(locateRequest, map) {
         val fine = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -184,11 +195,13 @@ fun RoadMap(
         val handler = Handler(Looper.getMainLooper())
         var finished = false
         var listener: LocationListener? = null
+        var fallback: Location? = null
 
         fun finishWithLocation(location: Location) {
             if (finished || cancellation.token.isCancellationRequested) return
             if (location.latitude !in -90.0..90.0 || location.longitude !in -180.0..180.0) return
             finished = true
+            userFix = location
             val position = LatLng(location.latitude, location.longitude)
             map?.style?.getSourceAs<GeoJsonSource>("hodos-user-location")
                 ?.setGeoJson(FeatureCollection.fromFeatures(
@@ -209,9 +222,13 @@ fun RoadMap(
             }
         }
 
-        val timeout = Runnable { error(LocationIssue.Timeout) }
+        val timeout = Runnable {
+            val cached = fallback
+            if (cached != null) finishWithLocation(cached)
+            else error(LocationIssue.Timeout)
+        }
 
-        if (ready && locateRequest > 0) {
+        if (map != null && locateRequest > 0) {
             if (!fine && !coarse) {
                 error(LocationIssue.Permission)
             } else {
@@ -234,7 +251,22 @@ fun RoadMap(
                             LocationManager.NETWORK_PROVIDER,
                             LocationManager.GPS_PROVIDER
                         ).filter { locationManager.isProviderEnabled(it) }
-                        if (providers.isNotEmpty()) {
+                        // A cached fix is better than a map stuck on Nepal's
+                        // midpoint. Use a very recent fix immediately; older
+                        // (<15-minute) fixes are a timeout-only fallback.
+                        providers.forEach { provider ->
+                            val cached = try { locationManager.getLastKnownLocation(provider) }
+                                catch (_: Exception) { null }
+                            if (cached != null) {
+                                val ageMs = System.currentTimeMillis() - cached.time
+                                if (ageMs in 0..900_000L &&
+                                    (fallback == null || cached.time > fallback!!.time)) {
+                                    fallback = cached
+                                }
+                                if (ageMs in 0..30_000L) finishWithLocation(cached)
+                            }
+                        }
+                        if (providers.isNotEmpty() && !finished) {
                             val platformListener = object : LocationListener {
                                 override fun onLocationChanged(location: Location) {
                                     finishWithLocation(location)
@@ -273,9 +305,13 @@ fun RoadMap(
                             }
                         // A last known fix is useful only if still recent.
                         client.lastLocation.addOnSuccessListener { fix ->
-                            if (fix != null &&
-                                System.currentTimeMillis() - fix.time in 0..120_000L) {
-                                finishWithLocation(fix)
+                            if (fix != null) {
+                                val ageMs = System.currentTimeMillis() - fix.time
+                                if (ageMs in 0..900_000L &&
+                                    (fallback == null || fix.time > fallback!!.time)) {
+                                    fallback = fix
+                                }
+                                if (ageMs in 0..30_000L) finishWithLocation(fix)
                             }
                         }
                     } catch (_: SecurityException) {
