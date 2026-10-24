@@ -105,7 +105,10 @@ appwrite tablesdb create-enum-column --database-id "${DATABASE_ID}" --table-id e
 appwrite tablesdb create-integer-column --database-id "${DATABASE_ID}" --table-id hazards \
   --key clearPasses --required=false --xdefault 0 -f || true
 appwrite tablesdb create-enum-column --database-id "${DATABASE_ID}" --table-id events \
-  --key observation --elements impact --elements pass --required=false -f || true
+  --key observation --elements impact --elements pass --elements fix --required=false -f || true
+# Also migrate pre-existing tables; creation on an existing key is a no-op.
+appwrite tablesdb update-enum-column --database-id "${DATABASE_ID}" --table-id events \
+  --key observation --elements impact --elements pass --elements fix --required=false -f || true
 appwrite tablesdb create-string-column --database-id "${DATABASE_ID}" --table-id events \
   --key hazardRef --size 64 --required=false -f || true
 
