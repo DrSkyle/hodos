@@ -11,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -40,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -188,13 +191,17 @@ fun HodosApp(
                                 screen = tab
                             },
                             icon = {
-                                Icon(
-                                    when (tab) {
-                                        Screen.MAP -> Icons.Outlined.Map
-                                        Screen.MAPPING -> Icons.Outlined.DirectionsCar
-                                        Screen.YOU -> Icons.Outlined.PersonOutline
-                                    }, contentDescription = null
-                                )
+                                if (tab == Screen.MAP || tab == Screen.MAPPING) {
+                                    Image(
+                                        painter = painterResource(
+                                            if (tab == Screen.MAP) R.drawable.hodos_icon_square
+                                            else R.drawable.hodos_icon_round
+                                        ),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp))
+                                    )
+                                } else Icon(Icons.Outlined.PersonOutline, contentDescription = null)
                             },
                             label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.SemiBold else FontWeight.Normal) },
                             alwaysShowLabel = true,
@@ -277,6 +284,13 @@ fun HodosApp(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 12.dp)
                             ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    HodosBrand()
+                                    Spacer(Modifier.weight(1f))
+                                    Text("SAFER ROADS", fontSize = 10.sp, color = Forest,
+                                        fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                                }
+                                Spacer(Modifier.height(9.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     OutlinedTextField(
                                         value = query,
@@ -525,6 +539,8 @@ private fun MappingScreen(
         verticalArrangement = Arrangement.spacedBy(17.dp)
     ) {
         item {
+            HodosBrand()
+            Spacer(Modifier.height(17.dp))
             Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
             Spacer(Modifier.height(7.dp))
             Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
@@ -636,6 +652,8 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
     ) {
         item {
             Spacer(Modifier.height(12.dp))
+            HodosBrand()
+            Spacer(Modifier.height(16.dp))
             Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
             Text("Every journey makes the roads a little better understood.", color = Muted)
         }
@@ -670,5 +688,18 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
                 Text("Hodos · by Devilabs", color = Muted, fontSize = 13.sp)
             }
         }
+    }
+}
+
+@Composable
+private fun HodosBrand() {
+    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF123D31)) {
+        Image(
+            painter = painterResource(R.drawable.hodos_wordmark),
+            contentDescription = "Hodos · Safer roads, brighter paths",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.width(156.dp).height(50.dp)
+                .padding(horizontal = 9.dp, vertical = 10.dp)
+        )
     }
 }
