@@ -108,6 +108,10 @@ public class HodosService extends Service implements SensorEventListener {
     }
 
     if ("org.hodos.app.ACTIVITY".equals(action)) {
+      if (!getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+        stopSelf();
+        return START_NOT_STICKY;
+      }
       startForegroundCompat();
       int activityType = intent.getIntExtra("activity", -1);
       if (activityType >= 0) {
@@ -210,6 +214,10 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   public static void onActivity(Context context, int activityType) {
+    // Pending transitions may arrive after the user turned mapping off.
+    if (!context.getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+      return;
+    }
     Intent intent = new Intent(context, HodosService.class);
     intent.setAction("org.hodos.app.ACTIVITY");
     intent.putExtra("activity", activityType);
@@ -248,6 +256,7 @@ public class HodosService extends Service implements SensorEventListener {
       return;
     }
     sampling = true;
+    getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", true).apply();
     tripStartedAt = System.currentTimeMillis();
     synchronized (samples) { samples.clear(); }
     synchronized (fixes) { fixes.clear(); }
@@ -336,6 +345,7 @@ public class HodosService extends Service implements SensorEventListener {
       return;
     }
     sampling = false;
+    getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", false).apply();
     if (scheduler != null) {
       scheduler.shutdownNow();
       scheduler = null;
@@ -356,6 +366,7 @@ public class HodosService extends Service implements SensorEventListener {
 
   private void stopEverything() {
     sampling = false;
+    getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", false).apply();
     if (outboxScheduler != null) {
       outboxScheduler.shutdownNow();
       outboxScheduler = null;
