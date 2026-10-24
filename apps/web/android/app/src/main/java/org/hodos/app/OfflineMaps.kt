@@ -211,15 +211,7 @@ internal object OfflineMaps {
             ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) return
         state = state.copy(lastLocation = location)
-        if (state.autoEnabled) {
-            if (OfflineDownloadPolicy.safeForAutomaticDownload(
-                    location.hasAccuracy(), location.accuracy)) {
-                saveNearby(location)
-            } else {
-                state = state.copy(status =
-                    "Location is approximate · tap Save nearby to choose this area")
-            }
-        }
+        if (state.autoEnabled) saveNearby(location)
     }
 
     fun saveNearbyNow() {
@@ -239,6 +231,15 @@ internal object OfflineMaps {
     private fun saveNearby(location: Location, manual: Boolean = false) {
         if (!initialized || creating || state.downloading) return
         if (!manual && !state.autoEnabled) return
+        // Every automatic entry point (new GPS fix, Wi-Fi reconnection,
+        // toggling Auto on) must enforce the same location-quality gate.
+        // A manually requested pack is allowed with approximate location.
+        if (!manual && !OfflineDownloadPolicy.safeForAutomaticDownload(
+                location.hasAccuracy(), location.accuracy)) {
+            state = state.copy(status =
+                "Location is approximate · tap Save nearby to choose this area")
+            return
+        }
         if (!wifiReady()) {
             current?.setDownloadState(OfflineRegion.STATE_INACTIVE)
             state = state.copy(downloading = false,
