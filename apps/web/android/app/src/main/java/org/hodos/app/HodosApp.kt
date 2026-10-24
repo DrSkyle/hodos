@@ -79,6 +79,10 @@ fun HodosApp(
     val internetConnected by rememberInternetConnectivity()
     val haptic = LocalHapticFeedback.current
     val repo = remember { HazardRepository(context) }
+    val offlineMaps = remember(context) {
+        OfflineMaps.initialize(context)
+        OfflineMaps
+    }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val sheetState = rememberBottomSheetScaffoldState()
@@ -126,12 +130,30 @@ fun HodosApp(
     var filterVisible by remember { mutableStateOf(false) }
     var severity by remember { mutableStateOf("All") }
     var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
+    // After foreground location permission is granted, automatically locate
+    // once so the Wi-Fi-only neighborhood pack can be downloaded.
+    LaunchedEffect(Unit) {
+        val fine = ContextCompat.checkSelfPermission(context,
+            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(context,
+            Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (fine || coarse) {
+            locating = true
+            locateRequest++
+        }
+    }
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
     var tripActive by remember { mutableStateOf(prefs.getBoolean("tripActive", false)) }
     LaunchedEffect(screen, refreshSignal) {
         while (screen == Screen.MAPPING) {
             tripActive = prefs.getBoolean("tripActive", false)
             delay(1000L)
+        }
+    }
+
+    LaunchedEffect(internetConnected, lastKnownLocation) {
+        if (internetConnected && lastKnownLocation != null) {
+            offlineMaps.onLocation(lastKnownLocation!!)
         }
     }
 
@@ -289,6 +311,7 @@ fun HodosApp(
                                 onSelect = { selected = it },
                                 onLocated = {
                                     lastKnownLocation = it
+                                    offlineMaps.onLocation(it)
                                     locating = false
                                     locationIssue = null
                                 },
@@ -411,6 +434,7 @@ fun HodosApp(
                     }
                     Screen.MAPPING -> MappingScreen(
                         armed, trips,
+                        offlineMaps = offlineMaps,
                         onToggle = onToggle,
                         onRefresh = onRefresh,
                         tripActive = tripActive,
@@ -558,6 +582,7 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
 private fun MappingScreen(
     armed: Boolean,
     trips: List<RoadTrip>,
+    offlineMaps: OfflineMaps,
     onToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     tripActive: Boolean,
@@ -614,6 +639,50 @@ private fun MappingScreen(
                         }
                     }) { Text("Review battery optimization") }
                     Text("These settings are optional, and availability varies by Android device.", color = Muted, fontSize = 12.sp)
+                }
+            }
+        }
+        item {
+            val saved = offlineMaps.state
+            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Map, contentDescription = null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Offline nearby maps", fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = saved.autoEnabled,
+                            onCheckedChange = { offlineMaps.setAuto(it) },
+                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Automatically save roads within 20 km on Wi-Fi after you allow location. No mobile-data map downloads.",
+                        fontSize = 13.sp, color = Muted)
+                    Spacer(Modifier.height(12.dp))
+                    Text(saved.status, fontSize = 13.sp, color = Ink,
+                        fontWeight = FontWeight.SemiBold)
+                    if (saved.downloading && saved.required > 0) {
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { (saved.completed.toFloat() / saved.required).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Forest
+                        )
+                    }
+                    Text("${saved.savedRegions} saved areas · ${saved.downloadedBytes / (1024 * 1024)} MB current area · zoom 8–13",
+                        fontSize = 12.sp, color = Muted)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { offlineMaps.saveNearbyNow() },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Save nearby", fontSize = 12.sp) }
+                        TextButton(onClick = { offlineMaps.clear() }) {
+                            Text("Remove maps", fontSize = 12.sp)
+                        }
+                    }
                 }
             }
         }
