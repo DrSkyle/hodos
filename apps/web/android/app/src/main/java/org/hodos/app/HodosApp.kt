@@ -563,7 +563,26 @@ private fun MappingScreen(
                     Spacer(Modifier.height(18.dp))
                     HorizontalDivider(color = Color(0xFFD0E2D7))
                     Spacer(Modifier.height(14.dp))
-                    Text("Your motion data stays on this phone. A foreground notification shows when mapping is active.", color = Muted, fontSize = 13.sp)
+                    Text("Your motion data stays on this phone. A persistent foreground notification shows when mapping is active. Android may stop tracking when you force-stop Hodos or restrict its battery use.", color = Muted, fontSize = 13.sp)
+                    Spacer(Modifier.height(13.dp))
+                    Text("For more reliable screen-off mapping:", color = Ink, fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold)
+                    val context = LocalContext.current
+                    TextButton(onClick = {
+                        context.startActivity(Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + context.packageName)
+                        ))
+                    }) { Text("Location · Allow all the time") }
+                    TextButton(onClick = {
+                        try {
+                            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        } catch (_: Exception) {
+                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + context.packageName)))
+                        }
+                    }) { Text("Review battery optimization") }
+                    Text("These settings are optional, and availability varies by Android device.", color = Muted, fontSize = 12.sp)
                 }
             }
         }
