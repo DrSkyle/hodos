@@ -76,6 +76,7 @@ fun HodosApp(
     onFinishJourney: () -> Unit
 ) {
     val context = LocalContext.current
+    val internetConnected by rememberInternetConnectivity()
     val haptic = LocalHapticFeedback.current
     val repo = remember { HazardRepository(context) }
     val snackbar = remember { SnackbarHostState() }
@@ -119,7 +120,7 @@ fun HodosApp(
     var hazards by remember { mutableStateOf(repo.savedHazards()) }
     var trips by remember { mutableStateOf(repo.savedTrips()) }
     var loading by remember { mutableStateOf(false) }
-    var offline by remember { mutableStateOf(false) }
+    var syncError by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<RoadHazard?>(null) }
     var query by remember { mutableStateOf("") }
     var filterVisible by remember { mutableStateOf(false) }
@@ -155,13 +156,30 @@ fun HodosApp(
         )
     }
 
-    LaunchedEffect(refreshSignal) {
+    // Re-check the backend after internet connectivity returns or the
+    // activity resumes. An API failure is NOT proof the phone is offline.
+    LaunchedEffect(refreshSignal, internetConnected) {
         trips = repo.savedTrips()
-        loading = true
-        val result = repo.refreshHazards()
-        result.onSuccess { hazards = it; offline = false }
-        result.onFailure { offline = true; hazards = repo.savedHazards() }
-        loading = false
+        if (!internetConnected) {
+            hazards = repo.savedHazards()
+            syncError = false
+            loading = false
+        } else {
+            loading = true
+            try {
+                val result = repo.refreshHazards()
+                result.onSuccess {
+                    hazards = it
+                    syncError = false
+                }
+                result.onFailure {
+                    hazards = repo.savedHazards()
+                    syncError = true
+                }
+            } finally {
+                loading = false
+            }
+        }
     }
 
     val colors = lightColorScheme(
@@ -335,10 +353,23 @@ fun HodosApp(
                                         }
                                     }
                                 }
-                                if (offline) {
+                                if (!internetConnected || syncError) {
                                     Spacer(Modifier.height(8.dp))
                                     Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF1DE)) {
-                                        Text("Offline · showing saved hazards", Modifier.padding(11.dp), color = Ink, fontSize = 12.sp)
+                                        Row(
+                                            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                if (!internetConnected) "Offline · saved hazards available; map tiles may need internet"
+                                                else "Can't sync hazards · displaying last saved reports",
+                                                modifier = Modifier.weight(1f),
+                                                color = Ink, fontSize = 12.sp, lineHeight = 17.sp
+                                            )
+                                            if (internetConnected && syncError) {
+                                                TextButton(onClick = onRefresh) { Text("Retry") }
+                                            }
+                                        }
                                     }
                                 }
                             }
