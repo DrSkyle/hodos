@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/web/**"
-      - "packages/**"
+      - "apps/web/android/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "apps/web/android/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -17,76 +20,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-
+          java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
           packages: "platform-tools"
-
-      - name: Install SDK packages
+      - name: Install Android SDK
         run: |
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
-
-      - name: Read app version
-        id: version
-        run: |
-          version=$(grep -oP 'versionName "\K[^"]+' apps/web/android/app/build.gradle)
-          echo "value=${version:-0.0.0}" >> "$GITHUB_OUTPUT"
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build web assets
-        run: pnpm --filter @hodos/web build
-
-      - name: Sync Capacitor
-        run: pnpm --filter @hodos/web exec cap sync android
-
-      - name: Build APK
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" > /dev/null
+      - name: Build native APK
         run: |
           cd apps/web/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Name the APK
-        run: |
-          cd apps/web/android/app/build/outputs/apk/debug
-          cp app-debug.apk "hodos-${{ steps.version.outputs.value }}.apk"
-          ls -la
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+          ./gradlew :app:assembleDebug --no-daemon
+      - name: Verify APK
+        run: test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
         with:
-          name: hodos-${{ steps.version.outputs.value }}
-          path: apps/web/android/app/build/outputs/apk/debug/hodos-${{ steps.version.outputs.value }}.apk
+          name: hodos-android
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-
-      - name: Publish release
+      - name: Publish APK only on main
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.value }}
-          name: Hodos ${{ steps.version.outputs.value }}
+          tag_name: v1.1.0
+          name: Hodos 1.1.0
           body: |
-            The Android build of Hodos, from the latest `main`.
-
-            **Install:** download `hodos-${{ steps.version.outputs.value }}.apk`, open it from your
-            file manager, and allow installation when prompted.
-
-            **First run:** open the app, go to *Drive*, and switch on *Always mapping*.
-            Hodos will then start and stop itself when you travel. For that it needs
-            location set to *Allow all the time*, and battery optimisation off for the app.
-
-            You never file a report. Drive, and the map fills in.
-          files: apps/web/android/app/build/outputs/apk/debug/hodos-${{ steps.version.outputs.value }}.apk
-          prerelease: false
+            Native Android interface with MapLibre and Jetpack Compose.
+            Enable location permissions for automatic road mapping.
+            This is a debug-signed APK for testing. Keep the same application
+            ID; existing installations signed with a different key cannot
+            upgrade directly.
+          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
