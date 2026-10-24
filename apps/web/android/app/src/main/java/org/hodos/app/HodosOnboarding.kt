@@ -16,6 +16,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,14 +71,14 @@ fun HodosOnboarding(
                         .padding(horizontal = 26.dp, vertical = 20.dp)
                 ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(R.drawable.hodos_launcher),
-                        contentDescription = "Hodos logo",
-                        modifier = Modifier.size(44.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text("Hodos", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.7).sp, color = Ink)
+                    Surface(shape = RoundedCornerShape(15.dp), color = Forest) {
+                        Image(
+                            painter = painterResource(R.drawable.hodos_wordmark),
+                            contentDescription = "Hodos · Safer roads, brighter paths",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.width(178.dp).height(56.dp).padding(horizontal = 10.dp, vertical = 9.dp)
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     if (step < pages.lastIndex) {
                         TextButton(onClick = onFinish) { Text("Skip", color = Muted) }
@@ -162,60 +163,38 @@ fun HodosOnboarding(
 
 @Composable
 private fun OnboardingArtwork(step: Int) {
-    Box(Modifier.fillMaxWidth().height(242.dp), contentAlignment = Alignment.Center) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(232.dp),
-            shape = RoundedCornerShape(32.dp),
-            color = Color(0xFFE5EFE8)
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                Box(Modifier.align(Alignment.TopEnd).offset(x = 30.dp, y = (-45).dp)
-                    .size(180.dp).background(Color(0xFFCEE3D6), CircleShape))
-                Box(Modifier.align(Alignment.BottomStart).offset(x = (-35).dp, y = 65.dp)
-                    .size(190.dp).background(Color(0xFFD5E8DA), CircleShape))
-
-                Column(
-                    Modifier.align(Alignment.Center).padding(horizontal = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Surface(color = Forest, shape = RoundedCornerShape(23.dp)) {
-                        Icon(
-                            when (step) {
-                                0 -> Icons.Outlined.Map
-                                1 -> Icons.Outlined.DirectionsCar
-                                else -> Icons.Outlined.MyLocation
-                            },
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.padding(22.dp).size(58.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(17.dp))
-                    Surface(color = Color.White, shape = RoundedCornerShape(15.dp),
-                        shadowElevation = 2.dp) {
-                        Row(
-                            Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                if (step == 0) Icons.Outlined.WarningAmber
-                                else Icons.Outlined.CheckCircle,
-                                contentDescription = null, tint = Forest,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(9.dp))
-                            Text(
-                                when (step) {
-                                    0 -> "Road hazards on the map"
-                                    1 -> "Real journeys, real observations"
-                                    else -> "You decide when to contribute"
-                                },
-                                fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                color = Ink, textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
+    // Brand artwork supplied by the creator, not a placeholder Material icon.
+    Surface(
+        shape = RoundedCornerShape(32.dp),
+        color = Color(0xFFE5EFE8),
+        modifier = Modifier.fillMaxWidth().height(255.dp)
+    ) {
+        Box {
+            Image(
+                painter = painterResource(
+                    if (step == 1) R.drawable.hodos_icon_round
+                    else R.drawable.hodos_icon_square
+                ),
+                contentDescription = "Forest, mountains and the winding Hodos road",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(13.dp),
+                color = Color(0xEC133D31),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Text(
+                    when(step) {
+                        0 -> "Discover roads around you"
+                        1 -> "Make every journey count"
+                        else -> "Your location. Your choice."
+                    },
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp)
+                )
             }
         }
     }
