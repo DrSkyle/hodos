@@ -51,10 +51,21 @@ public final class MotionDetectorTest {
     return h;
   }
 
+  private static List<Long> fullCoverage() {
+    return Arrays.asList(START - 500L, START, START + 500L, START + 1500L,
+        START + 2000L, START + 2500L);
+  }
+
   private static List<MotionDetector.Hazard> clearPasses(
       List<MotionDetector.Fix> route, List<MotionDetector.Impact> impacts) {
+    return clearPasses(route, impacts, fullCoverage());
+  }
+
+  private static List<MotionDetector.Hazard> clearPasses(
+      List<MotionDetector.Fix> route, List<MotionDetector.Impact> impacts,
+      List<Long> coverage) {
     return MotionDetector.passedHazards(route,
-        Collections.singletonList(knownHazard()), impacts);
+        Collections.singletonList(knownHazard()), impacts, coverage);
   }
 
   @Test public void confirmedMovingPassProducesNegativeEvidence() {
@@ -96,6 +107,37 @@ public final class MotionDetectorTest {
     assertTrue(clearPasses(Arrays.asList(
         movingFix(0, -0.00007, 5, 9, true),
         movingFix(90_000, 0.00007, 5, 9, true)), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void missingMotionCoverageCannotClaimRoadWasRepaired() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(2000, 0.00007, 5, 9, true)),
+        Collections.emptyList(), Collections.emptyList()).isEmpty());
+  }
+
+  @Test public void motionSamplesOnlyAtStartAreNotEnough() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(2000, 0.00007, 5, 9, true)),
+        Collections.emptyList(),
+        Arrays.asList(START - 1000L, START - 500L, START, START + 50L)).isEmpty());
+  }
+
+  @Test public void motionSamplesOnlyAtEndAreNotEnough() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(2000, 0.00007, 5, 9, true)),
+        Collections.emptyList(),
+        Arrays.asList(START + 1700L, START + 2200L, START + 2700L)).isEmpty());
+  }
+
+  @Test public void closelyDuplicatedSensorTimestampsAreNotCoverage() {
+    assertTrue(clearPasses(Arrays.asList(
+        movingFix(0, -0.00007, 5, 9, true),
+        movingFix(2000, 0.00007, 5, 9, true)),
+        Collections.emptyList(),
+        Arrays.asList(START, START + 5L, START + 2000L, START + 2005L)).isEmpty());
   }
 
   @Test public void feltImpactOverridesOtherwiseClearPass() {

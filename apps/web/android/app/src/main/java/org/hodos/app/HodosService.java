@@ -79,6 +79,9 @@ public class HodosService extends Service implements SensorEventListener {
   private final List<MotionDetector.Sample> samples = new ArrayList<>();
   private final List<MotionDetector.Fix> fixes = new ArrayList<>();
   private final List<MotionDetector.Impact> impacts = new ArrayList<>();
+  // Coarse timestamps (not raw readings) preserve coverage evidence for long
+  // journeys even though the high-rate detector sample buffer is trimmed.
+  private final List<Long> motionCoverageTimes = new ArrayList<>();
 
   private ScheduledExecutorService scheduler;
   private ScheduledExecutorService outboxScheduler;
@@ -269,7 +272,7 @@ public class HodosService extends Service implements SensorEventListener {
         == PackageManager.PERMISSION_GRANTED;
   }
 
-  private void startTrip() {
+  private synchronized void startTrip() {
     if (!hasLocationPermission()) {
       updateNotification("Location permission needed");
       return;
@@ -279,6 +282,7 @@ public class HodosService extends Service implements SensorEventListener {
     getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", true).apply();
     tripStartedAt = System.currentTimeMillis();
     synchronized (samples) { samples.clear(); }
+    synchronized (motionCoverageTimes) { motionCoverageTimes.clear(); }
     synchronized (fixes) { fixes.clear(); }
     synchronized (impacts) { impacts.clear(); }
     updateNotification("Mapping your route");
@@ -366,7 +370,7 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
-  private void endTrip() {
+  private synchronized void endTrip() {
     if (!sampling) {
       return;
     }
@@ -384,10 +388,12 @@ public class HodosService extends Service implements SensorEventListener {
 
     List<MotionDetector.Impact> finished;
     List<MotionDetector.Fix> route;
-    int motionSamples;
+    List<Long> coverage;
     synchronized (impacts) { finished = new ArrayList<>(impacts); }
     synchronized (fixes) { route = new ArrayList<>(fixes); }
-    synchronized (samples) { motionSamples = samples.size(); }
+    synchronized (motionCoverageTimes) {
+      coverage = new ArrayList<>(motionCoverageTimes);
+    }
     // Persist the evidence BEFORE returning to Android or stopping the
     // foreground service. Previously, the just-finished trip only reached
     // SQLite on a detached thread, so Android could kill the process first.
@@ -399,7 +405,7 @@ public class HodosService extends Service implements SensorEventListener {
     updateNotification("Waiting for a journey");
     // Network I/O remains off the service/main thread. Stored impacts are
     // safe to retry using their stable SQLite row IDs.
-    new Thread(() -> upload(finished, route, device, trip, motionSamples),
+    new Thread(() -> upload(finished, route, device, trip, coverage),
         "hodos-trip-upload").start();
   }
 
@@ -438,10 +444,25 @@ public class HodosService extends Service implements SensorEventListener {
     if (!sampling) {
       return;
     }
+    long t = System.currentTimeMillis();
     synchronized (samples) {
       samples.add(new MotionDetector.Sample(
-          System.currentTimeMillis(), event.values[0], event.values[1], event.values[2]));
+          t, event.values[0], event.values[1], event.values[2]));
       if (samples.size() > 6000) samples.subList(0, 3000).clear();
+    }
+    synchronized (motionCoverageTimes) {
+      int last = motionCoverageTimes.size() - 1;
+      // A wall-clock change invalidates assumptions about ordering.
+      if (last >= 0 && t < motionCoverageTimes.get(last)) {
+        motionCoverageTimes.clear();
+        last = -1;
+      }
+      if (last < 0 || t - motionCoverageTimes.get(last) >= 500) {
+        motionCoverageTimes.add(t);
+        if (motionCoverageTimes.size() > 25000) {
+          motionCoverageTimes.subList(0, 10000).clear();
+        }
+      }
     }
   }
 
@@ -462,7 +483,7 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
-                      String device, String trip, int motionSamples) {
+                      String device, String trip, List<Long> coverage) {
     // Observed impacts are ALREADY in the durable outbox. This worker must
     // never enqueue them twice. Its only responsibilities are local summary,
     // optional clear-road evidence and best-effort network synchronization.
@@ -483,11 +504,12 @@ public class HodosService extends Service implements SensorEventListener {
     recordTrip(finished.size(), hazards.size(), confirmed, distanceMetres(route));
     updateNotification("Waiting for a journey");
 
-    // A location-only trip cannot prove a smooth road. Require enough real
-    // accelerometer coverage before making any negative claims.
-    if (motionSamples >= 100) {
+    // No negative road evidence without measured motion at BOTH positions
+    // of the crossing. Keeping this within the worker avoids network on main.
+    if (coverage.size() >= 4 && route.size() >= 2) {
       List<MotionDetector.Hazard> known = fetchPublishedHazards();
-      List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(route, known, finished);
+      List<MotionDetector.Hazard> cleared =
+          MotionDetector.passedHazards(route, known, finished, coverage);
       for (MotionDetector.Hazard hazard : cleared) {
         postPass(device, trip, hazard);
       }

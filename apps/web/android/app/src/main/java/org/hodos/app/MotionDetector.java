@@ -553,6 +553,25 @@ public final class MotionDetector {
   private static final double PASS_MIN_DISPLACEMENT_M = 4.0;
   private static final long PASS_MIN_INTERVAL_MS = 500;
   private static final long PASS_MAX_INTERVAL_MS = 20000;
+  private static final long PASS_SENSOR_WINDOW_MS = 1500;
+  private static final long PASS_MIN_SENSOR_SPAN_MS = 400;
+
+  /** Requires actual on-device motion samples near BOTH passage fixes. */
+  private static boolean sensorCoveredAt(List<Long> times, long at) {
+    if (times == null || times.isEmpty() || at <= 0) return false;
+    long from = at - PASS_SENSOR_WINDOW_MS;
+    long to = at + PASS_SENSOR_WINDOW_MS;
+    int start = Collections.binarySearch(times, from);
+    if (start < 0) start = -start - 1;
+    long first = -1;
+    for (int i = start; i < times.size(); i++) {
+      long observed = times.get(i);
+      if (observed > to) break;
+      if (first < 0) first = observed;
+      else if (observed - first >= PASS_MIN_SENSOR_SPAN_MS) return true;
+    }
+    return false;
+  }
 
   private static boolean reliableMovingFix(Fix fix) {
     return fix != null && fix.t > 0 && fix.hasSpeed
@@ -567,11 +586,12 @@ public final class MotionDetector {
   /**
    * A single GPS point beside a hazard is NOT evidence of a clear road: the
    * phone might be parked, GPS might drift, or the sensor may have stopped.
-   * Require two distinct, accurate, moving fixes close to the hazard before
-   * reporting a clear passage. When in doubt, preserve the hazard.
+   * Require two distinct, accurate, moving fixes close to the hazard AND
+   * accelerometer coverage at both positions. When in doubt, preserve it.
    */
   public static List<Hazard> passedHazards(
-      List<Fix> fixes, List<Hazard> known, List<Impact> impacts) {
+      List<Fix> fixes, List<Hazard> known, List<Impact> impacts,
+      List<Long> motionTimes) {
     List<Hazard> passed = new ArrayList<>();
     for (Hazard hazard : known) {
       if (hazard == null || !Double.isFinite(hazard.lat) || !Double.isFinite(hazard.lng)
@@ -589,7 +609,9 @@ public final class MotionDetector {
           long elapsed = fix.t - previous.t;
           if (elapsed >= PASS_MIN_INTERVAL_MS && elapsed <= PASS_MAX_INTERVAL_MS
               && haversineMeters(previous.lat, previous.lng, fix.lat, fix.lng)
-                  >= PASS_MIN_DISPLACEMENT_M) {
+                  >= PASS_MIN_DISPLACEMENT_M
+              && sensorCoveredAt(motionTimes, previous.t)
+              && sensorCoveredAt(motionTimes, fix.t)) {
             travelled = true;
             break;
           }
