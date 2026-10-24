@@ -1,6 +1,9 @@
 package org.hodos.app
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.content.pm.PackageManager
 import android.location.Location
 import android.text.format.DateFormat
@@ -76,13 +79,25 @@ fun HodosApp(
     val scope = rememberCoroutineScope()
     val sheetState = rememberBottomSheetScaffoldState()
     var locateRequest by remember { mutableIntStateOf(0) }
+    var locationIssue by remember { mutableStateOf<LocationIssue?>(null) }
+    var locating by remember { mutableStateOf(false) }
+    val locationSettingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        locationIssue = null
+        locating = true
+        locateRequest++
+    }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.values.any { it }) {
+            locationIssue = null
+            locating = true
             locateRequest++
         } else {
-            scope.launch { snackbar.showSnackbar("Location access is off. Enable it to center the map.") }
+            locating = false
+            locationIssue = LocationIssue.Permission
         }
     }
 
@@ -236,9 +251,14 @@ fun HodosApp(
                                 hazards = visibleHazards,
                                 locateRequest = locateRequest,
                                 onSelect = { selected = it },
-                                onLocated = { lastKnownLocation = it },
-                                onLocationError = { message ->
-                                    scope.launch { snackbar.showSnackbar(message) }
+                                onLocated = {
+                                    lastKnownLocation = it
+                                    locating = false
+                                    locationIssue = null
+                                },
+                                onLocationError = { issue ->
+                                    locating = false
+                                    locationIssue = issue
                                 }
                             )
                             Column(
@@ -306,6 +326,8 @@ fun HodosApp(
                                         context, Manifest.permission.ACCESS_COARSE_LOCATION
                                     ) == PackageManager.PERMISSION_GRANTED
                                     if (fine || coarse) {
+                                        locating = true
+                                        locationIssue = null
                                         locateRequest++
                                     } else {
                                         locationPermissionLauncher.launch(
@@ -322,7 +344,12 @@ fun HodosApp(
                                 modifier = Modifier.align(Alignment.BottomEnd)
                                     .padding(end = 18.dp, bottom = 146.dp).size(52.dp)
                             ) {
-                                Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
+                                if (locating) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(22.dp),
+                                        color = Forest, strokeWidth = 2.5.dp
+                                    )
+                                } else Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
                             }
                         }
                     }
@@ -337,6 +364,54 @@ fun HodosApp(
                     Screen.YOU -> YouScreen(trips, hazards.size)
                 }
             }
+        }
+
+        locationIssue?.let { issue ->
+            val title = when (issue) {
+                LocationIssue.Permission -> "Allow location access"
+                LocationIssue.Disabled -> "Turn on device location"
+                LocationIssue.Timeout -> "Location not available yet"
+            }
+            val description = when (issue) {
+                LocationIssue.Permission ->
+                    "Hodos needs location permission to center the map. Approximate location is enough for browsing."
+                LocationIssue.Disabled ->
+                    "Your phone's Location switch is off. Turn it on in Android settings, then return to Hodos."
+                LocationIssue.Timeout ->
+                    "Your phone couldn't provide a fresh position. Check Wi-Fi or mobile network location, or try again near a window."
+            }
+            AlertDialog(
+                onDismissRequest = { locationIssue = null },
+                title = { Text(title, fontWeight = FontWeight.SemiBold) },
+                text = { Text(description, color = Muted) },
+                confirmButton = {
+                    Button(onClick = {
+                        locationIssue = null
+                        when (issue) {
+                            LocationIssue.Permission -> {
+                                locationSettingsLauncher.launch(
+                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}"))
+                                )
+                            }
+                            LocationIssue.Disabled -> {
+                                locationSettingsLauncher.launch(
+                                    Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                )
+                            }
+                            LocationIssue.Timeout -> {
+                                locating = true
+                                locateRequest++
+                            }
+                        }
+                    }) {
+                        Text(if (issue == LocationIssue.Timeout) "Try again" else "Open settings")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { locationIssue = null }) { Text("Not now") }
+                }
+            )
         }
 
         selected?.let { hazard ->
