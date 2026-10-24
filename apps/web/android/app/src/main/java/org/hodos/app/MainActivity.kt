@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         if (hasForegroundPermissions()) continueEnabling()
-        else Toast.makeText(this, "Motion and location are needed to map a road", Toast.LENGTH_LONG).show()
+        else Toast.makeText(this, "Automatic mapping needs precise location and motion permission. The map works with approximate location.", Toast.LENGTH_LONG).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,7 +70,10 @@ class MainActivity : ComponentActivity() {
 
     private fun continueEnabling() {
         if (!hasForegroundPermissions()) {
-            val needed = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            val needed = mutableListOf(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
             if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
             if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
             permissions.launch(needed.toTypedArray())

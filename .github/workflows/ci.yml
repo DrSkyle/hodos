@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/android-first-native-experience]
+    branches: [main, feat/android-first-native-experience, fix/native-location-permissions]
   pull_request:
 
 concurrency:
