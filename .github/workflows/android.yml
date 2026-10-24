@@ -38,6 +38,12 @@ jobs:
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
 
+      - name: Read app version
+        id: version
+        run: |
+          version=$(grep -oP 'versionName "\K[^"]+' apps/web/android/app/build.gradle)
+          echo "value=${version:-0.0.0}" >> "$GITHUB_OUTPUT"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -47,28 +53,40 @@ jobs:
       - name: Sync Capacitor
         run: pnpm --filter @hodos/web exec cap sync android
 
-      - name: Build debug APK
+      - name: Build APK
         run: |
           cd apps/web/android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Name the APK
+        run: |
+          cd apps/web/android/app/build/outputs/apk/debug
+          cp app-debug.apk "hodos-${{ steps.version.outputs.value }}.apk"
+          ls -la
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hodos-debug-apk
-          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          name: hodos-${{ steps.version.outputs.value }}
+          path: apps/web/android/app/build/outputs/apk/debug/hodos-${{ steps.version.outputs.value }}.apk
+          if-no-files-found: error
 
-      - name: Publish APK release
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-latest
-          name: Hodos — latest APK
+          tag_name: v${{ steps.version.outputs.value }}
+          name: Hodos ${{ steps.version.outputs.value }}
           body: |
-            Installable Android build of Hodos, produced from the latest `main`.
+            The Android build of Hodos, from the latest `main`.
 
-            Download `app-debug.apk`, allow installation from your browser's file
-            manager, and open it. Hodos asks for motion and location access when you
-            start a trip.
-          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
-          prerelease: true
+            **Install:** download `hodos-${{ steps.version.outputs.value }}.apk`, open it from your
+            file manager, and allow installation when prompted.
+
+            **First run:** open the app, go to *Drive*, and switch on *Always mapping*.
+            Hodos will then start and stop itself when you travel. For that it needs
+            location set to *Allow all the time*, and battery optimisation off for the app.
+
+            You never file a report. Drive, and the map fills in.
+          files: apps/web/android/app/build/outputs/apk/debug/hodos-${{ steps.version.outputs.value }}.apk
+          prerelease: false

@@ -113,3 +113,32 @@ export async function runAggregation(): Promise<void> {
     /* the hourly schedule will catch up */
   }
 }
+
+export interface Sponsor {
+  name: string;
+  line: string;
+  url: string;
+}
+
+/** The sponsored slot. Server-managed, public read, never personalised. */
+export async function listSponsors(): Promise<Sponsor[]> {
+  try {
+    const res = await fetch(`${tablesUrl("sponsors")}?limit=20`, { headers: headers() });
+    if (!res.ok) {
+      return [];
+    }
+    const body = (await res.json()) as {
+      rows?: Array<{ name?: string; line?: string; url?: string; active?: boolean }>;
+    };
+    return (body.rows ?? [])
+      .filter((row) => row.active !== false)
+      .map((row) => ({
+        name: row.name ?? "",
+        line: row.line ?? "",
+        url: row.url ?? "",
+      }))
+      .filter((sponsor) => sponsor.name !== "");
+  } catch {
+    return [];
+  }
+}

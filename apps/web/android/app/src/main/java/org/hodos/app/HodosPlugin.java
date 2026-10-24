@@ -100,6 +100,13 @@ public class HodosPlugin extends Plugin {
     Context context = getContext();
     Intent intent = new Intent(context, HodosService.class);
     intent.setAction(action);
+    if (HodosService.ACTION_DISABLE.equals(action)) {
+      // Never route a stop through startForegroundService: the platform would
+      // require a notification to be posted before the service is allowed to
+      // stop, which races the stop and can crash.
+      context.startService(intent);
+      return;
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       context.startForegroundService(intent);
     } else {

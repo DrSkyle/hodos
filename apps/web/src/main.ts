@@ -4,7 +4,7 @@ import { deviceId, newTripId } from "./device";
 import { HazardMap, severityLabel } from "./map";
 import { CaptureSession, type SessionSnapshot } from "./session";
 import { requestMotionAccess } from "./sensors";
-import { appendEvent, listHazards, runAggregation, type HazardRecord } from "./backend";
+import { appendEvent, listHazards, listSponsors, runAggregation, type HazardRecord, type Sponsor } from "./backend";
 import { describeArea } from "./places";
 import { formatDistance, loadMe, mergeMe, relativeTime, saveMe, spanDays, tally } from "./me";
 import { establishSession, loadProfile, saveProfile } from "./account";
@@ -32,6 +32,21 @@ function need<T extends Element>(selector: string): T {
   return element;
 }
 
+function reportRuntimeError(message: string): void {
+  let banner = document.querySelector<HTMLElement>("#runtime-error");
+  if (banner === null) {
+    banner = document.createElement("div");
+    banner.id = "runtime-error";
+    banner.className = "runtime-error";
+    document.body.appendChild(banner);
+  }
+  banner.textContent = `Something went wrong: ${message}`;
+  banner.hidden = false;
+}
+
+window.addEventListener("error", (event) => reportRuntimeError(event.message));
+window.addEventListener("unhandledrejection", (event) => reportRuntimeError(String(event.reason)));
+
 const app = need<HTMLDivElement>("#app");
 
 app.innerHTML = `
@@ -56,9 +71,9 @@ app.innerHTML = `
       <div class="map-wrap">
         <div id="map" class="map"></div>
         <div id="map-empty" class="empty-card" hidden>
-          <p class="eyebrow">Nothing confirmed here yet</p>
-          <h2>Be the first on your street</h2>
-          <p>Hodos wants three passes from two phones before it puts a hazard on the map. Take the first one.</p>
+          <p class="eyebrow">Your street</p>
+          <h2>Nothing mapped here yet</h2>
+          <p>Take a drive and Hodos starts filling this in. It only marks a hazard once a few phones have felt the same thing.</p>
           <button class="primary" data-view="drive">Start mapping</button>
         </div>
       </div>
@@ -71,14 +86,15 @@ app.innerHTML = `
           <button id="locate" class="ghost">Find me</button>
           <button id="report" class="ghost">Road report</button>
         </div>
+        <aside id="sponsor" class="sponsor" hidden></aside>
         <ul id="hazard-list" class="list"></ul>
       </aside>
     </section>
 
     <section data-panel="drive" class="panel">
       <div class="drive">
-        <p class="eyebrow">Recording</p>
-        <h2 id="drive-title">Map a route</h2>
+        <p class="eyebrow">Your drive</p>
+        <h2 id="drive-title">Map a street</h2>
         <div id="auto-card" class="auto-card" hidden>
           <div class="auto-head">
             <div>
@@ -93,9 +109,8 @@ app.innerHTML = `
           <p id="auto-copy" class="sub"></p>
         </div>
         <p class="lede">
-          Or map a route right now. A browser cannot sense in the background, so a manual
-          trip needs this screen open &mdash; automatic mode above is the one that just
-          happens on its own. Either way you never file a report.
+          Start a trip and keep this screen on while you travel. Hodos listens to the road
+          and marks what it finds. You never file a report.
         </p>
         <button id="record" class="record">Start trip</button>
         <div class="stats big" id="drive-stats"></div>
@@ -200,6 +215,36 @@ app.innerHTML = `
     </section>
   </main>
 
+  <nav class="mobile-nav" aria-label="Sections">
+    <button data-view="map" class="mnav is-active">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+        <circle cx="12" cy="10" r="2.4" />
+      </svg>
+      <span>Map</span>
+    </button>
+    <button data-view="drive" class="mnav">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 16l1.4-5.2A2 2 0 0 1 9.3 9.3h5.4a2 2 0 0 1 1.9 1.5L18 16" />
+        <path d="M4.5 16h15v3.5h-3V18H7.5v1.5h-3z" />
+      </svg>
+      <span>Drive</span>
+    </button>
+    <button data-view="data" class="mnav">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5.5 19v-7M12 19V5.5M18.5 19v-4.5" />
+      </svg>
+      <span>Data</span>
+    </button>
+    <button data-view="you" class="mnav">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8.4" r="3.2" />
+        <path d="M5.5 19.6c0-3.3 2.9-5.6 6.5-5.6s6.5 2.3 6.5 5.6" />
+      </svg>
+      <span>You</span>
+    </button>
+  </nav>
+
   <div id="scrim" class="scrim" hidden></div>
   <article id="detail" class="detail" hidden></article>
 `;
@@ -235,6 +280,7 @@ const dataSummary = need<HTMLElement>("#data-summary");
 const dataMeters = need<HTMLElement>("#data-meters");
 const dataList = need<HTMLElement>("#data-records");
 const dataEmpty = need<HTMLElement>("#data-empty");
+const sponsorSlot = need<HTMLElement>("#sponsor");
 const meterType = need<HTMLElement>("#meter-type");
 const meterStatus = need<HTMLElement>("#meter-status");
 const barOpen = need<HTMLElement>("#bar-open");
@@ -253,7 +299,7 @@ let lastSnapshot: SessionSnapshot | null = null;
 let currentRowId = "";
 
 function switchView(view: string): void {
-  for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
+  for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab, .mnav")) {
     tab.classList.toggle("is-active", tab.dataset.view === view);
   }
   for (const panel of document.querySelectorAll<HTMLElement>("[data-panel]")) {
@@ -360,6 +406,66 @@ hazardList.addEventListener("click", (event) => {
     openDetail(record);
   }
 });
+
+const SPONSOR_KEY = "hodos.sponsor.dismissed";
+let sponsors: Sponsor[] = [];
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) =>
+    character === "&"
+      ? "&amp;"
+      : character === "<"
+        ? "&lt;"
+        : character === ">"
+          ? "&gt;"
+          : character === '"'
+            ? "&quot;"
+            : "&#39;",
+  );
+}
+
+function renderSponsor(): void {
+  const sponsor = sponsors[0];
+  let dismissed = false;
+  try {
+    dismissed = localStorage.getItem(SPONSOR_KEY) === "1";
+  } catch {
+    dismissed = false;
+  }
+  if (sponsor === undefined || dismissed) {
+    sponsorSlot.hidden = true;
+    return;
+  }
+  sponsorSlot.hidden = false;
+  sponsorSlot.innerHTML = `
+    <span class="sponsor-tag">Sponsored</span>
+    <button class="sponsor-close" data-sponsor-dismiss aria-label="Hide">&#10005;</button>
+    <strong>${escapeHtml(sponsor.name)}</strong>
+    ${sponsor.line === "" ? "" : `<span>${escapeHtml(sponsor.line)}</span>`}
+    ${
+      sponsor.url === ""
+        ? ""
+        : `<a class="sponsor-link" href="${escapeHtml(sponsor.url)}" target="_blank" rel="noopener noreferrer">Visit</a>`
+    }
+  `;
+}
+
+sponsorSlot.addEventListener("click", (event) => {
+  if ((event.target as HTMLElement).closest("[data-sponsor-dismiss]") === null) {
+    return;
+  }
+  try {
+    localStorage.setItem(SPONSOR_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+  sponsorSlot.hidden = true;
+});
+
+async function loadSponsors(): Promise<void> {
+  sponsors = await listSponsors();
+  renderSponsor();
+}
 
 const DATA_COLUMNS = [
   "hazardId",
@@ -733,6 +839,10 @@ function renderDrive(snapshot: SessionSnapshot): void {
     stat(snapshot.speedKph === null ? "—" : Math.round(snapshot.speedKph), "km/h"),
     stat(formatDistance(snapshot.travelledM), "travelled"),
   ].join("");
+  if (snapshot.stalled) {
+    driveStatus.textContent =
+      "This phone is not reporting movement yet. Check motion and location access for Hodos.";
+  }
 }
 
 async function locate(): Promise<void> {
@@ -896,17 +1006,21 @@ async function renderAutomatic(): Promise<void> {
   const on = await automaticEnabled();
   autoToggle.checked = on;
   autoCopy.textContent = on
-    ? "On. It starts itself when you set off and stops when you park. Location must be set to \u201cAllow all the time\u201d, and battery optimisation should be off for Hodos."
-    : "Arm it once. After that Hodos starts and stops by itself when you drive \u2014 no tapping, no remembering.";
+    ? "On. It starts when you set off and stops when you park. Keep location on \u201cAllow all the time\u201d."
+    : "Turn this on once. After that it runs by itself whenever you drive.";
 }
 
 autoToggle.addEventListener("change", () => {
   const wanted = autoToggle.checked;
   autoToggle.disabled = true;
-  autoCopy.textContent = wanted ? "Arming..." : "Turning off...";
-  void setAutomatic(wanted).then((actual) => {
-    autoToggle.checked = actual;
+  autoCopy.textContent = wanted ? "Turning on..." : "Turning off...";
+  void setAutomatic(wanted).then((result) => {
+    autoToggle.checked = result.enabled;
     autoToggle.disabled = false;
+    if (result.error !== undefined) {
+      autoCopy.textContent = `Could not turn it on: ${result.error}`;
+      return;
+    }
     void renderAutomatic();
   });
 });
@@ -1000,6 +1114,7 @@ restoreGo.addEventListener("click", () => {
 renderMe();
 renderData();
 void refreshHazards();
+void loadSponsors();
 const initialView = location.hash.replace("#", "");
 if (["map", "drive", "data", "you"].includes(initialView)) {
   switchView(initialView);

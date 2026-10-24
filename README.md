@@ -8,7 +8,7 @@ sensors, works out where the potholes, speed bumps and rough patches are, and
 adds them to a shared map. Nobody files a report.
 
 - **Web app:** https://hodos.devilabs.dev
-- **Android app:** built by CI, attached to the [`apk-latest` release](../../releases)
+- **Android app:** built by CI, attached to the [latest release](../../releases/latest)
 - **Backend:** Appwrite (TablesDB), project `elpis`, database `hodos`
 
 ---
@@ -19,9 +19,6 @@ Most road-condition data is either surveyed by fleets (expensive) or collected
 by hand (biased — people report what is near home, never the arterial they
 drive past). Hodos sits in the middle: the sensors already exist, in everyone's
 pocket, and the detection is passive.
-
-The specific problem this addresses, and the evidence that it is real, is
-written up in [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
 
 ## How it works
 
@@ -94,15 +91,6 @@ observed, confidence, silent passes, repair reports — and exports the whole se
 as **CSV** or **JSON** (the JSON is self-describing). Field-by-field meanings and
 the privacy treatment of each one are in [`docs/DATA.md`](docs/DATA.md).
 
-## How it could earn
-
-The data is effectively free — a licence here is unenforceable — so the product
-is not the data. What is scarce is coverage, verification someone will stand
-behind, and the report a ward can act on. The strongest version is **repair
-verification**: the party paying for repairs gets evidence that the work happened
-and stayed done. Full reasoning, and the line not to cross, in
-[`docs/SUSTAINABILITY.md`](docs/SUSTAINABILITY.md).
-
 ## Repository layout
 
 ```
@@ -147,7 +135,7 @@ cd apps/web/android && ./gradlew assembleDebug
 ```
 
 CI does this automatically on every push to `main` and publishes the APK to the
-`apk-latest` release.
+latest release.
 
 ## Privacy
 

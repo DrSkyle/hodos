@@ -4,23 +4,38 @@
       <stop offset="0" stop-color="#16212e" />
       <stop offset="1" stop-color="#080b10" />
     </linearGradient>
-    <radialGradient id="find" cx="0.34" cy="0.26" r="0.85">
-      <stop offset="0" stop-color="#ffd77a" />
-      <stop offset="1" stop-color="#f2a01d" />
+    <linearGradient id="road" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#203145" />
+      <stop offset="1" stop-color="#131d29" />
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#2dd4bf" />
+      <stop offset="1" stop-color="#7fe9d8" />
+    </linearGradient>
+    <radialGradient id="find" cx="0.36" cy="0.28" r="0.8">
+      <stop offset="0" stop-color="#ffd27a" />
+      <stop offset="1" stop-color="#f08a0e" />
     </radialGradient>
   </defs>
 
-  <rect class="tile" width="512" height="512" rx="116" fill="url(#tile)" />
+  <rect class="tile" width="512" height="512" rx="118" fill="url(#tile)" />
 
   <g class="glyph">
-    <path d="M150 432 L238 80" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" fill="none" />
-    <path d="M362 432 L274 80" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" fill="none" />
+    <path d="M132 436 L246 88 L266 88 L380 436 Z" fill="url(#road)" />
 
-    <g stroke="#2dd4bf" stroke-width="10" stroke-linecap="round" fill="none">
-      <path d="M256 112 L256 138" />
-      <path d="M256 164 L256 190" />
-      <path d="M256 322 L256 348" />
-      <path d="M256 374 L256 400" />
+    <path
+      d="M117.75 431.33 L242.20 86.76 L249.80 89.25 L146.26 440.67 Z"
+      fill="url(#edge)"
+    />
+    <path
+      d="M394.25 431.33 L269.80 86.76 L262.20 89.25 L365.74 440.67 Z"
+      fill="url(#edge)"
+    />
+
+    <g stroke="#2dd4bf" stroke-linecap="round" fill="none">
+      <path d="M256 326 L256 368" stroke-width="18" />
+      <path d="M256 170 L256 198" stroke-width="12" />
+      <path d="M256 126 L256 144" stroke-width="7" />
     </g>
 
     <circle cx="256" cy="256" r="40" fill="url(#find)" />

@@ -12,6 +12,8 @@ export interface SessionSnapshot {
   travelledM: number;
   lastFix: GeoFix | null;
   error: string | null;
+  /** True when recording has begun but the phone has reported nothing yet. */
+  stalled: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ export class CaptureSession {
   private error: string | null = null;
   private travelledM = 0;
   private track: GeoFix[] = [];
+  private startedAt = 0;
 
   constructor(private readonly onUpdate: (snapshot: SessionSnapshot) => void) {}
 
@@ -41,6 +44,7 @@ export class CaptureSession {
     this.error = null;
     this.travelledM = 0;
     this.track = [];
+    this.startedAt = Date.now();
     this.recording = true;
     this.stopMotion = startMotion((sample) => this.samples.push(sample));
     this.stopGeo = startGeolocation(
@@ -127,6 +131,8 @@ export class CaptureSession {
       travelledM: this.travelledM,
       lastFix,
       error: this.error,
+      stalled:
+        this.recording && this.samples.length === 0 && Date.now() - this.startedAt > 4000,
     });
   }
 }

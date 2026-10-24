@@ -199,10 +199,14 @@ public class HodosService extends Service implements SensorEventListener {
     Intent intent = new Intent(context, HodosService.class);
     intent.setAction("org.hodos.app.ACTIVITY");
     intent.putExtra("activity", activityType);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      context.startForegroundService(intent);
-    } else {
+    try {
+      // The mapping service is already running in the foreground, so a plain
+      // startService is permitted from a background receiver. startForegroundService
+      // from a receiver is refused on Android 12+, which is what used to make this
+      // silently do nothing.
       context.startService(intent);
+    } catch (RuntimeException ignored) {
+      /* only the foreground can restart a service that has been stopped */
     }
   }
 
@@ -403,7 +407,6 @@ public class HodosService extends Service implements SensorEventListener {
       if (hazard.published) {
         confirmed++;
       }
-      mergeHazard(hazard);
     }
     recordTrip(finished.size(), hazards.size(), confirmed);
     updateNotification("Waiting for a journey");

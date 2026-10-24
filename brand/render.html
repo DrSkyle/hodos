@@ -21,7 +21,7 @@
       const size = Number(params.get("s") || 512);
       const mode = params.get("mode") || "tile";
 
-      const scale = { glyph: 0.66, splash: 0.5 }[mode] ?? 1;
+      const scale = { glyph: 0.58, splash: 0.44 }[mode] ?? 1;
 
       async function draw() {
         const source = await (await fetch("icon.svg")).text();
