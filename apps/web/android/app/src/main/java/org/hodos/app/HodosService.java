@@ -380,8 +380,18 @@ public class HodosService extends Service implements SensorEventListener {
     List<MotionDetector.Fix> route;
     synchronized (impacts) { finished = new ArrayList<>(impacts); }
     synchronized (fixes) { route = new ArrayList<>(fixes); }
+    // Persist the evidence BEFORE returning to Android or stopping the
+    // foreground service. Previously, the just-finished trip only reached
+    // SQLite on a detached thread, so Android could kill the process first.
+    final String device = deviceId();
+    final String trip = UUID.randomUUID().toString();
+    for (MotionDetector.Impact impact : finished) {
+      postEvent(device, trip, impact);
+    }
     updateNotification("Waiting for a journey");
-    new Thread(() -> upload(finished, route)).start();
+    // Network I/O remains off the service/main thread. Stored impacts are
+    // safe to retry using their stable SQLite row IDs.
+    new Thread(() -> upload(finished, route, device, trip), "hodos-trip-upload").start();
   }
 
   private void stopEverything() {
@@ -442,18 +452,11 @@ public class HodosService extends Service implements SensorEventListener {
     return id;
   }
 
-  private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route) {
-    // Even a smooth trip can supply valuable negative evidence for a hazard.
-    // Do not skip pass observations just because the motion detector found
-    // no new impacts on this particular journey.
-    String device = deviceId();
-    String trip = UUID.randomUUID().toString();
-    int logged = 0;
-    for (MotionDetector.Impact impact : finished) {
-      if (postEvent(device, trip, impact)) {
-        logged++;
-      }
-    }
+  private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
+                      String device, String trip) {
+    // Observed impacts are ALREADY in the durable outbox. This worker must
+    // never enqueue them twice. Its only responsibilities are local summary,
+    // optional clear-road evidence and best-effort network synchronization.
     List<MotionDetector.Observed> observed = new ArrayList<>();
     for (MotionDetector.Impact impact : finished) {
       MotionDetector.Observed item = new MotionDetector.Observed();
