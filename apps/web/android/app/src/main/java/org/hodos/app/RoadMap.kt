@@ -284,19 +284,22 @@ fun RoadMap(
                         }
                         listener = callback
                         try {
-                            for (provider in listOf(
-                                LocationManager.NETWORK_PROVIDER,
-                                LocationManager.GPS_PROVIDER
-                            )) {
-                                if (manager.isProviderEnabled(provider)) {
-                                    manager.requestSingleUpdate(
-                                        provider, callback, Looper.getMainLooper()
-                                    )
-                                }
+                            // Android may restrict GPS provider access to precise
+                            // location while still allowing network location.
+                            // A SecurityException from GPS must not cancel the
+                            // network or fused requests for approximate access.
+                            val providers = if (fine)
+                                listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
+                            else listOf(LocationManager.NETWORK_PROVIDER)
+                            for (provider in providers) {
+                                try {
+                                    if (manager.isProviderEnabled(provider)) {
+                                        manager.requestSingleUpdate(
+                                            provider, callback, Looper.getMainLooper()
+                                        )
+                                    }
+                                } catch (_: SecurityException) { /* try other providers */ }
                             }
-                        } catch (_: SecurityException) {
-                            finished = true
-                            latestOnLocationError(LocationIssue.Permission)
                         } catch (_: Exception) { /* Fused provider is attempted below */ }
 
                         if (!finished) {
