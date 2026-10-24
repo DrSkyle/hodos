@@ -365,24 +365,24 @@ private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Bool
             Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
         }
         item {
-            Surface(shape = RoundedCornerShape(25.dp), color = Ink) {
+            Surface(shape = RoundedCornerShape(25.dp), color = Mist) {
                 Column(Modifier.padding(22.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.DirectionsCar, null, tint = Color.White, modifier = Modifier.size(30.dp))
+                        Icon(Icons.Outlined.DirectionsCar, null, tint = Forest, modifier = Modifier.size(30.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(if (armed) "Mapping is on" else "Ready when you are", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text(if (armed) "Watching for your next journey" else "Enable once to map automatically", color = Color(0xFFB5CAC0), fontSize = 12.sp)
+                            Text(if (armed) "Detection is on" else "Automatic mapping is off", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Text(if (armed) "Detecting when a journey starts" else "Enable it to detect road hazards", color = Muted, fontSize = 12.sp)
                         }
                         Switch(
                             checked = armed, onCheckedChange = onToggle,
-                            colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF72CCAA))
+                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
                         )
                     }
                     Spacer(Modifier.height(18.dp))
-                    HorizontalDivider(color = Color(0xFF40544C))
+                    HorizontalDivider(color = Color(0xFFD0E2D7))
                     Spacer(Modifier.height(14.dp))
-                    Text("Runs in the background with your permission. Your raw sensor readings stay on this phone.", color = Color(0xFFB5CAC0), fontSize = 13.sp)
+                    Text("Your motion data stays on this phone. A foreground notification shows when mapping is active.", color = Muted, fontSize = 13.sp)
                 }
             }
         }
