@@ -234,6 +234,12 @@ internal object OfflineMaps {
         // Every automatic entry point (new GPS fix, Wi-Fi reconnection,
         // toggling Auto on) must enforce the same location-quality gate.
         // A manually requested pack is allowed with approximate location.
+        if (!manual && !LocationFixPolicy.isFresh(
+                location.time, System.currentTimeMillis())) {
+            state = state.copy(status =
+                "Location is outdated · tap the map location button to refresh")
+            return
+        }
         if (!manual && !OfflineDownloadPolicy.safeForAutomaticDownload(
                 location.hasAccuracy(), location.accuracy)) {
             state = state.copy(status =
