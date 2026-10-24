@@ -416,6 +416,9 @@ public class HodosService extends Service implements SensorEventListener {
     for (MotionDetector.Hazard hazard : cleared) {
       postPass(device, trip, hazard);
     }
+    if (logged > 0 || !cleared.isEmpty()) {
+      triggerAggregation();
+    }
   }
 
   private List<MotionDetector.Hazard> fetchPublishedHazards() {
@@ -535,6 +538,29 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
+  /** Ask the server-side writer to recompute the map after a background trip. */
+  private void triggerAggregation() {
+    HttpURLConnection connection = null;
+    try {
+      connection = (HttpURLConnection)
+          new URL(ENDPOINT + "/functions/hodos-aggregate/executions").openConnection();
+      connection.setRequestMethod("POST");
+      connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
+      connection.setRequestProperty("Content-Type", "application/json");
+      connection.setConnectTimeout(10_000);
+      connection.setReadTimeout(15_000);
+      connection.setDoOutput(true);
+      try (OutputStream out = connection.getOutputStream()) {
+        out.write("{\"async\":true}".getBytes(StandardCharsets.UTF_8));
+      }
+      connection.getResponseCode();
+    } catch (Exception ignored) {
+      /* The scheduled aggregation will catch up if this request fails. */
+    } finally {
+      if (connection != null) connection.disconnect();
+    }
+  }
+
   private void mergeHazard(MotionDetector.Hazard hazard) {
     try {
       String rowId = rowIdFor(hazard.lat, hazard.lng);
@@ -584,8 +610,10 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   private String isoTime(long t) {
-    return new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
-        .format(new java.util.Date(t));
+    java.text.SimpleDateFormat utc =
+        new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+    utc.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+    return utc.format(new java.util.Date(t));
   }
 
   private HttpURLConnection open(String method, String path) {
