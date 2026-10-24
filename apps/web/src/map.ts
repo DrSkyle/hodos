@@ -50,32 +50,46 @@ function isFixed(): maplibregl.ExpressionSpecification {
   return ["==", ["get", "fixed"], true];
 }
 
+/**
+ * The hazard map. Rendering is best effort: a device without WebGL, or a browser
+ * that blocks it, must not take the rest of the app down with it, so a failed
+ * construction leaves this inert rather than thrown.
+ */
 export class HazardMap {
-  private readonly map: maplibregl.Map;
+  private map: maplibregl.Map | null = null;
   private ready = false;
   private pendingHazards: HazardRecord[] = [];
   private pendingImpacts: Impact[] = [];
   private userMarker?: maplibregl.Marker;
 
   constructor(container: HTMLElement, private readonly onSelect?: (record: HazardRecord) => void) {
-    this.map = new maplibregl.Map({
-      container,
-      style: CONFIG.map.styleUrl,
-      center: [CONFIG.map.defaultCenter.lng, CONFIG.map.defaultCenter.lat],
-      zoom: 12,
-      attributionControl: { compact: true },
-    });
-    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    this.map.on("load", () => {
-      this.installLayers();
-      this.ready = true;
-      this.flush();
-    });
+    try {
+      const map = new maplibregl.Map({
+        container,
+        style: CONFIG.map.styleUrl,
+        center: [CONFIG.map.defaultCenter.lng, CONFIG.map.defaultCenter.lat],
+        zoom: 12,
+        attributionControl: { compact: true },
+      });
+      this.map = map;
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+      map.on("load", () => {
+        this.installLayers();
+        this.ready = true;
+        this.flush();
+      });
+    } catch {
+      this.map = null;
+    }
   }
 
   private installLayers(): void {
-    this.map.addSource("hazards", { type: "geojson", data: hazardFeatureCollection([]) });
-    this.map.addLayer({
+    const map = this.map;
+    if (map === null) {
+      return;
+    }
+    map.addSource("hazards", { type: "geojson", data: hazardFeatureCollection([]) });
+    map.addLayer({
       id: "hazards-halo",
       type: "circle",
       source: "hazards",
@@ -85,7 +99,7 @@ export class HazardMap {
         "circle-opacity": ["case", isFixed(), 0.08, 0.18],
       },
     });
-    this.map.addLayer({
+    map.addLayer({
       id: "hazards-core",
       type: "circle",
       source: "hazards",
@@ -98,8 +112,8 @@ export class HazardMap {
       },
     });
 
-    this.map.addSource("trip", { type: "geojson", data: impactFeatureCollection([]) });
-    this.map.addLayer({
+    map.addSource("trip", { type: "geojson", data: impactFeatureCollection([]) });
+    map.addLayer({
       id: "trip-impacts",
       type: "circle",
       source: "trip",
@@ -111,7 +125,7 @@ export class HazardMap {
       },
     });
 
-    this.map.on("click", "hazards-core", (event) => {
+    map.on("click", "hazards-core", (event) => {
       const feature = event.features?.[0];
       if (!feature) {
         return;
@@ -135,18 +149,28 @@ export class HazardMap {
       };
       this.onSelect?.(record);
     });
-    this.map.on("mouseenter", "hazards-core", () => {
-      this.map.getCanvas().style.cursor = "pointer";
+    map.on("mouseenter", "hazards-core", () => {
+      const canvas = map.getCanvas();
+      if (canvas) {
+        canvas.style.cursor = "pointer";
+      }
     });
-    this.map.on("mouseleave", "hazards-core", () => {
-      this.map.getCanvas().style.cursor = "";
+    map.on("mouseleave", "hazards-core", () => {
+      const canvas = map.getCanvas();
+      if (canvas) {
+        canvas.style.cursor = "";
+      }
     });
   }
 
   private flush(): void {
-    const hazards = this.map.getSource("hazards") as maplibregl.GeoJSONSource | undefined;
+    const map = this.map;
+    if (map === null) {
+      return;
+    }
+    const hazards = map.getSource("hazards") as maplibregl.GeoJSONSource | undefined;
     hazards?.setData(hazardFeatureCollection(this.pendingHazards));
-    const trip = this.map.getSource("trip") as maplibregl.GeoJSONSource | undefined;
+    const trip = map.getSource("trip") as maplibregl.GeoJSONSource | undefined;
     trip?.setData(impactFeatureCollection(this.pendingImpacts));
   }
 
@@ -165,20 +189,28 @@ export class HazardMap {
   }
 
   setUserPosition(lat: number, lng: number): void {
-    if (this.userMarker === undefined) {
-      this.userMarker = new maplibregl.Marker({ color: "#38bdf8" }).setLngLat([lng, lat]);
-      this.userMarker.addTo(this.map);
-    } else {
-      this.userMarker.setLngLat([lng, lat]);
+    const map = this.map;
+    if (map === null) {
+      return;
+    }
+    try {
+      if (this.userMarker === undefined) {
+        this.userMarker = new maplibregl.Marker({ color: "#38bdf8" }).setLngLat([lng, lat]);
+        this.userMarker.addTo(map);
+      } else {
+        this.userMarker.setLngLat([lng, lat]);
+      }
+    } catch {
+      /* marker is decoration */
     }
   }
 
   focus(lat: number, lng: number, zoom = 16): void {
-    this.map.flyTo({ center: [lng, lat], zoom });
+    this.map?.flyTo({ center: [lng, lat], zoom });
   }
 
   centreOn(lat: number, lng: number): void {
-    this.map.setCenter([lng, lat]);
+    this.map?.setCenter([lng, lat]);
   }
 }
 
