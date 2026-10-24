@@ -229,14 +229,23 @@ function buildHazard(cluster, now, silentPasses, fixReports) {
 }
 
 async function listHazards() {
-  const url = `${rowsUrl("hazards")}?${encodeURIComponent("queries[]")}=${encodeURIComponent(
-    JSON.stringify({ method: "limit", values: [PAGE_SIZE] }),
-  )}`;
-  const res = await fetch(url, { headers: headers() });
-  if (!res.ok) {
-    throw new Error(`hazards read failed: ${res.status}`);
+  const rows = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const queries = [
+      { method: "limit", values: [PAGE_SIZE] },
+      { method: "offset", values: [offset] },
+    ];
+    const params = queries.map((q) =>
+      `queries[]=${encodeURIComponent(JSON.stringify(q))}`).join("&");
+    const res = await fetch(`${rowsUrl("hazards")}?${params}`, { headers: headers() });
+    if (!res.ok) {
+      throw new Error(`hazards read failed: ${res.status}`);
+    }
+    const page = (await res.json()).rows ?? [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+    if (offset >= 19500) throw new Error("Too many hazards for full recomputation");
   }
-  return (await res.json()).rows ?? [];
 }
 
 async function writeHazard(hazard, existingByRowId) {
