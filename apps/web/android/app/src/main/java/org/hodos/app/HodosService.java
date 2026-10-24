@@ -79,6 +79,8 @@ public class HodosService extends Service implements SensorEventListener {
   private final List<MotionDetector.Impact> impacts = new ArrayList<>();
 
   private ScheduledExecutorService scheduler;
+  private ScheduledExecutorService outboxScheduler;
+  private EventOutbox outbox;
   private volatile boolean sampling = false;
   private volatile long lastMovementAt = 0;
   private long tripStartedAt = 0;
@@ -89,6 +91,7 @@ public class HodosService extends Service implements SensorEventListener {
     sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
     locationClient = LocationServices.getFusedLocationProviderClient(this);
     createChannel();
+    outbox = new EventOutbox(this);
   }
 
   @Override
@@ -115,8 +118,16 @@ public class HodosService extends Service implements SensorEventListener {
 
     startForegroundCompat();
     registerActivityTransitions();
+    startOutboxRetry();
     lastMovementAt = System.currentTimeMillis();
     return START_STICKY;
+  }
+
+  @Override
+  public void onDestroy() {
+    endTrip();
+    stopEverything();
+    super.onDestroy();
   }
 
   @Override
@@ -345,6 +356,10 @@ public class HodosService extends Service implements SensorEventListener {
 
   private void stopEverything() {
     sampling = false;
+    if (outboxScheduler != null) {
+      outboxScheduler.shutdownNow();
+      outboxScheduler = null;
+    }
     if (scheduler != null) {
       scheduler.shutdownNow();
       scheduler = null;
@@ -431,7 +446,7 @@ public class HodosService extends Service implements SensorEventListener {
     for (MotionDetector.Hazard hazard : cleared) {
       postPass(device, trip, hazard);
     }
-    if (logged > 0 || !cleared.isEmpty()) {
+    if (flushQueuedEvents() > 0) {
       triggerAggregation();
     }
   }
@@ -499,10 +514,7 @@ public class HodosService extends Service implements SensorEventListener {
       data.put("mode", "vehicle");
       data.put("observation", "pass");
       data.put("hazardRef", hazard.id);
-      JSONObject body = new JSONObject();
-      body.put("rowId", "unique()");
-      body.put("data", data);
-      return send("POST", "tables/events/rows", body) < 400;
+      return outbox.enqueue(UUID.randomUUID().toString(), data.toString());
     } catch (Exception error) {
       return false;
     }
@@ -565,13 +577,42 @@ public class HodosService extends Service implements SensorEventListener {
       data.put("kind", impact.kind);
       data.put("confidence", impact.confidence);
       data.put("mode", impact.mode);
-      JSONObject body = new JSONObject();
-      body.put("rowId", "unique()");
-      body.put("data", data);
-      return send("POST", "tables/events/rows", body) < 400;
+      return outbox.enqueue(UUID.randomUUID().toString(), data.toString());
     } catch (Exception error) {
       return false;
     }
+  }
+
+  private void startOutboxRetry() {
+    if (outboxScheduler != null && !outboxScheduler.isShutdown()) return;
+    outboxScheduler = Executors.newSingleThreadScheduledExecutor();
+    outboxScheduler.scheduleWithFixedDelay(() -> {
+      if (flushQueuedEvents() > 0) triggerAggregation();
+    }, 0, 5, TimeUnit.MINUTES);
+  }
+
+  private synchronized int flushQueuedEvents() {
+    if (outbox == null) return 0;
+    int sent = 0;
+    try {
+      for (EventOutbox.Entry queued : outbox.pending(200)) {
+        JSONObject body = new JSONObject()
+            .put("rowId", queued.id)
+            .put("data", new JSONObject(queued.payload));
+        int response = send("POST", "tables/events/rows", body);
+        // 409 means a previous attempt succeeded but its response was lost.
+        if ((response >= 200 && response < 300) || response == 409) {
+          outbox.acknowledge(queued.id);
+          sent++;
+        } else {
+          // Preserve the oldest unsent event until connectivity returns.
+          break;
+        }
+      }
+    } catch (Exception ignored) {
+      // The durable queue remains intact; a subsequent retry resumes it.
+    }
+    return sent;
   }
 
   /** Ask the server-side writer to recompute the map after a background trip. */
