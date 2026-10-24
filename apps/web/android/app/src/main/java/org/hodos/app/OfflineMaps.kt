@@ -6,6 +6,11 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Network
+import android.net.NetworkRequest
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +28,6 @@ import org.maplibre.android.offline.OfflineRegionError
 import org.maplibre.android.offline.OfflineRegionStatus
 import org.maplibre.android.offline.OfflineTilePyramidRegionDefinition
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 import kotlin.math.cos
 
 data class OfflineMapState(
@@ -66,6 +70,7 @@ internal object OfflineMaps {
     private var creating = false
     private val pendingLoads = mutableListOf<() -> Unit>()
     private var current: OfflineRegion? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val regions = mutableListOf<OfflineRegion>()
 
     @Synchronized
@@ -96,11 +101,42 @@ internal object OfflineMaps {
             // A hard SDK limit for the two retained packs.
             manager.setOfflineMapboxTileCountLimit(LIMIT_TILES * KEEP_REGIONS)
             initialized = true
+            watchConnectivity()
             load()
         } catch (e: Exception) {
             Log.e(TAG, "Could not initialize offline maps", e)
             state = state.copy(status = "Offline map storage unavailable")
         }
+    }
+
+    private fun watchConnectivity() {
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return
+        val listener = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) = check()
+            override fun onLost(network: Network) = check()
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) = check()
+            private fun check() {
+                mainHandler.post {
+                    if (!initialized) return@post
+                    if (!wifiReady()) {
+                        current?.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                        if (state.downloading) {
+                            state = state.copy(downloading = false,
+                                status = "Paused · waiting for Wi-Fi")
+                        }
+                    } else if (state.autoEnabled && !state.downloading) {
+                        state.lastLocation?.let { saveNearby(it) }
+                    }
+                }
+            }
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 24) cm.registerDefaultNetworkCallback(listener)
+            else cm.registerNetworkCallback(
+                NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(), listener)
+        } catch (error: RuntimeException) { Log.w(TAG, "Network events unavailable", error) }
     }
 
     private fun wifiReady(): Boolean {
@@ -288,16 +324,16 @@ internal object OfflineMaps {
                     state = state.copy(downloading = false, status = "Paused · waiting for Wi-Fi")
                     return
                 }
+                if (status.isComplete) {
+                    region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                    state = state.copy(downloading = false, status = "Nearby map ready offline")
+                    return
+                }
                 if (status.completedTileCount >= LIMIT_TILES ||
                     status.completedResourceSize >= LIMIT_BYTES) {
                     region.setDownloadState(OfflineRegion.STATE_INACTIVE)
                     state = state.copy(downloading = false,
                         status = "Download paused at provider safety limit")
-                    return
-                }
-                if (status.isComplete) {
-                    region.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                    state = state.copy(downloading = false, status = "Nearby map ready offline")
                 }
             }
             override fun onError(error: OfflineRegionError) {
