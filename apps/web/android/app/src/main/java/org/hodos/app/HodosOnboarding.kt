@@ -78,7 +78,7 @@ fun HodosOnboarding(
                     Spacer(Modifier.width(12.dp))
                     Text("Hodos", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-0.7).sp, color = Ink)
-                    Spacer(Modifier.height(36.dp))
+                    Spacer(Modifier.weight(1f))
                     if (step < pages.lastIndex) {
                         TextButton(onClick = onFinish) { Text("Skip", color = Muted) }
                     }
@@ -95,7 +95,7 @@ fun HodosOnboarding(
                     fontWeight = FontWeight.Bold, letterSpacing = (-1.4).sp, color = Ink)
                 Spacer(Modifier.height(14.dp))
                 Text(page.description, fontSize = 16.sp, lineHeight = 25.sp, color = Muted)
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(34.dp))
 
                 if (step == pages.lastIndex) {
                     Surface(color = Color(0xFFE8F2EB), shape = RoundedCornerShape(17.dp)) {
