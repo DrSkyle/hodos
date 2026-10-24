@@ -1,5 +1,7 @@
 # Hodos
 
+> **Android beta notice (24 October 2026):** The `v1.1.4-beta.1` installer has a reported immediate-launch crash and missing launcher artwork. **Do not install this beta.** The next build is blocked until the original branding files are restored and Android emulator startup tests pass. A successful Gradle compile is not proof of device compatibility.
+
 **The road maps itself.**
 
 Hodos is an Android app that maps potential potholes, speed bumps and rough pavement from motion readings collected during everyday journeys.
@@ -19,7 +21,7 @@ Turn on automatic mapping, keep your phone with you and drive as you normally wo
 
 The Android app uses Kotlin, Jetpack Compose and MapLibre. The website is built with Vite. Appwrite stores road observations and generates the public hazard map.
 
-**Build the Android app** with JDK 17 and Android SDK 35:
+**Build the Android app** with JDK 17 and Android SDK 35. First upload the three **unmodified original** PNGs into `apps/web/public/`: `hodos-icon.png`, `hodos-round.png`, and `hodos-wordmark.png`. The build generates all Android icon densities and the onboarding/brand resources from these files. The build intentionally fails rather than packaging reduced or corrupt replacements.
 
 ```sh
 cd apps/web/android
