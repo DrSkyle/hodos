@@ -347,6 +347,10 @@ fun HodosApp(
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 34.dp)) {
                     Text(hazard.title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
+                    if (demoMode) {
+                        Text("DEMO · Sample road hazard", color = Forest, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                    }
                     Text(
                         (if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity") +
                             " · ${(hazard.confidence * 100).roundToInt()}/100 evidence score",
@@ -359,15 +363,23 @@ fun HodosApp(
                         DetailStat("${hazard.clearPasses}", "Clear passes", Modifier.weight(1f))
                     }
                     Spacer(Modifier.height(17.dp))
-                    Text("This location is based on independently recorded road observations. Your feedback helps check whether the hazard is still there.", color = Muted, fontSize = 13.sp)
+                    Text(if (demoMode) "This is a sample location. Explore the hazard details and practice reporting a repair without submitting real data." else "This location is based on independently recorded road observations. Your feedback helps check whether the hazard is still there.", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedButton(
                             onClick = {
                                 scope.launch {
-                                    val result = repo.sendObservation(hazard, repaired = false)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Thanks! Confirmation recorded." else "Could not send. Check your connection.")
-                                    if (result.isSuccess) { selected = null; onRefresh() }
+                                    if (demoMode) {
+                                        demoHazards = demoHazards.map {
+                                            if (it.id == hazard.id) it.copy(passes = it.passes + 1) else it
+                                        }
+                                        selected = null
+                                        snackbar.showSnackbar("Demo confirmation only — no report sent")
+                                    } else {
+                                        val result = repo.sendObservation(hazard, repaired = false)
+                                        snackbar.showSnackbar(if (result.isSuccess) "Thanks! Confirmation recorded." else "Could not send. Check your connection.")
+                                        if (result.isSuccess) { selected = null; onRefresh() }
+                                    }
                                 }
                             }, modifier = Modifier.weight(1f)
                         ) { Text("Still there") }
@@ -375,9 +387,17 @@ fun HodosApp(
                             enabled = !hazard.fixed,
                             onClick = {
                                 scope.launch {
-                                    val result = repo.sendObservation(hazard, repaired = true)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Repair report received." else "Could not send. Check your connection.")
-                                    if (result.isSuccess) { selected = null; onRefresh() }
+                                    if (demoMode) {
+                                        demoHazards = demoHazards.map {
+                                            if (it.id == hazard.id) it.copy(fixed = true, clearPasses = it.clearPasses + 1) else it
+                                        }
+                                        selected = null
+                                        snackbar.showSnackbar("Demo repair only — no report sent")
+                                    } else {
+                                        val result = repo.sendObservation(hazard, repaired = true)
+                                        snackbar.showSnackbar(if (result.isSuccess) "Repair report received." else "Could not send. Check your connection.")
+                                        if (result.isSuccess) { selected = null; onRefresh() }
+                                    }
                                 }
                             }, modifier = Modifier.weight(1f)
                         ) { Text("Mark fixed") }
