@@ -2,7 +2,7 @@ name: Deploy web
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/android-first-native-experience]
     paths:
       - "apps/web/**"
       - "packages/**"
@@ -30,4 +30,4 @@ jobs:
         with:
           apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name=hodos
+          command: pages deploy apps/web/dist --project-name=hodos --branch=${{ github.ref_name }}
