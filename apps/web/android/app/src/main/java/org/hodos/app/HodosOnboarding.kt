@@ -13,6 +13,8 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,10 +63,12 @@ fun HodosOnboarding(
         primary = Forest, onPrimary = Color.White, surface = Paper, onSurface = Ink
     )) {
         Surface(Modifier.fillMaxSize(), color = Paper) {
-            Column(
-                Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
-                    .padding(horizontal = 26.dp, vertical = 20.dp)
-            ) {
+            Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                Column(
+                    Modifier.fillMaxSize().padding(bottom = 97.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 26.dp, vertical = 20.dp)
+                ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
                         painter = painterResource(R.drawable.hodos_launcher),
@@ -74,13 +78,13 @@ fun HodosOnboarding(
                     Spacer(Modifier.width(12.dp))
                     Text("Hodos", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-0.7).sp, color = Ink)
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.height(36.dp))
                     if (step < pages.lastIndex) {
                         TextButton(onClick = onFinish) { Text("Skip", color = Muted) }
                     }
                 }
 
-                Spacer(Modifier.weight(0.7f))
+                Spacer(Modifier.height(30.dp))
                 OnboardingArtwork(step)
                 Spacer(Modifier.height(30.dp))
 
@@ -121,30 +125,36 @@ fun HodosOnboarding(
                     Spacer(Modifier.height(11.dp))
                 }
 
-                Button(
-                    onClick = { if (step == pages.lastIndex) onFinish() else step++ },
-                    modifier = Modifier.fillMaxWidth().height(57.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Forest)
-                ) {
-                    Text(if (step == pages.lastIndex) "Open Hodos" else "Continue",
-                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                        .background(Paper)
+                        .padding(horizontal = 26.dp, vertical = 11.dp)
                 ) {
-                    pages.indices.forEach { i ->
-                        Box(
-                            Modifier.padding(horizontal = 4.dp)
-                                .size(width = if (i == step) 28.dp else 8.dp, height = 8.dp)
-                                .background(if (i == step) Forest else Color(0xFFCFDCD3), CircleShape)
-                        )
+                    Button(
+                        onClick = { if (step == pages.lastIndex) onFinish() else step++ },
+                        modifier = Modifier.fillMaxWidth().height(55.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                    ) {
+                        Text(if (step == pages.lastIndex) "Open Hodos" else "Continue",
+                            fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(13.dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        pages.indices.forEach { i ->
+                            Box(
+                                Modifier.padding(horizontal = 4.dp)
+                                    .size(width = if (i == step) 28.dp else 8.dp, height = 8.dp)
+                                    .background(if (i == step) Forest else Color(0xFFCFDCD3), CircleShape)
+                            )
+                        }
                     }
                 }
-            }
         }
     }
 }
