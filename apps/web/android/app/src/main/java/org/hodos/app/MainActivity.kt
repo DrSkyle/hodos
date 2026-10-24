@@ -5,8 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,7 +22,6 @@ import androidx.core.content.ContextCompat
 class MainActivity : ComponentActivity() {
     private var armed by mutableStateOf(false)
     private var refreshSignal by mutableIntStateOf(0)
-    private var awaitingSettings = false
 
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -48,12 +45,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (awaitingSettings) {
-            awaitingSettings = false
-            if (hasAllPermissions()) startMapping()
-            else Toast.makeText(this, "Choose 'Allow all the time' for automatic mapping", Toast.LENGTH_LONG).show()
+        val enabled = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)
+        if (enabled && !hasForegroundPermissions()) {
+            stopMapping()
+            Toast.makeText(this, "Mapping paused because location or motion permission was revoked", Toast.LENGTH_LONG).show()
+        } else {
+            armed = enabled
         }
-        armed = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)
         refreshSignal++
     }
 
@@ -64,10 +62,6 @@ class MainActivity : ComponentActivity() {
         has(Manifest.permission.ACCESS_FINE_LOCATION) &&
             (Build.VERSION.SDK_INT < 29 || has(Manifest.permission.ACTIVITY_RECOGNITION))
 
-    private fun hasAllPermissions(): Boolean =
-        hasForegroundPermissions() &&
-            (Build.VERSION.SDK_INT < 29 || has(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
-
     private fun continueEnabling() {
         if (!hasForegroundPermissions()) {
             val needed = mutableListOf(
@@ -77,13 +71,6 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
             if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
             permissions.launch(needed.toTypedArray())
-            return
-        }
-        if (!hasAllPermissions()) {
-            awaitingSettings = true
-            Toast.makeText(this, "In permissions, allow location all the time to map with the screen off", Toast.LENGTH_LONG).show()
-            val uri = Uri.parse("package:" + packageName)
-            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
             return
         }
         startMapping()
