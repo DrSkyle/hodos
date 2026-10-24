@@ -96,8 +96,11 @@ the privacy treatment of each one are in [`docs/DATA.md`](docs/DATA.md).
 
 ## How it could earn
 
-Short version: sell the ward report, publish the data open, and never monetise
-the people who contribute. The longer reasoning is in
+The data is effectively free — a licence here is unenforceable — so the product
+is not the data. What is scarce is coverage, verification someone will stand
+behind, and the report a ward can act on. The strongest version is **repair
+verification**: the party paying for repairs gets evidence that the work happened
+and stayed done. Full reasoning, and the line not to cross, in
 [`docs/SUSTAINABILITY.md`](docs/SUSTAINABILITY.md).
 
 ## Repository layout

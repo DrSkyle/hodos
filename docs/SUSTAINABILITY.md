@@ -1,65 +1,110 @@
 # How Hodos could earn
 
-Honest options, best first. None of them require selling anything about a
-person, and the last section is the line Hodos must not cross.
+## Start from the truth
 
-## 1. Sell the report, not the data
+The hazard data is effectively free. Anyone who can see the map can rebuild the
+list, and a licence in Kathmandu is a piece of paper nobody will litigate. So any
+plan that begins "we own the data" begins with nothing.
 
-The product a road authority actually wants is not a database — it is a
-**prioritised, evidence-backed worklist for their ward**: these hazards, ranked
-by severity and corroboration, in this boundary, with how many independent
-passes support each one. That is a subscription a municipality, a ward office,
-or a road contractor can justify as operational spend.
+That is not a problem, it is a clarification. **If the data is free, the data was
+never the product.** What is actually scarce:
 
-This keeps the data open and charges for the work: verification, reporting,
-boundaries, exports, and a support channel.
+- **Coverage.** Nobody else has driven these roads with phones running. Getting
+  the first thousand kilometres in a ward is work, and it is not in the file you
+  downloaded.
+- **Verification.** Saying "there is a pothole here" is cheap. Saying "and it is
+  still there as of Tuesday, and here is what supports that" is worth money to
+  someone who has to act on it.
+- **The workflow.** A municipality does not want a map. It wants a worklist in a
+  format its engineer can act on, inside the process it already runs.
+- **A name.** When a report goes into a ward meeting and someone asks "who says",
+  the answer has to be an organisation that will stand behind it.
 
-## 2. Open data with an attribution licence
+A competitor can copy the dataset in an afternoon and still have to do all four.
+That is the moat, and it is the only one available here.
 
-Publish the hazard dataset under an open licence (ODbL or CC-BY) and let others
-build on it. The licence, not a paywall, is the product: it makes the data
-citable, keeps it trustworthy, and builds the reputation that sells option 1.
-Open data is also how a small civic project gets taken seriously.
+## Where the money actually is, best first
 
-## 3. Grants and civic funding
+### 1. Repair verification — the strongest idea
 
-This is a textbook fit for civic-tech and road-safety funding: measurable public
-benefit, open source, open data, a real neighbourhood, a tiny budget. Grant
-cycles are slow, so treat this as runway rather than revenue, but it is the most
-realistic first money for a student-built project.
+The person who pays is the person paying **for the repairs**, not the person
+doing them: the ward, the municipality, a donor programme. What they cannot
+currently buy is assurance.
 
-## 4. Fleet and insurance partnerships
+Hodos can say, with evidence:
 
-Delivery fleets, couriers and insurers already pay for road-risk information,
-because vehicle damage and claims are their cost. They can query the same public
-map, or pay for an aggregate risk view by area. Sell the *aggregate*, never a
-trace, and never a device.
+> This stretch was patched in Baisakh. Since then 9 independent phones have
+> travelled it and none detected the defect. Two defects on the same road were
+> re-detected within a month of being "repaired".
 
-## 5. Sponsored routes
+That is a monitoring product. It uses exactly the mechanism already built —
+`clearPasses` for verified repairs, fresh impacts for repairs that failed — and
+it sells to the **payer**, never to the contractor being checked. This is the one
+thing here that a spreadsheet cannot clone, because it depends on continuous
+passive coverage, which is the hard part.
 
-A business on a bad road has an obvious interest in it being fixed ("this stretch
-outside our shop has been patched four times"). Sponsoring the mapping and
-reporting for a street is a small, legible, local sponsorship — and it does not
-compromise what the map says.
+### 2. A managed service to wards and municipalities
 
-## What must not be sold
+Not software — a service. Monthly, per ward: the prioritised worklist, the
+verification note, the export in their format, and a person to call. They have
+road budgets and small discretionary funds; this is operational spend, not IT
+spend, which is why it is sellable at a ward level without procurement.
 
-- **Never** location traces, device identifiers, or anything that could identify
-  a person or a journey. That is the whole basis on which people contribute.
+Price it against one avoided complaint cycle, not against software.
+
+### 3. Fleets, transport operators and ride-hailing
+
+Buses, trucks and delivery fleets pay for suspension damage, tyres and downtime.
+Ride-hailing and scooter-rental operators have riders on bad roads and care about
+both vehicles and complaints. They can buy an aggregate route-risk view. Sell the
+**aggregate**, never a trace, never a device.
+
+### 4. Donors and road-safety programmes
+
+Road safety is a funded category, and funded programmes expect reporting
+standards. Coverage in a named corridor, with verifiable before/after evidence,
+is exactly the kind of deliverable a programme can pay for — and unlike a
+municipality, a donor will accept an open-data clause.
+
+### 5. Insurance
+
+Later, and only at aggregate level. Vehicle and two-wheeler insurers care about
+where claims come from. This is a real market but a slower, more regulated one.
+
+## What to keep back — friction, not enforcement
+
+Since enforcement is fantasy, use friction:
+
+- **The map stays free.** That is non-negotiable; it is why people contribute and
+  why the data is credible.
+- **Do not ship a bulk dump as the product.** Export exists for a ward that is
+  being served, not as a public download. Anyone determined can scrape the map,
+  but the organisation that wants to *act* on the data wants the verified report
+  and someone accountable for it.
+- **Put the report behind an agreement that names the ward.** Not to stop
+  copying — to create a paper trail that establishes who the source is. In a
+  market where nobody enforces licences, being the recognised origin is worth
+  more than a clause.
+
+## The honest fallback
+
+It is entirely possible this never becomes a business, and that is a legitimate
+outcome. A civic map that a ward uses to get roads fixed is a public good, and
+public goods are funded by grants, CSR, university programmes and donors — not by
+customers. Plenty of the most useful infrastructure in Nepal works this way.
+
+The mistake is pretending it is a startup. The alternative mistake is assuming it
+cannot earn at all. Both are avoidable: build the thing, get one ward to use one
+report, and let the answer come from that.
+
+## The line
+
+- **Never** sell location traces, device identifiers, or anything that identifies
+  a person or a journey. That is the only reason people contribute.
 - **No advertising** in the app. A civic map that is also an ad surface loses the
   trust that makes it useful.
-- **No paying to change what the map says.** A road authority can pay for a
-  report; it cannot pay to have a pothole hidden.
+- **Never sell to the party being monitored while selling to the party paying for
+  the monitoring.** There is no version of that which ends well.
 
-The privacy model is not a constraint on the business — it is the product's
-credibility. The moment Hodos monetises the people who contribute, it stops
-being worth contributing to.
-
-## A realistic sequence
-
-1. **Now:** finish the map, publish the open dataset, get one ward to use a
-   report. That is a case study, not revenue.
-2. **Next:** charge for the ward report and the boundary-aware export. Price it
-   against the cost of one avoided pothole complaint cycle.
-3. **Then:** fleet aggregate access, and grants to fund coverage in
-   neighbourhoods that cannot pay.
+The privacy model is not a constraint on earning. It is the credibility that
+makes earning possible at all.
