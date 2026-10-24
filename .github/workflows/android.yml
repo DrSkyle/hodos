@@ -50,6 +50,14 @@ jobs:
       # Android compilation alone did not catch previous on-device startup crashes.
       # Do not publish anything unless both a fresh install and the map screen
       # survive real Android framework/resource/native-map initialization.
+      - name: Enable Linux KVM for Android instrumentation
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod a+rw /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo "::warning::KVM missing; Android emulator tests may be unavailable"
+          fi
       - name: Boot Android emulator and test both startup paths
         uses: reactivecircus/android-emulator-runner@v2
         with:
