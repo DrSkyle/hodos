@@ -239,7 +239,7 @@ internal object OfflineMaps {
                 current = nearest
                 nearest.getStatus(object : OfflineRegion.OfflineRegionStatusCallback {
                     override fun onStatus(status: OfflineRegionStatus?) {
-                        if (status != null && status.isComplete) {
+                        if (status != null && status.isComplete && status.requiredResourceCount > 0 && status.isRequiredResourceCountPrecise) {
                             updateCounts(status)
                             state = state.copy(status = "Nearby map ready offline", downloading = false)
                         } else start(nearest)
@@ -324,7 +324,8 @@ internal object OfflineMaps {
                     state = state.copy(downloading = false, status = "Paused · waiting for Wi-Fi")
                     return
                 }
-                if (status.isComplete) {
+                if (status.isComplete && status.requiredResourceCount > 0 &&
+                    status.isRequiredResourceCountPrecise) {
                     region.setDownloadState(OfflineRegion.STATE_INACTIVE)
                     state = state.copy(downloading = false, status = "Nearby map ready offline")
                     return
