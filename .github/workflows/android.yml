@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, fix/onboarding-and-location-recovery]
+    branches: [main]
     paths:
       - "apps/web/android/**"
       - ".github/workflows/android.yml"
