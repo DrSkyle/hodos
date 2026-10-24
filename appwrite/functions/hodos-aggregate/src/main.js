@@ -92,7 +92,8 @@ function validEvent(event, sinceMs, now) {
     Number.isInteger(severity) && severity >= 1 && severity <= 3 &&
     Number.isFinite(time) && time >= sinceMs && time <= now + 5 * 60000 &&
     Number.isFinite(confidence) && confidence >= 0 && confidence <= 1 &&
-    typeof event.deviceId === "string" && event.deviceId.length > 0 &&
+    typeof event.deviceId === "string" && event.deviceId.length > 0 && event.deviceId.length <= 64 &&
+    typeof event.tripId === "string" && event.tripId.length > 0 && event.tripId.length <= 64 &&
     kinds.includes(event.kind) && observations.includes(observation) &&
     (observation === "impact" ||
       (typeof event.hazardRef === "string" && event.hazardRef.length > 0));
@@ -104,7 +105,7 @@ function clusterEvents(events) {
   const index = new Map();
   const clusters = [];
 
-  const key = (lat, lng) => `${Math.round(lat / cell)}:${Math.round(lng / cell)}`;
+  const key = (lat, lng, kind) => `${kind}:${Math.round(lat / cell)}:${Math.round(lng / cell)}`;
 
   for (const event of events) {
     const lat = Number(event.lat);
@@ -114,7 +115,7 @@ function clusterEvents(events) {
     let target = null;
     for (let dx = -1; dx <= 1 && target === null; dx += 1) {
       for (let dy = -1; dy <= 1 && target === null; dy += 1) {
-        const bucket = index.get(`${gx + dx}:${gy + dy}`);
+        const bucket = index.get(`${event.kind}:${gx + dx}:${gy + dy}`);
         if (bucket === undefined) {
           continue;
         }
@@ -129,9 +130,9 @@ function clusterEvents(events) {
     if (target === null) {
       target = { centre: { lat, lng }, events: [], sumLat: 0, sumLng: 0 };
       clusters.push(target);
-      const bucket = index.get(key(lat, lng)) ?? [];
+      const bucket = index.get(key(lat, lng, event.kind)) ?? [];
       bucket.push(target);
-      index.set(key(lat, lng), bucket);
+      index.set(key(lat, lng, event.kind), bucket);
     }
     target.events.push(event);
     target.sumLat += lat;
@@ -160,22 +161,23 @@ function majority(values, fallback) {
   return best;
 }
 
-function rowIdFor(lat, lng) {
+function rowIdFor(lat, lng, kind = "pothole") {
   const ns = lat < 0 ? "s" : "n";
   const ew = lng < 0 ? "w" : "e";
-  return `${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
+  return `${kind[0]}${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
 }
 
 function buildHazard(cluster, now, silentPasses, fixReports) {
   const events = cluster.events;
   const devices = new Set(events.map((event) => event.deviceId));
+  const trips = new Set(events.map((event) => `${event.deviceId}:${event.tripId}`));
   const days = new Set(events.map((event) => String(event.recordedAt).slice(0, 10)));
   const times = events.map((event) => Date.parse(event.recordedAt)).filter(Number.isFinite);
   const qualities = events.map((event) => Number(event.confidence ?? 0.5));
   const lastSeen = Math.max(...times);
   const firstSeen = Math.min(...times);
 
-  const passCount = events.length;
+  const passCount = trips.size;
   const deviceCount = devices.size;
   const quality = qualities.reduce((sum, value) => sum + value, 0) / Math.max(1, qualities.length);
 
@@ -185,7 +187,7 @@ function buildHazard(cluster, now, silentPasses, fixReports) {
   const recency = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
   const belief = Math.min(1, 0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
 
-  const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng);
+  const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng, String(events[0].kind));
 
   // A pass or a fix report only counts if it happened after the last time
   // anyone felt this hazard, so a fresh impact resets the evidence that it has
