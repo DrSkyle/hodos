@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f5f6f0" />
+  <meta name="theme-color" content="#104e3f" />
   <meta name="description" content="Hodos maps potholes and road hazards using independent observations from everyday Android journeys. Explore safer roads together." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos — The road maps itself" />
@@ -11,7 +11,10 @@
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
   
   <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" type="image/svg+xml" href="/icon.svg?v=20261024" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg?v=3" />
+  <link rel="icon" type="image/png" href="/favicon-32.png?v=3" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/apple-touch-icon.png" />
   
   <title>Hodos — The road maps itself</title>
 </head>
@@ -166,7 +169,7 @@
     <section class="content-section wrapper" id="how">
       <div class="section-heading"><span class="overline">HOW IT WORKS / 001</span><h2>Just go where<br />you were <em>going.</em></h2><p>Maps usually need someone to report a problem. Hodos learns from the movement of phones already travelling those roads.</p></div>
       <div class="steps">
-        <article class="step"><span class="step-number">01 /</span><div class="step-icon">↝</div><h3>Set it once</h3><p>Enable automatic mapping in the Android app, then carry on with your normal journeys.</p></article>
+        <article class="step"><span class="step-number">01 /</span><div class="step-icon">↝</div><h3>Switch on mapping</h3><p>Enable automatic mapping in the Android app, then carry on with your normal journeys.</p></article>
         <article class="step"><span class="step-number">02 /</span><div class="step-icon">⌁</div><h3>Feel the road</h3><p>On-device motion analysis finds likely potholes, rough patches and speed bumps without recording raw traces online.</p></article>
         <article class="step"><span class="step-number">03 /</span><div class="step-icon">◎</div><h3>Trust the evidence</h3><p>Repeated reports help corroborate potential hazards. People can also report that a road was repaired.</p></article>
       </div>
@@ -175,15 +178,15 @@
       <div><span class="overline">WHAT MATTERS / 002</span><h2>Useful in public.<br /><em>Careful in private.</em></h2></div>
       <div class="principles-list">
         <div><b>01</b><div><h3>Raw motion data stays on the phone.</h3><p>Hodos submits compact road observations, not continuous sensor recordings.</p></div></div>
-        <div><b>02</b><div><h3>One report isn't the whole story.</h3><p>The shared map uses independent evidence and records repair confirmations.</p></div></div>
-        <div><b>03</b><div><h3>The project is open source.</h3><p>Read the code, inspect the decisions, and help improve how your roads are represented.</p></div></div>
+        <div><b>02</b><div><h3>One report isn't the whole story.</h3><p>Hazards appear after repeated observations. You can also report when a road has been repaired.</p></div></div>
+        <div><b>03</b><div><h3>Built in the open.</h3><p>See how Hodos works, report bugs, or contribute on GitHub.</p></div></div>
       </div>
     </div></section>
-    <section class="impact wrapper" id="impact"><div><span class="overline">OUR IMPACT</span><h2>Small signals.<br />Safer journeys.</h2></div><p>Road defects rarely appear on ordinary maps. Hodos turns everyday trips into evidence others can use. Nothing is published as a confirmed hazard until independent journeys support it.</p></section>
-    <section class="faq wrapper" id="faq"><span class="overline">QUESTIONS</span><h2>Good to know.</h2><details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos sends compact geolocated road observations when it detects a potential hazard; your raw accelerometer stream stays on the device.</p></details><details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore already confirmed road hazards without enabling automatic mapping.</p></details><details><summary>How does a pothole become visible on the map?</summary><p>The backend combines observations from multiple journeys and distinct installation identifiers before publishing a hazard. These identifiers are pseudonymous, not proof of unique physical devices. You can also report a repair.</p></details><details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first. The current release and source code are available on GitHub.</p></details></section>
-    <section class="closing wrapper"><div><span class="overline">ROAD BY ROAD</span><h2>Better roads start with<br />better <em>information.</em></h2></div><a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases/latest" target="_blank" rel="noopener noreferrer">Get Hodos for Android ↗</a></section>
+    <section class="impact wrapper" id="impact"><div><span class="overline">OUR IMPACT</span><h2>A clearer picture<br />of your roads.</h2></div><p>The map brings together observations from everyday journeys, with feedback from people who use the same roads.</p></section>
+    <section class="faq wrapper" id="faq"><span class="overline">FAQ</span><h2>A few things worth knowing.</h2><details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos sends compact geolocated road observations when it detects a potential hazard; your raw accelerometer stream stays on the device.</p></details><details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore already confirmed road hazards without enabling automatic mapping.</p></details><details><summary>When does a hazard appear on the map?</summary><p>Hodos checks for repeated observations from different app installations before showing a hazard. You can also report when one has been repaired.</p></details><details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first. The current release and source code are available on GitHub.</p></details></section>
+    <section class="closing wrapper"><div><span class="overline">ROAD BY ROAD</span><h2>Better roads start with<br />better <em>information.</em></h2></div><a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Get Hodos for Android ↗</a></section>
   </main>
-  <footer class="footer wrapper"><span>© <span id="year">2026</span> Hodos · A Devilabs project</span><div><a href="https://github.com/DrSkyle/hodos">Source code ↗</a><a href="https://github.com/DrSkyle/hodos/blob/main/docs/PRIVACY.md">Privacy ↗</a></div></footer>
+  <footer class="footer wrapper"><span>© <span id="year">2026</span> Hodos · A Devilabs project</span><div><a href="https://github.com/DrSkyle/hodos">Source code ↗</a><a href="/privacy.html">Privacy</a></div></footer>
   <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>
