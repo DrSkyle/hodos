@@ -81,6 +81,7 @@ fun HodosApp(
     var locateRequest by remember { mutableIntStateOf(0) }
     var locationIssue by remember { mutableStateOf<LocationIssue?>(null) }
     var locating by remember { mutableStateOf(false) }
+    var locationLabel by remember { mutableStateOf<String?>(null) }
     val locationSettingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
@@ -262,10 +263,22 @@ fun HodosApp(
                                 hazards = visibleHazards,
                                 locateRequest = locateRequest,
                                 onSelect = { selected = it },
-                                onLocated = {
-                                    lastKnownLocation = it
+                                onLocated = { fix, cached ->
+                                    lastKnownLocation = fix
                                     locating = false
                                     locationIssue = null
+                                    val age = (System.currentTimeMillis() - fix.time)
+                                        .coerceAtLeast(0L) / 60_000L
+                                    locationLabel = when {
+                                        cached && age >= 60L ->
+                                            "Last known ${age / 60L}h ago · may be outdated"
+                                        cached ->
+                                            "Last known ${age.coerceAtLeast(1L)}m ago · may be outdated"
+                                        !fix.hasAccuracy() -> "Located · accuracy unavailable"
+                                        fix.accuracy >= 1_000f ->
+                                            "Approximate · ±${String.format(Locale.US, "%.1f", fix.accuracy / 1_000f)} km"
+                                        else -> "Location · ±${fix.accuracy.roundToInt()} m"
+                                    }
                                 },
                                 onLocationError = { issue ->
                                     locating = false
@@ -318,6 +331,24 @@ fun HodosApp(
                                                     label = { Text(option) }
                                                 )
                                             }
+                                        }
+                                    }
+                                }
+                                locationLabel?.let { label ->
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(13.dp),
+                                        color = Color.White,
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Outlined.MyLocation, contentDescription = null,
+                                                tint = Forest, modifier = Modifier.size(16.dp))
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(label, color = Ink, fontSize = 12.sp)
                                         }
                                     }
                                 }
@@ -389,7 +420,7 @@ fun HodosApp(
                 LocationIssue.Disabled ->
                     "Your phone's Location switch is off. Turn it on in Android settings, then return to Hodos."
                 LocationIssue.Timeout ->
-                    "Your phone couldn't provide a fresh position. Check Wi-Fi or mobile network location, or try again near a window."
+                    "No new fix yet. Switch on Location Accuracy and Wi-Fi scanning in Android settings, or retry outdoors. If the phone has a saved location from the past day, Hodos can show it clearly marked as last known."
             }
             AlertDialog(
                 onDismissRequest = { locationIssue = null },
