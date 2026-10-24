@@ -1,6 +1,11 @@
 package org.hodos.app
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.location.Location
 import android.text.format.DateFormat
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -76,8 +81,18 @@ fun HodosApp(
     var query by remember { mutableStateOf("") }
     var filterVisible by remember { mutableStateOf(false) }
     var severity by remember { mutableStateOf("All") }
+    var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
 
-    val visibleHazards = remember(hazards, query, severity) {
+    LaunchedEffect(locateRequest, refreshSignal) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            try {
+                LocationServices.getFusedLocationProviderClient(context).lastLocation
+                    .addOnSuccessListener { location -> lastKnownLocation = location }
+            } catch (_: SecurityException) { /* Browsing the map remains available without GPS. */ }
+        }
+    }
+
+    val visibleHazards = remember(hazards, query, severity, lastKnownLocation) {
         hazards.filter { hazard ->
             val matchSeverity = when (severity) {
                 "High" -> hazard.severity >= 3 && !hazard.fixed
@@ -92,7 +107,10 @@ fun HodosApp(
                     hazard.severityText.contains(query.trim(), ignoreCase = true) ||
                     hazard.id.contains(query.trim(), ignoreCase = true)
                 )
-        }.sortedWith(compareByDescending<RoadHazard> { !it.fixed }.thenByDescending { it.severity })
+        }.sortedWith(
+            if (lastKnownLocation != null) compareBy<RoadHazard> { distanceTo(it, lastKnownLocation!!) }
+            else compareByDescending<RoadHazard> { !it.fixed }.thenByDescending { it.severity }
+        )
     }
 
     LaunchedEffect(refreshSignal) {
@@ -192,7 +210,7 @@ fun HodosApp(
                                 } else {
                                     LazyColumn(Modifier.heightIn(max = 320.dp)) {
                                         items(visibleHazards, key = { it.id }) { hazard ->
-                                            HazardRow(hazard) { selected = hazard }
+                                            HazardRow(hazard, lastKnownLocation?.let { distanceTo(hazard, it) }) { selected = hazard }
                                         }
                                     }
                                 }
@@ -332,8 +350,14 @@ private fun DetailStat(value: String, title: String, modifier: Modifier = Modifi
     }
 }
 
+private fun distanceTo(hazard: RoadHazard, location: Location): Float {
+    val result = FloatArray(1)
+    Location.distanceBetween(location.latitude, location.longitude, hazard.lat, hazard.lng, result)
+    return result[0]
+}
+
 @Composable
-private fun HazardRow(hazard: RoadHazard, onClick: () -> Unit) {
+private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -345,7 +369,11 @@ private fun HazardRow(hazard: RoadHazard, onClick: () -> Unit) {
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(hazard.title, fontWeight = FontWeight.Medium)
-            Text("${hazard.passes} passes · ${hazard.devices} devices", color = Muted, fontSize = 12.sp)
+            Text(
+                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
+                else "${hazard.passes} passes · ${hazard.devices} devices",
+                color = Muted, fontSize = 12.sp
+            )
         }
         Text(if (hazard.fixed) "Repaired" else hazard.severityText, color = Muted, fontSize = 12.sp)
     }
