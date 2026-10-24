@@ -39,7 +39,7 @@ jobs:
         run: |
           cd apps/web/android
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon
       - name: Verify APK
         run: test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
