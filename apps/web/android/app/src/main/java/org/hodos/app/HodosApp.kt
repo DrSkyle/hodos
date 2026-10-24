@@ -82,6 +82,18 @@ fun HodosApp(
     var locationIssue by remember { mutableStateOf<LocationIssue?>(null) }
     var locating by remember { mutableStateOf(false) }
     var locationLabel by remember { mutableStateOf<String?>(null) }
+    // Opening the map locates automatically if the user already granted
+    // permission; it never prompts for permission without an explicit tap.
+    LaunchedEffect(Unit) {
+        val granted = listOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ).any { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+        if (granted) {
+            locating = true
+            locateRequest++
+        }
+    }
     val locationSettingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {

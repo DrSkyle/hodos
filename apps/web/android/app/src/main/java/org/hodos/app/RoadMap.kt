@@ -214,14 +214,15 @@ fun RoadMap(
         }
 
         fun offerCached(fix: Location?) {
-            if (fix == null || !fix.hasAccuracy()) return
+            if (fix == null) return
             if (!fix.latitude.isFinite() || !fix.longitude.isFinite() ||
                 fix.latitude !in -90.0..90.0 || fix.longitude !in -180.0..180.0) return
             val age = ageMs(fix)
             if (age > 86_400_000L) return // never silently jump to older than a day
             if (candidate == null ||
                 age < ageMs(candidate!!) ||
-                (age < 120_000L && fix.accuracy < candidate!!.accuracy)) {
+                (age < 120_000L && fix.hasAccuracy() &&
+                    (!candidate!!.hasAccuracy() || fix.accuracy < candidate!!.accuracy))) {
                 candidate = fix
             }
         }
