@@ -64,6 +64,7 @@ internal object OfflineMaps {
     private var initialized = false
     private var listing = false
     private var creating = false
+    private val pendingLoads = mutableListOf<() -> Unit>()
     private var current: OfflineRegion? = null
     private val regions = mutableListOf<OfflineRegion>()
 
@@ -116,7 +117,9 @@ internal object OfflineMaps {
             .getOrNull()?.takeIf { it.optBoolean("hodos") }
 
     private fun load(onLoaded: (() -> Unit)? = null) {
-        if (!initialized || listing) return
+        if (!initialized) return
+        if (onLoaded != null) pendingLoads.add(onLoaded)
+        if (listing) return
         listing = true
         manager.listOfflineRegions(object : OfflineManager.ListOfflineRegionsCallback {
             override fun onList(offlineRegions: Array<OfflineRegion>?) {
@@ -133,9 +136,12 @@ internal object OfflineMaps {
                         override fun onError(error: String?) { Log.w(TAG, error ?: "Region status error") }
                     })
                 }
-                onLoaded?.invoke()
+                val callbacks = pendingLoads.toList()
+                pendingLoads.clear()
+                callbacks.forEach { it() }
             }
             override fun onError(error: String) {
+                pendingLoads.clear()
                 listing = false
                 state = state.copy(status = "Could not read saved maps")
                 Log.w(TAG, error)
