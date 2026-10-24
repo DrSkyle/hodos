@@ -22,6 +22,18 @@ import androidx.core.content.ContextCompat
 class MainActivity : ComponentActivity() {
     private var armed by mutableStateOf(false)
     private var refreshSignal by mutableIntStateOf(0)
+    private var onboardingComplete by mutableStateOf(false)
+    private var mapLocationGranted by mutableStateOf(false)
+
+    private val mapLocationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
+            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        if (!mapLocationGranted) {
+            Toast.makeText(this, "You can still explore the map without location access", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -32,9 +44,30 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        armed = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)
+        val prefs = getSharedPreferences("hodos", MODE_PRIVATE)
+        armed = prefs.getBoolean("armed", false)
+        onboardingComplete = prefs.getBoolean("onboardingComplete", false)
+        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
+            has(Manifest.permission.ACCESS_FINE_LOCATION)
         setContent {
-            HodosApp(
+            if (!onboardingComplete) {
+                HodosOnboarding(
+                    locationGranted = mapLocationGranted,
+                    onRequestLocation = {
+                        mapLocationPermission.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            )
+                        )
+                    },
+                    onFinish = {
+                        prefs.edit().putBoolean("onboardingComplete", true).apply()
+                        onboardingComplete = true
+                        refreshSignal++
+                    }
+                )
+            } else HodosApp(
                 armed = armed,
                 refreshSignal = refreshSignal,
                 onToggle = { if (it) continueEnabling() else stopMapping() },
@@ -47,6 +80,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
+            has(Manifest.permission.ACCESS_FINE_LOCATION)
         val enabled = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)
         if (enabled && !hasForegroundPermissions()) {
             stopMapping()
