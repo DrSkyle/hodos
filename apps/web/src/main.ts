@@ -105,47 +105,51 @@ app.innerHTML = `
     </section>
 
     <section data-panel="data" class="panel">
-      <div class="data-view">
-        <p class="eyebrow">Open data</p>
-        <h2>Everything the phones have found</h2>
-        <p class="sub">
-          One row per hazard, with the evidence behind it: how many independent phones felt it,
-          on how many separate days, and how much of that evidence says it has since been
-          repaired. This is the same data the map draws, structured so it can be checked,
-          analysed or handed to a road authority.
-        </p>
-        <div class="stats big" id="data-stats"></div>
-        <div class="row">
-          <button id="export-csv" class="ghost">Download CSV</button>
-          <button id="export-json" class="ghost">Download JSON</button>
+      <div class="ledger">
+        <header class="ledger-head">
+          <p class="eyebrow">Open data</p>
+          <h2>The ledger</h2>
+          <p class="ledger-summary" id="data-summary">Reading the record.</p>
+        </header>
+
+        <div class="meters" id="data-meters" hidden>
+          <div class="meter-row">
+            <span class="meter-label">type</span>
+            <div class="bar">
+              <span class="seg seg-pothole" id="bar-pothole"></span>
+              <span class="seg seg-bump" id="bar-bump"></span>
+              <span class="seg seg-rough" id="bar-rough"></span>
+            </div>
+            <span class="meter-fig" id="meter-type"></span>
+          </div>
+          <div class="meter-row">
+            <span class="meter-label">status</span>
+            <div class="bar">
+              <span class="seg seg-open" id="bar-open"></span>
+              <span class="seg seg-repaired" id="bar-repaired"></span>
+            </div>
+            <span class="meter-fig" id="meter-status"></span>
+          </div>
+          <p class="legend">
+            <span><i class="key key-pothole"></i>potholes</span>
+            <span><i class="key key-bump"></i>speed bumps</span>
+            <span><i class="key key-rough"></i>rough</span>
+          </p>
         </div>
-        <p class="hint">
-          The map is free and always will be. These exports exist for a ward report: if they
-          are going to a road authority, name the ward in the filename so the source is on
-          record.
+
+        <ol class="records" id="data-records"></ol>
+        <p class="ledger-empty" id="data-empty" hidden>
+          The ledger is empty. The first trip will write the first line.
         </p>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th class="num">Passes</th>
-                <th class="num">Phones</th>
-                <th class="num">Days</th>
-                <th class="num">Conf.</th>
-                <th class="num">Silent passes</th>
-                <th class="num">Verified by</th>
-                <th>Last seen</th>
-                <th class="num">Latitude</th>
-                <th class="num">Longitude</th>
-              </tr>
-            </thead>
-            <tbody id="data-body"></tbody>
-          </table>
-        </div>
-        <p class="hint" id="data-empty" hidden>No hazards yet. The first trip will fill this in.</p>
+
+        <footer class="ledger-foot">
+          <button class="link" id="export-csv">Download CSV</button>
+          <button class="link" id="export-json">Download JSON</button>
+          <span class="foot-note">
+            The map is free and always will be. If this goes to a road authority, name the
+            ward so the source is on record.
+          </span>
+        </footer>
       </div>
     </section>
 
@@ -225,9 +229,17 @@ const restoreStatus = need<HTMLElement>("#restore-status");
 const autoCard = need<HTMLElement>("#auto-card");
 const autoToggle = need<HTMLInputElement>("#auto-toggle");
 const autoCopy = need<HTMLElement>("#auto-copy");
-const dataStats = need<HTMLElement>("#data-stats");
-const dataBody = need<HTMLElement>("#data-body");
+const dataSummary = need<HTMLElement>("#data-summary");
+const dataMeters = need<HTMLElement>("#data-meters");
+const dataList = need<HTMLElement>("#data-records");
 const dataEmpty = need<HTMLElement>("#data-empty");
+const meterType = need<HTMLElement>("#meter-type");
+const meterStatus = need<HTMLElement>("#meter-status");
+const barPothole = need<HTMLElement>("#bar-pothole");
+const barBump = need<HTMLElement>("#bar-bump");
+const barRough = need<HTMLElement>("#bar-rough");
+const barOpen = need<HTMLElement>("#bar-open");
+const barRepaired = need<HTMLElement>("#bar-repaired");
 
 let me = loadMe();
 let identity: Identity = loadIdentity() ?? { code: newCode() };
@@ -369,36 +381,59 @@ function rankedHazards(): HazardRecord[] {
 function renderData(): void {
   const all = hazards;
   const repaired = all.filter((hazard) => hazardStatus(hazard) === "fixed").length;
+  const open = all.length - repaired;
   const count = (kind: string) => all.filter((hazard) => hazard.kind === kind).length;
-  dataStats.innerHTML = [
-    stat(all.length, "hazards"),
-    stat(all.length - repaired, "open"),
-    stat(repaired, "repaired", "fixed"),
-    stat(count("pothole"), "potholes"),
-    stat(count("speed_bump"), "speed bumps"),
-    stat(count("rough_pavement"), "rough patches"),
-  ].join("");
+  const potholes = count("pothole");
+  const bumps = count("speed_bump");
+  const rough = count("rough_pavement");
+
+  dataSummary.textContent =
+    all.length === 0
+      ? "Nothing yet. The first trip writes the first line."
+      : `${all.length} ${all.length === 1 ? "hazard" : "hazards"} on record · ${open} still open · ${repaired} repaired`;
+
+  dataMeters.hidden = all.length === 0;
+  const share = (value: number) => `${all.length === 0 ? 0 : (value / all.length) * 100}%`;
+  barPothole.style.width = share(potholes);
+  barBump.style.width = share(bumps);
+  barRough.style.width = share(rough);
+  barOpen.style.width = share(open);
+  barRepaired.style.width = share(repaired);
+  meterType.textContent = `${potholes} · ${bumps} · ${rough}`;
+  meterStatus.textContent = `${open} open · ${repaired} repaired`;
+
   dataEmpty.hidden = all.length > 0;
-  dataBody.innerHTML = rankedHazards()
-    .map(
-      (hazard) => `
-      <tr>
-        <td>${hazard.kind.replace("_", " ")}</td>
-        <td><span class="sev sev-${hazard.severity}">${severityLabel(hazard.severity)}</span></td>
-        <td>${hazardStatus(hazard) === "fixed" ? "repaired" : "open"}</td>
-        <td class="num">${hazard.passCount}</td>
-        <td class="num">${hazard.deviceCount}</td>
-        <td class="num">${hazard.dayCount}</td>
-        <td class="num">${Math.round(hazard.confidence * 100)}%</td>
-        <td class="num">${hazard.clearPasses}</td>
-        <td class="num">${hazard.fixedVotes}</td>
-        <td>${relativeTime(hazard.lastSeen)}</td>
-        <td class="num">${hazard.lat.toFixed(5)}</td>
-        <td class="num">${hazard.lng.toFixed(5)}</td>
-      </tr>`,
-    )
+  dataList.innerHTML = rankedHazards()
+    .map((hazard) => {
+      const status = hazardStatus(hazard);
+      const mark =
+        status === "fixed" ? (hazard.fixedVotes >= 2 ? "reported fixed" : "repaired") : "open";
+      return `
+        <li class="record" data-row-id="${hazard.rowId}">
+          <i class="pip sev-${hazard.severity}"></i>
+          <span class="record-kind">${hazard.kind.replace("_", " ")}</span>
+          <span class="record-meta">${hazard.passCount} ${hazard.passCount === 1 ? "pass" : "passes"} · ${hazard.deviceCount} ${hazard.deviceCount === 1 ? "phone" : "phones"} · ${hazard.dayCount} ${hazard.dayCount === 1 ? "day" : "days"}</span>
+          <span class="record-mark ${status === "fixed" ? "is-repaired" : "is-open"}">${mark}</span>
+          <span class="record-conf">${Math.round(hazard.confidence * 100)}<small>%</small></span>
+        </li>`;
+    })
     .join("");
 }
+
+dataList.addEventListener("click", (event) => {
+  const row = (event.target as HTMLElement).closest<HTMLElement>("[data-row-id]");
+  const rowId = row?.dataset.rowId;
+  if (rowId === undefined) {
+    return;
+  }
+  const record = hazards.find((hazard) => hazard.rowId === rowId);
+  if (record === undefined) {
+    return;
+  }
+  switchView("map");
+  hazardMap.focus(record.lat, record.lng);
+  openDetail(record);
+});
 
 interface HazardRow extends Record<string, string | number> {
   hazardId: string;
