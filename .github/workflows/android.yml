@@ -48,13 +48,13 @@ jobs:
       - name: Name beta package clearly
         run: |
           test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
-          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.3-beta.apk
+          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.4-beta.apk
       - name: Verify APK
-        run: test -s Hodos-1.1.3-beta.apk
+        run: test -s Hodos-1.1.4-beta.apk
       - uses: actions/upload-artifact@v4
         with:
           name: hodos-android
-          path: Hodos-1.1.3-beta.apk
+          path: Hodos-1.1.4-beta.apk
           if-no-files-found: error
       # Keep release-signing keys in repository Actions secrets, never Git.
       - name: Assemble signed release
@@ -69,23 +69,28 @@ jobs:
           chmod 600 "$RUNNER_TEMP/hodos-release.jks"
           cd apps/web/android
           HODOS_KEYSTORE_PATH="$RUNNER_TEMP/hodos-release.jks" ./gradlew :app:assembleRelease --no-daemon
+      - name: Give signed APK its Hodos release name
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
+        run: |
+          test -s apps/web/android/app/build/outputs/apk/release/app-release.apk
+          cp apps/web/android/app/build/outputs/apk/release/app-release.apk Hodos-1.1.4.apk
       - name: Publish signed release
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.3
-          name: Hodos 1.1.3
+          tag_name: v1.1.4
+          name: Hodos 1.1.4
           body: |
             Native onboarding, improved map location with platform fallbacks,
             and clearer location settings recovery.
-          files: apps/web/android/app/build/outputs/apk/release/app-release.apk
+          files: Hodos-1.1.4.apk
           prerelease: true
       - name: Publish debug-signed beta APK when no release key is configured
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && (env.HODOS_KEYSTORE_BASE64 == '' || env.HODOS_STORE_PASSWORD == '' || env.HODOS_KEY_ALIAS == '' || env.HODOS_KEY_PASSWORD == '') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.3-beta.1
-          name: Hodos 1.1.3 beta
+          tag_name: v1.1.4-beta.1
+          name: Hodos 1.1.4 beta
           body: |
             Android beta with native onboarding, permission recovery, and improved location fallback.
             
@@ -93,5 +98,5 @@ jobs:
             It may not install over versions signed with another key; keep a copy
             of any important data before reinstalling. Sensor detection has not
             yet been validated with a labelled multi-device road test.
-          files: Hodos-1.1.3-beta.apk
+          files: Hodos-1.1.4-beta.apk
           prerelease: true
