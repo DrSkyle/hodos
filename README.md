@@ -1,6 +1,6 @@
 # Hodos
 
-> **Android beta notice (24 October 2026):** The `v1.1.4-beta.1` installer has a reported immediate-launch crash and missing launcher artwork. **Do not install this beta.** The next build is blocked until the original branding files are restored and Android emulator startup tests pass. A successful Gradle compile is not proof of device compatibility.
+> **Android beta notice (24 October 2026):** Do **not** install the known-broken `v1.1.4-beta.1` build. Newer builds restore the original branding and pass Android emulator startup checks. Real-phone GPS, background journey recording, offline tile coverage and road detection **still require field verification**; use the latest beta from [Releases](https://github.com/DrSkyle/hodos/releases), not an older installer.
 
 **The road maps itself.**
 

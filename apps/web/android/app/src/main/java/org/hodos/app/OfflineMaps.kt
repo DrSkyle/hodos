@@ -55,8 +55,8 @@ internal object OfflineMaps {
     const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
     private const val RADIUS_KM = 20.0
     private const val KEEP_REGIONS = 2
-    private const val LIMIT_TILES = 2_400L
-    private const val LIMIT_BYTES = 45L * 1024L * 1024L
+    private const val LIMIT_TILES = OfflineDownloadPolicy.MAX_TILES
+    private const val LIMIT_BYTES = OfflineDownloadPolicy.MAX_BYTES
     private const val PREFS = "hodos_offline_maps"
     private const val TAG = "HodosOfflineMaps"
 
@@ -183,7 +183,7 @@ internal object OfflineMaps {
             override fun onError(error: String) {
                 pendingLoads.clear()
                 listing = false
-                state = state.copy(status = "Could not read saved maps")
+                state = state.copy(downloading = false, status = "Could not read saved maps")
                 Log.w(TAG, error)
             }
         })
@@ -231,6 +231,21 @@ internal object OfflineMaps {
     private fun saveNearby(location: Location, manual: Boolean = false) {
         if (!initialized || creating || state.downloading) return
         if (!manual && !state.autoEnabled) return
+        // Every automatic entry point (new GPS fix, Wi-Fi reconnection,
+        // toggling Auto on) must enforce the same location-quality gate.
+        // A manually requested pack is allowed with approximate location.
+        if (!manual && !LocationFixPolicy.isFresh(
+                location.time, System.currentTimeMillis())) {
+            state = state.copy(status =
+                "Location is outdated · tap the map location button to refresh")
+            return
+        }
+        if (!manual && !OfflineDownloadPolicy.safeForAutomaticDownload(
+                location.hasAccuracy(), location.accuracy)) {
+            state = state.copy(status =
+                "Location is approximate · tap Save nearby to choose this area")
+            return
+        }
         if (!wifiReady()) {
             current?.setDownloadState(OfflineRegion.STATE_INACTIVE)
             state = state.copy(downloading = false,
@@ -299,7 +314,7 @@ internal object OfflineMaps {
                 }
                 override fun onError(error: String) {
                     creating = false
-                    state = state.copy(status = "Offline map couldn't start")
+                    state = state.copy(downloading = false, status = "Offline map couldn't start")
                     Log.e(TAG, error)
                 }
             })
@@ -323,27 +338,37 @@ internal object OfflineMaps {
         region.setObserver(object : OfflineRegion.OfflineRegionObserver {
             override fun onStatusChanged(status: OfflineRegionStatus) {
                 updateCounts(status)
-                if (!wifiReady()) {
-                    region.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                    state = state.copy(downloading = false, status = "Paused · waiting for Wi-Fi")
-                    return
-                }
-                if (status.isComplete && status.requiredResourceCount > 0 &&
-                    status.isRequiredResourceCountPrecise) {
-                    region.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                    state = state.copy(downloading = false, status = "Nearby map ready offline")
-                    return
-                }
-                if (status.completedTileCount >= LIMIT_TILES ||
-                    status.completedResourceSize >= LIMIT_BYTES) {
-                    region.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                    state = state.copy(downloading = false,
-                        status = "Download paused at provider safety limit")
+                when (OfflineDownloadPolicy.evaluate(
+                    wifi = wifiReady(),
+                    complete = status.isComplete,
+                    preciseCount = status.isRequiredResourceCountPrecise,
+                    requiredResources = status.requiredResourceCount,
+                    completedTiles = status.completedTileCount,
+                    completedBytes = status.completedResourceSize
+                )) {
+                    OfflineDownloadPolicy.Decision.CONTINUE -> Unit
+                    OfflineDownloadPolicy.Decision.WAIT_FOR_WIFI -> {
+                        region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                        state = state.copy(downloading = false,
+                            status = "Paused · waiting for Wi-Fi")
+                    }
+                    OfflineDownloadPolicy.Decision.COMPLETE -> {
+                        region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                        state = state.copy(downloading = false,
+                            status = "Nearby map ready offline")
+                    }
+                    OfflineDownloadPolicy.Decision.PROVIDER_LIMIT -> {
+                        region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                        state = state.copy(downloading = false,
+                            status = "Not fully downloaded · provider safety limit reached")
+                    }
                 }
             }
             override fun onError(error: OfflineRegionError) {
                 Log.w(TAG, "Offline tile problem: ${error.message}")
-                state = state.copy(status = "Offline download interrupted · retry on Wi-Fi")
+                region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                state = state.copy(downloading = false,
+                    status = "Offline download interrupted · tap Save nearby to retry")
             }
             override fun mapboxTileCountLimitExceeded(limit: Long) {
                 region.setDownloadState(OfflineRegion.STATE_INACTIVE)

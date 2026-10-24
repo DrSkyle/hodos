@@ -217,13 +217,20 @@ fun RoadMap(
                 ?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(
                     Feature.fromGeometry(Point.fromLngLat(fix.longitude, fix.latitude))
                 )))
+            // If GPS resolved while the style was still loading, center the
+            // camera now instead of silently keeping it over Nepal's midpoint.
+            val fine = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                LatLng(fix.latitude, fix.longitude), if (fine) 15.0 else 12.0
+            ))
         }
     }
 
-    // Only resolve a position after an explicit location-button press.
-    // AOSP phones can still locate using Android's providers when Play
-    // services are unavailable or return null.
-    DisposableEffect(locateRequest, map) {
+    // Location must not be blocked by a slow/offline map style load.
+    // The platform and fused providers can locate independently of MapLibre.
+    DisposableEffect(locateRequest) {
         val fine = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -239,7 +246,7 @@ fun RoadMap(
 
         fun finishWithLocation(location: Location) {
             if (finished || cancellation.token.isCancellationRequested) return
-            if (location.latitude !in -90.0..90.0 || location.longitude !in -180.0..180.0) return
+            if (!LocationFixPolicy.validCoordinates(location.latitude, location.longitude)) return
             finished = true
             userFix = location
             val position = LatLng(location.latitude, location.longitude)
@@ -268,7 +275,7 @@ fun RoadMap(
             else error(LocationIssue.Timeout)
         }
 
-        if (map != null && locateRequest > 0) {
+        if (locateRequest > 0) {
             if (!fine && !coarse) {
                 error(LocationIssue.Permission)
             } else {
@@ -298,12 +305,12 @@ fun RoadMap(
                             val cached = try { locationManager.getLastKnownLocation(provider) }
                                 catch (_: Exception) { null }
                             if (cached != null) {
-                                val ageMs = System.currentTimeMillis() - cached.time
-                                if (ageMs in 0..900_000L &&
+                                val now = System.currentTimeMillis()
+                                if (LocationFixPolicy.isFallbackCandidate(cached.time, now) &&
                                     (fallback == null || cached.time > fallback!!.time)) {
                                     fallback = cached
                                 }
-                                if (ageMs in 0..30_000L) finishWithLocation(cached)
+                                if (LocationFixPolicy.isFresh(cached.time, now)) finishWithLocation(cached)
                             }
                         }
                         if (providers.isNotEmpty() && !finished) {
@@ -346,12 +353,12 @@ fun RoadMap(
                         // A last known fix is useful only if still recent.
                         client.lastLocation.addOnSuccessListener { fix ->
                             if (fix != null) {
-                                val ageMs = System.currentTimeMillis() - fix.time
-                                if (ageMs in 0..900_000L &&
+                                val now = System.currentTimeMillis()
+                                if (LocationFixPolicy.isFallbackCandidate(fix.time, now) &&
                                     (fallback == null || fix.time > fallback!!.time)) {
                                     fallback = fix
                                 }
-                                if (ageMs in 0..30_000L) finishWithLocation(fix)
+                                if (LocationFixPolicy.isFresh(fix.time, now)) finishWithLocation(fix)
                             }
                         }
                     } catch (_: SecurityException) {
