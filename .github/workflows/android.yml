@@ -67,12 +67,7 @@ jobs:
           profile: pixel_3a
           disable-animations: true
           emulator-boot-timeout: 600
-          script: |
-            cd apps/web/android
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon || {
-              adb logcat -d -s AndroidRuntime:E HodosRoadMap:E | tail -300
-              exit 1
-            }
+          script: cd apps/web/android && ./gradlew :app:connectedDebugAndroidTest --no-daemon
       - name: Name beta package clearly
         run: |
           test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
