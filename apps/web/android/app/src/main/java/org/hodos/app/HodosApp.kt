@@ -88,6 +88,17 @@ fun HodosApp(
         locating = true
         locateRequest++
     }
+    // A missing map style or stalled provider must never leave the locate
+    // control spinning forever.
+    LaunchedEffect(locateRequest) {
+        if (locateRequest > 0) {
+            delay(19_000L)
+            if (locating) {
+                locating = false
+                locationIssue = LocationIssue.Timeout
+            }
+        }
+    }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
