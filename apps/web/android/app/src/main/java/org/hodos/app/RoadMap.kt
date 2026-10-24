@@ -79,6 +79,7 @@ fun RoadMap(
             result.cameraPosition = CameraPosition.Builder()
                 .target(LatLng(27.7172, 85.3240)).zoom(12.0).build()
             result.uiSettings.isRotateGesturesEnabled = false
+            result.uiSettings.setAttributionMargins(12, 0, 12, 170)
             result.setStyle(
                 Style.Builder().fromUri("https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json")
             ) { style ->
