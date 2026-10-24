@@ -1,4 +1,4 @@
-name: Deploy web
+name: Website build
 
 on:
   push:
@@ -34,8 +34,11 @@ jobs:
           name: hodos-website
           path: apps/web/dist
           if-no-files-found: error
+      - name: Deployment configuration
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == '' }}
+        run: echo "::warning::Website built successfully but Cloudflare deployment was skipped. Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository Actions secrets."
       - name: Publish to Cloudflare Pages
-        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
