@@ -168,7 +168,7 @@ fun HodosApp(
                             ) {
                                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("ROADS AROUND YOU", fontSize = 10.sp, color = Forest, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                        Text("SHARED ROAD MAP", fontSize = 10.sp, color = Forest, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                         Spacer(Modifier.height(5.dp))
                                         Text(
                                             if (hazards.isEmpty()) "No confirmed hazards yet"
