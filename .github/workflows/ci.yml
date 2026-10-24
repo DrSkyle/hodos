@@ -18,4 +18,5 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm -r typecheck
       - run: pnpm -r test
+      - run: node --test appwrite/functions/hodos-aggregate/src/main.test.js
       - run: pnpm --filter @hodos/web build
