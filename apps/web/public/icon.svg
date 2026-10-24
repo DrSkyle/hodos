@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Hodos"><rect width="128" height="128" rx="30" fill="#104e3f"/><path d="M34 99 57 29Q64 13 71 29L94 99" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/><path d="M48 74h32" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="10"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Hodos — mountain road">
+  <rect width="128" height="128" rx="29" fill="#123F34"/>
+  <circle cx="96" cy="33" r="13" fill="#E8D6AC"/>
+  <path d="M0 83 L19 67 L38 42 L57 66 L78 39 L101 68 L128 53 V128 H0Z" fill="#86A995"/>
+  <path d="M0 94 L19 77 L40 95 L65 65 L89 88 L110 64 L128 81 V128 H0Z" fill="#36775D"/>
+  <path d="M0 111 Q29 82 55 101 Q82 83 128 96 V128 H0Z" fill="#185342"/>
+  <path d="M57 133 C39 114 44 101 67 91 C96 77 77 64 62 61 C50 59 54 47 70 43" fill="none" stroke="#0D352C" stroke-width="26" stroke-linecap="round"/>
+  <path d="M57 133 C39 114 44 101 67 91 C96 77 77 64 62 61 C50 59 54 47 70 43" fill="none" stroke="#F4ECDC" stroke-width="18" stroke-linecap="round"/>
+  <path d="M57 133 C39 114 44 101 67 91 C96 77 77 64 62 61 C50 59 54 47 70 43" fill="none" stroke="#B5C8B5" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="5 8"/>
+  <circle cx="104" cy="63" r="4" fill="#F1BF70"/>
+</svg>
