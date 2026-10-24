@@ -8,8 +8,14 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -62,9 +68,24 @@ fun RoadMap(
     val latestOnSelect by rememberUpdatedState(onSelect)
     val latestOnLocated by rememberUpdatedState(onLocated)
     val latestOnLocationError by rememberUpdatedState(onLocationError)
-    val mapView = remember {
-        MapLibre.getInstance(context)
-        MapView(context).apply { onCreate(null) }
+    // Native map initialization varies across GPU drivers and older Android devices.
+    // A map renderer problem must not crash the whole application.
+    val mapView = remember(context) {
+        runCatching {
+            MapLibre.getInstance(context)
+            MapView(context).apply { onCreate(null) }
+        }.onFailure { Log.e("HodosRoadMap", "Map initialization failed", it) }.getOrNull()
+    }
+    var rendererFailed by remember { mutableStateOf(false) }
+    if (mapView == null) {
+        LaunchedEffect(locateRequest) {
+            if (locateRequest > 0) latestOnLocationError(LocationIssue.Timeout)
+        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Map renderer unavailable on this device. You can still browse the nearby hazards list.",
+                modifier = Modifier.padding(30.dp))
+        }
+        return
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var ready by remember { mutableStateOf(false) }
@@ -73,26 +94,32 @@ fun RoadMap(
     DisposableEffect(mapView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                Lifecycle.Event.ON_START -> runCatching { mapView.onStart() }.onFailure { rendererFailed = true }
+                Lifecycle.Event.ON_RESUME -> runCatching { mapView.onResume() }.onFailure { rendererFailed = true }
+                Lifecycle.Event.ON_PAUSE -> runCatching { mapView.onPause() }
+                Lifecycle.Event.ON_STOP -> runCatching { mapView.onStop() }
                 else -> Unit
             }
         }
         lifecycle.addObserver(observer)
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) mapView.onStart()
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) mapView.onResume()
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            runCatching { mapView.onStart() }.onFailure { rendererFailed = true }
+        }
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            runCatching { mapView.onResume() }.onFailure { rendererFailed = true }
+        }
         onDispose {
             lifecycle.removeObserver(observer)
-            mapView.onPause()
-            mapView.onStop()
-            mapView.onDestroy()
+            runCatching { mapView.onPause() }
+            runCatching { mapView.onStop() }
+            runCatching { mapView.onDestroy() }
         }
     }
 
     LaunchedEffect(mapView) {
-        mapView.getMapAsync { result ->
+        try {
+          mapView.getMapAsync { result ->
+            try {
             map = result
             result.cameraPosition = CameraPosition.Builder()
                 .target(LatLng(28.2, 84.0)).zoom(6.0).build()
@@ -146,6 +173,14 @@ fun RoadMap(
                     } else false
                 }
             }
+            } catch (error: Throwable) {
+                rendererFailed = true
+                Log.e("HodosRoadMap", "Map callback failed", error)
+            }
+          }
+        } catch (error: Throwable) {
+            rendererFailed = true
+            Log.e("HodosRoadMap", "Could not create map", error)
         }
     }
 
@@ -332,5 +367,14 @@ fun RoadMap(
         }
     }
 
-    AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+    Box(Modifier.fillMaxSize()) {
+        if (!rendererFailed) {
+            AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(
+                "Map renderer failed to start. The rest of Hodos remains available.",
+                modifier = Modifier.align(Alignment.Center).padding(28.dp)
+            )
+        }
+    }
 }
