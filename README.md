@@ -24,7 +24,7 @@ the new native version.**
 - **Appwrite** — publicly readable aggregated hazards, append-only events,
   private profiles in the previous Capacitor app.
 - **Offline map cache** — browse previously fetched hazards without a network.
-  Offline event upload queue is not implemented yet.
+  Automatic journey observations are saved in a durable SQLite outbox and retried while mapping is enabled. Manual confirmation actions still require connectivity.
 
 The website is a lightweight product landing page powered by Vite.
 The original browser app source is preserved temporarily in
@@ -91,7 +91,7 @@ permissions. Read [the privacy policy](docs/PRIVACY.md) and
 
 ## Status
 
-A native UI refactor is underway. Deployment to \`main\` and a stable signed APK
+The native map and landing-page refresh are under development on a dedicated branch. Deployment to \`main\` and a stable signed APK
 are deliberately held until CI, migration and device tests succeed. The
 original recovery-code identity must remain recoverable for existing users.
 
