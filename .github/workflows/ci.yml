@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/android-first-native-experience]
   pull_request:
 
 jobs:
