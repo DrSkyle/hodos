@@ -28,6 +28,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter @hodos/web build
+      - name: Preserve built website for preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: hodos-website
+          path: apps/web/dist
+          if-no-files-found: error
       - name: Publish to Cloudflare Pages
         if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
         uses: cloudflare/wrangler-action@v3
