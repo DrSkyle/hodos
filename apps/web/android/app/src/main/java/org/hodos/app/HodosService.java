@@ -159,7 +159,7 @@ public class HodosService extends Service implements SensorEventListener {
     return new NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("Hodos")
         .setContentText(text)
-        .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+        .setSmallIcon(R.drawable.hodos_notification)
         .setOngoing(true)
         .setContentIntent(content)
         .build();

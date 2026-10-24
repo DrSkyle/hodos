@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, feat/android-first-native-experience]
+    branches: [main, feat/android-first-native-experience, fix/native-location-permissions]
     paths:
       - "apps/web/android/**"
       - ".github/workflows/android.yml"
@@ -51,8 +51,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          name: Hodos 1.1.0
+          tag_name: v1.1.1
+          name: Hodos 1.1.1
           body: |
             Native Android interface with MapLibre and Jetpack Compose.
             Enable location permissions for automatic road mapping.
