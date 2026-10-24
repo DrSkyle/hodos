@@ -12,6 +12,8 @@ import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.*
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,10 +66,11 @@ fun HodosOnboarding(
                     .padding(horizontal = 26.dp, vertical = 20.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = RoundedCornerShape(12.dp), color = Forest) {
-                        Text("H", Modifier.padding(horizontal = 15.dp, vertical = 9.dp),
-                            fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Color.White)
-                    }
+                    Image(
+                        painter = painterResource(R.drawable.hodos_launcher),
+                        contentDescription = "Hodos logo",
+                        modifier = Modifier.size(44.dp)
+                    )
                     Spacer(Modifier.width(12.dp))
                     Text("Hodos", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-0.7).sp, color = Ink)
