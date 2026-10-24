@@ -8,6 +8,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -53,7 +54,7 @@ fun RoadMap(
     hazards: List<RoadHazard>,
     locateRequest: Int,
     onSelect: (RoadHazard) -> Unit,
-    onLocated: (Location) -> Unit,
+    onLocated: (Location, Boolean) -> Unit,
     onLocationError: (LocationIssue) -> Unit
 ) {
     val context = LocalContext.current
@@ -68,6 +69,7 @@ fun RoadMap(
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var ready by remember { mutableStateOf(false) }
+    var mappedLocation by remember { mutableStateOf<Location?>(null) }
 
     DisposableEffect(mapView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -148,6 +150,22 @@ fun RoadMap(
         }
     }
 
+    LaunchedEffect(ready, mappedLocation) {
+        val fix = mappedLocation ?: return@LaunchedEffect
+        if (!ready) return@LaunchedEffect
+        val position = LatLng(fix.latitude, fix.longitude)
+        map?.style?.getSourceAs<GeoJsonSource>("hodos-user-location")
+            ?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(
+                Feature.fromGeometry(Point.fromLngLat(position.longitude, position.latitude))
+            )))
+        val coarse = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
+            position, if (coarse || fix.accuracy > 800) 11.0 else 15.0
+        ))
+    }
+
     LaunchedEffect(hazards, ready) {
         if (ready) {
             val features = hazards.map { hazard ->
@@ -169,10 +187,9 @@ fun RoadMap(
         }
     }
 
-    // Only resolve a position after an explicit location-button press.
-    // AOSP phones can still locate using Android's providers when Play
-    // services are unavailable or return null.
-    DisposableEffect(locateRequest, ready) {
+    // Location lookup is intentionally independent of the map style/network
+    // tiles. A position can be found while the map is still loading.
+    DisposableEffect(locateRequest) {
         val fine = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -180,108 +197,135 @@ fun RoadMap(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         val cancellation = CancellationTokenSource()
-        val locationManager = context.getSystemService(LocationManager::class.java)
+        val manager = context.getSystemService(LocationManager::class.java)
         val handler = Handler(Looper.getMainLooper())
         var finished = false
         var listener: LocationListener? = null
+        var candidate: Location? = null
 
-        fun finishWithLocation(location: Location) {
-            if (finished || cancellation.token.isCancellationRequested) return
-            if (location.latitude !in -90.0..90.0 || location.longitude !in -180.0..180.0) return
-            finished = true
-            val position = LatLng(location.latitude, location.longitude)
-            map?.style?.getSourceAs<GeoJsonSource>("hodos-user-location")
-                ?.setGeoJson(FeatureCollection.fromFeatures(
-                    arrayOf(Feature.fromGeometry(Point.fromLngLat(
-                        position.longitude, position.latitude
-                    )))
-                ))
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                position, if (fine) 15.0 else 12.0
-            ))
-            latestOnLocated(location)
+        fun ageMs(fix: Location): Long {
+            // Prefer monotonic elapsed real time when available. Wall-clock
+            // changes and NTP corrections should not make old fixes look new.
+            val elapsed = if (fix.elapsedRealtimeNanos > 0L) {
+                (SystemClock.elapsedRealtimeNanos() - fix.elapsedRealtimeNanos) / 1_000_000
+            } else Long.MAX_VALUE
+            return if (elapsed in 0L..604_800_000L) elapsed
+            else (System.currentTimeMillis() - fix.time).coerceAtLeast(0L)
         }
 
-        fun error(issue: LocationIssue) {
-            if (!finished && !cancellation.token.isCancellationRequested) {
-                finished = true
-                latestOnLocationError(issue)
+        fun offerCached(fix: Location?) {
+            if (fix == null || !fix.hasAccuracy()) return
+            if (!fix.latitude.isFinite() || !fix.longitude.isFinite() ||
+                fix.latitude !in -90.0..90.0 || fix.longitude !in -180.0..180.0) return
+            val age = ageMs(fix)
+            if (age > 86_400_000L) return // never silently jump to older than a day
+            if (candidate == null ||
+                age < ageMs(candidate!!) ||
+                (age < 120_000L && fix.accuracy < candidate!!.accuracy)) {
+                candidate = fix
             }
         }
 
-        val timeout = Runnable { error(LocationIssue.Timeout) }
+        fun finish(fix: Location, cached: Boolean) {
+            if (finished || cancellation.token.isCancellationRequested) return
+            finished = true
+            mappedLocation = fix
+            latestOnLocated(fix, cached)
+        }
 
-        if (ready && locateRequest > 0) {
+        val timeout = Runnable {
+            if (!finished && !cancellation.token.isCancellationRequested) {
+                val cached = candidate
+                if (cached != null) finish(cached, true)
+                else {
+                    finished = true
+                    latestOnLocationError(LocationIssue.Timeout)
+                }
+            }
+        }
+
+        if (locateRequest > 0) {
             if (!fine && !coarse) {
-                error(LocationIssue.Permission)
+                finished = true
+                latestOnLocationError(LocationIssue.Permission)
             } else {
                 val enabled = try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        locationManager.isLocationEnabled
-                    } else {
-                        locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-                    }
-                } catch (_: Exception) {
-                    false
-                }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                        manager.isLocationEnabled
+                    else manager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                        manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+                } catch (_: Exception) { false }
+
                 if (!enabled) {
-                    error(LocationIssue.Disabled)
+                    finished = true
+                    latestOnLocationError(LocationIssue.Disabled)
                 } else {
-                    handler.postDelayed(timeout, 16_000L)
-                    try {
-                        val providers = listOf(
-                            LocationManager.NETWORK_PROVIDER,
-                            LocationManager.GPS_PROVIDER
-                        ).filter { locationManager.isProviderEnabled(it) }
-                        if (providers.isNotEmpty()) {
-                            val platformListener = object : LocationListener {
-                                override fun onLocationChanged(location: Location) {
-                                    finishWithLocation(location)
+                    // GPS can be unavailable indoors. Query network, GPS and
+                    // passive caches before asking for fresh provider updates.
+                    for (provider in listOf(
+                        LocationManager.NETWORK_PROVIDER,
+                        LocationManager.GPS_PROVIDER,
+                        LocationManager.PASSIVE_PROVIDER
+                    )) {
+                        try {
+                            if (manager.isProviderEnabled(provider)) {
+                                offerCached(manager.getLastKnownLocation(provider))
+                            }
+                        } catch (_: Exception) { }
+                    }
+                    candidate?.let { if (ageMs(it) <= 20_000L) finish(it, false) }
+                    if (!finished) {
+                        handler.postDelayed(timeout, 17_000L)
+                        val callback = object : LocationListener {
+                            override fun onLocationChanged(fix: Location) {
+                                if (!finished) finish(fix, false)
+                            }
+                        }
+                        listener = callback
+                        try {
+                            for (provider in listOf(
+                                LocationManager.NETWORK_PROVIDER,
+                                LocationManager.GPS_PROVIDER
+                            )) {
+                                if (manager.isProviderEnabled(provider)) {
+                                    manager.requestSingleUpdate(
+                                        provider, callback, Looper.getMainLooper()
+                                    )
                                 }
                             }
-                            listener = platformListener
-                            providers.forEach { provider ->
-                                // Older versions support this API; callback is delivered
-                                // on the main looper without requesting background access.
-                                locationManager.requestSingleUpdate(
-                                    provider, platformListener, Looper.getMainLooper()
-                                )
-                            }
+                        } catch (_: SecurityException) {
+                            finished = true
+                            latestOnLocationError(LocationIssue.Permission)
+                        } catch (_: Exception) { /* Fused provider is attempted below */ }
+
+                        if (!finished) {
+                            try {
+                                val client = LocationServices.getFusedLocationProviderClient(context)
+                                val request = CurrentLocationRequest.Builder()
+                                    .setPriority(if (fine) Priority.PRIORITY_HIGH_ACCURACY
+                                        else Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                                    .setMaxUpdateAgeMillis(30_000L)
+                                    .setDurationMillis(15_000L)
+                                    .build()
+                                client.getCurrentLocation(request, cancellation.token)
+                                    .addOnSuccessListener { fix ->
+                                        if (fix != null && !finished) finish(fix, false)
+                                    }
+                                    .addOnFailureListener { /* Android providers can still respond */ }
+                                client.lastLocation.addOnSuccessListener { fix ->
+                                    if (!finished) {
+                                        offerCached(fix)
+                                        val fresh = candidate
+                                        if (fresh != null && ageMs(fresh) <= 20_000L) {
+                                            finish(fresh, false)
+                                        }
+                                    }
+                                }
+                            } catch (_: SecurityException) {
+                                finished = true
+                                latestOnLocationError(LocationIssue.Permission)
+                            } catch (_: Exception) { /* wait for the native providers */ }
                         }
-                    } catch (_: SecurityException) {
-                        error(LocationIssue.Permission)
-                    } catch (_: Exception) {
-                        // Continue with the fused location request below.
-                    }
-                    try {
-                        val client = LocationServices.getFusedLocationProviderClient(context)
-                        val request = CurrentLocationRequest.Builder()
-                            .setPriority(
-                                if (fine) Priority.PRIORITY_HIGH_ACCURACY
-                                else Priority.PRIORITY_BALANCED_POWER_ACCURACY
-                            )
-                            .setMaxUpdateAgeMillis(30_000L)
-                            .setDurationMillis(14_000L)
-                            .build()
-                        client.getCurrentLocation(request, cancellation.token)
-                            .addOnSuccessListener { fix ->
-                                if (fix != null) finishWithLocation(fix)
-                            }
-                            .addOnFailureListener {
-                                // Android providers may still succeed without GMS.
-                            }
-                        // A last known fix is useful only if still recent.
-                        client.lastLocation.addOnSuccessListener { fix ->
-                            if (fix != null &&
-                                System.currentTimeMillis() - fix.time in 0..120_000L) {
-                                finishWithLocation(fix)
-                            }
-                        }
-                    } catch (_: SecurityException) {
-                        error(LocationIssue.Permission)
-                    } catch (_: Exception) {
-                        // Keep waiting for the Android location provider.
                     }
                 }
             }
@@ -290,9 +334,7 @@ fun RoadMap(
             finished = true
             cancellation.cancel()
             handler.removeCallbacks(timeout)
-            listener?.let {
-                try { locationManager.removeUpdates(it) } catch (_: Exception) { }
-            }
+            listener?.let { runCatching { manager.removeUpdates(it) } }
         }
     }
 
