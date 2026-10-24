@@ -23,8 +23,8 @@ android {
         applicationId 'org.hodos.app'
         minSdk 23
         targetSdk 35
-        versionCode 7
-        versionName '1.1.5'
+        versionCode 8
+        versionName '1.1.6'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -76,57 +76,68 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.6.2'
 }
 
-// Never ship the previously truncated JPEG/PNG thumbnails as Hodos artwork.
-// The website's ORIGINAL PNGs are the single authoritative brand source.
-// This task runs for local builds and GitHub Actions alike.
+// Hodos has exactly ONE full-colour brand image: web/public/hodos-icon.png.
+// The website favicon is a pixel-exact 32px resize of this same source.
+// Both Android legacy icons and both adaptive icons are generated from it.
 def hodosArtworkDir = file('../../public')
 def hodosGeneratedRes = layout.buildDirectory.dir('generated/hodos/res')
 android.sourceSets.main.res.srcDir(hodosGeneratedRes.get().asFile)
 
 tasks.register('prepareHodosArtwork') {
-    def originals = [
-        'hodos-icon.png': 'hodos_icon_square.png',
-        'hodos-round.png': 'hodos_icon_round.png',
-        'hodos-wordmark.png': 'hodos_wordmark.png'
-    ]
-    inputs.files(originals.keySet().collect { new File(hodosArtworkDir, it) })
+    def master = new File(hodosArtworkDir, 'hodos-icon.png')
+    inputs.file(master)
     outputs.dir(hodosGeneratedRes)
     doLast {
-        def target = new File(hodosGeneratedRes.get().asFile, 'drawable-nodpi')
-        target.mkdirs()
-        originals.each { originalName, packagedName ->
-            def source = new File(hodosArtworkDir, originalName)
-            if (!source.isFile() || source.length() < 50000) {
-                throw new GradleException(
-                    "Original Hodos artwork missing or too small: apps/web/public/" +
-                    originalName + ". Upload the full-resolution PNG first."
-                )
-            }
-            new File(target, packagedName).bytes = source.bytes
+        if (!master.isFile() || master.length() < 50000) {
+            throw new GradleException('Missing full-resolution Hodos icon: apps/web/public/hodos-icon.png')
+        }
+        def original = javax.imageio.ImageIO.read(master)
+        if (original == null || original.width < 1024 || original.height < 1024 ||
+            original.width != original.height) {
+            throw new GradleException('Hodos master icon must be a square PNG of at least 1024px.')
         }
 
-        // Android 6–7 launchers need physical density-specific PNG mipmaps.
-        // Android 8+ uses the adaptive XML icon backed by the same source PNG.
-        def sizes = [mdpi:48, hdpi:72, xhdpi:96, xxhdpi:144, xxxhdpi:192]
-        ['hodos-icon.png':'ic_launcher.png',
-         'hodos-round.png':'ic_launcher_round.png'].each { sourceName, apkName ->
-            def original = javax.imageio.ImageIO.read(new File(hodosArtworkDir, sourceName))
-            if (original == null || original.width < 512 || original.height < 512) {
-                throw new GradleException("Invalid Hodos original launcher PNG: " + sourceName)
-            }
-            sizes.each { density, px ->
-                def image = new java.awt.image.BufferedImage(px, px,
-                    java.awt.image.BufferedImage.TYPE_INT_ARGB)
-                def graphics = image.createGraphics()
-                graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                    java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-                graphics.drawImage(original, 0, 0, px, px, null)
-                graphics.dispose()
-                def mipmap = new File(hodosGeneratedRes.get().asFile, 'mipmap-' + density)
-                mipmap.mkdirs()
-                javax.imageio.ImageIO.write(image, 'png', new File(mipmap, apkName))
+        def resRoot = hodosGeneratedRes.get().asFile
+        def drawable = new File(resRoot, 'drawable-nodpi')
+        drawable.mkdirs()
+        new File(drawable, 'hodos_brand_icon.png').bytes = master.bytes
+
+        // Pre-Android 8 launchers use identical artwork, whether the launcher
+        // selects the standard or legacy round icon entry.
+        [mdpi:48, hdpi:72, xhdpi:96, xxhdpi:144, xxxhdpi:192].each { density, px ->
+            def output = new File(resRoot, 'mipmap-' + density)
+            output.mkdirs()
+            def image = new java.awt.image.BufferedImage(px, px,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            def graphics = image.createGraphics()
+            graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+                java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+            graphics.drawImage(original, 0, 0, px, px, null)
+            graphics.dispose()
+            ['ic_launcher.png', 'ic_launcher_round.png'].each { fileName ->
+                javax.imageio.ImageIO.write(image, 'png', new File(output, fileName))
             }
         }
+
+        // Android adaptive icons crop/mask the foreground to the phone's icon
+        // shape. Keep the *whole favicon artwork* inside the adaptive safe zone
+        // instead of letting the OS cut away the tree and road.
+        def side = 432
+        def foreground = new java.awt.image.BufferedImage(side, side,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        def graphics = foreground.createGraphics()
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+            java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+            java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+        def inset = (int)(side * 0.12)  // favicon image occupies 76% safe centre
+        graphics.drawImage(original, inset, inset, side - inset * 2,
+            side - inset * 2, null)
+        graphics.dispose()
+        javax.imageio.ImageIO.write(foreground, 'png',
+            new File(drawable, 'hodos_launcher_foreground.png'))
     }
 }
 tasks.named('preBuild').configure {
