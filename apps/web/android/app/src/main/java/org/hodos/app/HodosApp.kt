@@ -3,6 +3,8 @@ package org.hodos.app
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,12 +13,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.*
@@ -37,13 +41,13 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Ink = Color(0xFF192923)
-private val Forest = Color(0xFF17664F)
-private val Paper = Color(0xFFF8F9F6)
-private val Muted = Color(0xFF65766B)
-private val Mist = Color(0xFFEAF0EA)
+private val Ink = Color(0xFF162522)
+private val Forest = Color(0xFF125B48)
+private val Paper = Color(0xFFF7FAF8)
+private val Muted = Color(0xFF687C74)
+private val Mist = Color(0xFFEAF3ED)
 private val Orange = Color(0xFFC47B29)
-private val Danger = Color(0xFFB84C3C)
+private val Danger = Color(0xFFCB4E43)
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
 
@@ -60,14 +64,36 @@ fun HodosApp(
     val repo = remember { HazardRepository(context) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val sheetState = rememberBottomSheetScaffoldState()
+
     var screen by remember { mutableStateOf(Screen.MAP) }
     var hazards by remember { mutableStateOf(repo.savedHazards()) }
     var trips by remember { mutableStateOf(repo.savedTrips()) }
     var loading by remember { mutableStateOf(false) }
     var offline by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<RoadHazard?>(null) }
-    var listOpen by remember { mutableStateOf(false) }
     var locateRequest by remember { mutableIntStateOf(0) }
+    var query by remember { mutableStateOf("") }
+    var filterVisible by remember { mutableStateOf(false) }
+    var severity by remember { mutableStateOf("All") }
+
+    val visibleHazards = remember(hazards, query, severity) {
+        hazards.filter { hazard ->
+            val matchSeverity = when (severity) {
+                "High" -> hazard.severity >= 3 && !hazard.fixed
+                "Medium" -> hazard.severity == 2 && !hazard.fixed
+                "Low" -> hazard.severity <= 1 && !hazard.fixed
+                "Repaired" -> hazard.fixed
+                else -> true
+            }
+            matchSeverity && (
+                query.isBlank() ||
+                    hazard.title.contains(query.trim(), ignoreCase = true) ||
+                    hazard.severityText.contains(query.trim(), ignoreCase = true) ||
+                    hazard.id.contains(query.trim(), ignoreCase = true)
+                )
+        }.sortedWith(compareByDescending<RoadHazard> { !it.fixed }.thenByDescending { it.severity })
+    }
 
     LaunchedEffect(refreshSignal) {
         trips = repo.savedTrips()
@@ -84,11 +110,14 @@ fun HodosApp(
         surface = Color.White, onSurface = Ink,
         surfaceVariant = Mist, onSurfaceVariant = Muted
     )
-    MaterialTheme(colorScheme = colors, shapes = Shapes(
-        small = RoundedCornerShape(12.dp),
-        medium = RoundedCornerShape(18.dp),
-        large = RoundedCornerShape(26.dp)
-    )) {
+    MaterialTheme(
+        colorScheme = colors,
+        shapes = Shapes(
+            small = RoundedCornerShape(12.dp),
+            medium = RoundedCornerShape(18.dp),
+            large = RoundedCornerShape(26.dp)
+        )
+    ) {
         Scaffold(
             containerColor = Paper,
             snackbarHost = { SnackbarHost(snackbar) },
@@ -123,121 +152,157 @@ fun HodosApp(
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets)) {
                 when (screen) {
-                    Screen.MAP -> {
-                        RoadMap(hazards, locateRequest, onSelect = { selected = it })
-                        Column(
-                            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp)
-                        ) {
-                            Surface(shape = RoundedCornerShape(22.dp), shadowElevation = 5.dp) {
-                                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(Forest), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Outlined.Map, contentDescription = null, tint = Color.White)
-                                    }
-                                    Spacer(Modifier.width(12.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text("Hodos", fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-                                        Text("The road maps itself", fontSize = 12.sp, color = Muted)
-                                    }
-                                    if (loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                                    else IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, contentDescription = "Refresh map") }
-                                }
-                            }
-                            if (offline) {
-                                Spacer(Modifier.height(8.dp))
-                                Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF0DC)) {
-                                    Text("Offline · showing your last saved map", Modifier.padding(10.dp), fontSize = 12.sp, color = Ink)
-                                }
-                            }
-                        }
-                        Column(
-                            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)
-                        ) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                FilledIconButton(
-                                    onClick = { locateRequest++ },
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White, contentColor = Ink),
-                                    modifier = Modifier.size(52.dp)
-                                ) { Icon(Icons.Outlined.MyLocation, "Find my location") }
-                            }
-                            Spacer(Modifier.height(10.dp))
-                            Surface(
-                                onClick = { listOpen = true },
-                                shape = RoundedCornerShape(23.dp),
-                                color = Color.White,
-                                shadowElevation = 7.dp
+                    Screen.MAP -> BottomSheetScaffold(
+                        scaffoldState = sheetState,
+                        sheetPeekHeight = 126.dp,
+                        sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        sheetContainerColor = Color.White,
+                        sheetShadowElevation = 11.dp,
+                        sheetDragHandle = {
+                            BottomSheetDefaults.DragHandle(color = Color(0xFFCBD7CF))
+                        },
+                        sheetContent = {
+                            Column(
+                                Modifier.fillMaxWidth()
+                                    .heightIn(min = 118.dp, max = 480.dp)
+                                    .padding(horizontal = 20.dp)
+                                    .padding(bottom = 16.dp)
                             ) {
-                                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("SHARED ROAD MAP", fontSize = 10.sp, color = Forest, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                        Spacer(Modifier.height(5.dp))
+                                        Text("Nearby hazards", fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
                                         Text(
-                                            if (hazards.isEmpty()) "No confirmed hazards yet"
-                                            else "${hazards.count { !it.fixed }} open hazards",
-                                            fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-                                            letterSpacing = (-0.5).sp
+                                            if (visibleHazards.isEmpty()) "No matching road hazards"
+                                            else "${visibleHazards.size} on the shared map",
+                                            color = Muted, fontSize = 12.sp
                                         )
-                                        Text("Tap to explore the map records", fontSize = 12.sp, color = Muted)
                                     }
-                                    Icon(Icons.Outlined.WarningAmber, null, tint = Orange, modifier = Modifier.size(29.dp))
+                                    IconButton(onClick = onRefresh, enabled = !loading) {
+                                        if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                        else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards")
+                                    }
                                 }
+                                Spacer(Modifier.height(14.dp))
+                                if (visibleHazards.isEmpty()) {
+                                    Text(
+                                        if (hazards.isEmpty()) "As independent journeys confirm road defects, you'll see them here."
+                                        else "Try another search or severity filter.",
+                                        color = Muted, fontSize = 13.sp
+                                    )
+                                } else {
+                                    LazyColumn(Modifier.heightIn(max = 320.dp)) {
+                                        items(visibleHazards, key = { it.id }) { hazard ->
+                                            HazardRow(hazard) { selected = hazard }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        containerColor = Color.Transparent
+                    ) { sheetInsets ->
+                        Box(Modifier.fillMaxSize().padding(sheetInsets)) {
+                            RoadMap(visibleHazards, locateRequest, onSelect = { selected = it })
+                            Column(
+                                Modifier.align(Alignment.TopCenter)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedTextField(
+                                        value = query,
+                                        onValueChange = { query = it },
+                                        singleLine = true,
+                                        placeholder = { Text("Search road hazards", fontSize = 14.sp) },
+                                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(19.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = Color.White,
+                                            unfocusedContainerColor = Color.White,
+                                            focusedBorderColor = Forest,
+                                            unfocusedBorderColor = Color(0xFFDAE7DD)
+                                        )
+                                    )
+                                    FilledIconButton(
+                                        onClick = { filterVisible = !filterVisible },
+                                        modifier = Modifier.size(54.dp),
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = if (filterVisible) Forest else Color.White,
+                                            contentColor = if (filterVisible) Color.White else Ink
+                                        )
+                                    ) {
+                                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter hazards")
+                                    }
+                                }
+                                if (filterVisible) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(shape = RoundedCornerShape(20.dp), color = Color.White, shadowElevation = 4.dp) {
+                                        Row(
+                                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(7.dp)
+                                        ) {
+                                            listOf("All", "High", "Medium", "Low", "Repaired").forEach { option ->
+                                                FilterChip(
+                                                    selected = severity == option,
+                                                    onClick = { severity = option },
+                                                    label = { Text(option) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                if (offline) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF1DE)) {
+                                        Text("Offline · showing saved hazards", Modifier.padding(11.dp), color = Ink, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                            FilledIconButton(
+                                onClick = { locateRequest++ },
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = Color.White, contentColor = Forest
+                                ),
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                                    .padding(end = 18.dp, bottom = 146.dp).size(52.dp)
+                            ) {
+                                Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
                             }
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
-                        armed, trips,
-                        onToggle = onToggle,
-                        onRefresh = onRefresh
+                        armed, trips, onToggle = onToggle, onRefresh = onRefresh
                     )
                     Screen.YOU -> YouScreen(trips, hazards.size)
                 }
             }
         }
-        if (listOpen) {
-            ModalBottomSheet(onDismissRequest = { listOpen = false }) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
-                    Text("Road conditions", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                    Text("${hazards.size} independently mapped hazards", color = Muted)
-                    Spacer(Modifier.height(14.dp))
-                    if (hazards.isEmpty()) {
-                        Text("As people travel, independently confirmed road hazards will appear here.", color = Muted)
-                    } else {
-                        LazyColumn(Modifier.heightIn(max = 410.dp)) {
-                            items(hazards, key = { it.id }) { h ->
-                                HazardRow(h) {
-                                    listOpen = false
-                                    selected = h
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+
         selected?.let { hazard ->
             ModalBottomSheet(onDismissRequest = { selected = null }) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 34.dp)) {
                     Text(hazard.title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(5.dp))
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        (if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity")
-                            + " · ${(hazard.confidence * 100).roundToInt()}% confidence",
+                        (if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity") +
+                            " · ${(hazard.confidence * 100).roundToInt()}% confidence",
                         color = if (hazard.fixed) Forest else Orange
                     )
-                    Spacer(Modifier.height(20.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Spacer(Modifier.height(19.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         DetailStat("${hazard.passes}", "Passes", Modifier.weight(1f))
                         DetailStat("${hazard.devices}", "Devices", Modifier.weight(1f))
                         DetailStat("${hazard.clearPasses}", "Clear passes", Modifier.weight(1f))
                     }
-                    Spacer(Modifier.height(14.dp))
-                    Text("Reports help confirm whether this road defect remains or was repaired. Only aggregated evidence updates the shared map.", color = Muted, fontSize = 13.sp)
+                    Spacer(Modifier.height(17.dp))
+                    Text("This location is based on independently recorded road observations. Your feedback helps check whether the hazard is still there.", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedButton(
                             onClick = {
                                 scope.launch {
                                     val result = repo.sendObservation(hazard, repaired = false)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Thanks! Report recorded." else "Couldn't send. Try again online.")
+                                    snackbar.showSnackbar(if (result.isSuccess) "Thanks! Confirmation recorded." else "Could not send. Check your connection.")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
                             }, modifier = Modifier.weight(1f)
@@ -247,11 +312,11 @@ fun HodosApp(
                             onClick = {
                                 scope.launch {
                                     val result = repo.sendObservation(hazard, repaired = true)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Repair report received." else "Couldn't send. Try again online.")
+                                    snackbar.showSnackbar(if (result.isSuccess) "Repair report received." else "Could not send. Check your connection.")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
                             }, modifier = Modifier.weight(1f)
-                        ) { Text("Fixed now") }
+                        ) { Text("Mark fixed") }
                     }
                 }
             }
