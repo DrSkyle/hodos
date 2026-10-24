@@ -71,4 +71,40 @@ dependencies {
     implementation 'org.maplibre.gl:android-sdk:12.3.1'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+}
+
+// Never ship the previously truncated JPEG/PNG thumbnails as Hodos artwork.
+// The website's ORIGINAL PNGs are the single authoritative brand source.
+// This task runs for local builds and GitHub Actions alike.
+def hodosArtworkDir = file('../../public')
+def hodosGeneratedRes = layout.buildDirectory.dir('generated/hodos/res')
+android.sourceSets.main.res.srcDir(hodosGeneratedRes.get().asFile)
+
+tasks.register('prepareHodosArtwork') {
+    def originals = [
+        'hodos-icon.png': 'hodos_icon_square.png',
+        'hodos-round.png': 'hodos_icon_round.png',
+        'hodos-wordmark.png': 'hodos_wordmark.png'
+    ]
+    inputs.files(originals.keySet().collect { new File(hodosArtworkDir, it) })
+    outputs.dir(hodosGeneratedRes)
+    doLast {
+        def target = new File(hodosGeneratedRes.get().asFile, 'drawable-nodpi')
+        target.mkdirs()
+        originals.each { originalName, packagedName ->
+            def source = new File(hodosArtworkDir, originalName)
+            if (!source.isFile() || source.length() < 50000) {
+                throw new GradleException(
+                    "Original Hodos artwork missing or too small: apps/web/public/" +
+                    originalName + ". Upload the full-resolution PNG first."
+                )
+            }
+            new File(target, packagedName).bytes = source.bytes
+        }
+    }
+}
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('prepareHodosArtwork')
 }
