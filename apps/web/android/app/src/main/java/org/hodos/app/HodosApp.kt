@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -64,7 +65,9 @@ fun HodosApp(
     armed: Boolean,
     refreshSignal: Int,
     onToggle: (Boolean) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onStartJourney: () -> Unit,
+    onFinishJourney: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -93,6 +96,14 @@ fun HodosApp(
     var filterVisible by remember { mutableStateOf(false) }
     var severity by remember { mutableStateOf("All") }
     var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
+    val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
+    var tripActive by remember { mutableStateOf(prefs.getBoolean("tripActive", false)) }
+    LaunchedEffect(screen, refreshSignal) {
+        while (screen == Screen.MAPPING) {
+            tripActive = prefs.getBoolean("tripActive", false)
+            delay(1000L)
+        }
+    }
 
     val visibleHazards = remember(hazards, query, severity, lastKnownLocation) {
         hazards.filter { hazard ->
@@ -316,7 +327,12 @@ fun HodosApp(
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
-                        armed, trips, onToggle = onToggle, onRefresh = onRefresh
+                        armed, trips,
+                        onToggle = onToggle,
+                        onRefresh = onRefresh,
+                        tripActive = tripActive,
+                        onStartJourney = onStartJourney,
+                        onFinishJourney = onFinishJourney
                     )
                     Screen.YOU -> YouScreen(trips, hazards.size)
                 }
@@ -408,7 +424,15 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
 }
 
 @Composable
-private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Boolean) -> Unit, onRefresh: () -> Unit) {
+private fun MappingScreen(
+    armed: Boolean,
+    trips: List<RoadTrip>,
+    onToggle: (Boolean) -> Unit,
+    onRefresh: () -> Unit,
+    tripActive: Boolean,
+    onStartJourney: () -> Unit,
+    onFinishJourney: () -> Unit
+) {
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
@@ -438,6 +462,36 @@ private fun MappingScreen(armed: Boolean, trips: List<RoadTrip>, onToggle: (Bool
                     HorizontalDivider(color = Color(0xFFD0E2D7))
                     Spacer(Modifier.height(14.dp))
                     Text("Your motion data stays on this phone. A foreground notification shows when mapping is active.", color = Muted, fontSize = 13.sp)
+                }
+            }
+        }
+        item {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text(if (tripActive) "Journey in progress" else "Record a journey",
+                            fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(9.dp))
+                    Text(
+                        if (tripActive) "Hodos is collecting real motion and location readings. Finish when your trip ends."
+                        else "Mapping detects journeys automatically. You can also start recording a real journey yourself.",
+                        fontSize = 13.sp, color = Muted
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Button(
+                        enabled = armed,
+                        onClick = if (tripActive) onFinishJourney else onStartJourney,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (tripActive) "Finish journey" else "Start journey")
+                    }
+                    if (!armed) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Switch on automatic mapping to record a journey.", color = Muted, fontSize = 12.sp)
+                    }
                 }
             }
         }

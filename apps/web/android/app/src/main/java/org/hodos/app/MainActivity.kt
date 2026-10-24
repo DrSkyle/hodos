@@ -38,7 +38,9 @@ class MainActivity : ComponentActivity() {
                 armed = armed,
                 refreshSignal = refreshSignal,
                 onToggle = { if (it) continueEnabling() else stopMapping() },
-                onRefresh = { refreshSignal++ }
+                onRefresh = { refreshSignal++ },
+                onStartJourney = { journeyAction(HodosService.ACTION_START_TRIP) },
+                onFinishJourney = { journeyAction(HodosService.ACTION_END_TRIP) }
             )
         }
     }
@@ -87,6 +89,19 @@ class MainActivity : ComponentActivity() {
         } catch (error: Exception) {
             armed = false
             Toast.makeText(this, "Couldn't start mapping: " + error.message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun journeyAction(action: String) {
+        if (!armed || !hasForegroundPermissions()) {
+            Toast.makeText(this, "Enable automatic mapping first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            startService(Intent(this, HodosService::class.java).apply { this.action = action })
+            refreshSignal++
+        } catch (error: Exception) {
+            Toast.makeText(this, "Couldn't control journey: ${error.message}", Toast.LENGTH_LONG).show()
         }
     }
 
