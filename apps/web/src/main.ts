@@ -109,15 +109,21 @@ app.innerHTML = `
         <p class="eyebrow">Open data</p>
         <h2>Everything the phones have found</h2>
         <p class="sub">
-          One row per hazard, with the evidence behind it. This is the same data the
-          map draws, structured so it can be checked, analysed or handed to a road
-          authority.
+          One row per hazard, with the evidence behind it: how many independent phones felt it,
+          on how many separate days, and how much of that evidence says it has since been
+          repaired. This is the same data the map draws, structured so it can be checked,
+          analysed or handed to a road authority.
         </p>
         <div class="stats big" id="data-stats"></div>
         <div class="row">
           <button id="export-csv" class="ghost">Download CSV</button>
           <button id="export-json" class="ghost">Download JSON</button>
         </div>
+        <p class="hint">
+          The map is free and always will be. These exports exist for a ward report: if they
+          are going to a road authority, name the ward in the filename so the source is on
+          record.
+        </p>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -130,6 +136,7 @@ app.innerHTML = `
                 <th class="num">Days</th>
                 <th class="num">Conf.</th>
                 <th class="num">Silent passes</th>
+                <th class="num">Verified by</th>
                 <th>Last seen</th>
                 <th class="num">Latitude</th>
                 <th class="num">Longitude</th>
@@ -384,6 +391,7 @@ function renderData(): void {
         <td class="num">${hazard.dayCount}</td>
         <td class="num">${Math.round(hazard.confidence * 100)}%</td>
         <td class="num">${hazard.clearPasses}</td>
+        <td class="num">${hazard.fixedVotes}</td>
         <td>${relativeTime(hazard.lastSeen)}</td>
         <td class="num">${hazard.lat.toFixed(5)}</td>
         <td class="num">${hazard.lng.toFixed(5)}</td>
