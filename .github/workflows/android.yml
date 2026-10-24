@@ -22,6 +22,11 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      HODOS_KEYSTORE_BASE64: ${{ secrets.HODOS_KEYSTORE_BASE64 }}
+      HODOS_STORE_PASSWORD: ${{ secrets.HODOS_STORE_PASSWORD }}
+      HODOS_KEY_ALIAS: ${{ secrets.HODOS_KEY_ALIAS }}
+      HODOS_KEY_PASSWORD: ${{ secrets.HODOS_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -47,17 +52,27 @@ jobs:
           name: hodos-android
           path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-      - name: Publish APK only on main
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      # Keep release-signing keys in repository Actions secrets, never Git.
+      - name: Assemble signed release
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
+        env:
+          HODOS_KEYSTORE_BASE64: ${{ secrets.HODOS_KEYSTORE_BASE64 }}
+          HODOS_STORE_PASSWORD: ${{ secrets.HODOS_STORE_PASSWORD }}
+          HODOS_KEY_ALIAS: ${{ secrets.HODOS_KEY_ALIAS }}
+          HODOS_KEY_PASSWORD: ${{ secrets.HODOS_KEY_PASSWORD }}
+        run: |
+          echo "$HODOS_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hodos-release.jks"
+          chmod 600 "$RUNNER_TEMP/hodos-release.jks"
+          cd apps/web/android
+          HODOS_KEYSTORE_PATH="$RUNNER_TEMP/hodos-release.jks" ./gradlew :app:assembleRelease --no-daemon
+      - name: Publish signed release
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.1.1
           name: Hodos 1.1.1
           body: |
-            Native Android interface with MapLibre and Jetpack Compose.
-            Enable location permissions for automatic road mapping.
-            This is a debug-signed APK for testing. Keep the same application
-            ID; existing installations signed with a different key cannot
-            upgrade directly.
-          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+            Improved location handling, privacy controls, automatic mapping
+            and adaptive Hodos branding.
+          files: apps/web/android/app/build/outputs/apk/release/app-release.apk
           prerelease: true

@@ -5,6 +5,17 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv('HODOS_KEYSTORE_PATH')
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('HODOS_STORE_PASSWORD')
+                keyAlias System.getenv('HODOS_KEY_ALIAS')
+                keyPassword System.getenv('HODOS_KEY_PASSWORD')
+            }
+        }
+    }
     namespace 'org.hodos.app'
     compileSdk 35
 
@@ -19,6 +30,9 @@ android {
 
     buildTypes {
         release {
+            if (System.getenv('HODOS_KEYSTORE_PATH')) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
