@@ -24,7 +24,7 @@ EVENT_COLUMNS=(
   '{"key":"kind","type":"enum","elements":["pothole","speed_bump","rough_pavement"],"required":true}'
   '{"key":"confidence","type":"double","default":0}'
   '{"key":"mode","type":"enum","elements":["vehicle","pedestrian"]}'
-  '{"key":"observation","type":"enum","elements":["impact","pass"],"default":"impact"}'
+  '{"key":"observation","type":"enum","elements":["impact","pass","fix"],"default":"impact"}'
   '{"key":"hazardRef","type":"string","size":64}'
 )
 
