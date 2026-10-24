@@ -80,7 +80,7 @@ public class HodosService extends Service implements SensorEventListener {
 
   private ScheduledExecutorService scheduler;
   private volatile boolean sampling = false;
-  private long lastMovementAt = 0;
+  private volatile long lastMovementAt = 0;
   private long tripStartedAt = 0;
 
   @Override
@@ -235,9 +235,9 @@ public class HodosService extends Service implements SensorEventListener {
     }
     sampling = true;
     tripStartedAt = System.currentTimeMillis();
-    samples.clear();
-    fixes.clear();
-    impacts.clear();
+    synchronized (samples) { samples.clear(); }
+    synchronized (fixes) { fixes.clear(); }
+    synchronized (impacts) { impacts.clear(); }
     updateNotification("Mapping your route");
 
     Sensor accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -253,14 +253,11 @@ public class HodosService extends Service implements SensorEventListener {
           public void onLocationResult(LocationResult result) {
             Location last = result.getLastLocation();
             if (last != null) {
-              fixes.add(
-                  new MotionDetector.Fix(
-                      last.getTime(),
-                      last.getLatitude(),
-                      last.getLongitude(),
-                      last.getAccuracy(),
-                      last.getSpeed(),
-                      last.hasSpeed()));
+              synchronized (fixes) {
+                fixes.add(new MotionDetector.Fix(
+                    last.getTime(), last.getLatitude(), last.getLongitude(),
+                    last.getAccuracy(), last.getSpeed(), last.hasSpeed()));
+              }
             }
           }
         };
@@ -281,25 +278,27 @@ public class HodosService extends Service implements SensorEventListener {
     }
     long cutoff = System.currentTimeMillis() - 30_000;
     List<MotionDetector.Sample> window = new ArrayList<>();
-    for (MotionDetector.Sample sample : samples) {
-      if (sample.t >= cutoff) {
-        window.add(sample);
+    synchronized (samples) {
+      for (MotionDetector.Sample sample : samples) {
+        if (sample.t >= cutoff) window.add(sample);
       }
     }
     if (window.size() < 25) {
       return;
     }
-    List<MotionDetector.Impact> found = MotionDetector.detect(window, fixes);
-    for (MotionDetector.Impact impact : found) {
-      boolean duplicate = false;
-      for (MotionDetector.Impact seen : impacts) {
-        if (Math.abs(seen.t - impact.t) < 500) {
-          duplicate = true;
-          break;
+    List<MotionDetector.Fix> locationSnapshot;
+    synchronized (fixes) { locationSnapshot = new ArrayList<>(fixes); }
+    List<MotionDetector.Impact> found = MotionDetector.detect(window, locationSnapshot);
+    synchronized (impacts) {
+      for (MotionDetector.Impact impact : found) {
+        boolean duplicate = false;
+        for (MotionDetector.Impact seen : impacts) {
+          if (Math.abs(seen.t - impact.t) < 500) {
+            duplicate = true;
+            break;
+          }
         }
-      }
-      if (!duplicate) {
-        impacts.add(impact);
+        if (!duplicate) impacts.add(impact);
       }
     }
     if (System.currentTimeMillis() - lastMovementAt > STOP_AFTER_STILL_MS) {
@@ -322,8 +321,12 @@ public class HodosService extends Service implements SensorEventListener {
       locationCallback = null;
     }
 
-    List<MotionDetector.Impact> finished = new ArrayList<>(impacts);
-    new Thread(() -> upload(finished)).start();
+    List<MotionDetector.Impact> finished;
+    List<MotionDetector.Fix> route;
+    synchronized (impacts) { finished = new ArrayList<>(impacts); }
+    synchronized (fixes) { route = new ArrayList<>(fixes); }
+    updateNotification("Waiting for a journey");
+    new Thread(() -> upload(finished, route)).start();
   }
 
   private void stopEverything() {
@@ -356,11 +359,10 @@ public class HodosService extends Service implements SensorEventListener {
     if (!sampling) {
       return;
     }
-    samples.add(
-        new MotionDetector.Sample(
-            System.currentTimeMillis(), event.values[0], event.values[1], event.values[2]));
-    if (samples.size() > 6000) {
-      samples.subList(0, 3000).clear();
+    synchronized (samples) {
+      samples.add(new MotionDetector.Sample(
+          System.currentTimeMillis(), event.values[0], event.values[1], event.values[2]));
+      if (samples.size() > 6000) samples.subList(0, 3000).clear();
     }
   }
 
@@ -381,7 +383,7 @@ public class HodosService extends Service implements SensorEventListener {
     return id;
   }
 
-  private void upload(List<MotionDetector.Impact> finished) {
+  private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route) {
     if (finished.isEmpty()) {
       recordTrip(0, 0, 0);
       return;
@@ -412,7 +414,7 @@ public class HodosService extends Service implements SensorEventListener {
     updateNotification("Waiting for a journey");
 
     List<MotionDetector.Hazard> known = fetchPublishedHazards();
-    List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(fixes, known, finished);
+    List<MotionDetector.Hazard> cleared = MotionDetector.passedHazards(route, known, finished);
     for (MotionDetector.Hazard hazard : cleared) {
       postPass(device, trip, hazard);
     }
