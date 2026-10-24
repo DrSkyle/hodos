@@ -303,7 +303,7 @@ fun HodosApp(
                     Spacer(Modifier.height(6.dp))
                     Text(
                         (if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity") +
-                            " · ${(hazard.confidence * 100).roundToInt()}% confidence",
+                            " · ${(hazard.confidence * 100).roundToInt()}/100 evidence score",
                         color = if (hazard.fixed) Forest else Orange
                     )
                     Spacer(Modifier.height(19.dp))
@@ -370,7 +370,7 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         Column(Modifier.weight(1f)) {
             Text(hazard.title, fontWeight = FontWeight.Medium)
             Text(
-                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
+                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} installation IDs"
                 else "${hazard.passes} passes · ${hazard.devices} devices",
                 color = Muted, fontSize = 12.sp
             )

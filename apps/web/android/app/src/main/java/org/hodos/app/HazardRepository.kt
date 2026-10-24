@@ -75,7 +75,12 @@ class HazardRepository(context: Context) {
 
     suspend fun refreshHazards(): Result<List<RoadHazard>> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = "$base/tablesdb/hodos/tables/hazards/rows?limit=500"
+            val query = JSONObject().put("method", "limit").put("values", JSONArray().put(500))
+            val url = okhttp3.HttpUrl.Builder()
+                .scheme("https").host("sgp.cloud.appwrite.io")
+                .addPathSegments("v1/tablesdb/hodos/tables/hazards/rows")
+                .addQueryParameter("queries[]", query.toString())
+                .build().toString()
             client.newCall(request(url).get().build()).execute().use { response ->
                 if (!response.isSuccessful) error("Map unavailable (HTTP ${response.code})")
                 val raw = response.body?.string() ?: error("Empty map response")
@@ -125,15 +130,11 @@ class HazardRepository(context: Context) {
         }
     } catch (_: Exception) { emptyList() }
 
-    private fun rotatingDeviceId(): String {
-        val now = System.currentTimeMillis()
-        val issued = prefs.getLong("deviceIssuedAt", 0L)
-        val previous = prefs.getString("deviceId", null)
-        if (previous != null && now - issued < 86_400_000L) return previous
-        return UUID.randomUUID().toString().also {
-            prefs.edit().putString("deviceId", it).putLong("deviceIssuedAt", now).apply()
-        }
-    }
+    private fun installationId(): String =
+        prefs.getString("deviceId", null)?.takeIf { it.isNotEmpty() }
+            ?: UUID.randomUUID().toString().also {
+                prefs.edit().putString("deviceId", it).apply()
+            }
 
     suspend fun sendObservation(hazard: RoadHazard, repaired: Boolean): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -142,7 +143,7 @@ class HazardRepository(context: Context) {
                     timeZone = TimeZone.getTimeZone("UTC")
                 }.format(Date())
                 val data = JSONObject()
-                    .put("deviceId", rotatingDeviceId())
+                    .put("deviceId", installationId())
                     .put("tripId", UUID.randomUUID().toString())
                     .put("recordedAt", date)
                     .put("lat", hazard.lat)

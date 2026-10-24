@@ -37,6 +37,7 @@ test("nearby events cluster, distant defects remain distinct", () => {
   ]);
   assert.equal(clusters.length, 2);
   assert.equal(clusters[0].events.length, 2);
+  assert.equal(testing.clusterEvents([base, { ...base, kind: "speed_bump" }]).length, 2);
 });
 
 test("publication requires distinct devices, not repeated submissions", () => {
@@ -46,11 +47,12 @@ test("publication requires distinct devices, not repeated submissions", () => {
     { ...base }
   ])[0];
   assert.equal(testing.buildHazard(sameDevice, now, [], []).data.published, false);
+  assert.equal(testing.buildHazard(sameDevice, now, [], []).data.passCount, 1);
 
   const independentlySeen = testing.clusterEvents([
     { ...base },
-    { ...base, deviceId: "device-two" },
-    { ...base, deviceId: "device-one" }
+    { ...base, deviceId: "device-two", tripId: "trip-two" },
+    { ...base, deviceId: "device-one", tripId: "trip-three" }
   ])[0];
   assert.equal(testing.buildHazard(independentlySeen, now, [], []).data.published, true);
 });

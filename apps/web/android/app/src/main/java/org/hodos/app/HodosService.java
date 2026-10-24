@@ -400,14 +400,13 @@ public class HodosService extends Service implements SensorEventListener {
     /* not used */
   }
 
+  /** Persistent random installation pseudonym used for corroboration. */
   private String deviceId() {
     SharedPreferences prefs = getSharedPreferences("hodos", MODE_PRIVATE);
-    long now = System.currentTimeMillis();
-    long issued = prefs.getLong("deviceIssuedAt", 0);
     String id = prefs.getString("deviceId", null);
-    if (id == null || now - issued > 86_400_000L) {
+    if (id == null || id.isEmpty()) {
       id = UUID.randomUUID().toString();
-      prefs.edit().putString("deviceId", id).putLong("deviceIssuedAt", now).apply();
+      prefs.edit().putString("deviceId", id).apply();
     }
     return id;
   }
@@ -636,54 +635,6 @@ public class HodosService extends Service implements SensorEventListener {
     } finally {
       if (connection != null) connection.disconnect();
     }
-  }
-
-  private void mergeHazard(MotionDetector.Hazard hazard) {
-    try {
-      String rowId = rowIdFor(hazard.lat, hazard.lng);
-      JSONObject data = new JSONObject();
-      data.put("hazardId", hazard.id);
-      data.put("lat", hazard.lat);
-      data.put("lng", hazard.lng);
-      data.put("kind", hazard.kind);
-      data.put("severity", hazard.severity);
-      data.put("passCount", hazard.passCount);
-      data.put("deviceCount", hazard.deviceCount);
-      data.put("dayCount", hazard.dayCount);
-      data.put("confidence", hazard.confidence);
-      data.put("firstSeen", isoTime(hazard.firstSeen));
-      data.put("lastSeen", isoTime(hazard.lastSeen));
-      data.put("published", hazard.published);
-      data.put("fixedVotes", 0);
-
-      HttpURLConnection head = open("GET", "tables/hazards/rows/" + rowId);
-      if (head != null && head.getResponseCode() == 200) {
-        head.disconnect();
-        JSONObject body = new JSONObject();
-        body.put("data", data);
-        send("PATCH", "tables/hazards/rows/" + rowId, body);
-        return;
-      }
-      if (head != null) {
-        head.disconnect();
-      }
-      JSONObject body = new JSONObject();
-      body.put("rowId", rowId);
-      body.put("data", data);
-      send("POST", "tables/hazards/rows", body);
-    } catch (Exception ignored) {
-      /* merge is best effort */
-    }
-  }
-
-  private String rowIdFor(double lat, double lng) {
-    return String.format(
-        java.util.Locale.US,
-        "%s%.4f%s%.4f",
-        lat < 0 ? "s" : "n",
-        Math.abs(lat),
-        lng < 0 ? "w" : "e",
-        Math.abs(lng));
   }
 
   private String isoTime(long t) {
