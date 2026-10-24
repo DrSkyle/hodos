@@ -103,6 +103,29 @@ tasks.register('prepareHodosArtwork') {
             }
             new File(target, packagedName).bytes = source.bytes
         }
+
+        // Android 6–7 launchers need physical density-specific PNG mipmaps.
+        // Android 8+ uses the adaptive XML icon backed by the same source PNG.
+        def sizes = [mdpi:48, hdpi:72, xhdpi:96, xxhdpi:144, xxxhdpi:192]
+        ['hodos-icon.png':'ic_launcher.png',
+         'hodos-round.png':'ic_launcher_round.png'].each { sourceName, apkName ->
+            def original = javax.imageio.ImageIO.read(new File(hodosArtworkDir, sourceName))
+            if (original == null || original.width < 512 || original.height < 512) {
+                throw new GradleException("Invalid Hodos original launcher PNG: " + sourceName)
+            }
+            sizes.each { density, px ->
+                def image = new java.awt.image.BufferedImage(px, px,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                def graphics = image.createGraphics()
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                graphics.drawImage(original, 0, 0, px, px, null)
+                graphics.dispose()
+                def mipmap = new File(hodosGeneratedRes.get().asFile, 'mipmap-' + density)
+                mipmap.mkdirs()
+                javax.imageio.ImageIO.write(image, 'png', new File(mipmap, apkName))
+            }
+        }
     }
 }
 tasks.named('preBuild').configure {
