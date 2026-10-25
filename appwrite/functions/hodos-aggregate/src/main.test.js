@@ -10,6 +10,8 @@ const base = {
   lat: 27.7172,
   lng: 85.324,
   accuracy: 6,
+  speedKph: 30,
+  magnitude: 4,
   severity: 2,
   confidence: 0.9,
   kind: "pothole",
@@ -21,6 +23,10 @@ test("discard impossible locations, timestamps and severity", () => {
   for (const invalid of [
     { lat: 91 }, { lng: -181 }, { lat: Number.NaN },
     { severity: 99 }, { accuracy: -1 }, { confidence: 2 },
+    { lat: null }, { lat: "27.7172" }, { accuracy: "6" },
+    { speedKph: null }, { speedKph: "30" }, { speedKph: -1 },
+    { magnitude: null }, { magnitude: -2 }, { confidence: "0.9" },
+    { mode: "unknown" },
     { recordedAt: "not a date" }, { recordedAt: new Date(now + 3600000).toISOString() },
     { kind: "other" }, { deviceId: "" },
     { observation: "fix", hazardRef: null }

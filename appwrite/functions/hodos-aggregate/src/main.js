@@ -77,26 +77,33 @@ async function fetchEvents(sinceIso) {
 /** Reject malformed or out-of-window observations before spatial aggregation. */
 function validEvent(event, sinceMs, now) {
   if (!event || typeof event !== "object") return false;
-  const lat = Number(event.lat);
-  const lng = Number(event.lng);
-  const accuracy = Number(event.accuracy);
-  const severity = Number(event.severity);
-  const time = Date.parse(event.recordedAt);
-  const confidence = event.confidence == null ? 0.5 : Number(event.confidence);
+  // Enforce the wire format, not coercions like Number(null) === 0.
+  // All native reports send JSON numbers; legacy rows may omit confidence.
+  const { lat, lng, accuracy, severity, speedKph, magnitude } = event;
+  const time = typeof event.recordedAt === "string"
+    ? Date.parse(event.recordedAt) : NaN;
+  const confidence = event.confidence == null ? 0.5 : event.confidence;
   const kinds = ["pothole", "speed_bump", "rough_pavement"];
   const observations = ["impact", "pass", "fix"];
   const observation = event.observation || "impact";
-  return Number.isFinite(lat) && Number.isFinite(lng) &&
+  return typeof lat === "number" && Number.isFinite(lat) &&
+    typeof lng === "number" && Number.isFinite(lng) &&
     Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
-    Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 100 &&
+    typeof accuracy === "number" && Number.isFinite(accuracy) &&
+    accuracy >= 0 && accuracy <= 100 &&
+    typeof speedKph === "number" && Number.isFinite(speedKph) && speedKph >= 0 &&
+    typeof magnitude === "number" && Number.isFinite(magnitude) && magnitude >= 0 &&
     Number.isInteger(severity) && severity >= 1 && severity <= 3 &&
     Number.isFinite(time) && time >= sinceMs && time <= now + 5 * 60000 &&
-    Number.isFinite(confidence) && confidence >= 0 && confidence <= 1 &&
+    typeof confidence === "number" && Number.isFinite(confidence) &&
+    confidence >= 0 && confidence <= 1 &&
     typeof event.deviceId === "string" && event.deviceId.length > 0 && event.deviceId.length <= 64 &&
     typeof event.tripId === "string" && event.tripId.length > 0 && event.tripId.length <= 64 &&
     kinds.includes(event.kind) && observations.includes(observation) &&
+    (event.mode == null || ["vehicle", "pedestrian"].includes(event.mode)) &&
     (observation === "impact" ||
-      (typeof event.hazardRef === "string" && event.hazardRef.length > 0));
+      (typeof event.hazardRef === "string" && event.hazardRef.length > 0 &&
+       event.hazardRef.length <= 64));
 }
 
 /** Greedy spatial clustering with a cell index, so it stays linear in practice. */
