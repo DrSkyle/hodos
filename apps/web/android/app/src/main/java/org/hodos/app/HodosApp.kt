@@ -741,7 +741,7 @@ private fun MappingScreen(
                     Text(
                         when {
                             !syncMetricsReady -> "Sync status unavailable on this device"
-                            waitingUploads > 0 -> "$waitingUploads reports safely saved here · waiting for upload"
+                            waitingUploads > 0 -> "$waitingUploads reports safely saved here · will retry online"
                             else -> "No road observations waiting to upload"
                         },
                         color = if (!syncMetricsReady) Danger else Muted,

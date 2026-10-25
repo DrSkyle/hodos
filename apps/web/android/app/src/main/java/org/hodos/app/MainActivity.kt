@@ -106,6 +106,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        // Retry any evidence from earlier journeys even if mapping is off.
+        HodosSyncWorker.schedule(this)
         refreshSignal++
     }
 
@@ -167,5 +169,6 @@ class MainActivity : ComponentActivity() {
         }
         armed = false
         getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", false).apply()
+        HodosSyncWorker.schedule(this)
     }
 }

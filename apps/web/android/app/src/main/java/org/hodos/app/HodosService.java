@@ -37,9 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -84,7 +82,6 @@ public class HodosService extends Service implements SensorEventListener {
   private final List<Long> motionCoverageTimes = new ArrayList<>();
 
   private ScheduledExecutorService scheduler;
-  private ScheduledExecutorService outboxScheduler;
   private EventOutbox outbox;
   private volatile boolean sampling = false;
   private volatile long lastMovementAt = 0;
@@ -120,7 +117,7 @@ public class HodosService extends Service implements SensorEventListener {
         return START_NOT_STICKY;
       }
       startForegroundCompat();
-      startOutboxRetry();
+      HodosSyncWorker.schedule(this);
       if (ACTION_START_TRIP.equals(action)) {
         if (!sampling) {
           lastMovementAt = System.currentTimeMillis();
@@ -138,7 +135,7 @@ public class HodosService extends Service implements SensorEventListener {
         return START_NOT_STICKY;
       }
       startForegroundCompat();
-      startOutboxRetry();
+      HodosSyncWorker.schedule(this);
       int activityType = intent.getIntExtra("activity", -1);
       if (activityType >= 0) {
         handleActivity(activityType);
@@ -155,7 +152,7 @@ public class HodosService extends Service implements SensorEventListener {
     }
     startForegroundCompat();
     registerActivityTransitions();
-    startOutboxRetry();
+    HodosSyncWorker.schedule(this);
     lastMovementAt = System.currentTimeMillis();
     return START_STICKY;
   }
@@ -414,8 +411,10 @@ public class HodosService extends Service implements SensorEventListener {
       postEvent(device, trip, impact);
     }
     updateNotification("Waiting for a journey");
-    // Network I/O remains off the service/main thread. Stored impacts are
-    // safe to retry using their stable SQLite row IDs.
+    // WorkManager owns upload retries even if mapping is disabled, the device
+    // loses connectivity, or Android reclaims this foreground service.
+    HodosSyncWorker.schedule(this);
+    // Local summaries and optional pass evidence remain on a worker thread.
     new Thread(() -> upload(finished, route, device, trip, coverage),
         "hodos-trip-upload").start();
   }
@@ -423,10 +422,6 @@ public class HodosService extends Service implements SensorEventListener {
   private void stopEverything() {
     sampling = false;
     getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", false).apply();
-    if (outboxScheduler != null) {
-      outboxScheduler.shutdownNow();
-      outboxScheduler = null;
-    }
     if (scheduler != null) {
       scheduler.shutdownNow();
       scheduler = null;
@@ -528,9 +523,8 @@ public class HodosService extends Service implements SensorEventListener {
         postPass(device, trip, hazard);
       }
     }
-    if (flushQueuedEvents() > 0) {
-      triggerAggregation();
-    }
+    // A pass may have been enqueued after the earlier sync worker started.
+    HodosSyncWorker.schedule(this);
   }
 
   private List<MotionDetector.Hazard> fetchPublishedHazards() {
@@ -665,65 +659,6 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
-  private void startOutboxRetry() {
-    if (outboxScheduler != null && !outboxScheduler.isShutdown()) return;
-    outboxScheduler = Executors.newSingleThreadScheduledExecutor();
-    outboxScheduler.scheduleWithFixedDelay(() -> {
-      if (flushQueuedEvents() > 0) triggerAggregation();
-    }, 0, 5, TimeUnit.MINUTES);
-  }
-
-  private synchronized int flushQueuedEvents() {
-    if (outbox == null) return 0;
-    int sent = 0;
-    try {
-      for (EventOutbox.Entry queued : outbox.pending(200)) {
-        JSONObject body = new JSONObject()
-            .put("rowId", queued.id)
-            .put("data", new JSONObject(queued.payload));
-        int response = send("POST", "tables/events/rows", body);
-        // 409 means a previous attempt succeeded but its response was lost.
-        if (UploadResponsePolicy.accepted(response)) {
-          outbox.acknowledge(queued.id);
-          sent++;
-        } else if (UploadResponsePolicy.isPermanentlyRejected(response)) {
-          // Keep the original payload privately for review, without letting
-          // this one invalid row block every later valid observation.
-          if (!outbox.quarantine(queued.id, response)) break;
-        } else {
-          // Back off on offline, authorization and server errors.
-          break;
-        }
-      }
-    } catch (Exception ignored) {
-      // The durable queue remains intact; a subsequent retry resumes it.
-    }
-    return sent;
-  }
-
-  /** Ask the server-side writer to recompute the map after a background trip. */
-  private void triggerAggregation() {
-    HttpURLConnection connection = null;
-    try {
-      connection = (HttpURLConnection)
-          new URL(ENDPOINT + "/functions/hodos-aggregate/executions").openConnection();
-      connection.setRequestMethod("POST");
-      connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-      connection.setRequestProperty("Content-Type", "application/json");
-      connection.setConnectTimeout(10_000);
-      connection.setReadTimeout(15_000);
-      connection.setDoOutput(true);
-      try (OutputStream out = connection.getOutputStream()) {
-        out.write("{\"async\":true}".getBytes(StandardCharsets.UTF_8));
-      }
-      connection.getResponseCode();
-    } catch (Exception ignored) {
-      /* The scheduled aggregation will catch up if this request fails. */
-    } finally {
-      if (connection != null) connection.disconnect();
-    }
-  }
-
   private String isoTime(long t) {
     java.text.SimpleDateFormat utc =
         new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
@@ -746,33 +681,4 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
-  private int send(String method, String path, JSONObject body) {
-    HttpURLConnection connection = open(method, path);
-    if (connection == null) {
-      return 500;
-    }
-    try {
-      connection.setDoOutput(true);
-      byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
-      try (OutputStream out = connection.getOutputStream()) {
-        out.write(payload);
-      }
-      int code = connection.getResponseCode();
-      InputStream stream =
-          code < 400 ? connection.getInputStream() : connection.getErrorStream();
-      if (stream != null) {
-        try (BufferedReader reader =
-            new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-          while (reader.readLine() != null) {
-            /* drain */
-          }
-        }
-      }
-      return code;
-    } catch (Exception error) {
-      return 500;
-    } finally {
-      connection.disconnect();
-    }
-  }
 }
