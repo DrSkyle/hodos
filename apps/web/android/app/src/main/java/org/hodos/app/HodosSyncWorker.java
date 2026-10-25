@@ -84,10 +84,20 @@ public final class HodosSyncWorker extends Worker {
    */
   static int discardPending(Context context) {
     Context app = context.getApplicationContext();
+    SharedPreferences prefs = app.getSharedPreferences("hodos", Context.MODE_PRIVATE);
+    if (prefs.getBoolean("armed", false) || prefs.getBoolean("tripActive", false)) {
+      throw new IllegalStateException("Turn mapping off and finish the journey first");
+    }
+    // Cancel first so an in-flight drain notices WorkManager's stop request
+    // before we wait for the shared lock. Otherwise a slow network could keep
+    // the user waiting for an entire 40-observation batch.
+    WorkManager manager = WorkManager.getInstance(app);
+    manager.cancelUniqueWork(WORK_NAME);
+    manager.cancelUniqueWork(RECOVERY_WORK_NAME);
     synchronized (DRAIN_LOCK) {
-      SharedPreferences prefs = app.getSharedPreferences("hodos", Context.MODE_PRIVATE);
+      // Recheck after acquiring the lock in case mapping was enabled meanwhile.
       if (prefs.getBoolean("armed", false) || prefs.getBoolean("tripActive", false)) {
-        throw new IllegalStateException("Turn mapping off and finish the journey first");
+        throw new IllegalStateException("Mapping resumed while deleting reports");
       }
       // The cutoff invalidates delayed inserts from journeys that began
       // before deletion (for instance, an end-of-journey pass fetch).
@@ -95,9 +105,6 @@ public final class HodosSyncWorker extends Worker {
       if (!prefs.edit().putLong(DISCARD_BEFORE, now).commit()) {
         throw new IllegalStateException("Could not save the deletion boundary");
       }
-      WorkManager manager = WorkManager.getInstance(app);
-      manager.cancelUniqueWork(WORK_NAME);
-      manager.cancelUniqueWork(RECOVERY_WORK_NAME);
       try (EventOutbox outbox = new EventOutbox(app)) {
         return outbox.clearPending();
       }
