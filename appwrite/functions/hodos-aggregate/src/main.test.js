@@ -363,3 +363,29 @@ test("capacity exhaustion rejects incomplete snapshots without touching hazards"
     global.fetch = originalFetch;
   }
 });
+
+test("entirely invalid event history cannot unpublish existing road hazards", async () => {
+  const originalFetch = global.fetch;
+  let hazardTouched = false;
+  global.fetch = async (url) => {
+    if (new URL(String(url)).pathname.endsWith("/events/rows")) {
+      return { ok: true, json: async () => ({ rows: [
+        { ...base, lat: 999, recordedAt: new Date(Date.now() - 60_000).toISOString() }
+      ] }) };
+    }
+    hazardTouched = true;
+    throw new Error("invalid evidence must not touch hazards");
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 503);
+    assert.equal(result.body.ok, false);
+    assert.equal(result.body.error, "no valid observations");
+    assert.equal(hazardTouched, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
