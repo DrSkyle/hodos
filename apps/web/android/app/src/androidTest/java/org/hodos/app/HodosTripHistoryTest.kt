@@ -37,6 +37,22 @@ class HodosTripHistoryTest {
         }
     }
 
+    @Test fun localHistoryCanBeClearedWithoutChangingOtherPreferences() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences(
+            "test-trip-history-${UUID.randomUUID()}", Context.MODE_PRIVATE
+        )
+        try {
+            prefs.edit().putString("otherSetting", "preserved").commit()
+            assertTrue(TripHistory.record(prefs, 12345L, 2, 12, 240.0))
+            assertTrue(TripHistory.clear(prefs))
+            assertEquals("[]", prefs.getString("autoTrips", "[]"))
+            assertEquals("preserved", prefs.getString("otherSetting", ""))
+        } finally {
+            prefs.edit().clear().commit()
+        }
+    }
+
     @Test fun invalidJourneyDoesNotOverwritePreviousHistory() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val prefs = context.getSharedPreferences(

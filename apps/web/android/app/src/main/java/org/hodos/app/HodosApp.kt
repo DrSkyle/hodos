@@ -478,7 +478,18 @@ fun HodosApp(
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
-                    Screen.YOU -> YouScreen(trips, hazards.size)
+                    Screen.YOU -> YouScreen(trips, hazards.size, onClearHistory = {
+                        scope.launch {
+                            val cleared = withContext(Dispatchers.IO) {
+                                TripHistory.clear(prefs)
+                            }
+                            if (cleared) onRefresh()
+                            snackbar.showSnackbar(
+                                if (cleared) "Local journey history deleted"
+                                else "Could not delete local history"
+                            )
+                        }
+                    })
                 }
             }
         }
@@ -864,8 +875,12 @@ private fun MappingScreen(
 }
 
 @Composable
-private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
+private fun YouScreen(
+    trips: List<RoadTrip>, hazards: Int, onClearHistory: () -> Unit
+) {
     val total = trips.sumOf { it.impacts }
+    val context = LocalContext.current
+    var confirmClearHistory by remember { mutableStateOf(false) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(22.dp),
@@ -898,7 +913,20 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
                         Text("Privacy comes first", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text("The detector runs locally. The app submits identified road observations so that independent devices can corroborate hazards. Location permission is needed for hands-free mapping.", color = Muted, fontSize = 13.sp)
+                    Text("The detector runs locally. The app submits road observations so multiple installations can corroborate hazards. Location permission is needed for hands-free mapping.", color = Muted, fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Text("Saved journeys contain counts and distance—not your full route. Deleting local history does not retract observations already submitted.", color = Muted, fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/privacy.html"))
+                        )
+                    }) { Text("Read the full privacy notice") }
+                    if (trips.isNotEmpty()) {
+                        TextButton(onClick = { confirmClearHistory = true }) {
+                            Text("Delete local journey history", color = Danger)
+                        }
+                    }
                 }
             }
         }
@@ -909,6 +937,28 @@ private fun YouScreen(trips: List<RoadTrip>, hazards: Int) {
                 Text("Hodos · by Devilabs", color = Muted, fontSize = 13.sp)
             }
         }
+    }
+    if (confirmClearHistory) {
+        AlertDialog(
+            onDismissRequest = { confirmClearHistory = false },
+            title = { Text("Delete local journey history?") },
+            text = {
+                Text("This clears saved journey dates, distances and impact counts on this phone. " +
+                    "It cannot delete reports already uploaded to the public map, " +
+                    "and it does not delete observations still queued for upload.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearHistory = false
+                    onClearHistory()
+                }) { Text("Delete history", color = Danger) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearHistory = false }) {
+                    Text("Keep history")
+                }
+            }
+        )
     }
 }
 

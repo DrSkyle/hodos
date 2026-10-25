@@ -12,6 +12,11 @@ final class TripHistory {
   private static final int MAX_TRIPS = 50;
   private TripHistory() {}
 
+  /** Remove only local summary history; pending upload evidence is untouched. */
+  static synchronized boolean clear(SharedPreferences prefs) {
+    return prefs != null && prefs.edit().remove("autoTrips").commit();
+  }
+
   static synchronized boolean record(
       SharedPreferences prefs, long timestamp, int impacts, int gpsFixes, double distanceM) {
     if (prefs == null || timestamp <= 0 || impacts < 0 || gpsFixes < 0 ||
