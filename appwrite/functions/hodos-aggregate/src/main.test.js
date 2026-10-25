@@ -1,6 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { testing } = require("./main.js");
+// Tests must never use live credentials or external network access.
+process.env.HODOS_ENDPOINT = "https://hodos-test.invalid/v1";
+process.env.HODOS_PROJECT_ID = "test-project";
+process.env.HODOS_API_KEY = "test-key-not-secret";
+const aggregate = require("./main.js");
+const { testing } = aggregate;
 
 const now = Date.parse("2026-10-24T04:00:00.000Z");
 const base = {
@@ -169,4 +174,79 @@ test("native sensor impacts without an explicit observation field remain support
   assert.equal(testing.validEvent(nativeImpact, now - 86400000, now), true);
   assert.equal(testing.isMeasuredImpact(nativeImpact), true);
   assert.equal(testing.isManualConfirmation(nativeImpact), false);
+});
+
+test("whole aggregation flow publishes corroborated sensor evidence without network", async () => {
+  const originalFetch = global.fetch;
+  const timestamp = new Date(Date.now() - 60_000).toISOString();
+  const incidents = [
+    { ...base, recordedAt: timestamp, deviceId: "sensor-one", tripId: "trip-a" },
+    { ...base, recordedAt: timestamp, deviceId: "sensor-two", tripId: "trip-b" },
+    { ...base, recordedAt: timestamp, deviceId: "sensor-one", tripId: "trip-c" }
+  ];
+  const writes = [];
+  global.fetch = async (url, options = {}) => {
+    assert.ok(String(url).startsWith("https://hodos-test.invalid/v1/"));
+    if (String(url).includes("/events/rows")) {
+      assert.equal(options.method, undefined);
+      return { ok: true, json: async () => ({ rows: incidents }) };
+    }
+    if (String(url).includes("/hazards/rows") && options.method === undefined) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (String(url).endsWith("/hazards/rows") && options.method === "POST") {
+      writes.push(JSON.parse(options.body));
+      return { ok: true, status: 201 };
+    }
+    throw new Error("Unexpected request: " + url);
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.created, 1);
+    assert.equal(result.body.published, 1);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].data.passCount, 3);
+    assert.equal(writes[0].data.deviceCount, 2);
+    assert.equal(writes[0].data.published, true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("whole aggregation flow hides unsupported old publications without deleting rows", async () => {
+  const originalFetch = global.fetch;
+  const oldHazard = { $id: "pold-hazard", published: true };
+  const patches = [];
+  global.fetch = async (url, options = {}) => {
+    assert.ok(String(url).startsWith("https://hodos-test.invalid/v1/"));
+    if (String(url).includes("/events/rows")) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (String(url).endsWith("/hazards/rows") && options.method === undefined) {
+      return { ok: true, json: async () => ({ rows: [oldHazard] }) };
+    }
+    if (String(url).includes("/hazards/rows/") && options.method === "PATCH") {
+      patches.push({ url, body: JSON.parse(options.body) });
+      return { ok: true, status: 200 };
+    }
+    throw new Error("Unexpected request: " + url);
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.unpublished, 1);
+    assert.equal(patches.length, 1);
+    assert.deepEqual(patches[0].body, { data: { published: false } });
+    assert.ok(patches[0].url.endsWith("/" + oldHazard.$id));
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
