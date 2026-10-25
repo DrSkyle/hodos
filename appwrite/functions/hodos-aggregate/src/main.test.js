@@ -336,3 +336,30 @@ test("malformed hazard list cannot trigger writes or stale reconciliation", asyn
     global.fetch = originalFetch;
   }
 });
+
+test("capacity exhaustion rejects incomplete snapshots without touching hazards", async () => {
+  const originalFetch = global.fetch;
+  let pages = 0;
+  let touchedHazards = false;
+  global.fetch = async (url) => {
+    if (new URL(String(url)).pathname.endsWith("/events/rows")) {
+      pages++;
+      return { ok: true, json: async () => ({ rows: Array(500).fill(base) }) };
+    }
+    touchedHazards = true;
+    throw new Error("must not mutate hazards on truncated history");
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 503);
+    assert.equal(result.body.ok, false);
+    assert.equal(result.body.error, "observation capacity reached");
+    assert.equal(pages, 40);
+    assert.equal(touchedHazards, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
