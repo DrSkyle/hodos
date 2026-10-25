@@ -248,6 +248,28 @@ async function listHazards() {
   }
 }
 
+/**
+ * Never keep a hazard labelled as current after ALL supporting impacts age
+ * outside the evidence window. If input was truncated, leave old rows alone:
+ * an incomplete history is not proof a road changed.
+ */
+function stalePublishedRows(existing, currentHazards, completeHistory) {
+  if (!completeHistory) return [];
+  const currentIds = new Set(currentHazards.map((hazard) => hazard.rowId));
+  return existing.filter((row) =>
+    row && row.published === true && typeof row.$id === "string" &&
+    !currentIds.has(row.$id));
+}
+
+async function unpublishStaleHazard(row) {
+  const response = await fetch(`${rowsUrl("hazards")}/${encodeURIComponent(row.$id)}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({ data: { published: false } }),
+  });
+  if (!response.ok) throw new Error(`stale hazard update failed: ${response.status}`);
+}
+
 async function writeHazard(hazard, existingByRowId) {
   const existing = existingByRowId.get(hazard.rowId);
   if (existing === undefined) {
@@ -316,8 +338,17 @@ module.exports = async ({ res, log }) => {
       }
     }
 
+    let unpublished = 0;
+    // Don't hide any previous hazard if a write failed or the event window
+    // hit its cap; partial evidence cannot safely invalidate old rows.
+    const complete = incoming.length < MAX_EVENTS && failed === 0;
+    const stale = stalePublishedRows(existing, hazards, complete);
+    for (const row of stale) {
+      await unpublishStaleHazard(row);
+      unpublished += 1;
+    }
     const published = hazards.filter((hazard) => hazard.data.published).length;
-    log(`hazards: ${hazards.length} (${published} published), created ${created}, updated ${updated}`);
+    log(`hazards: ${hazards.length} (${published} published), created ${created}, updated ${updated}, stale hidden ${unpublished}`);
     return res.json({
       ok: true,
       events: events.length,
@@ -325,6 +356,7 @@ module.exports = async ({ res, log }) => {
       published,
       created,
       updated,
+      unpublished,
       failed,
     });
   } catch (error) {
@@ -335,4 +367,6 @@ module.exports = async ({ res, log }) => {
 
 
 // Export deterministic domain helpers for the repository's regression tests.
-module.exports.testing = { validEvent, clusterEvents, buildHazard, rowIdFor };
+module.exports.testing = {
+  validEvent, clusterEvents, buildHazard, rowIdFor, stalePublishedRows
+};

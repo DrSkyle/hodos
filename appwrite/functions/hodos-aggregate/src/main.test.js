@@ -75,3 +75,23 @@ test("repair evidence must be recent and located near the hazard", () => {
   ]);
   assert.equal(hazard.data.fixedVotes, 1);
 });
+
+test("stale published hazards are hidden only after a complete recomputation", () => {
+  const rows = [
+    { $id: "still-relevant", published: true },
+    { $id: "expired-pothole", published: true },
+    { $id: "already-hidden", published: false }
+  ];
+  const current = [{ rowId: "still-relevant", data: { published: true } }];
+  assert.deepEqual(
+    testing.stalePublishedRows(rows, current, true).map((row) => row.$id),
+    ["expired-pothole"]
+  );
+  assert.deepEqual(testing.stalePublishedRows(rows, current, false), []);
+});
+
+test("no current evidence hides old publications only when history is complete", () => {
+  const old = [{ $id: "previously-confirmed", published: true }];
+  assert.equal(testing.stalePublishedRows(old, [], true).length, 1);
+  assert.equal(testing.stalePublishedRows(old, [], false).length, 0);
+});
