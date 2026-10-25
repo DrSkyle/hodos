@@ -256,7 +256,11 @@ class HazardRepository(context: Context) {
             val url = "$base/functions/hodos-aggregate/executions"
             client.newCall(request(url).post(
                 """{"async":true}""".toRequestBody("application/json".toMediaType())
-            ).build()).execute().close()
+            ).build()).execute().use { response ->
+                check(response.isSuccessful) {
+                    "Could not schedule hazard aggregation (HTTP ${response.code})"
+                }
+            }
         }
     }
 }
