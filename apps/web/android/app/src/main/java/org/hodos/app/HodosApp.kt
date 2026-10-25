@@ -475,6 +475,25 @@ fun HodosApp(
                                 }
                             }
                         },
+                        onDeleteQueued = {
+                            scope.launch {
+                                try {
+                                    val removed = withContext(Dispatchers.IO) {
+                                        HodosSyncWorker.discardPending(context)
+                                    }
+                                    waitingUploads = withContext(Dispatchers.IO) {
+                                        EventOutbox(context).use { it.pendingCount() }
+                                    }
+                                    snackbar.showSnackbar(
+                                        "$removed unsent reports deleted from this device"
+                                    )
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(
+                                        "Could not delete unsent reports. Turn mapping off first."
+                                    )
+                                }
+                            }
+                        },
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
@@ -638,10 +657,12 @@ private fun MappingScreen(
     rejectedUploads: Int,
     syncMetricsReady: Boolean,
     onDeleteRejected: () -> Unit,
+    onDeleteQueued: () -> Unit,
     onStartJourney: () -> Unit,
     onFinishJourney: () -> Unit
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
+    var confirmDeleteQueued by remember { mutableStateOf(false) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
@@ -758,6 +779,17 @@ private fun MappingScreen(
                         color = if (!syncMetricsReady) Danger else Muted,
                         fontSize = 13.sp
                     )
+                    if (syncMetricsReady && waitingUploads > 0 && !armed && !tripActive) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "You can discard unsent reports while mapping is off. " +
+                                "Reports already accepted by the server cannot be recalled.",
+                            color = Muted, fontSize = 13.sp
+                        )
+                        TextButton(onClick = { confirmDeleteQueued = true }) {
+                            Text("Delete unsent reports", color = Danger)
+                        }
+                    }
                     if (syncMetricsReady && rejectedUploads > 0) {
                         Spacer(Modifier.height(10.dp))
                         Text("$rejectedUploads reports were rejected by the server. " +
@@ -851,6 +883,28 @@ private fun MappingScreen(
                 }
             }
         }
+    }
+    if (confirmDeleteQueued) {
+        AlertDialog(
+            onDismissRequest = { confirmDeleteQueued = false },
+            title = { Text("Delete unsent road reports?") },
+            text = {
+                Text("This permanently removes reports still in this phone's upload queue. " +
+                    "An upload that finished before deletion cannot be undone. " +
+                    "Already-uploaded reports, rejected reports and local journey history are unaffected.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDeleteQueued = false
+                    onDeleteQueued()
+                }) { Text("Delete unsent", color = Danger) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDeleteQueued = false }) {
+                    Text("Keep reports")
+                }
+            }
+        )
     }
     if (confirmDiscard) {
         AlertDialog(

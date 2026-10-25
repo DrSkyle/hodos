@@ -23,7 +23,12 @@ final class EventOutbox extends SQLiteOpenHelper {
   private static final String REJECTED_TABLE = "rejected_events";
 
   EventOutbox(Context context) {
-    super(context.getApplicationContext(), "hodos-events.db", null, 2);
+    this(context, "hodos-events.db");
+  }
+
+  /** Test-only database isolation, never used by production queue code. */
+  EventOutbox(Context context, String databaseName) {
+    super(context.getApplicationContext(), databaseName, null, 2);
   }
 
   @Override
@@ -75,6 +80,11 @@ final class EventOutbox extends SQLiteOpenHelper {
 
   synchronized void acknowledge(String id) {
     getWritableDatabase().delete(TABLE, "id = ?", new String[]{id});
+  }
+
+  /** Delete only unsent reports; rejected diagnostics remain untouched. */
+  synchronized int clearPending() {
+    return getWritableDatabase().delete(TABLE, null, null);
   }
 
   synchronized int pendingCount() {

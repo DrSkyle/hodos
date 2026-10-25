@@ -29,7 +29,7 @@
 <body>
 <header><div><a class="brand" href="/"><img alt="" src="/hodos-icon.png?v=10" width="34" height="34"/>Hodos</a><a href="/">Back to Hodos →</a></div></header>
 <main>
-<h1>Privacy</h1><p class="date">Updated 24 October 2026</p>
+<h1>Privacy</h1><p class="date">Updated 25 October 2026</p>
 <p>Hodos uses your phone's motion sensors and location to identify possible road defects. You can view the hazard map without enabling automatic mapping.</p>
 <h2>Location and motion</h2>
 <p>When automatic mapping is enabled, Hodos reads motion and location signals to recognize journeys and detect unusual road impacts. Analysis runs on your phone. Raw accelerometer samples and complete GPS routes are not uploaded.</p>
@@ -41,7 +41,7 @@
 <p>Your phone holds a cache of map hazards, up to 50 journey summaries, and any observations queued for upload in app-private SQLite storage. That queue does not currently use separate application-level encryption. Permanently rejected submissions are retained separately in private app storage until you clear them or remove app data. Observations queued before you turn mapping off can continue uploading in the background when network access returns.</p>
 <p>The aggregation service examines the last 120 days of events. This is not a deletion schedule; older server observations are not currently deleted automatically.</p>
 <h2>Your controls</h2>
-<p>Turn off automatic mapping in Hodos or revoke location and activity-recognition permissions in Android settings. Clearing local app data or uninstalling Hodos removes local information but does not erase observations already submitted to the server.</p>
+<p>Turn off automatic mapping in Hodos or revoke location and activity-recognition permissions in Android settings. In the Mapping screen, after switching mapping off and finishing a journey, you can delete road observations that remain queued locally; requests already accepted by the server cannot be recalled. You can separately clear rejected reports and local journey history. Clearing local app data or uninstalling Hodos removes local information but does not erase observations already submitted to the server.</p>
 <p>Hodos does not intentionally include advertising or third-party analytics SDKs. Hosting providers may process technical connection data necessary to operate the service.</p>
 <h2>Contact</h2>
 <p>For data questions or deletion requests, contact the maintainers through the <a href="https://github.com/DrSkyle/hodos">Hodos repository</a>. Please don't share precise location details in a public issue.</p>

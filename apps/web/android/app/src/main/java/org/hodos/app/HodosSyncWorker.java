@@ -75,6 +75,28 @@ public final class HodosSyncWorker extends Worker {
     }
   }
 
+  /**
+   * Opt-out for reports not yet submitted. Serialize against the network drain
+   * before clearing SQLite, and cancel both recovery and immediate jobs. A
+   * request already accepted before this acquires the lock cannot be recalled.
+   * Call from an IO coroutine, never Android's UI thread.
+   */
+  static int discardPending(Context context) {
+    Context app = context.getApplicationContext();
+    synchronized (DRAIN_LOCK) {
+      SharedPreferences prefs = app.getSharedPreferences("hodos", Context.MODE_PRIVATE);
+      if (prefs.getBoolean("armed", false) || prefs.getBoolean("tripActive", false)) {
+        throw new IllegalStateException("Turn mapping off and finish the journey first");
+      }
+      WorkManager manager = WorkManager.getInstance(app);
+      manager.cancelUniqueWork(WORK_NAME);
+      manager.cancelUniqueWork(RECOVERY_WORK_NAME);
+      try (EventOutbox outbox = new EventOutbox(app)) {
+        return outbox.clearPending();
+      }
+    }
+  }
+
   @NonNull
   @Override
   public Result doWork() {

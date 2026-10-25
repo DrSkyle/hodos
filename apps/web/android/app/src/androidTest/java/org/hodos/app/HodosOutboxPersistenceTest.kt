@@ -21,7 +21,8 @@ class HodosOutboxPersistenceTest {
         val app = ApplicationProvider.getApplicationContext<Context>()
         val id = "smoke-${UUID.randomUUID()}"
         val payload = """{"observation":"impact","kind":"pothole"}"""
-        val first = EventOutbox(app)
+        val databaseName = "hodos-queue-test-${UUID.randomUUID()}.db"
+        val first = EventOutbox(app, databaseName)
         try {
             assertTrue("First insert must persist", first.enqueue(id, payload))
             assertFalse("Duplicate ID must not create more evidence", first.enqueue(id, payload))
@@ -29,7 +30,7 @@ class HodosOutboxPersistenceTest {
             first.close()
         }
 
-        val reopened = EventOutbox(app)
+        val reopened = EventOutbox(app, databaseName)
         try {
             val retained = reopened.pending(200).filter { it.id == id }
             assertEquals("Evidence must survive helper recreation", 1, retained.size)
@@ -40,6 +41,7 @@ class HodosOutboxPersistenceTest {
         } finally {
             reopened.acknowledge(id)
             reopened.close()
+            app.deleteDatabase(databaseName)
         }
     }
 
@@ -48,7 +50,8 @@ class HodosOutboxPersistenceTest {
         val app = ApplicationProvider.getApplicationContext<Context>()
         val rejectedId = "test-invalid-${UUID.randomUUID()}"
         val goodId = "test-valid-${UUID.randomUUID()}"
-        val db = EventOutbox(app)
+        val databaseName = "hodos-queue-test-${UUID.randomUUID()}.db"
+        val db = EventOutbox(app, databaseName)
         try {
             val beforePending = db.pendingCount()
             val beforeRejected = db.rejectedCount()
@@ -67,7 +70,7 @@ class HodosOutboxPersistenceTest {
             db.acknowledge(goodId)
             db.close()
         }
-        val reopened = EventOutbox(app)
+        val reopened = EventOutbox(app, databaseName)
         try {
             assertTrue(reopened.rejectedCount() >= 1)
             assertFalse(reopened.pending(200).any { it.id == rejectedId })
@@ -75,6 +78,28 @@ class HodosOutboxPersistenceTest {
             // Test data must not remain in the user's diagnostics table.
             reopened.deleteRejected(rejectedId)
             reopened.close()
+            app.deleteDatabase(databaseName)
+        }
+    }
+
+    @Test
+    fun clearingUnsentReportsKeepsRejectedRecordsAndOtherDatabasesIntact() {
+        val app = ApplicationProvider.getApplicationContext<Context>()
+        val databaseName = "hodos-queue-test-${UUID.randomUUID()}.db"
+        try {
+            EventOutbox(app, databaseName).use { outbox ->
+                assertTrue(outbox.enqueue("good-a", """{"kind":"pothole"}"""))
+                assertTrue(outbox.enqueue("bad-b", """{"kind":"speed_bump"}"""))
+                assertTrue(outbox.quarantine("bad-b", 422))
+                assertEquals(1, outbox.pendingCount())
+                assertEquals(1, outbox.rejectedCount())
+                assertEquals(1, outbox.clearPending())
+                assertEquals(0, outbox.pendingCount())
+                assertEquals(1, outbox.rejectedCount())
+                assertEquals(0, outbox.clearPending())
+            }
+        } finally {
+            app.deleteDatabase(databaseName)
         }
     }
 }
