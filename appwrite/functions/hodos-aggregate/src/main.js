@@ -64,7 +64,10 @@ async function fetchEvents(sinceIso) {
       throw new Error(`events read failed: ${res.status} ${await res.text()}`);
     }
     const body = await res.json();
-    const rows = body.rows ?? [];
+    if (!body || !Array.isArray(body.rows)) {
+      throw new Error("invalid events response: rows array required");
+    }
+    const rows = body.rows;
     events.push(...rows);
     if (rows.length < PAGE_SIZE) {
       break;
@@ -281,7 +284,11 @@ async function listHazards() {
     if (!res.ok) {
       throw new Error(`hazards read failed: ${res.status}`);
     }
-    const page = (await res.json()).rows ?? [];
+    const body = await res.json();
+    if (!body || !Array.isArray(body.rows)) {
+      throw new Error("invalid hazards response: rows array required");
+    }
+    const page = body.rows;
     rows.push(...page);
     if (page.length < PAGE_SIZE) return rows;
     if (offset >= 19500) throw new Error("Too many hazards for full recomputation");
