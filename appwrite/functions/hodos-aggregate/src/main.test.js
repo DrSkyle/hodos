@@ -250,3 +250,39 @@ test("whole aggregation flow hides unsupported old publications without deleting
     global.fetch = originalFetch;
   }
 });
+
+test("failed hazard writes return a retryable error instead of false success", async () => {
+  const originalFetch = global.fetch;
+  const timestamp = new Date(Date.now() - 60_000).toISOString();
+  const incidents = [
+    { ...base, recordedAt: timestamp, deviceId: "sensor-one", tripId: "trip-a" },
+    { ...base, recordedAt: timestamp, deviceId: "sensor-two", tripId: "trip-b" },
+    { ...base, recordedAt: timestamp, deviceId: "sensor-one", tripId: "trip-c" }
+  ];
+  global.fetch = async (url, options = {}) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith("/events/rows") && !options.method) {
+      return { ok: true, json: async () => ({ rows: incidents }) };
+    }
+    if (path.endsWith("/hazards/rows") && !options.method) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (path.endsWith("/hazards/rows") && options.method === "POST") {
+      return { ok: false, status: 429 };
+    }
+    throw new Error("Unexpected request: " + url);
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 503);
+    assert.equal(result.body.ok, false);
+    assert.equal(result.body.failed, 1);
+    assert.equal(result.body.created, 0);
+    assert.equal(result.body.unpublished, 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
