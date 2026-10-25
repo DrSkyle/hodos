@@ -73,13 +73,13 @@ jobs:
       - name: Name beta package clearly
         run: |
           test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
-          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.15-beta.apk
+          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.16-beta.apk
       - name: Verify APK
-        run: test -s Hodos-1.1.15-beta.apk
+        run: test -s Hodos-1.1.16-beta.apk
       - uses: actions/upload-artifact@v4
         with:
           name: hodos-android
-          path: Hodos-1.1.15-beta.apk
+          path: Hodos-1.1.16-beta.apk
           if-no-files-found: error
       # Keep release-signing keys in repository Actions secrets, never Git.
       - name: Assemble signed release
@@ -98,32 +98,32 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         run: |
           test -s apps/web/android/app/build/outputs/apk/release/app-release.apk
-          cp apps/web/android/app/build/outputs/apk/release/app-release.apk Hodos-1.1.15.apk
+          cp apps/web/android/app/build/outputs/apk/release/app-release.apk Hodos-1.1.16.apk
       - name: Publish signed release
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.15
-          name: Hodos 1.1.15
+          tag_name: v1.1.16
+          name: Hodos 1.1.16
           body: |
             Repaired original Hodos branding, reliable GPS handling and offline map recovery,
             with Android startup and location-policy regression tests.
-          files: Hodos-1.1.15.apk
+          files: Hodos-1.1.16.apk
           prerelease: true
       - name: Publish debug-signed beta APK when no release key is configured
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && (env.HODOS_KEYSTORE_BASE64 == '' || env.HODOS_STORE_PASSWORD == '' || env.HODOS_KEY_ALIAS == '' || env.HODOS_KEY_PASSWORD == '') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.15-beta.1
-          name: Hodos 1.1.15 beta
+          tag_name: v1.1.16-beta.1
+          name: Hodos 1.1.16 beta
           body: |
-            Journey history beta: summaries are committed before service teardown,
-            GPS fix counts are distinguished from inferred road spots, and distance
-            is shown per journey without storing a personal route.
+            Sync resilience beta: bounded network-only jobs with OS-managed periodic recovery,
+            avoiding unbounded retry chains during long offline journeys. Observation
+            uploads remain idempotent and private until acknowledged.
             
             **This APK is debug-signed, not a stable production release.**
             It may not install over versions signed with another key; keep a copy
             of any important data before reinstalling. Sensor detection has not
             yet been validated with a labelled multi-device road test.
-          files: Hodos-1.1.15-beta.apk
+          files: Hodos-1.1.16-beta.apk
           prerelease: true

@@ -8,8 +8,10 @@ import androidx.annotation.NonNull;
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.ExistingWorkPolicy;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import androidx.work.WorkManager;
@@ -31,6 +33,10 @@ import java.util.concurrent.TimeUnit;
 public final class HodosSyncWorker extends Worker {
   private static final String TAG = "HodosSync";
   private static final String WORK_NAME = "hodos-observation-sync";
+  private static final String RECOVERY_WORK_NAME = "hodos-observation-recovery";
+  // WorkManager may run both the immediate and periodic jobs in this process.
+  // Serialize draining so the queue and aggregation marker have one writer.
+  private static final Object DRAIN_LOCK = new Object();
   private static final String ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
   private static final String PROJECT_ID = "6ad7939a002ff135e419";
   private static final String AGGREGATION_PENDING = "aggregationPending";
@@ -40,7 +46,12 @@ public final class HodosSyncWorker extends Worker {
     super(context, parameters);
   }
 
-  /** Append behind a currently running sync, so newly added rows aren't missed. */
+  /**
+   * At most one immediate job may be pending, plus one 15-minute recovery job.
+   * KEEP avoids building unbounded dependent work chains on repeated GPS
+   * events, activity resumes and offline reconnects. The periodic job closes
+   * the final race when a new row arrives as a running immediate job finishes.
+   */
   public static void schedule(Context context) {
     try {
       Constraints network = new Constraints.Builder()
@@ -50,8 +61,14 @@ public final class HodosSyncWorker extends Worker {
           .setConstraints(network)
           .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
           .build();
-      WorkManager.getInstance(context.getApplicationContext())
-          .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request);
+      WorkManager manager = WorkManager.getInstance(context.getApplicationContext());
+      PeriodicWorkRequest recovery =
+          new PeriodicWorkRequest.Builder(HodosSyncWorker.class, 15, TimeUnit.MINUTES)
+              .setConstraints(network)
+              .build();
+      manager.enqueueUniquePeriodicWork(
+          RECOVERY_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, recovery);
+      manager.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request);
     } catch (RuntimeException error) {
       // SQLite outbox remains durable; the next app launch can re-enqueue.
       Log.w(TAG, "Could not schedule observation sync", error);
@@ -61,6 +78,12 @@ public final class HodosSyncWorker extends Worker {
   @NonNull
   @Override
   public Result doWork() {
+    synchronized (DRAIN_LOCK) {
+      return drain();
+    }
+  }
+
+  private Result drain() {
     SharedPreferences prefs =
         getApplicationContext().getSharedPreferences("hodos", Context.MODE_PRIVATE);
     try (EventOutbox queue = new EventOutbox(getApplicationContext())) {
