@@ -286,3 +286,53 @@ test("failed hazard writes return a retryable error instead of false success", a
     global.fetch = originalFetch;
   }
 });
+
+test("malformed event list cannot silently unpublish the public map", async () => {
+  const originalFetch = global.fetch;
+  let hazardReadAttempted = false;
+  global.fetch = async (url) => {
+    if (new URL(String(url)).pathname.endsWith("/events/rows")) {
+      return { ok: true, json: async () => ({ total: 0 }) };
+    }
+    hazardReadAttempted = true;
+    throw new Error("hazard map should not be touched");
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 500);
+    assert.equal(result.body.ok, false);
+    assert.equal(hazardReadAttempted, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("malformed hazard list cannot trigger writes or stale reconciliation", async () => {
+  const originalFetch = global.fetch;
+  let writes = 0;
+  global.fetch = async (url, options = {}) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith("/events/rows")) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (path.endsWith("/hazards/rows") && !options.method) {
+      return { ok: true, json: async () => ({}) };
+    }
+    writes++;
+    throw new Error("unexpected mutation");
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 500);
+    assert.equal(result.body.ok, false);
+    assert.equal(writes, 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
