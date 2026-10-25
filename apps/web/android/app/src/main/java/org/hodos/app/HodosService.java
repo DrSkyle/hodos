@@ -85,6 +85,9 @@ public class HodosService extends Service implements SensorEventListener {
   private EventOutbox outbox;
   private volatile boolean sampling = false;
   private volatile long lastMovementAt = 0;
+  private volatile String activeTripId;
+  private volatile String activeDeviceId;
+  private volatile long lastSyncScheduledAt = 0;
   private long tripStartedAt = 0;
 
   @Override
@@ -285,6 +288,15 @@ public class HodosService extends Service implements SensorEventListener {
       updateNotification("Location permission needed");
       return;
     }
+    try {
+      // A single stable identity must cover all observations from this journey.
+      activeDeviceId = deviceId();
+      activeTripId = UUID.randomUUID().toString();
+    } catch (RuntimeException error) {
+      updateNotification("Storage unavailable · trip not recorded");
+      return;
+    }
+    lastSyncScheduledAt = 0;
     sampling = true;
     lastMovementAt = System.currentTimeMillis();
     getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", true).apply();
@@ -342,6 +354,11 @@ public class HodosService extends Service implements SensorEventListener {
     if (!sampling) {
       return;
     }
+    // Capture identity before analysis so a subsequent journey cannot re-label
+    // an observation finishing on this scheduler thread.
+    final String device = activeDeviceId;
+    final String trip = activeTripId;
+    if (device == null || trip == null) return;
     long cutoff = System.currentTimeMillis() - 30_000;
     List<MotionDetector.Sample> window = new ArrayList<>();
     synchronized (samples) {
@@ -361,6 +378,7 @@ public class HodosService extends Service implements SensorEventListener {
     List<MotionDetector.Fix> locationSnapshot;
     synchronized (fixes) { locationSnapshot = new ArrayList<>(fixes); }
     List<MotionDetector.Impact> found = MotionDetector.detect(window, locationSnapshot);
+    List<MotionDetector.Impact> newImpacts = new ArrayList<>();
     synchronized (impacts) {
       for (MotionDetector.Impact impact : found) {
         boolean duplicate = false;
@@ -370,8 +388,24 @@ public class HodosService extends Service implements SensorEventListener {
             break;
           }
         }
-        if (!duplicate) impacts.add(impact);
+        if (!duplicate) {
+          impacts.add(impact);
+          newImpacts.add(impact);
+        }
       }
+    }
+    // Persist on this analysis executor, NOT the UI thread, while the journey
+    // is still active. A killed service may never reach endTrip().
+    boolean persisted = false;
+    for (MotionDetector.Impact impact : newImpacts) {
+      persisted |= postEvent(device, trip, impact);
+    }
+    long now = System.currentTimeMillis();
+    if (persisted && (lastSyncScheduledAt == 0 ||
+        now - lastSyncScheduledAt >= 60_000L)) {
+      lastSyncScheduledAt = now;
+      // WorkManager retains the work across process death and network loss.
+      HodosSyncWorker.schedule(this);
     }
     if (System.currentTimeMillis() - lastMovementAt > STOP_AFTER_STILL_MS) {
       endTrip();
@@ -405,9 +439,14 @@ public class HodosService extends Service implements SensorEventListener {
     // Persist the evidence BEFORE returning to Android or stopping the
     // foreground service. Previously, the just-finished trip only reached
     // SQLite on a detached thread, so Android could kill the process first.
-    final String device = deviceId();
-    final String trip = UUID.randomUUID().toString();
+    final String device = activeDeviceId;
+    final String trip = activeTripId;
+    if (device == null || trip == null) {
+      updateNotification("Waiting for a journey");
+      return;
+    }
     for (MotionDetector.Impact impact : finished) {
+      // Idempotent retry if the periodic detector could not persist earlier.
       postEvent(device, trip, impact);
     }
     updateNotification("Waiting for a journey");
@@ -484,7 +523,9 @@ public class HodosService extends Service implements SensorEventListener {
     String id = prefs.getString("deviceId", null);
     if (id == null || id.isEmpty()) {
       id = UUID.randomUUID().toString();
-      prefs.edit().putString("deviceId", id).apply();
+      if (!prefs.edit().putString("deviceId", id).commit()) {
+        throw new IllegalStateException("Installation ID could not be persisted");
+      }
     }
     return id;
   }
@@ -653,7 +694,7 @@ public class HodosService extends Service implements SensorEventListener {
       data.put("kind", impact.kind);
       data.put("confidence", impact.confidence);
       data.put("mode", impact.mode);
-      return outbox.enqueue(UUID.randomUUID().toString(), data.toString());
+      return outbox.enqueue(ObservationIds.impactRowId(trip, impact.t), data.toString());
     } catch (Exception error) {
       return false;
     }
