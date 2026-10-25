@@ -38,7 +38,7 @@
 <p>The app creates a random installation identifier and a separate identifier for each journey. The installation identifier persists in local app data and accompanies observations so repeated reports can be compared. It is not derived from your name, phone number or advertising ID. It is not proof of a unique physical device.</p>
 <h2>Storage</h2>
 <p>Observations are stored in Appwrite and are not publicly readable through the app. The aggregated hazard map is public.</p>
-<p>Your phone holds a cache of map hazards, up to 50 journey summaries, and any observations queued for upload in app-private SQLite storage. That queue does not currently use separate application-level encryption.</p>
+<p>Your phone holds a cache of map hazards, up to 50 journey summaries, and any observations queued for upload in app-private SQLite storage. That queue does not currently use separate application-level encryption. Permanently rejected submissions are retained separately in private app storage until you clear them or remove app data.</p>
 <p>The aggregation service examines the last 120 days of events. This is not a deletion schedule; older server observations are not currently deleted automatically.</p>
 <h2>Your controls</h2>
 <p>Turn off automatic mapping in Hodos or revoke location and activity-recognition permissions in Android settings. Clearing local app data or uninstalling Hodos removes local information but does not erase observations already submitted to the server.</p>

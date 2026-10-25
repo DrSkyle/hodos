@@ -106,6 +106,8 @@ public class HodosService extends Service implements SensorEventListener {
       // Finish and persist an active journey before tearing down the service.
       // Previously, switching mapping off silently discarded collected impacts.
       endTrip();
+      // Deliberate user opt-out, unlike Android reclaiming this service.
+      getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", false).commit();
       stopEverything();
       stopForeground(true);
       stopSelf();
@@ -118,6 +120,7 @@ public class HodosService extends Service implements SensorEventListener {
         return START_NOT_STICKY;
       }
       startForegroundCompat();
+      startOutboxRetry();
       if (ACTION_START_TRIP.equals(action)) {
         if (!sampling) {
           lastMovementAt = System.currentTimeMillis();
@@ -135,6 +138,7 @@ public class HodosService extends Service implements SensorEventListener {
         return START_NOT_STICKY;
       }
       startForegroundCompat();
+      startOutboxRetry();
       int activityType = intent.getIntExtra("activity", -1);
       if (activityType >= 0) {
         handleActivity(activityType);
@@ -142,6 +146,13 @@ public class HodosService extends Service implements SensorEventListener {
       return START_STICKY;
     }
 
+    // START_STICKY may restart the service with a null intent. Re-arm only if
+    // this installation had opted in; never resurrect mapping after opt-out.
+    if (!ACTION_ENABLE.equals(action) &&
+        !getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+      stopSelf(startId);
+      return START_NOT_STICKY;
+    }
     startForegroundCompat();
     registerActivityTransitions();
     startOutboxRetry();
@@ -436,7 +447,8 @@ public class HodosService extends Service implements SensorEventListener {
     } catch (SecurityException ignored) {
       /* nothing registered */
     }
-    getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", false).apply();
+    // Preserve the opt-in across ordinary service teardown; a sticky restart
+    // needs to know whether Android stopped us or the user turned us off.
   }
 
   @Override
@@ -669,11 +681,15 @@ public class HodosService extends Service implements SensorEventListener {
             .put("data", new JSONObject(queued.payload));
         int response = send("POST", "tables/events/rows", body);
         // 409 means a previous attempt succeeded but its response was lost.
-        if ((response >= 200 && response < 300) || response == 409) {
+        if (UploadResponsePolicy.accepted(response)) {
           outbox.acknowledge(queued.id);
           sent++;
+        } else if (UploadResponsePolicy.isPermanentlyRejected(response)) {
+          // Keep the original payload privately for review, without letting
+          // this one invalid row block every later valid observation.
+          if (!outbox.quarantine(queued.id, response)) break;
         } else {
-          // Preserve the oldest unsent event until connectivity returns.
+          // Back off on offline, authorization and server errors.
           break;
         }
       }

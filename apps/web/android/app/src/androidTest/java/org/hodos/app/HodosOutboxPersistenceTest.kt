@@ -42,4 +42,39 @@ class HodosOutboxPersistenceTest {
             reopened.close()
         }
     }
+
+    @Test
+    fun rejectedEventIsRetainedPrivatelyWithoutBlockingLaterEvents() {
+        val app = ApplicationProvider.getApplicationContext<Context>()
+        val rejectedId = "test-invalid-${UUID.randomUUID()}"
+        val goodId = "test-valid-${UUID.randomUUID()}"
+        val db = EventOutbox(app)
+        try {
+            val beforePending = db.pendingCount()
+            val beforeRejected = db.rejectedCount()
+            assertTrue(db.enqueue(rejectedId, """{"lat":27.7}"""))
+            assertTrue(db.enqueue(goodId, """{"lat":27.8}"""))
+            assertTrue(db.quarantine(rejectedId, 422))
+            assertFalse(db.quarantine(rejectedId, 422))
+            assertEquals(beforePending + 1, db.pendingCount())
+            assertEquals(beforeRejected + 1, db.rejectedCount())
+            assertTrue(db.pending(200).any { it.id == goodId })
+            assertFalse(db.pending(200).any { it.id == rejectedId })
+            db.acknowledge(goodId)
+            assertEquals(beforePending, db.pendingCount())
+            // Quarantined payloads survive helper recreation.
+        } finally {
+            db.acknowledge(goodId)
+            db.close()
+        }
+        val reopened = EventOutbox(app)
+        try {
+            assertTrue(reopened.rejectedCount() >= 1)
+            assertFalse(reopened.pending(200).any { it.id == rejectedId })
+        } finally {
+            // Test data must not remain in the user's diagnostics table.
+            reopened.clearRejected()
+            reopened.close()
+        }
+    }
 }
