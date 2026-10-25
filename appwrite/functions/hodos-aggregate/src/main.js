@@ -389,8 +389,10 @@ module.exports = async ({ res, log }) => {
     }
     const published = hazards.filter((hazard) => hazard.data.published).length;
     log(`hazards: ${hazards.length} (${published} published), created ${created}, updated ${updated}, stale hidden ${unpublished}`);
+    // Partial publication is not a successful run. Surface the failure so
+    // operators can retry instead of silently trusting an incomplete map.
     return res.json({
-      ok: true,
+      ok: failed === 0,
       events: events.length,
       hazards: hazards.length,
       published,
@@ -398,7 +400,7 @@ module.exports = async ({ res, log }) => {
       updated,
       unpublished,
       failed,
-    });
+    }, failed > 0 ? 503 : 200);
   } catch (error) {
     log(String(error));
     return res.json({ ok: false, error: String(error) }, 500);
