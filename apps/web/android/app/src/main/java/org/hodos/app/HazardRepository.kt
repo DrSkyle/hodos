@@ -46,7 +46,8 @@ data class RoadTrip(
     val impacts: Int,
     val locations: Int,
     val confirmed: Int,
-    val distanceM: Double
+    val distanceM: Double,
+    val gpsFixes: Int? = null
 )
 
 /**
@@ -125,7 +126,8 @@ class HazardRepository(context: Context) {
                     row.optInt("impacts"),
                     row.optInt("locations"),
                     row.optInt("confirmed"),
-                    row.optDouble("distanceM")
+                    row.optDouble("distanceM"),
+                    if (row.has("gpsFixes")) row.optInt("gpsFixes") else null
                 ))
             }
         }

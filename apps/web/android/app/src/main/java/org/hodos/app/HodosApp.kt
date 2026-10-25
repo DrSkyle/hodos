@@ -815,9 +815,18 @@ private fun MappingScreen(
                         Spacer(Modifier.width(15.dp))
                         Column(Modifier.weight(1f)) {
                             Text(DateFormat.format("d MMM · h:mm a", Date(trip.at)).toString(), fontWeight = FontWeight.SemiBold)
-                            Text("${trip.impacts} impacts · ${trip.locations} locations", color = Muted, fontSize = 12.sp)
+                            Text("${trip.impacts} impacts · " +
+                                (trip.gpsFixes?.let { "$it GPS fixes" }
+                                    ?: "${trip.locations} potential spots"),
+                                color = Muted, fontSize = 12.sp)
                         }
-                        Text("${trip.confirmed} mapped", color = Forest, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (trip.distanceM >= 1000.0)
+                                String.format(Locale.US, "%.1f km", trip.distanceM / 1000.0)
+                            else "${trip.distanceM.roundToInt()} m",
+                            color = Forest, fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

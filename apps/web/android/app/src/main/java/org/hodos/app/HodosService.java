@@ -449,6 +449,10 @@ public class HodosService extends Service implements SensorEventListener {
       // Idempotent retry if the periodic detector could not persist earlier.
       postEvent(device, trip, impact);
     }
+    // Save an actual journey summary before the service stops; a detached
+    // upload worker must not be responsible for the local history existing.
+    TripHistory.record(getSharedPreferences("hodos", MODE_PRIVATE),
+        System.currentTimeMillis(), finished.size(), route.size(), distanceMetres(route));
     updateNotification("Waiting for a journey");
     // WorkManager owns upload retries even if mapping is disabled, the device
     // loses connectivity, or Android reclaims this foreground service.
@@ -532,24 +536,8 @@ public class HodosService extends Service implements SensorEventListener {
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
                       String device, String trip, List<Long> coverage) {
-    // Observed impacts are ALREADY in the durable outbox. This worker must
-    // never enqueue them twice. Its only responsibilities are local summary,
-    // optional clear-road evidence and best-effort network synchronization.
-    List<MotionDetector.Observed> observed = new ArrayList<>();
-    for (MotionDetector.Impact impact : finished) {
-      MotionDetector.Observed item = new MotionDetector.Observed();
-      item.impact = impact;
-      item.deviceId = device;
-      observed.add(item);
-    }
-    List<MotionDetector.Hazard> hazards = MotionDetector.cluster(observed, System.currentTimeMillis());
-    int confirmed = 0;
-    for (MotionDetector.Hazard hazard : hazards) {
-      if (hazard.published) {
-        confirmed++;
-      }
-    }
-    recordTrip(finished.size(), hazards.size(), confirmed, distanceMetres(route));
+    // Observed impacts and the local trip summary are already durable.
+    // This worker only computes optional clear-road evidence.
     if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
       updateNotification("Waiting for a journey");
     }
@@ -656,27 +644,6 @@ public class HodosService extends Service implements SensorEventListener {
       previous = fix;
     }
     return Math.round(total);
-  }
-
-  private void recordTrip(int impacts, int locations, int confirmed, double distanceM) {
-    SharedPreferences prefs = getSharedPreferences("hodos", MODE_PRIVATE);
-    try {
-      JSONArray trips = new JSONArray(prefs.getString("autoTrips", "[]"));
-      JSONObject trip = new JSONObject();
-      trip.put("at", System.currentTimeMillis());
-      trip.put("impacts", impacts);
-      trip.put("locations", locations);
-      trip.put("confirmed", confirmed);
-      trip.put("distanceM", distanceM);
-      trips.put(trip);
-      JSONArray trimmed = new JSONArray();
-      for (int i = Math.max(0, trips.length() - 50); i < trips.length(); i++) {
-        trimmed.put(trips.get(i));
-      }
-      prefs.edit().putString("autoTrips", trimmed.toString()).apply();
-    } catch (Exception ignored) {
-      /* a failed log must not break the service */
-    }
   }
 
   private boolean postEvent(String device, String trip, MotionDetector.Impact impact) {
