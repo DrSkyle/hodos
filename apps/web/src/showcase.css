@@ -100,3 +100,11 @@
 /* Offline-bundled Lucide SVGs: crisp at every density, without a web icon CDN. */
 .hero-benefits .benefit-icon{display:inline-grid;place-items:center}
 .hero-benefits .benefit-icon img{display:block;filter:invert(29%) sepia(45%) saturate(690%) hue-rotate(111deg) brightness(83%)}
+
+/* Self-hosted hand-drawn Oreo doodles. Friendly art, not navigation controls. */
+.doodle-journey{display:flex;align-items:center;gap:12px;width:min(100%,410px);min-height:72px;margin-top:25px;padding:3px 14px 3px 6px;border:1px solid #d9e7d7;background:#ecf5e8;border-radius:22px;overflow:hidden}
+.doodle-journey picture{display:block;flex:0 0 66px;height:66px}.doodle-journey-car{display:block;width:66px;height:66px}
+.doodle-journey-path{height:2px;flex:0 1 36px;border-top:2px dashed #8dad9f}
+.doodle-journey-flower{flex:0 0 37px;width:37px;height:37px;transform:rotate(-14deg)}
+.doodle-journey-caption{font-size:12px;line-height:1.4;color:#385847;font-weight:650;max-width:139px}
+@media(max-width:430px){.doodle-journey{gap:5px;padding-right:8px}.doodle-journey-path{max-width:23px}.doodle-journey-caption{font-size:11px}}
