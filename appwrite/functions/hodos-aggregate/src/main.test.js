@@ -101,3 +101,64 @@ test("no current evidence hides old publications only when history is complete",
   assert.equal(testing.stalePublishedRows(old, [], true).length, 1);
   assert.equal(testing.stalePublishedRows(old, [], false).length, 0);
 });
+
+test("manual presence reports cannot become independently detected potholes", () => {
+  const manual = {
+    ...base,
+    deviceId: "manual-device",
+    tripId: "manual-trip",
+    accuracy: 100,
+    speedKph: 0,
+    magnitude: 0,
+    confidence: 0.35,
+    hazardRef: testing.rowIdFor(base.lat, base.lng),
+  };
+  assert.equal(testing.validEvent(manual, now - 86400000, now), true);
+  assert.equal(testing.isManualConfirmation(manual), true);
+  assert.equal(testing.isMeasuredImpact(manual), false);
+  assert.equal(testing.isMeasuredImpact(base), true);
+  const manualOnly = [manual, { ...manual, deviceId: "device-two" }, { ...manual, deviceId: "device-three" }];
+  assert.equal(testing.clusterEvents(manualOnly.filter(testing.isMeasuredImpact)).length, 0);
+});
+
+test("manual report can only weakly strengthen an already measured hazard", () => {
+  const measured = [
+    { ...base },
+    { ...base, deviceId: "sensor-two", tripId: "trip-two" },
+    { ...base, deviceId: "sensor-one", tripId: "trip-three" },
+  ];
+  const cluster = testing.clusterEvents(measured)[0];
+  const initial = testing.buildHazard(cluster, now, [], []).data;
+  const feedback = {
+    ...base,
+    observation: "impact", magnitude: 0, speedKph: 0, accuracy: 100,
+    confidence: 0.35, hazardRef: testing.rowIdFor(cluster.centre.lat, cluster.centre.lng)
+  };
+  const after = testing.buildHazard(cluster, now, [], [], [
+    { ...feedback, recordedAt: new Date(now - 1000).toISOString(), deviceId: "man-one" },
+    { ...feedback, recordedAt: new Date(now - 1000).toISOString(), deviceId: "man-two" },
+  ]).data;
+  assert.equal(after.published, initial.published);
+  assert.equal(after.passCount, initial.passCount);
+  assert.equal(after.deviceCount, initial.deviceCount);
+  assert.equal(after.lastSeen, initial.lastSeen);
+  assert.ok(after.confidence > initial.confidence);
+  assert.ok(after.confidence - initial.confidence <= 0.021);
+});
+
+test("manual feedback cannot boost unrelated or stale hazards", () => {
+  const cluster = testing.clusterEvents([{ ...base }])[0];
+  const score = testing.buildHazard(cluster, now, [], []).data.confidence;
+  const feedback = {
+    ...base, observation: "impact", magnitude: 0, speedKph: 0,
+    accuracy: 100, confidence: 0.35, deviceId: "man-one",
+    recordedAt: new Date(now - 1000).toISOString(),
+  };
+  assert.equal(testing.buildHazard(cluster, now, [], [], [
+    { ...feedback, hazardRef: "wrong" }
+  ]).data.confidence, score);
+  assert.equal(testing.buildHazard(cluster, now, [], [], [
+    { ...feedback, hazardRef: testing.rowIdFor(base.lat, base.lng),
+      recordedAt: new Date(now - 100000).toISOString() }
+  ]).data.confidence, score);
+});

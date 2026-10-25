@@ -106,6 +106,27 @@ function validEvent(event, sinceMs, now) {
        event.hazardRef.length <= 64));
 }
 
+/**
+ * A manual "Still there" report uses legacy observation=impact, but has no
+ * accelerometer measurement and references an existing hazard. It must NEVER
+ * count as an independent sensor crossing or seed a new public hazard.
+ * Untrusted clients can forge these fields, so this is only a minimum
+ * validation gate; server-verified installation attestations are still needed.
+ */
+function isMeasuredImpact(event) {
+  return event.observation === "impact" &&
+    !event.hazardRef &&
+    typeof event.magnitude === "number" && event.magnitude > 0 &&
+    typeof event.accuracy === "number" && event.accuracy <= 50;
+}
+
+function isManualConfirmation(event) {
+  return event.observation === "impact" &&
+    typeof event.hazardRef === "string" && event.hazardRef.length > 0 &&
+    event.magnitude === 0 && event.speedKph === 0 &&
+    event.accuracy === 100 && event.confidence <= 0.35;
+}
+
 /** Greedy spatial clustering with a cell index, so it stays linear in practice. */
 function clusterEvents(events) {
   const cell = 0.00015; // ~16 m
@@ -174,7 +195,7 @@ function rowIdFor(lat, lng, kind = "pothole") {
   return `${kind[0]}${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
 }
 
-function buildHazard(cluster, now, silentPasses, fixReports) {
+function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations = []) {
   const events = cluster.events;
   const devices = new Set(events.map((event) => event.deviceId));
   const trips = new Set(events.map((event) => `${event.deviceId}:${event.tripId}`));
@@ -195,6 +216,17 @@ function buildHazard(cluster, now, silentPasses, fixReports) {
   const belief = Math.min(1, 0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
 
   const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng, String(events[0].kind));
+  // Explicit feedback can weakly support an already corroborated hazard but
+  // cannot affect passCount, deviceCount, first/last measured timestamps or
+  // publication eligibility. Never treat user-supplied IDs as verified people.
+  const confirmations = new Set(manualConfirmations.filter((report) =>
+    report.hazardRef === rowId &&
+    report.kind === events[0].kind &&
+    Date.parse(report.recordedAt) >= lastSeen &&
+    now - Date.parse(report.recordedAt) <= 30 * MS_PER_DAY &&
+    haversine({ lat: report.lat, lng: report.lng }, cluster.centre) <= 50
+  ).map((report) => report.deviceId));
+  const feedbackBonus = Math.min(0.03, confirmations.size * 0.01);
 
   // A pass or a fix report only counts if it happened after the last time
   // anyone felt this hazard, so a fresh impact resets the evidence that it has
@@ -225,7 +257,7 @@ function buildHazard(cluster, now, silentPasses, fixReports) {
       passCount,
       deviceCount,
       dayCount: days.size,
-      confidence: Math.round(Math.min(1, belief * recency) * 1000) / 1000,
+      confidence: Math.round(Math.min(1, (belief + feedbackBonus) * recency) * 1000) / 1000,
       firstSeen: new Date(firstSeen).toISOString(),
       lastSeen: new Date(lastSeen).toISOString(),
       published: passCount >= PUBLISH_MIN_PASSES && deviceCount >= PUBLISH_MIN_DEVICES,
@@ -316,17 +348,17 @@ module.exports = async ({ res, log }) => {
     if (incoming.length !== events.length) {
       log(`rejected ${incoming.length - events.length} malformed observations`);
     }
-    const incidents = events.filter(
-      (event) => event.observation !== "pass" && event.observation !== "fix",
-    );
+    const incidents = events.filter(isMeasuredImpact);
+    const manualConfirmations = events.filter(isManualConfirmation);
     const silentPasses = events.filter((event) => event.observation === "pass");
     const fixReports = events.filter((event) => event.observation === "fix");
     log(
-      `read ${events.length} events (${incidents.length} impacts, ${silentPasses.length} passes, ${fixReports.length} fix reports)`,
+      `read ${events.length} events (${incidents.length} sensor impacts, ${manualConfirmations.length} manual confirmations, ${silentPasses.length} passes, ${fixReports.length} fix reports)`,
     );
 
     const clusters = clusterEvents(incidents);
-    const hazards = clusters.map((cluster) => buildHazard(cluster, now, silentPasses, fixReports));
+    const hazards = clusters.map((cluster) =>
+      buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations));
     const existing = await listHazards();
     const existingByRowId = new Map(existing.map((row) => [row.$id, row]));
 
@@ -375,5 +407,6 @@ module.exports = async ({ res, log }) => {
 
 // Export deterministic domain helpers for the repository's regression tests.
 module.exports.testing = {
-  validEvent, clusterEvents, buildHazard, rowIdFor, stalePublishedRows
+  validEvent, clusterEvents, buildHazard, rowIdFor, stalePublishedRows,
+  isMeasuredImpact, isManualConfirmation
 };
