@@ -352,6 +352,13 @@ module.exports = async ({ res, log }) => {
     const now = Date.now();
     const sinceIso = new Date(now - LOOKBACK_DAYS * MS_PER_DAY).toISOString();
     const incoming = await fetchEvents(sinceIso);
+    // A truncated observation window must never be presented as a complete
+    // public road map. Stop before any writes; increase capacity with cursor
+    // pagination and bounded reconciliation before accepting more evidence.
+    if (incoming.length >= MAX_EVENTS) {
+      log("observation limit reached; leaving existing hazard map unchanged");
+      return res.json({ ok: false, error: "observation capacity reached" }, 503);
+    }
     const events = incoming.filter((event) => validEvent(event, now - LOOKBACK_DAYS * MS_PER_DAY, now));
     if (incoming.length !== events.length) {
       log(`rejected ${incoming.length - events.length} malformed observations`);
