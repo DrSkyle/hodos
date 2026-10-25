@@ -40,6 +40,7 @@ public final class HodosSyncWorker extends Worker {
   private static final String ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
   private static final String PROJECT_ID = "6ad7939a002ff135e419";
   private static final String AGGREGATION_PENDING = "aggregationPending";
+  private static final String DISCARD_BEFORE = "pendingDiscardedBefore";
   private static final int BATCH_SIZE = 40;
 
   public HodosSyncWorker(@NonNull Context context, @NonNull WorkerParameters parameters) {
@@ -88,12 +89,33 @@ public final class HodosSyncWorker extends Worker {
       if (prefs.getBoolean("armed", false) || prefs.getBoolean("tripActive", false)) {
         throw new IllegalStateException("Turn mapping off and finish the journey first");
       }
+      // The cutoff invalidates delayed inserts from journeys that began
+      // before deletion (for instance, an end-of-journey pass fetch).
+      long now = System.currentTimeMillis();
+      if (!prefs.edit().putLong(DISCARD_BEFORE, now).commit()) {
+        throw new IllegalStateException("Could not save the deletion boundary");
+      }
       WorkManager manager = WorkManager.getInstance(app);
       manager.cancelUniqueWork(WORK_NAME);
       manager.cancelUniqueWork(RECOVERY_WORK_NAME);
       try (EventOutbox outbox = new EventOutbox(app)) {
         return outbox.clearPending();
       }
+    }
+  }
+
+  static boolean mayPersistTrip(long startedAt, long discardBefore) {
+    return startedAt > 0 && startedAt > discardBefore;
+  }
+
+  /** Same lock as queue deletion: no delayed trip report can cross its cutoff. */
+  static boolean enqueueTripObservation(
+      Context context, EventOutbox queue, String id, String payload, long startedAt) {
+    synchronized (DRAIN_LOCK) {
+      long discarded = context.getApplicationContext()
+          .getSharedPreferences("hodos", Context.MODE_PRIVATE)
+          .getLong(DISCARD_BEFORE, 0L);
+      return mayPersistTrip(startedAt, discarded) && queue.enqueue(id, payload);
     }
   }
 

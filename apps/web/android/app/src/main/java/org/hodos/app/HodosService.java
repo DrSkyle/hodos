@@ -358,6 +358,7 @@ public class HodosService extends Service implements SensorEventListener {
     // an observation finishing on this scheduler thread.
     final String device = activeDeviceId;
     final String trip = activeTripId;
+    final long startedAt = tripStartedAt;
     if (device == null || trip == null) return;
     long cutoff = System.currentTimeMillis() - 30_000;
     List<MotionDetector.Sample> window = new ArrayList<>();
@@ -398,7 +399,7 @@ public class HodosService extends Service implements SensorEventListener {
     // is still active. A killed service may never reach endTrip().
     boolean persisted = false;
     for (MotionDetector.Impact impact : newImpacts) {
-      persisted |= postEvent(device, trip, impact);
+      persisted |= postEvent(device, trip, impact, startedAt);
     }
     long now = System.currentTimeMillis();
     if (persisted && (lastSyncScheduledAt == 0 ||
@@ -441,13 +442,14 @@ public class HodosService extends Service implements SensorEventListener {
     // SQLite on a detached thread, so Android could kill the process first.
     final String device = activeDeviceId;
     final String trip = activeTripId;
+    final long startedAt = tripStartedAt;
     if (device == null || trip == null) {
       updateNotification("Waiting for a journey");
       return;
     }
     for (MotionDetector.Impact impact : finished) {
       // Idempotent retry if the periodic detector could not persist earlier.
-      postEvent(device, trip, impact);
+      postEvent(device, trip, impact, startedAt);
     }
     // Save an actual journey summary before the service stops; a detached
     // upload worker must not be responsible for the local history existing.
@@ -458,7 +460,7 @@ public class HodosService extends Service implements SensorEventListener {
     // loses connectivity, or Android reclaims this foreground service.
     HodosSyncWorker.schedule(this);
     // Local summaries and optional pass evidence remain on a worker thread.
-    new Thread(() -> upload(finished, route, device, trip, coverage),
+    new Thread(() -> upload(finished, route, device, trip, coverage, startedAt),
         "hodos-trip-upload").start();
   }
 
@@ -535,7 +537,7 @@ public class HodosService extends Service implements SensorEventListener {
   }
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
-                      String device, String trip, List<Long> coverage) {
+                      String device, String trip, List<Long> coverage, long startedAt) {
     // Observed impacts and the local trip summary are already durable.
     // This worker only computes optional clear-road evidence.
     if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
@@ -549,7 +551,7 @@ public class HodosService extends Service implements SensorEventListener {
       List<MotionDetector.Hazard> cleared =
           MotionDetector.passedHazards(route, known, finished, coverage);
       for (MotionDetector.Hazard hazard : cleared) {
-        postPass(device, trip, hazard);
+        postPass(device, trip, hazard, startedAt);
       }
     }
     // A pass may have been enqueued after the earlier sync worker started.
@@ -602,7 +604,8 @@ public class HodosService extends Service implements SensorEventListener {
     return hazards;
   }
 
-  private boolean postPass(String device, String trip, MotionDetector.Hazard hazard) {
+  private boolean postPass(
+      String device, String trip, MotionDetector.Hazard hazard, long startedAt) {
     try {
       JSONObject data = new JSONObject();
       data.put("deviceId", device);
@@ -619,7 +622,8 @@ public class HodosService extends Service implements SensorEventListener {
       data.put("mode", "vehicle");
       data.put("observation", "pass");
       data.put("hazardRef", hazard.id);
-      return outbox.enqueue(UUID.randomUUID().toString(), data.toString());
+      return HodosSyncWorker.enqueueTripObservation(this, outbox,
+          UUID.randomUUID().toString(), data.toString(), startedAt);
     } catch (Exception error) {
       return false;
     }
@@ -646,7 +650,8 @@ public class HodosService extends Service implements SensorEventListener {
     return Math.round(total);
   }
 
-  private boolean postEvent(String device, String trip, MotionDetector.Impact impact) {
+  private boolean postEvent(
+      String device, String trip, MotionDetector.Impact impact, long startedAt) {
     try {
       JSONObject data = new JSONObject();
       data.put("deviceId", device);
@@ -661,7 +666,8 @@ public class HodosService extends Service implements SensorEventListener {
       data.put("kind", impact.kind);
       data.put("confidence", impact.confidence);
       data.put("mode", impact.mode);
-      return outbox.enqueue(ObservationIds.impactRowId(trip, impact.t), data.toString());
+      return HodosSyncWorker.enqueueTripObservation(this, outbox,
+          ObservationIds.impactRowId(trip, impact.t), data.toString(), startedAt);
     } catch (Exception error) {
       return false;
     }
