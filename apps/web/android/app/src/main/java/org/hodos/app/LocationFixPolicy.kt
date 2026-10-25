@@ -20,6 +20,16 @@ internal object LocationFixPolicy {
         fixMillis > 0L && nowMillis >= fixMillis &&
             nowMillis - fixMillis <= maxAgeMillis
 
+    /** Reject stale, inaccurate or malformed fixes before recording road evidence. */
+    @JvmStatic
+    fun validRoadFix(
+        fixMillis: Long, nowMillis: Long, latitude: Double, longitude: Double,
+        accuracyMeters: Float, speedMetersPerSecond: Float, hasSpeed: Boolean
+    ): Boolean =
+        isFresh(fixMillis, nowMillis) && validCoordinates(latitude, longitude) &&
+            accuracyMeters.isFinite() && accuracyMeters in 0f..50f &&
+            (!hasSpeed || (speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0f))
+
     fun validCoordinates(latitude: Double, longitude: Double): Boolean =
         latitude.isFinite() && longitude.isFinite() &&
             latitude in -90.0..90.0 && longitude in -180.0..180.0
