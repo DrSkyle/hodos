@@ -88,6 +88,23 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Mapping paused because location or motion permission was revoked", Toast.LENGTH_LONG).show()
         } else {
             armed = enabled
+            if (enabled) {
+                // Returning to Hodos should repair a foreground service that
+                // Android reclaimed, without requiring another toggle.
+                try {
+                    ContextCompat.startForegroundService(
+                        this, Intent(this, HodosService::class.java).apply {
+                            action = HodosService.ACTION_ENABLE
+                        })
+                } catch (error: Exception) {
+                    armed = false
+                    getSharedPreferences("hodos", MODE_PRIVATE).edit()
+                        .putBoolean("armed", false).apply()
+                    Toast.makeText(this,
+                        "Could not resume mapping: ${error.message}",
+                        Toast.LENGTH_LONG).show()
+                }
+            }
         }
         refreshSignal++
     }

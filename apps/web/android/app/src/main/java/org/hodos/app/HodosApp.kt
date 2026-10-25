@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -144,6 +146,28 @@ fun HodosApp(
     }
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
     var tripActive by remember { mutableStateOf(prefs.getBoolean("tripActive", false)) }
+    var waitingUploads by remember { mutableIntStateOf(0) }
+    var rejectedUploads by remember { mutableIntStateOf(0) }
+    var syncMetricsReady by remember { mutableStateOf(false) }
+    LaunchedEffect(screen, refreshSignal) {
+        while (screen == Screen.MAPPING) {
+            val counts = try {
+                withContext(Dispatchers.IO) {
+                    EventOutbox(context).use { outbox ->
+                        Pair(outbox.pendingCount(), outbox.rejectedCount())
+                    }
+                }
+            } catch (_: Exception) { null }
+            if (counts == null) {
+                syncMetricsReady = false
+            } else {
+                waitingUploads = counts.first
+                rejectedUploads = counts.second
+                syncMetricsReady = true
+            }
+            delay(10_000L)
+        }
+    }
     LaunchedEffect(screen, refreshSignal) {
         while (screen == Screen.MAPPING) {
             tripActive = prefs.getBoolean("tripActive", false)
@@ -435,6 +459,22 @@ fun HodosApp(
                         onToggle = onToggle,
                         onRefresh = onRefresh,
                         tripActive = tripActive,
+                        waitingUploads = waitingUploads,
+                        rejectedUploads = rejectedUploads,
+                        syncMetricsReady = syncMetricsReady,
+                        onDeleteRejected = {
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        EventOutbox(context).use { it.clearRejected() }
+                                    }
+                                    rejectedUploads = 0
+                                    snackbar.showSnackbar("Rejected reports deleted from this device")
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar("Could not clear rejected reports")
+                                }
+                            }
+                        },
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
@@ -583,9 +623,14 @@ private fun MappingScreen(
     onToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     tripActive: Boolean,
+    waitingUploads: Int,
+    rejectedUploads: Int,
+    syncMetricsReady: Boolean,
+    onDeleteRejected: () -> Unit,
     onStartJourney: () -> Unit,
     onFinishJourney: () -> Unit
 ) {
+    var confirmDiscard by remember { mutableStateOf(false) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
@@ -685,6 +730,37 @@ private fun MappingScreen(
         }
         item {
             Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
+                Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Observation sync", fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        when {
+                            !syncMetricsReady -> "Sync status unavailable on this device"
+                            waitingUploads > 0 -> "$waitingUploads reports safely saved here · waiting for upload"
+                            else -> "No road observations waiting to upload"
+                        },
+                        color = if (!syncMetricsReady) Danger else Muted,
+                        fontSize = 13.sp
+                    )
+                    if (syncMetricsReady && rejectedUploads > 0) {
+                        Spacer(Modifier.height(10.dp))
+                        Text("$rejectedUploads reports were rejected by the server. " +
+                            "They are preserved on this device for review and do not block newer reports.",
+                            color = Danger, fontSize = 13.sp)
+                        TextButton(onClick = { confirmDiscard = true }) {
+                            Text("Delete rejected reports")
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
@@ -755,6 +831,26 @@ private fun MappingScreen(
                 }
             }
         }
+    }
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text("Delete rejected reports?") },
+            text = {
+                Text("This deletes only reports that the server refused. " +
+                    "They will no longer be available for diagnosis. " +
+                    "Reports still waiting to upload will not be touched.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDiscard = false
+                    onDeleteRejected()
+                }) { Text("Delete reports", color = Danger) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) { Text("Keep reports") }
+            }
+        )
     }
 }
 

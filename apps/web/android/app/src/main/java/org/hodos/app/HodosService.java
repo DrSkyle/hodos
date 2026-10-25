@@ -514,7 +514,9 @@ public class HodosService extends Service implements SensorEventListener {
       }
     }
     recordTrip(finished.size(), hazards.size(), confirmed, distanceMetres(route));
-    updateNotification("Waiting for a journey");
+    if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+      updateNotification("Waiting for a journey");
+    }
 
     // No negative road evidence without measured motion at BOTH positions
     // of the crossing. Keeping this within the worker avoids network on main.
