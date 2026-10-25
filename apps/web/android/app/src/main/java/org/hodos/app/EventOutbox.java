@@ -111,6 +111,10 @@ final class EventOutbox extends SQLiteOpenHelper {
     }
   }
 
+  synchronized void deleteRejected(String id) {
+    getWritableDatabase().delete(REJECTED_TABLE, "id = ?", new String[]{id});
+  }
+
   /** Explicit user privacy control for data the server could not accept. */
   synchronized void clearRejected() {
     getWritableDatabase().delete(REJECTED_TABLE, null, null);

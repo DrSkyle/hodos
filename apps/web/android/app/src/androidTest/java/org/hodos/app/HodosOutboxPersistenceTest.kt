@@ -73,7 +73,7 @@ class HodosOutboxPersistenceTest {
             assertFalse(reopened.pending(200).any { it.id == rejectedId })
         } finally {
             // Test data must not remain in the user's diagnostics table.
-            reopened.clearRejected()
+            reopened.deleteRejected(rejectedId)
             reopened.close()
         }
     }
