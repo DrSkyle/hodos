@@ -227,7 +227,7 @@ test("whole aggregation flow hides unsupported old publications without deleting
     if (String(url).includes("/events/rows")) {
       return { ok: true, json: async () => ({ rows: [] }) };
     }
-    if (String(url).endsWith("/hazards/rows") && options.method === undefined) {
+    if (new URL(String(url)).pathname.endsWith("/hazards/rows") && options.method === undefined) {
       return { ok: true, json: async () => ({ rows: [oldHazard] }) };
     }
     if (String(url).includes("/hazards/rows/") && options.method === "PATCH") {
