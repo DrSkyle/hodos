@@ -72,49 +72,106 @@ class HazardRepository(context: Context) {
         .header("X-Appwrite-Project", project)
         .header("Content-Type", "application/json")
 
+    companion object {
+        private const val PAGE_SIZE = 500
+        private const val MAX_SNAPSHOT_ROWS = 5_000
+        private const val CACHE_KEY = "hazards-cache-v1"
+    }
+
     fun savedHazards(): List<RoadHazard> =
-        decode(prefs.getString("hazards-cache-v1", null).orEmpty())
+        runCatching { decodeSnapshot(prefs.getString(CACHE_KEY, null).orEmpty()) }
+            .getOrDefault(emptyList())
 
     suspend fun refreshHazards(): Result<List<RoadHazard>> = withContext(Dispatchers.IO) {
         runCatching {
-            val query = JSONObject().put("method", "limit").put("values", JSONArray().put(500))
-            val url = okhttp3.HttpUrl.Builder()
-                .scheme("https").host("sgp.cloud.appwrite.io")
-                .addPathSegments("v1/tablesdb/hodos/tables/hazards/rows")
-                .addQueryParameter("queries[]", query.toString())
-                .build().toString()
-            client.newCall(request(url).get().build()).execute().use { response ->
-                if (!response.isSuccessful) error("Map unavailable (HTTP ${response.code})")
-                val raw = response.body?.string() ?: error("Empty map response")
-                val hazards = decode(raw)
-                prefs.edit().putString("hazards-cache-v1", raw).apply()
-                hazards
+            val combined = JSONArray()
+            val encountered = HashSet<String>()
+            var offset = 0
+            while (true) {
+                // A bounded complete snapshot is preferable to silently
+                // replacing offline data with only the first 500 hazards.
+                check(offset < MAX_SNAPSHOT_ROWS) {
+                    "Map exceeds supported offline snapshot size; previous map preserved"
+                }
+                val limit = JSONObject().put("method", "limit")
+                    .put("values", JSONArray().put(PAGE_SIZE))
+                val skip = JSONObject().put("method", "offset")
+                    .put("values", JSONArray().put(offset))
+                val url = okhttp3.HttpUrl.Builder()
+                    .scheme("https").host("sgp.cloud.appwrite.io")
+                    .addPathSegments("v1/tablesdb/hodos/tables/hazards/rows")
+                    .addQueryParameter("queries[]", limit.toString())
+                    .addQueryParameter("queries[]", skip.toString())
+                    .build().toString()
+                val page = client.newCall(request(url).get().build()).execute().use { response ->
+                    if (!response.isSuccessful) error("Map unavailable (HTTP ${response.code})")
+                    val body = response.body?.string() ?: error("Empty map response")
+                    JSONObject(body).optJSONArray("rows")
+                        ?: error("Unexpected map response; saved map preserved")
+                }
+                for (i in 0 until page.length()) {
+                    val row = page.optJSONObject(i)
+                        ?: error("Unexpected hazard row; saved map preserved")
+                    val id = row.optString(36.toChar().toString() + "id")
+                    check(id.isNotBlank() && encountered.add(id)) {
+                        "Map changed during refresh; saved copy preserved"
+                    }
+                    combined.put(row)
+                }
+                if (page.length() < PAGE_SIZE) break
+                offset += page.length()
             }
+            val raw = JSONObject().put("rows", combined).toString()
+            val hazards = decodeSnapshot(raw)
+            check(prefs.edit().putString(CACHE_KEY, raw).commit()) {
+                "Could not save offline map"
+            }
+            hazards
         }
     }
 
-    private fun decode(raw: String): List<RoadHazard> = try {
-        val rows = JSONObject(raw).optJSONArray("rows") ?: JSONArray()
-        buildList {
+    /**
+     * Parse strictly before committing a new cache. Failure must be visible to
+     * the caller; a malformed server response is not an empty neighbourhood.
+     */
+    internal fun decodeSnapshot(raw: String): List<RoadHazard> {
+        val rows = JSONObject(raw).optJSONArray("rows")
+            ?: error("Map response is missing its rows")
+        return buildList {
             for (i in 0 until rows.length()) {
-                val row = rows.optJSONObject(i) ?: continue
-                if (!row.optBoolean("published")) continue
+                val row = rows.optJSONObject(i) ?: error("Malformed hazard row")
+                val published = row.opt("published") as? Boolean
+                    ?: error("Hazard publication status is missing")
+                if (!published) continue
+                fun number(key: String): Double {
+                    val v = row.opt(key) as? Number ?: error("Invalid $key")
+                    val d = v.toDouble()
+                    check(d.isFinite()) { "Non-finite $key" }
+                    return d
+                }
+                val id = row.optString(36.toChar().toString() + "id")
+                val lat = number("lat")
+                val lng = number("lng")
+                val confidence = number("confidence")
+                val severity = row.optInt("severity", -1)
+                val kind = row.optString("kind")
+                check(id.isNotBlank() && lat in -90.0..90.0 && lng in -180.0..180.0)
+                check(kind in setOf("pothole", "speed_bump", "rough_pavement"))
+                check(severity in 1..3 && confidence in 0.0..1.0)
                 add(RoadHazard(
-                    id = row.optString(36.toChar().toString() + "id"),
-                    lat = row.optDouble("lat"),
-                    lng = row.optDouble("lng"),
-                    kind = row.optString("kind", "pothole"),
-                    severity = row.optInt("severity", 1),
+                    id = id, lat = lat, lng = lng, kind = kind,
+                    severity = severity,
                     passes = row.optInt("passCount"),
                     devices = row.optInt("deviceCount"),
-                    confidence = row.optDouble("confidence"),
+                    confidence = confidence,
                     clearPasses = row.optInt("clearPasses"),
-                    fixed = row.optInt("fixedVotes") >= 2 || row.optInt("clearPasses") >= 3,
+                    fixed = row.optInt("fixedVotes") >= 2 ||
+                        row.optInt("clearPasses") >= 3,
                     lastSeen = row.optString("lastSeen")
                 ))
             }
         }
-    } catch (_: Exception) { emptyList() }
+    }
 
     fun savedTrips(): List<RoadTrip> = try {
         val rows = JSONArray(prefs.getString("autoTrips", "[]") ?: "[]")
