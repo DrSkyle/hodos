@@ -145,6 +145,11 @@ fun HodosApp(
         }
     }
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
+    var savedRoadIds by remember { mutableStateOf(SavedRoadsStore.load(prefs)) }
+    fun updateSavedRoad(id: String, save: Boolean) {
+        val result = SavedRoadsStore.setSaved(prefs, id, save)
+        savedRoadIds = result
+    }
     var tripActive by remember { mutableStateOf(prefs.getBoolean("tripActive", false)) }
     var waitingUploads by remember { mutableIntStateOf(0) }
     var rejectedUploads by remember { mutableIntStateOf(0) }
@@ -255,14 +260,15 @@ fun HodosApp(
                                 screen = tab
                             },
                             icon = {
-                                if (tab == Screen.MAP || tab == Screen.MAPPING) {
-                                    Image(
-                                        painter = painterResource(R.drawable.hodos_brand_icon),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp))
-                                    )
-                                } else Icon(Icons.Outlined.PersonOutline, contentDescription = null)
+                                Icon(
+                                    imageVector = when (tab) {
+                                        Screen.MAP -> Icons.Outlined.Map
+                                        Screen.MAPPING -> Icons.Outlined.DirectionsCar
+                                        Screen.YOU -> Icons.Outlined.PersonOutline
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp)
+                                )
                             },
                             label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.SemiBold else FontWeight.Normal) },
                             alwaysShowLabel = true,
@@ -349,8 +355,20 @@ fun HodosApp(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     HodosBrand()
                                     Spacer(Modifier.weight(1f))
-                                    Text("SAFER ROADS", fontSize = 10.sp, color = Forest,
-                                        fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                                    Surface(
+                                        color = Color(0xF9FFFFFF),
+                                        shape = RoundedCornerShape(20.dp),
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Text(
+                                            if (loading) "Updating map…"
+                                            else if (!internetConnected || syncError) "Saved map"
+                                            else "${hazards.count { !it.fixed }} road reports",
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                            color = Forest, fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                                 Spacer(Modifier.height(9.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -499,7 +517,10 @@ fun HodosApp(
                     )
                     Screen.YOU -> YouScreen(
                         trips = trips,
-                        hazards = hazards.size,
+                        hazards = hazards,
+                        savedRoadIds = savedRoadIds,
+                        onSelectSavedRoad = { selected = it },
+                        onRemoveSavedRoad = { id -> updateSavedRoad(id, false) },
                         onOpenMapping = { screen = Screen.MAPPING },
                         onShare = {
                             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -594,6 +615,32 @@ fun HodosApp(
                         DetailStat("${hazard.passes}", "Passes", Modifier.weight(1f))
                         DetailStat("${hazard.devices}", "Devices", Modifier.weight(1f))
                         DetailStat("${hazard.clearPasses}", "Clear passes", Modifier.weight(1f))
+                    }
+                    Spacer(Modifier.height(15.dp))
+                    OutlinedButton(
+                        onClick = {
+                            val wasSaved = selected!!.id in savedRoadIds
+                            updateSavedRoad(selected!!.id, !wasSaved)
+                            scope.launch {
+                                snackbar.showSnackbar(
+                                    if (wasSaved) "Removed from your saved roads"
+                                    else "Saved on this phone. Check back for road updates."
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            if (selected!!.id in savedRoadIds)
+                                Icons.Outlined.CheckCircle else Icons.Outlined.Map,
+                            contentDescription = null
+                        )
+                        Spacer(Modifier.width(9.dp))
+                        Text(
+                            if (selected!!.id in savedRoadIds) "Saved to My Roads · Remove"
+                            else "Save this road"
+                        )
                     }
                     Spacer(Modifier.height(17.dp))
                     Text("Your feedback is a manual report, not a measured sensor reading. Hodos keeps it on this phone until it can upload.", color = Muted, fontSize = 13.sp)
@@ -949,7 +996,10 @@ private fun MappingScreen(
 @Composable
 private fun YouScreen(
     trips: List<RoadTrip>,
-    hazards: Int,
+    hazards: List<RoadHazard>,
+    savedRoadIds: Set<String>,
+    onSelectSavedRoad: (RoadHazard) -> Unit,
+    onRemoveSavedRoad: (String) -> Unit,
     onOpenMapping: () -> Unit,
     onShare: () -> Unit,
     onClearHistory: () -> Unit
@@ -973,10 +1023,18 @@ private fun YouScreen(
             RoadDiaryCard(trips, onOpenMapping = onOpenMapping, onShare = onShare)
         }
         item {
+            SavedRoadsSection(
+                savedIds = savedRoadIds,
+                hazards = hazards,
+                onSelect = onSelectSavedRoad,
+                onRemove = onRemoveSavedRoad
+            )
+        }
+        item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 DetailStat("${trips.size}", "Journeys", Modifier.weight(1f))
                 DetailStat("$total", "Impacts", Modifier.weight(1f))
-                DetailStat("$hazards", "Public hazards", Modifier.weight(1f))
+                DetailStat("${hazards.size}", "Public hazards", Modifier.weight(1f))
             }
         }
         item {

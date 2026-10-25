@@ -26,6 +26,18 @@ Basemaps use [OpenFreeMap](https://openfreemap.org/) under its [offline tile-dow
 
 Offline regions are only guaranteed at the downloaded zoom levels and after the on-device download is shown as complete. Downloading stops over cellular, and storage use is visible in the Mapping tab. Hazard sharing, new hazards, and unmapped locations still require connectivity.
 
+## Staying involved
+
+- **My Roads:** save a public map report locally, then revisit its community-confirmed status from the You tab. Saved IDs stay on this phone.
+- **Road diary:** private local summaries for each week, never a full route history.
+- **Contributions:** ordinary journeys can help improve the map when automatic mapping is explicitly enabled; reporting while operating a vehicle is not encouraged.
+
+## License
+
+Hodos' current maintained code is released under **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. This includes the client, website, shared detection library and backend aggregation code. If you distribute a modified version or run a modified AGPL-covered network service, review and comply with the source-provision obligations in the license.
+
+Earlier copies of Hodos released under the MIT License remain available under their original grant; see [the preserved historical MIT notice](LICENSES/MIT-legacy.txt). The license change does not revoke those earlier permissions or erase third-party copyright. See [third-party notices](THIRD_PARTY_NOTICES.md).
+
 ## Development
 
 The Android app uses Kotlin, Jetpack Compose and MapLibre. The website is built with Vite. Appwrite stores road observations and generates the public hazard map.
@@ -53,4 +65,4 @@ Hodos identifies *potential* hazards. Results depend on the phone, vehicle, moun
 
 [Contribute or report a problem](https://github.com/DrSkyle/hodos/issues).
 
-Developed by **Devilabs** · [MIT License](LICENSE)
+Developed by **Devilabs** · [GNU AGPL-3.0-only License](LICENSE)
