@@ -114,7 +114,8 @@ function validEvent(event, sinceMs, now) {
  * validation gate; server-verified installation attestations are still needed.
  */
 function isMeasuredImpact(event) {
-  return event.observation === "impact" &&
+  // Native sensor observations predate the explicit observation field.
+  return (event.observation == null || event.observation === "impact") &&
     !event.hazardRef &&
     typeof event.magnitude === "number" && event.magnitude > 0 &&
     typeof event.accuracy === "number" && event.accuracy <= 50;

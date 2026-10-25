@@ -162,3 +162,11 @@ test("manual feedback cannot boost unrelated or stale hazards", () => {
       recordedAt: new Date(now - 100000).toISOString() }
   ]).data.confidence, score);
 });
+
+test("native sensor impacts without an explicit observation field remain supported", () => {
+  const nativeImpact = { ...base };
+  delete nativeImpact.observation;
+  assert.equal(testing.validEvent(nativeImpact, now - 86400000, now), true);
+  assert.equal(testing.isMeasuredImpact(nativeImpact), true);
+  assert.equal(testing.isManualConfirmation(nativeImpact), false);
+});
