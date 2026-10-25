@@ -172,12 +172,17 @@ private fun OnboardingArtwork(step: Int) {
         modifier = Modifier.fillMaxWidth().height(255.dp)
     ) {
         Box {
-            Image(
-                painter = painterResource(R.drawable.hodos_brand_icon),
-                contentDescription = "Forest, mountains and the winding Hodos road",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            if (step == 0) {
+                Image(
+                    painter = painterResource(R.drawable.hodos_brand_icon),
+                    contentDescription = "Forest, mountains and the winding Hodos road",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Original vector artwork animates subtly without third-party assets.
+                RoadDoodle(Modifier.fillMaxSize())
+            }
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(13.dp),
                 color = Color(0xEC133D31),

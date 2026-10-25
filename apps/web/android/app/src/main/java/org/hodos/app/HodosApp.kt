@@ -497,7 +497,25 @@ fun HodosApp(
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
-                    Screen.YOU -> YouScreen(trips, hazards.size, onClearHistory = {
+                    Screen.YOU -> YouScreen(
+                        trips = trips,
+                        hazards = hazards.size,
+                        onOpenMapping = { screen = Screen.MAPPING },
+                        onShare = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    "A better road map starts with our journeys. Explore Hodos: https://hodos.devilabs.dev"
+                                )
+                            }
+                            runCatching {
+                                context.startActivity(Intent.createChooser(intent, "Share Hodos"))
+                            }.onFailure {
+                                scope.launch { snackbar.showSnackbar("No sharing app available") }
+                            }
+                        },
+                        onClearHistory = {
                         scope.launch {
                             val cleared = withContext(Dispatchers.IO) {
                                 TripHistory.clear(prefs)
@@ -930,7 +948,11 @@ private fun MappingScreen(
 
 @Composable
 private fun YouScreen(
-    trips: List<RoadTrip>, hazards: Int, onClearHistory: () -> Unit
+    trips: List<RoadTrip>,
+    hazards: Int,
+    onOpenMapping: () -> Unit,
+    onShare: () -> Unit,
+    onClearHistory: () -> Unit
 ) {
     val total = trips.sumOf { it.impacts }
     val context = LocalContext.current
@@ -946,6 +968,9 @@ private fun YouScreen(
             Spacer(Modifier.height(16.dp))
             Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
             Text("Every journey makes the roads a little better understood.", color = Muted)
+        }
+        item {
+            RoadDiaryCard(trips, onOpenMapping = onOpenMapping, onShare = onShare)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
