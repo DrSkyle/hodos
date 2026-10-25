@@ -25,6 +25,22 @@ class LocationFixPolicyTest {
         assertFalse(LocationFixPolicy.isFresh(-1, now))
     }
 
+    @Test fun roadEvidenceRequiresFreshAccuratePlausibleLocation() {
+        fun accepts(time: Long = now, lat: Double = 28.2, accuracy: Float = 8f,
+                    speed: Float = 3f, hasSpeed: Boolean = true) =
+            LocationFixPolicy.validRoadFix(time, now, lat, 84.0, accuracy, speed, hasSpeed)
+        assertTrue(accepts())
+        assertTrue(accepts(speed = 0f, hasSpeed = false))
+        assertFalse(accepts(time = now - 30_001L))
+        assertFalse(accepts(time = now + 1L))
+        assertFalse(accepts(lat = Double.NaN))
+        assertFalse(accepts(accuracy = Float.NaN))
+        assertFalse(accepts(accuracy = 51f))
+        assertFalse(accepts(accuracy = -1f))
+        assertFalse(accepts(speed = Float.POSITIVE_INFINITY))
+        assertFalse(accepts(speed = -1f))
+    }
+
     @Test fun invalidCoordinatesCannotCenterTheMap() {
         assertTrue(LocationFixPolicy.validCoordinates(28.2, 84.0))
         assertTrue(LocationFixPolicy.validCoordinates(-90.0, 180.0))
