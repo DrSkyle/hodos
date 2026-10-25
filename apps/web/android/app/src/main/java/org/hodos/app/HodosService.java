@@ -329,7 +329,9 @@ public class HodosService extends Service implements SensorEventListener {
           @Override
           public void onLocationResult(LocationResult result) {
             Location last = result.getLastLocation();
-            if (last != null) {
+            if (last != null && LocationFixPolicy.validRoadFix(
+                last.getTime(), System.currentTimeMillis(), last.getLatitude(),
+                last.getLongitude(), last.getAccuracy(), last.getSpeed(), last.hasSpeed())) {
               // Transitions arrive only when motion class changes; GPS speed
               // keeps long journeys active between transitions.
               if (last.hasSpeed() && last.getSpeed() >= 2.5f) {
