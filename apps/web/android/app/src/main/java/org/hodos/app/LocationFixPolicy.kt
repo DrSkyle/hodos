@@ -24,9 +24,9 @@ internal object LocationFixPolicy {
     @JvmStatic
     fun validRoadFix(
         fixMillis: Long, nowMillis: Long, latitude: Double, longitude: Double,
-        accuracyMeters: Float, speedMetersPerSecond: Float, hasSpeed: Boolean
+        accuracyMeters: Float, speedMetersPerSecond: Float, hasSpeed: Boolean, mocked: Boolean
     ): Boolean =
-        isFresh(fixMillis, nowMillis) && validCoordinates(latitude, longitude) &&
+        !mocked && isFresh(fixMillis, nowMillis) && validCoordinates(latitude, longitude) &&
             accuracyMeters.isFinite() && accuracyMeters in 0f..50f &&
             (!hasSpeed || (speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0f))
 
