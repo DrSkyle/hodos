@@ -363,6 +363,12 @@ module.exports = async ({ res, log }) => {
     if (incoming.length !== events.length) {
       log(`rejected ${incoming.length - events.length} malformed observations`);
     }
+    // A nonempty history consisting entirely of malformed records is not
+    // evidence that all previously reported road hazards disappeared.
+    if (incoming.length > 0 && events.length === 0) {
+      log("all observations rejected; existing hazard map preserved");
+      return res.json({ ok: false, error: "no valid observations" }, 503);
+    }
     const incidents = events.filter(isMeasuredImpact);
     const manualConfirmations = events.filter(isManualConfirmation);
     const silentPasses = events.filter((event) => event.observation === "pass");
