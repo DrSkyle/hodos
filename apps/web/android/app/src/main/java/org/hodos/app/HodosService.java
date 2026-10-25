@@ -93,6 +93,10 @@ public class HodosService extends Service implements SensorEventListener {
   @Override
   public void onCreate() {
     super.onCreate();
+    // This is a new service instance: the previous process's journey cannot
+    // still be collecting motion. Never show a phantom active-trip flag.
+    getSharedPreferences("hodos", MODE_PRIVATE)
+        .edit().putBoolean("tripActive", false).apply();
     sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
     locationClient = LocationServices.getFusedLocationProviderClient(this);
     createChannel();
@@ -415,6 +419,10 @@ public class HodosService extends Service implements SensorEventListener {
 
   private synchronized void endTrip() {
     if (!sampling) {
+      // A sticky-restarted service may have no in-memory trip while the
+      // persisted UI flag still says active.
+      getSharedPreferences("hodos", MODE_PRIVATE)
+          .edit().putBoolean("tripActive", false).apply();
       return;
     }
     sampling = false;
