@@ -548,14 +548,14 @@ fun HodosApp(
                         DetailStat("${hazard.clearPasses}", "Clear passes", Modifier.weight(1f))
                     }
                     Spacer(Modifier.height(17.dp))
-                    Text("This location is based on independently recorded road observations. Your feedback helps check whether the hazard is still there.", color = Muted, fontSize = 13.sp)
+                    Text("Your feedback is a manual report, not a measured sensor reading. Hodos keeps it on this phone until it can upload.", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedButton(
                             onClick = {
                                 scope.launch {
                                     val result = repo.sendObservation(hazard, repaired = false)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Thanks! Confirmation recorded." else "Could not send. Check your connection.")
+                                    snackbar.showSnackbar(if (result.isSuccess) "Saved on this phone · will sync online" else "Could not save report on this phone")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
                             }, modifier = Modifier.weight(1f)
@@ -565,7 +565,7 @@ fun HodosApp(
                             onClick = {
                                 scope.launch {
                                     val result = repo.sendObservation(hazard, repaired = true)
-                                    snackbar.showSnackbar(if (result.isSuccess) "Repair report received." else "Could not send. Check your connection.")
+                                    snackbar.showSnackbar(if (result.isSuccess) "Repair report saved · will sync online" else "Could not save report on this phone")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
                             }, modifier = Modifier.weight(1f)

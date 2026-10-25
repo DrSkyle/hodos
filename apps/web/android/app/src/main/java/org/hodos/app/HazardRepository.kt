@@ -56,7 +56,8 @@ data class RoadTrip(
  * The last successful response is cached so the map remains usable offline.
  */
 class HazardRepository(context: Context) {
-    private val prefs = context.getSharedPreferences("hodos", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("hodos", Context.MODE_PRIVATE)
     private val client = OkHttpClient.Builder()
         .connectTimeout(12, TimeUnit.SECONDS)
         .readTimeout(18, TimeUnit.SECONDS)
@@ -130,41 +131,63 @@ class HazardRepository(context: Context) {
         }
     } catch (_: Exception) { emptyList() }
 
-    private fun installationId(): String =
-        prefs.getString("deviceId", null)?.takeIf { it.isNotEmpty() }
-            ?: UUID.randomUUID().toString().also {
-                prefs.edit().putString("deviceId", it).apply()
+    private fun installationId(): String {
+        prefs.getString("deviceId", null)?.takeIf { it.isNotEmpty() }?.let { return it }
+        val id = UUID.randomUUID().toString()
+        check(prefs.edit().putString("deviceId", id).commit()) {
+            "Could not persist installation ID"
+        }
+        return id
+    }
+
+    /**
+     * Manual feedback is user testimony, NOT a phone-measured pothole impact.
+     * Keep its evidence weight conservative until the schema can distinguish
+     * explicit reports from sensor observations.
+     */
+    internal fun manualPayload(
+        hazard: RoadHazard, repaired: Boolean, deviceId: String,
+        timestamp: Date = Date()
+    ): JSONObject {
+        val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(timestamp)
+        return JSONObject()
+            .put("deviceId", deviceId)
+            .put("tripId", UUID.randomUUID().toString())
+            .put("recordedAt", date)
+            .put("lat", hazard.lat)
+            .put("lng", hazard.lng)
+            // No GPS measurement was taken for this manual map selection.
+            .put("accuracy", 100)
+            .put("speedKph", 0)
+            .put("magnitude", 0)
+            .put("severity", hazard.severity)
+            .put("kind", hazard.kind)
+            .put("confidence", 0.35)
+            // The legacy schema accepts only vehicle/pedestrian; not a sensor mode claim.
+            .put("mode", "vehicle")
+            .put("observation", if (repaired) "fix" else "impact")
+            .put("hazardRef", hazard.id)
+    }
+
+    /** Persist first; network retries are owned by the OS and survive service shutdown. */
+    internal fun persistManualObservation(hazard: RoadHazard, repaired: Boolean): String {
+        val payload = manualPayload(hazard, repaired, installationId())
+        val id = UUID.randomUUID().toString()
+        EventOutbox(appContext).use { outbox ->
+            check(outbox.enqueue(id, payload.toString())) {
+                "Could not save report on this device"
             }
+        }
+        return id
+    }
 
     suspend fun sendObservation(hazard: RoadHazard, repaired: Boolean): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }.format(Date())
-                val data = JSONObject()
-                    .put("deviceId", installationId())
-                    .put("tripId", UUID.randomUUID().toString())
-                    .put("recordedAt", date)
-                    .put("lat", hazard.lat)
-                    .put("lng", hazard.lng)
-                    .put("accuracy", 6)
-                    .put("speedKph", 0)
-                    .put("magnitude", 0)
-                    .put("severity", hazard.severity)
-                    .put("kind", hazard.kind)
-                    .put("confidence", 0.9)
-                    .put("mode", "vehicle")
-                    .put("observation", if (repaired) "fix" else "impact")
-                    .put("hazardRef", hazard.id)
-                val body = JSONObject().put("rowId", "unique()").put("data", data)
-                val url = "$base/tablesdb/hodos/tables/events/rows"
-                client.newCall(request(url)
-                    .post(body.toString().toRequestBody("application/json".toMediaType()))
-                    .build()).execute().use { response ->
-                    if (!response.isSuccessful) error("Couldn't send observation (${response.code})")
-                }
-                requestAggregation()
+                persistManualObservation(hazard, repaired)
+                HodosSyncWorker.schedule(appContext)
                 Unit
             }
         }
