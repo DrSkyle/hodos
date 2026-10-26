@@ -109,3 +109,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #20
 @media(max-width:800px){.road-atlas-art{width:min(100%,630px);margin:0 auto}.road-story-layout{gap:14px}.road-story{padding-bottom:70px}.road-atlas-art figcaption{margin-top:-5px}}
 @media(max-width:620px){.road-story-copy h2{font-size:clamp(43px,11vw,62px)}.road-story-copy>p{font-size:15px}.road-story-benefits{gap:4px}.road-atlas-art{margin-top:13px}}
 @media(prefers-reduced-motion:reduce){.road-atlas-art>img,.road-story-benefits article{transition:none!important;transform:none!important}}
+
+/* Clear release path: avoid hiding APKs behind GitHub Actions logs. */
+.hero-beta-note{font-size:12px;line-height:1.5;color:#597369;margin:13px 0 0;max-width:390px}
+.hero-beta-note strong{color:#265a49}
+@media(max-width:620px){.hero-beta-note{font-size:11px}}
