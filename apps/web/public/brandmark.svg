@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="h-title">
+<title id="h-title">Hodos road mark</title>
+<rect width="100" height="100" rx="23" fill="#193d32"/>
+<path d="M24 84C28 66 59 68 65 51S61 21 77 17" fill="none" stroke="#F4F0DF" stroke-width="23" stroke-linecap="round"/>
+<path d="M24 84C28 66 59 68 65 51S61 21 77 17" fill="none" stroke="#193D32" stroke-width="2.7" stroke-linecap="round" stroke-dasharray="5 8"/>
+<circle cx="75" cy="19" r="8" fill="#E49C64"/>
+</svg>

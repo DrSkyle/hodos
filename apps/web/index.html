@@ -3,228 +3,130 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#104e3f" />
-  <meta name="description" content="Hodos maps potholes and road hazards using independent observations from everyday Android journeys. Explore safer roads together." />
+  <meta name="theme-color" content="#172d29" />
+  <meta name="description" content="Hodos helps communities understand their roads. Explore reported hazards for free, or opt in to mapping on Android." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Hodos — The road maps itself" />
-  <meta property="og:description" content="An open-source, Android-first map of the roads we travel." />
+  <meta property="og:title" content="Hodos — Roads worth knowing" />
+  <meta property="og:description" content="A clearer view of the roads we share. Independent observations, community reports, and privacy by design." />
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
-  
-  <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=9" />
-  <link rel="shortcut icon" type="image/png" href="/favicon-32.png?v=9" />
-  <link rel="apple-touch-icon" href="/hodos-icon.png?v=9" sizes="512x512" />
   <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
-  
-  <title>Hodos — The road maps itself</title>
+  <link rel="canonical" href="https://hodos.devilabs.dev/" />
+  <link rel="icon" href="/brandmark.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="/hodos-icon.png" />
+  <title>Hodos — Roads worth knowing</title>
 </head>
 <body>
-  <a href="#main" class="skip">Skip to content</a>
+  <a class="skip-link" href="#content">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="/" aria-label="Hodos home">
-      <img class="brand-mark" src="/hodos-icon.png?v=9" alt="" width="42" height="42" />
-      <span class="brand-name">hodos<span class="dot">.</span></span>
-    </a>
-    <nav class="header-links" aria-label="Main navigation">
-      <a href="#features">Features</a>
-      <a href="#how">How it works</a>
-      <a href="#impact">Impact</a>
-      <a href="#faq">FAQ</a>
-      <a class="github-link" href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true"><img src="/doodles/arrow-up-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></a>
-    </nav>
-    <details class="mobile-navigation">
-      <summary aria-label="Open navigation menu"><img src="/doodles/menu.svg" width="17" height="17" alt="" aria-hidden="true" /></summary>
-      <nav aria-label="Mobile navigation">
-        <a href="#features"><img src="/doodles/heart.svg" width="17" height="17" alt="" aria-hidden="true" /> Features</a>
-        <a href="#how"><img src="/doodles/car.svg" width="17" height="17" alt="" aria-hidden="true" /> How it works</a>
-        <a href="#impact"><img src="/doodles/map.svg" width="17" height="17" alt="" aria-hidden="true" /> Impact</a>
-        <a href="#faq"><img src="/doodles/book.svg" width="17" height="17" alt="" aria-hidden="true" /> Questions</a>
-        <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer"><img src="/doodles/arrow-up-right.svg" width="17" height="17" alt="" aria-hidden="true" /> GitHub</a>
+    <div class="site-header-inner wrap">
+      <a class="brand" href="/" aria-label="Hodos home"><img src="/brandmark.svg" alt="" width="42" height="42"/><span>hodos<span class="brand-stop">.</span></span></a>
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a>
       </nav>
-    </details>
+      <a class="header-cta" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta <span class="button-trail" aria-hidden="true"></span></a>
+      <details class="mobile-nav"><summary aria-label="Toggle site navigation"><span></span><span></span></summary><nav aria-label="Mobile navigation"><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a><a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta</a></nav></details>
+    </div>
   </header>
-  <main id="main">
-
-    <section class="hero-reimagined" aria-labelledby="hero-title">
-      <div class="landscape" aria-hidden="true">
-        <svg viewBox="0 0 1600 780" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d5e4e8"/><stop offset="1" stop-color="#eaf1ee"/></linearGradient>
-            <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#adc8be"/><stop offset="1" stop-color="#b2c5b6"/></linearGradient>
-          </defs>
-          <path d="M-30 520L95 365 180 425 302 261 423 448 540 319 645 455 782 278 880 438 1028 302 1130 467 1260 300 1402 425 1530 297 1650 448V790H-30Z" fill="url(#ridge)" opacity=".62"/>
-          <path d="M-40 610L130 465 290 525 437 421 577 536 732 445 848 548 1012 415 1154 558 1320 432 1482 538 1630 418V800H-40Z" fill="url(#hill)" opacity=".5"/>
-          <path d="M-30 700Q145 575 320 664T730 682Q980 595 1190 692T1630 640V790H-30Z" fill="#a1b8a5" opacity=".35"/>
-          <path d="M-70 825Q205 670 555 800" fill="none" stroke="#f6f7ed" stroke-width="128" opacity=".8"/>
-          <path d="M-70 825Q205 670 555 800" fill="none" stroke="#bfcbba" stroke-width="2" stroke-dasharray="15 22"/>
-        </svg>
-      </div>
-      <div class="hero-reimagined-inner wrapper">
-        <div class="hero-intro">
-          <p class="hero-eyebrow">SAFER ROADS, TOGETHER</p>
-          <h1 id="hero-title">Hodos<span>The road maps itself.</span></h1>
-          <p class="hero-reimagined-lede">Hodos picks up likely potholes and rough stretches as you travel. Each journey adds another piece to a clearer picture of the road.</p>
+  <main id="content">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="signal-dot"></span> THE ROAD MAPS ITSELF</p>
+          <h1 id="hero-title">Know the road.<br/><em>Keep moving.</em></h1>
+          <p class="hero-description">Everyday journeys can reveal the potholes and rough stretches we all encounter. Hodos brings independent observations together on a public map—one road at a time.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer" aria-label="View Hodos Android beta APK releases">
-              <span class="android-mark" aria-hidden="true"><img src="/doodles/car.svg" width="17" height="17" alt="" aria-hidden="true" /></span> Get the Android beta <span aria-hidden="true">↗</span>
-            </a>
-            <a class="btn btn-text" href="#how">How it works <span aria-hidden="true"><img src="/doodles/arrow-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></a>
+            <a class="button button-dark" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Explore the Android beta</a>
+            <a class="button button-outline" href="#how">See how Hodos works</a>
           </div>
-          <p class="hero-beta-note"><strong>Early-access beta.</strong> Android only · Motion detection is still being tested on real roads.</p>
-          <div class="doodle-journey" aria-hidden="true">
-            <picture>
-              <source srcset="/doodles/car-static.svg" media="(prefers-reduced-motion: reduce)" />
-              <img class="doodle-journey-car" src="/doodles/car-animated.svg" width="90" height="90" alt="" decoding="async" />
-            </picture>
-            <span class="doodle-journey-path"></span>
-            <img class="doodle-journey-flower" src="/doodles/flower-static.svg" width="37" height="37" alt="" decoding="async" />
-            <span class="doodle-journey-caption">Make every ordinary journey count.</span>
-          </div>
-          <div class="hero-benefits" id="features">
-            <article><span class="benefit-icon" aria-hidden="true"><img class="doodle-icon" src="/doodles/car.svg" width="32" height="32" alt="" decoding="async" /></span><strong>Automatic detection</strong><p>Simply carry your phone. We do the mapping.</p></article>
-            <article><span class="benefit-icon" aria-hidden="true"><img class="doodle-icon" src="/doodles/map-pin.svg" width="32" height="32" alt="" decoding="async" /></span><strong>Real-world map</strong><p>Explore hazards backed by actual journeys.</p></article>
-            <article><span class="benefit-icon" aria-hidden="true"><img class="doodle-icon" src="/doodles/heart.svg" width="32" height="32" alt="" decoding="async" /></span><strong>Community impact</strong><p>Make local roads better, together.</p></article>
-          </div>
+          <p class="beta-note">Android early access. Road detection is still being validated on real devices; do not rely on Hodos as a sole safety source.</p>
+          <div class="hero-index"><span>01 / OBSERVE</span><span>02 / CORROBORATE</span><span>03 / UNDERSTAND</span></div>
         </div>
-
-        <div class="showcase-phones" aria-label="Previews of Hodos Android map, automatic mapping and hazard information">
-          <div class="showcase-phone showcase-phone--map">
-            <div class="showcase-screen map-screen">
-              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
-              <div class="showcase-map-content"><svg viewBox="0 0 336 455" class="showcase-map-art" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="336" height="455" fill="#e5ebe0"/>
-                <path d="M0 90L140 0H225L0 244Z M336 110L130 365L0 455 M336 302L210 455" fill="#d5e4d0"/>
-                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#f9faf5" stroke-width="32" fill="none"/>
-                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#c6d2c5" stroke-width="1.3" fill="none" stroke-dasharray="6 9"/>
-                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#fbfcf9" stroke-width="21" fill="none"/>
-                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#cfdbcf" stroke-width="1.4" fill="none"/>
-                <path d="M-30 330C85 288 180 250 360 180" stroke="#fff" stroke-width="8" fill="none"/>
-                <path d="M-20 330C85 288 180 250 360 180" stroke="#d8e2d5" stroke-width="1" fill="none"/>
-                <g font-size="9" font-family="sans-serif" fill="#849588" letter-spacing="1">
-                  <text x="50" y="70" transform="rotate(-40 50 70)">RING ROAD</text>
-                  <text x="150" y="166" transform="rotate(-8 150 166)">MAIN STREET</text>
-                  <text x="214" y="378" transform="rotate(-44 214 378)">SOUTH ROAD</text>
-                  <text x="43" y="430">YOUR NEIGHBOURHOOD</text>
+        <div class="hero-visual">
+          <div class="map-plate" aria-label="Illustrative map of shared road reports, not live data">
+            <div class="plate-heading"><span class="plate-kicker">HODOS / MAP VIEW</span><span class="plate-label"><span class="plate-indicator"></span> Example only</span></div>
+            <div class="map-canvas">
+              <svg class="cartographic-map" viewBox="0 0 610 495" role="img" aria-labelledby="map-title map-desc" preserveAspectRatio="xMidYMid slice">
+                <title id="map-title">A road map schematic</title><desc id="map-desc">Interconnected local roads, a highlighted route, and three example hazard markers.</desc>
+                <defs>
+                  <pattern id="map-grid" width="29" height="29" patternUnits="userSpaceOnUse"><path d="M29 0H0V29" fill="none" stroke="#dfe6df" stroke-width=".6"/></pattern>
+                  <pattern id="district-dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#b8c9bd"/></pattern>
+                </defs>
+                <rect width="610" height="495" fill="#eff2eb"/><rect width="610" height="495" fill="url(#map-grid)" opacity=".75"/>
+                <path d="M27 90L144 24l123 76 113-59 164 103 84-21v162l-125 53-112-33-111 65-178-20L0 417V255Z" fill="#e1eade"/>
+                <path d="M30 356 154 300l113 28 89-88 143 5 142-70" fill="none" stroke="#d3e2cf" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M50-35 119 95 82 235l130 96-8 193M302-30l-40 123 82 95-68 162 82 180M551-30l-87 119 48 109-65 136 153 136M-15 164l165-48 184 62 294-16M-30 410l149-85 160 46 122-125 243 89" stroke="#c9d4cb" stroke-width="31" fill="none" stroke-linecap="round"/>
+                <path d="M50-35 119 95 82 235l130 96-8 193M302-30l-40 123 82 95-68 162 82 180M551-30l-87 119 48 109-65 136 153 136M-15 164l165-48 184 62 294-16M-30 410l149-85 160 46 122-125 243 89" stroke="#fffef8" stroke-width="26" fill="none" stroke-linecap="round"/>
+                <path class="route-line" d="M92 465 212 332 82 235 119 95 263 92 344 187 509 199" fill="none" stroke="#33735b" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="1 0"/>
+                <g font-size="11" fill="#738779" letter-spacing="1.2" font-family="ui-monospace,monospace">
+                  <text x="29" y="56">NORTH SECTOR</text><text x="366" y="449">NEIGHBORHOOD</text><text x="361" y="70">CROSSING 04</text>
                 </g>
-                <g><circle cx="103" cy="163" r="17" fill="#bd533e" opacity=".14"/><circle cx="103" cy="163" r="8" fill="#bd533e" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="237" cy="109" r="17" fill="#be873f" opacity=".16"/><circle cx="237" cy="109" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="199" cy="273" r="17" fill="#23795c" opacity=".14"/><circle cx="199" cy="273" r="8" fill="#23795c" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="119" cy="368" r="17" fill="#be873f" opacity=".14"/><circle cx="119" cy="368" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="160" cy="227" r="14" fill="#4b83d2" opacity=".2"/><circle cx="160" cy="227" r="7" fill="#4b83d2" stroke="white" stroke-width="3"/></g>
+                <g transform="translate(119 95)"><circle r="21" fill="#f7ead7" stroke="#d38b59" stroke-width="2"/><circle r="7" fill="#c97947"/></g>
+                <g transform="translate(344 187)"><circle r="21" fill="#f7ead7" stroke="#d38b59" stroke-width="2"/><path d="M0-8V2" stroke="#a6603c" stroke-width="3.5" stroke-linecap="round"/><circle cy="9" r="2.2" fill="#a6603c"/></g>
+                <g transform="translate(509 199)"><circle r="21" fill="#d8e8d7" stroke="#367b62" stroke-width="2"/><path d="m-8 0 6 6 11-13" fill="none" stroke="#367b62" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g transform="translate(92 465)"><circle r="15" fill="#317cbd" opacity=".18"/><circle r="7" fill="#317cbd" stroke="#fff" stroke-width="3"/></g>
               </svg>
-                <span class="map-point map-point--one"></span><span class="map-point map-point--two"></span>
-                <span class="map-point map-point--three"></span><span class="map-point map-point--four"></span>
-                <span class="map-point map-point--location"></span>
-              </div>
-              <div class="showcase-map-search"><span aria-hidden="true"><img src="/doodles/search.svg" width="17" height="17" alt="" aria-hidden="true" /></span> Search road hazards <span aria-hidden="true"><img src="/doodles/filter.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              <span class="showcase-location" aria-hidden="true"><img class="doodle-icon" src="/doodles/map-pin.svg" width="32" height="32" alt="" decoding="async" /></span>
-              <div class="showcase-hazard-sheet"><span class="sheet-handle"></span><div class="sheet-title">Nearby hazards <span>See all →</span></div>
-                <div class="mock-hazard"><span class="hazard-icon"><img src="/doodles/warning.svg" width="17" height="17" alt="" aria-hidden="true" /></span><div><b>Large pothole</b><small>High severity · reported by multiple journeys</small></div><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-                <div class="mock-hazard"><span class="hazard-icon orange"><img src="/doodles/warning.svg" width="17" height="17" alt="" aria-hidden="true" /></span><div><b>Rough pavement</b><small>Medium severity · recently seen</small></div><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              </div>
-              <div class="showcase-nav"><span class="active"><img src="/doodles/map.svg" width="17" height="17" alt="" aria-hidden="true" /><small>Map</small></span><span><img src="/doodles/car.svg" width="17" height="17" alt="" aria-hidden="true" /><small>Mapping</small></span><span><img src="/doodles/user.svg" width="17" height="17" alt="" aria-hidden="true" /><small>You</small></span></div>
+              <div class="map-coordinates">27° 43′ N <span>·</span> 85° 19′ E</div>
             </div>
+            <div class="map-legend" aria-hidden="true"><span><i class="key-route"></i> Observed road</span><span><i class="key-report"></i> Possible hazard</span><span><i class="key-repaired"></i> Reported repaired</span></div>
+            <div class="plate-bottom"><span>PUBLIC ROAD INTELLIGENCE</span><span>ILLUSTRATIVE INTERFACE / NOT LIVE DATA</span></div>
           </div>
-
-          <div class="showcase-phone showcase-phone--mapping">
-            <div class="showcase-screen mapping-screen">
-              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
-              <div class="phone-toolbar"><span><img src="/doodles/arrow-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span><strong>Automatic mapping</strong></div>
-              <div class="mapping-card"><div class="mapping-icon"><img class="doodle-icon" src="/doodles/car.svg" width="32" height="32" alt="" decoding="async" /></div><span class="mock-switch" aria-label="Illustration of enabled mapping"></span><h3>Detection is on</h3><p>Hodos is watching for your next journey, quietly in the background.</p></div>
-              <div class="permission-card"><b><img src="/doodles/shield-check.svg" width="17" height="17" alt="" aria-hidden="true" /> Permissions</b><small>Location and motion help Hodos learn from your road trips.</small><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              <div class="trip-heading"><b>Recent journeys</b><span>See all</span></div>
-              <div class="mock-trip"><span class="trip-map"><img class="doodle-icon" src="/doodles/map.svg" width="32" height="32" alt="" decoding="async" /></span><div><b>Today, 5:24 PM</b><small>12.4 km · detected road hazards</small></div><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              <div class="mock-trip"><span class="trip-map second"><img class="doodle-icon" src="/doodles/map-pin.svg" width="32" height="32" alt="" decoding="async" /></span><div><b>Yesterday, 8:17 AM</b><small>Regular route · road observations</small></div><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              <div class="mock-trip"><span class="trip-map third"><img class="doodle-icon" src="/doodles/bookmark.svg" width="32" height="32" alt="" decoding="async" /></span><div><b>Previous journey</b><small>Your contributions stay on device</small></div><span><img src="/doodles/chevron-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span></div>
-              <div class="showcase-nav"><span><img src="/doodles/map.svg" width="17" height="17" alt="" aria-hidden="true" /><small>Map</small></span><span class="active"><img src="/doodles/car.svg" width="17" height="17" alt="" aria-hidden="true" /><small>Mapping</small></span><span><img src="/doodles/user.svg" width="17" height="17" alt="" aria-hidden="true" /><small>You</small></span></div>
-            </div>
-          </div>
-
-          <div class="showcase-phone showcase-phone--detail">
-            <div class="showcase-screen detail-screen">
-              <div class="showcase-status">9:41 <span>◆ ▰ ▮</span></div>
-              <div class="phone-toolbar"><span><img src="/doodles/arrow-right.svg" width="17" height="17" alt="" aria-hidden="true" /></span><strong>Hazard details</strong></div>
-              <div class="road-texture" aria-hidden="true"><svg viewBox="0 0 350 150" preserveAspectRatio="none"><rect width="350" height="150" fill="#555e5a"/><g fill="none" stroke="#222b2a" stroke-width="4"><path d="M12 25L80 45 110 20 154 40 194 12 238 35 284 14 355 22"/><path d="M0 110L54 96 92 123 138 82 181 110 225 74 282 115 350 89"/><path d="M110 20L138 82M194 12L181 110M238 35L225 74M54 96L80 45"/></g><path d="M110 59Q160 30 230 55T274 96Q213 121 151 99T110 59Z" fill="#1c2627"/><path d="M135 68Q170 51 228 68T253 87Q209 96 166 87T135 68Z" fill="#6c8785" opacity=".75"/></svg></div>
-              <div class="detail-content"><span class="severity-tag">High severity</span><h3>Large pothole</h3><p>Road hazard · Last seen recently</p>
-                <div class="detail-stats"><div><b>12</b><small>Passes</small></div><div><b>8</b><small>Devices</small></div><div><b>Open</b><small>Status</small></div></div>
-                <div class="detail-actions"><span>Still there</span><strong><img src="/doodles/check.svg" width="17" height="17" alt="" aria-hidden="true" /> Mark fixed</strong></div>
-                <div class="detail-map"><svg viewBox="0 0 336 455" class="detail-map-art" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="336" height="455" fill="#e5ebe0"/>
-                <path d="M0 90L140 0H225L0 244Z M336 110L130 365L0 455 M336 302L210 455" fill="#d5e4d0"/>
-                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#f9faf5" stroke-width="32" fill="none"/>
-                <path d="M-24 280L375 -8 M-50 392L365 85 M-40 158L368 465" stroke="#c6d2c5" stroke-width="1.3" fill="none" stroke-dasharray="6 9"/>
-                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#fbfcf9" stroke-width="21" fill="none"/>
-                <path d="M99 -20L144 482 M270 -40L190 487" stroke="#cfdbcf" stroke-width="1.4" fill="none"/>
-                <path d="M-30 330C85 288 180 250 360 180" stroke="#fff" stroke-width="8" fill="none"/>
-                <path d="M-20 330C85 288 180 250 360 180" stroke="#d8e2d5" stroke-width="1" fill="none"/>
-                <g font-size="9" font-family="sans-serif" fill="#849588" letter-spacing="1">
-                  <text x="50" y="70" transform="rotate(-40 50 70)">RING ROAD</text>
-                  <text x="150" y="166" transform="rotate(-8 150 166)">MAIN STREET</text>
-                  <text x="214" y="378" transform="rotate(-44 214 378)">SOUTH ROAD</text>
-                  <text x="43" y="430">YOUR NEIGHBOURHOOD</text>
-                </g>
-                <g><circle cx="103" cy="163" r="17" fill="#bd533e" opacity=".14"/><circle cx="103" cy="163" r="8" fill="#bd533e" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="237" cy="109" r="17" fill="#be873f" opacity=".16"/><circle cx="237" cy="109" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="199" cy="273" r="17" fill="#23795c" opacity=".14"/><circle cx="199" cy="273" r="8" fill="#23795c" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="119" cy="368" r="17" fill="#be873f" opacity=".14"/><circle cx="119" cy="368" r="8" fill="#be873f" stroke="white" stroke-width="3"/></g>
-                <g><circle cx="160" cy="227" r="14" fill="#4b83d2" opacity=".2"/><circle cx="160" cy="227" r="7" fill="#4b83d2" stroke="white" stroke-width="3"/></g>
-              </svg></div>
-                <div class="activity-label"><b>Evidence</b><span>Independent journeys</span></div>
-                <div class="activity-row"><span><img src="/doodles/check.svg" width="17" height="17" alt="" aria-hidden="true" /></span> Road observations corroborated</div>
-                <div class="activity-row"><span><img src="/doodles/heart.svg" width="17" height="17" alt="" aria-hidden="true" /></span> Community can report repairs</div>
-              </div>
-            </div>
-          </div>
-          <p class="showcase-caption">App interface preview · Sample hazards shown for illustration</p>
+          <div class="hero-side-note" aria-hidden="true">The map starts with a road.<br/>The picture gets clearer together.</div>
         </div>
       </div>
     </section>
-
-    <section class="proof-band" aria-label="Hodos at a glance"><div class="wrapper proof-grid">
-      <div><b>01</b><span>Travel your regular route</span></div>
-      <div><b>02</b><span>Let your phone detect the bumps</span></div>
-      <div><b>03</b><span>See the shared road map improve</span></div>
-    </div></section>
-
-    <section class="content-section wrapper" id="how">
-      <div class="section-heading"><span class="overline">HOW IT WORKS / 001</span><h2>Just go where<br />you were <em>going.</em></h2><p>Maps usually need someone to report a problem. Hodos learns from the movement of phones already travelling those roads.</p></div>
-      <div class="steps">
-        <article class="step"><span class="step-number">01 /</span><div class="step-icon"><img class="doodle-icon" src="/doodles/car.svg" width="32" height="32" alt="" decoding="async" /></div><h3>Switch on mapping</h3><p>Enable automatic mapping in the Android app, then carry on with your normal journeys.</p></article>
-        <article class="step"><span class="step-number">02 /</span><div class="step-icon"><img class="doodle-icon" src="/doodles/map-pin.svg" width="32" height="32" alt="" decoding="async" /></div><h3>Feel the road</h3><p>On-device motion analysis finds likely potholes, rough patches and speed bumps without recording raw traces online.</p></article>
-        <article class="step"><span class="step-number">03 /</span><div class="step-icon"><img class="doodle-icon" src="/doodles/check.svg" width="32" height="32" alt="" decoding="async" /></div><h3>Trust the evidence</h3><p>Repeated reports help corroborate potential hazards. People can also report that a road was repaired.</p></article>
+    <div class="method-strip"><div class="wrap method-strip-inner"><span>OPT-IN MAPPING</span><span>NO ACCOUNT TO EXPLORE</span><span>LOCAL JOURNEY SUMMARIES</span><span>OPEN SOURCE</span></div></div>
+    <section class="section section-how wrap" id="how" aria-labelledby="how-title">
+      <div class="section-intro"><div><span class="overline">01 / THE IDEA</span><h2 id="how-title">Just go where<br/>you were <em>going.</em></h2></div><p>Road conditions change constantly. Hodos helps turn everyday phone observations into a clearer, shared picture—without asking you to file a report at every bump.</p></div>
+      <div class="process-grid">
+        <article class="process-card"><span class="process-index">01</span><div class="process-symbol process-symbol-one" aria-hidden="true"><span class="process-path"></span></div><h3>Choose to map</h3><p>Opt in to automatic road mapping from the Android app. You decide when participation is on.</p><span class="process-foot">YOU'RE IN CONTROL</span></article>
+        <article class="process-card"><span class="process-index">02</span><div class="process-symbol process-symbol-two" aria-hidden="true"><span class="process-impulse"></span></div><h3>Travel as usual</h3><p>On-device motion analysis flags possible road impacts. A single bump is not enough to establish a defect.</p><span class="process-foot">LOCAL ANALYSIS</span></article>
+        <article class="process-card"><span class="process-index">03</span><div class="process-symbol process-symbol-three" aria-hidden="true"><span class="process-points"><i></i><i></i><i></i></span></div><h3>Build confidence</h3><p>Independent observations help corroborate reports. Communities can also submit repair feedback.</p><span class="process-foot">SHARED EVIDENCE</span></article>
       </div>
     </section>
-    <section class="road-story" aria-labelledby="road-story-title">
-      <div class="wrapper road-story-layout">
-        <div class="road-story-copy">
-          <span class="overline">YOUR LITTLE CORNER OF THE MAP</span>
-          <h2 id="road-story-title">Every road<br />has a <em>story.</em></h2>
-          <p>Some roads become part of your day. Save the reports that matter, see what's changed, and keep a little record of the journeys you've made—without storing your full route.</p>
-          <div class="road-story-benefits">
-            <article><span class="road-story-stamp"><img class="doodle-icon" src="/doodles/bookmark.svg" width="32" height="32" alt="" decoding="async" /></span><div><h3>Keep your roads close</h3><p>Bookmark hazards on your phone. Check back when their public report changes.</p></div></article>
-            <article><span class="road-story-stamp"><img class="doodle-icon" src="/doodles/book.svg" width="32" height="32" alt="" decoding="async" /></span><div><h3>A little road diary</h3><p>A calm, private collection of weekly journeys. No leaderboards. No pressure.</p></div></article>
-            <article><span class="road-story-stamp"><img class="doodle-icon" src="/doodles/heart.svg" width="32" height="32" alt="" decoding="async" /></span><div><h3>Room for everyone</h3><p>Explore without an account. Share road observations only when you choose.</p></div></article>
-          </div>
+    <section class="section section-roads" id="road-notes" aria-labelledby="roads-title"><div class="wrap roads-grid">
+      <div class="roads-copy"><span class="overline">02 / YOUR ROADS</span><h2 id="roads-title">The places you<br/>care about <em>matter.</em></h2><p>Keep track of the reports that are useful to you. Revisit the map to check a road's current public status, or look back at your own weekly journey summaries.</p>
+        <div class="road-features">
+          <div><span class="feature-label">SAVE / 01</span><div><h3>Keep a road close</h3><p>Save public hazard reports on your phone and return to check for changes.</p></div></div>
+          <div><span class="feature-label">REVISIT / 02</span><div><h3>See what's changed</h3><p>Open a saved report to see its most recently available community status.</p></div></div>
+          <div><span class="feature-label">REMEMBER / 03</span><div><h3>A quiet road diary</h3><p>Weekly summaries stay on your device—without saving your full route.</p></div></div>
         </div>
-        <figure class="road-atlas-art">
-          <img src="/illustrations/road-journal.svg" width="860" height="720" alt="An open illustrated journal beside a winding road through green hills, with a map pin and golden bookmark." loading="lazy" decoding="async" />
-          <figcaption><span class="atlas-caption-dot"></span> Your road story, at your own pace.</figcaption>
-        </figure>
       </div>
-    </section>
-    <section class="principles" id="principles"><div class="wrapper principles-grid">
-      <div><span class="overline">WHAT MATTERS / 002</span><h2>Useful in public.<br /><em>Careful in private.</em></h2></div>
-      <div class="principles-list">
-        <div><b><img src="/doodles/lock.svg" width="17" height="17" alt="" aria-hidden="true" /></b><div><h3>Raw motion data stays on the phone.</h3><p>Hodos submits compact road observations, not continuous sensor recordings.</p></div></div>
-        <div><b><img src="/doodles/shield-check.svg" width="17" height="17" alt="" aria-hidden="true" /></b><div><h3>One report isn't the whole story.</h3><p>Hazards appear after repeated observations. You can also report when a road has been repaired.</p></div></div>
-        <div><b><img src="/doodles/heart.svg" width="17" height="17" alt="" aria-hidden="true" /></b><div><h3>Built in the open.</h3><p>See how Hodos works, report bugs, or contribute on GitHub.</p></div></div>
+      <div class="road-record" aria-label="Illustration of the saved road record format">
+        <div class="record-top"><span>H / ROAD RECORD</span><span>LOCAL NOTE</span></div>
+        <div class="record-map"><svg viewBox="0 0 520 300" preserveAspectRatio="none" role="img" aria-label="Simple diagram of a curving road and a saved map point">
+          <defs><pattern id="record-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#b6c8b7" stroke-width=".6"/></pattern></defs>
+          <rect width="520" height="300" fill="#dfe9df"/><rect width="520" height="300" fill="url(#record-grid)"/>
+          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#b3c7b4" stroke-width="80" fill="none" stroke-linecap="round"/>
+          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#fffdf5" stroke-width="65" fill="none" stroke-linecap="round"/>
+          <path class="record-route" d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#448168" stroke-width="3" stroke-dasharray="8 12" fill="none"/>
+          <circle cx="266" cy="204" r="30" fill="#f6d6b7" stroke="#b8734e" stroke-width="2"/>
+          <circle cx="266" cy="204" r="11" fill="#bc774d"/>
+          <text x="37" y="45" fill="#4b6857" font-size="12" font-family="monospace" letter-spacing="1">SAVED / PUBLIC REPORT</text>
+        </svg></div>
+        <div class="record-details"><span class="record-number">H—001</span><div><span class="record-subhead">ROAD CONDITION</span><strong>Check back later.</strong><p>Road reports can change as new observations and repair feedback arrive.</p></div><span class="record-status"><span></span> Example</span></div>
+        <div class="record-footer"><span>BUILT FOR REVISITING</span><span>NO FULL ROUTE STORED</span></div>
       </div>
     </div></section>
-    <section class="impact wrapper" id="impact"><div><span class="overline">OUR IMPACT</span><h2>A clearer picture<br />of your roads.</h2></div><div class="impact-story"><div class="impact-icons" aria-hidden="true"><img class="doodle-icon" src="/doodles/sun.svg" width="32" height="32" alt="" decoding="async" /><img class="doodle-icon" src="/doodles/tree-pine.svg" width="32" height="32" alt="" decoding="async" /><img class="doodle-icon" src="/doodles/heart.svg" width="32" height="32" alt="" decoding="async" /></div><p>The map brings together observations from everyday journeys, with feedback from people who use the same roads.</p></div></section>
-    <section class="faq wrapper" id="faq"><div class="faq-heading"><div><span class="overline">FAQ</span><h2>A few things worth knowing.</h2></div><img class="doodle-icon" src="/doodles/clouds.svg" width="32" height="32" alt="" decoding="async" /></div><details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos sends compact geolocated road observations when it detects a potential hazard; your raw accelerometer stream stays on the device.</p></details><details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore already confirmed road hazards without enabling automatic mapping.</p></details><details><summary>When does a hazard appear on the map?</summary><p>Hodos checks for repeated observations from different app installations before showing a hazard. You can also report when one has been repaired.</p></details><details><summary>Can Hodos download maps for offline driving?</summary><p>On Android, Hodos can save a 20 km nearby area over Wi-Fi after you allow location. You can turn automatic downloads off, save a region manually, or remove maps in the Mapping tab. Previously saved map tiles work offline, but new hazard reports and other regions need internet.</p></details><details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first and still in beta testing. Check the latest Android release notes before installing; real-road sensor performance is still being verified.</p></details></section>
-    <section class="closing wrapper"><div><span class="closing-art" aria-hidden="true"><img class="doodle-icon" src="/doodles/flower.svg" width="32" height="32" alt="" decoding="async" /><img class="doodle-icon" src="/doodles/sun.svg" width="32" height="32" alt="" decoding="async" /></span><span class="overline">ROAD BY ROAD</span><h2>Better roads start with<br />better <em>information.</em></h2></div><a class="btn btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Explore Android beta releases <img src="/doodles/arrow-up-right.svg" width="17" height="17" alt="" aria-hidden="true" /></a></section>
+    <section class="section section-values" id="values" aria-labelledby="values-title"><div class="wrap values-grid">
+      <div><span class="overline">03 / PRINCIPLES</span><h2 id="values-title">Useful in public.<br/><em>Careful in private.</em></h2></div>
+      <div class="value-list">
+        <article><span>01</span><div><h3>Explore without signing in.</h3><p>The public hazard map is available even when automatic mapping is turned off.</p></div></article>
+        <article><span>02</span><div><h3>Keep raw motion on your phone.</h3><p>Compact geolocated observations can be sent when you participate; raw sensor streams and complete routes are not uploaded.</p></div></article>
+        <article><span>03</span><div><h3>Don't trust a single bump.</h3><p>Multiple independent observations help corroborate possible hazards before they're shown on the shared map.</p></div></article>
+        <article><span>04</span><div><h3>See the code.</h3><p>Hodos is developed in the open under AGPL-3.0. Read the implementation and help make it more dependable.</p></div></article>
+      </div>
+    </div></section>
+    <section class="section section-faq wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><span class="overline">04 / QUESTIONS</span><h2 id="faq-title">Good to know.</h2></div><div class="faq-list">
+      <details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos submits compact geolocated road observations when mapping is enabled, not raw accelerometer data or your complete GPS route.</p></details>
+      <details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore publicly confirmed road hazards without enabling automatic mapping.</p></details>
+      <details><summary>When does a hazard appear on the map?</summary><p>Hodos checks for repeated observations from different app installations before publishing a hazard. People can also report when a road has been repaired.</p></details>
+      <details><summary>Can I save maps for offline use?</summary><p>The Android app can save a nearby 20 km map area over Wi-Fi after you allow location. Saved tiles work offline; other regions and fresh hazard updates need internet.</p></details>
+      <details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first and in beta testing. iPhone support is not available yet.</p></details>
+    </div></section>
+    <section class="closing"><div class="wrap closing-inner"><div><span class="overline">EVERY ROAD COUNTS</span><h2>Better journeys start<br/>with better information.</h2></div><div><a class="button button-light" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Explore Android beta</a><p>Early-access software. Report issues on GitHub.</p></div></div></section>
   </main>
-  <footer class="footer wrapper"><span>© <span id="year">2026</span> Hodos · A Devilabs project</span><div><a href="https://github.com/DrSkyle/hodos">Source code <img src="/doodles/arrow-up-right.svg" width="17" height="17" alt="" aria-hidden="true" /></a><a href="/privacy.html">Privacy</a></div></footer>
+  <footer class="site-footer"><div class="wrap footer-inner"><a class="footer-brand" href="/"><img src="/brandmark.svg" alt="" width="28" height="28"/> hodos.</a><p>An open road project by Devilabs.</p><div><a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">Source code</a><a href="/privacy.html">Privacy</a></div></div></footer>
   <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>
