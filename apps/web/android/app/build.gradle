@@ -113,8 +113,8 @@ tasks.register('prepareHodosArtwork') {
                 route.curveTo(inset + side * .28d, inset + side * .66d,
                     inset + side * .59d, inset + side * .68d,
                     inset + side * .65d, inset + side * .51d)
-                route.curveTo(inset + side * .61d, inset + side * .21d,
-                    inset + side * .77d, inset + side * .17d,
+                route.curveTo(inset + side * .71d, inset + side * .34d,
+                    inset + side * .61d, inset + side * .21d,
                     inset + side * .77d, inset + side * .17d)
                 g.setStroke(new java.awt.BasicStroke((float)(side * .23d),
                     java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND))
