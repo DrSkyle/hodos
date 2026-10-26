@@ -23,8 +23,8 @@ android {
         applicationId 'org.hodos.app'
         minSdk 23
         targetSdk 35
-        versionCode 25
-        versionName '1.1.23'
+        versionCode 26
+        versionName '1.1.24'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -79,67 +79,76 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.6.2'
 }
 
-// Hodos has exactly ONE full-colour brand image: web/public/hodos-icon.png.
-// The website favicon is a pixel-exact 32px resize of this same source.
-// Both Android legacy icons and both adaptive icons are generated from it.
-def hodosArtworkDir = file('../../public')
+// One source of truth for the identity: deliberate cartographic road geometry.
+// The mark is drawn with Java2D at build time, keeping the APK independent from
+// externally generated PNGs and producing sharp density-specific raster icons.
 def hodosGeneratedRes = layout.buildDirectory.dir('generated/hodos/res')
 android.sourceSets.main.res.srcDir(hodosGeneratedRes.get().asFile)
 
 tasks.register('prepareHodosArtwork') {
-    def master = new File(hodosArtworkDir, 'hodos-icon.png')
-    inputs.file(master)
+    inputs.property('roadMarkRevision', '2026-10-cartographic-1')
     outputs.dir(hodosGeneratedRes)
     doLast {
-        if (!master.isFile() || master.length() < 50000) {
-            throw new GradleException('Missing full-resolution Hodos icon: apps/web/public/hodos-icon.png')
-        }
-        def original = javax.imageio.ImageIO.read(master)
-        if (original == null || original.width < 1024 || original.height < 1024 ||
-            original.width != original.height) {
-            throw new GradleException('Hodos master icon must be a square PNG of at least 1024px.')
-        }
-
-        def resRoot = hodosGeneratedRes.get().asFile
-        def drawable = new File(resRoot, 'drawable-nodpi')
-        drawable.mkdirs()
-        new File(drawable, 'hodos_brand_icon.png').bytes = master.bytes
-
-        // Pre-Android 8 launchers use identical artwork, whether the launcher
-        // selects the standard or legacy round icon entry.
-        [mdpi:48, hdpi:72, xhdpi:96, xxhdpi:144, xxxhdpi:192].each { density, px ->
-            def output = new File(resRoot, 'mipmap-' + density)
-            output.mkdirs()
+        def root = hodosGeneratedRes.get().asFile
+        def render = { int px, double insetRatio ->
             def image = new java.awt.image.BufferedImage(px, px,
                 java.awt.image.BufferedImage.TYPE_INT_ARGB)
-            def graphics = image.createGraphics()
-            graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-            graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
-                java.awt.RenderingHints.VALUE_RENDER_QUALITY)
-            graphics.drawImage(original, 0, 0, px, px, null)
-            graphics.dispose()
-            ['ic_launcher.png', 'ic_launcher_round.png'].each { fileName ->
-                javax.imageio.ImageIO.write(image, 'png', new File(output, fileName))
+            def g = image.createGraphics()
+            try {
+                g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
+                g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+                    java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+                g.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
+                    java.awt.RenderingHints.VALUE_STROKE_PURE)
+                double inset = px * insetRatio
+                double side = px - inset * 2d
+                def background = new java.awt.geom.RoundRectangle2D.Double(
+                    inset, inset, side, side, side * .46d, side * .46d)
+                g.setColor(new java.awt.Color(25, 61, 50))
+                g.fill(background)
+
+                def route = new java.awt.geom.Path2D.Double()
+                route.moveTo(inset + side * .24d, inset + side * .84d)
+                route.curveTo(inset + side * .28d, inset + side * .66d,
+                    inset + side * .59d, inset + side * .68d,
+                    inset + side * .65d, inset + side * .51d)
+                route.curveTo(inset + side * .61d, inset + side * .21d,
+                    inset + side * .77d, inset + side * .17d,
+                    inset + side * .77d, inset + side * .17d)
+                g.setStroke(new java.awt.BasicStroke((float)(side * .23d),
+                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND))
+                g.setColor(new java.awt.Color(244, 240, 223))
+                g.draw(route)
+                if (side > 30d) {
+                    g.setStroke(new java.awt.BasicStroke((float)(side * .027d),
+                        java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND,
+                        10f, [(float)(side * .05d), (float)(side * .08d)] as float[], 0f))
+                    g.setColor(new java.awt.Color(25, 61, 50))
+                    g.draw(route)
+                }
+                g.setColor(new java.awt.Color(228, 156, 100))
+                g.fill(new java.awt.geom.Ellipse2D.Double(
+                    inset + side * .75d - side * .08d,
+                    inset + side * .19d - side * .08d, side * .16d, side * .16d))
+            } finally {
+                g.dispose()
+            }
+            image
+        }
+        def drawable = new File(root, 'drawable-nodpi')
+        drawable.mkdirs()
+        javax.imageio.ImageIO.write(render(1024, 0d), 'png',
+            new File(drawable, 'hodos_brand_icon.png'))
+        [mdpi:48, hdpi:72, xhdpi:96, xxhdpi:144, xxxhdpi:192].each { density, px ->
+            def out = new File(root, 'mipmap-' + density)
+            out.mkdirs()
+            def art = render(px as int, 0d)
+            ['ic_launcher.png','ic_launcher_round.png'].each { filename ->
+                javax.imageio.ImageIO.write(art, 'png', new File(out, filename))
             }
         }
-
-        // Android adaptive icons crop/mask the foreground to the phone's icon
-        // shape. Keep the *whole favicon artwork* inside the adaptive safe zone
-        // instead of letting the OS cut away the tree and road.
-        def side = 432
-        def foreground = new java.awt.image.BufferedImage(side, side,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB)
-        def graphics = foreground.createGraphics()
-        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-            java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
-            java.awt.RenderingHints.VALUE_RENDER_QUALITY)
-        def inset = (int)(side * 0.12)  // favicon image occupies 76% safe centre
-        graphics.drawImage(original, inset, inset, side - inset * 2,
-            side - inset * 2, null)
-        graphics.dispose()
-        javax.imageio.ImageIO.write(foreground, 'png',
+        javax.imageio.ImageIO.write(render(432, .12d), 'png',
             new File(drawable, 'hodos_launcher_foreground.png'))
     }
 }

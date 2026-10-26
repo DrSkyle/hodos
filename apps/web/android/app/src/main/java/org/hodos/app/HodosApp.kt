@@ -1149,7 +1149,7 @@ private fun HodosBrand() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(R.drawable.hodos_brand_icon),
-            contentDescription = "Hodos forest road icon",
+            contentDescription = "Hodos road mark",
             contentScale = ContentScale.Fit,
             modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp))
         )

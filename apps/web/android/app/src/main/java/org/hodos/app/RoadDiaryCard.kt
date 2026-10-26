@@ -81,13 +81,13 @@ internal fun RoadDiaryCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     DoodleIcon(DoodleSymbol.DIARY, modifier = Modifier.size(29.dp), tint = DiaryForest)
                     Spacer(Modifier.width(9.dp))
-                    Text("YOUR LITTLE ROAD DIARY", color = DiaryForest,
+                    Text("YOUR ROAD DIARY", color = DiaryForest,
                         fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
                 Text(
-                    if (summary.journeysThisWeek == 0) "A fresh week of roads."
-                    else if (summary.activeDaysThisWeek == 1) "One day out exploring!"
-                    else "${summary.activeDaysThisWeek} days out exploring!",
+                    if (summary.journeysThisWeek == 0) "Your week on the map."
+                    else if (summary.activeDaysThisWeek == 1) "One recorded day this week."
+                    else "${summary.activeDaysThisWeek} days with journeys.",
                     fontSize = 24.sp, fontWeight = FontWeight.Bold, color = DiaryInk
                 )
                 Text(
@@ -150,74 +150,74 @@ internal fun RoadDiaryCard(
  * motion, no downloaded animation assets, tracking, or extra dependencies.
  */
 @Composable
-internal fun RoadDoodle(modifier: Modifier = Modifier) {
+internal fun RoadDoodle(modifier: Modifier = Modifier, variant: Int = 0) {
     val context = LocalContext.current
     val motionAllowed = remember(context) {
         Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled()
     }
-    val transition = rememberInfiniteTransition(label = "road companion")
-    val drift by transition.animateFloat(
+    val transition = rememberInfiniteTransition(label = "route signal")
+    val pulse by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(2100, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "gentle road motion"
+        label = "map location pulse"
     )
-    val movement = if (motionAllowed) drift else 0.5f
     Canvas(modifier) {
         val w = size.width
         val h = size.height
-        // Sunny sky and oversized friendly trees.
-        drawCircle(Color(0xFFFFD57B), radius = h * .15f,
-            center = Offset(w * .81f, h * .26f))
-        drawCircle(Color(0xFFFFFFFF), radius = h * .085f,
-            center = Offset(w * .22f + movement * 6f, h * .27f))
-        drawCircle(Color(0xFFFFFFFF), radius = h * .065f,
-            center = Offset(w * .28f + movement * 6f, h * .25f))
-        val trees = listOf(.12f to .54f, .88f to .70f, .94f to .40f)
-        trees.forEach { (x, y) ->
-            drawLine(Color(0xFF6D8B62), Offset(w*x, h*y),
-                Offset(w*x, h*(y + .17f)), strokeWidth = h*.025f,
-                cap = StrokeCap.Round)
-            drawCircle(Color(0xFF64AF7E), radius = h*.13f,
-                center = Offset(w*x, h*y))
-            drawCircle(Color(0xFF8FD09A), radius = h*.075f,
-                center = Offset(w*x - h*.04f, h*y - h*.035f))
+        val unit = h / 10f
+        drawRect(Color(0xFFE8EEE7))
+        for (i in 0..19) {
+            val x = i * unit
+            if (x <= w) drawLine(Color(0xFFD7E1D7), Offset(x, 0f),
+                Offset(x, h), strokeWidth = 1f)
+        }
+        for (i in 0..12) {
+            val y = i * unit
+            if (y <= h) drawLine(Color(0xFFD7E1D7), Offset(0f, y),
+                Offset(w, y), strokeWidth = 1f)
         }
         val road = Path().apply {
-            moveTo(-24f, h*.95f)
-            cubicTo(w*.10f, h*.55f, w*.32f, h*.96f, w*.52f, h*.66f)
-            cubicTo(w*.70f, h*.41f, w*.83f, h*.83f, w+24f, h*.54f)
+            moveTo(-w * .11f, h * .82f)
+            cubicTo(w * .25f, h * .61f, w * .21f, h * .14f, w * .53f, h * .23f)
+            cubicTo(w * .77f, h * .33f, w * .76f, h * .77f, w * 1.07f, h * .48f)
         }
-        drawPath(road, Color(0xFFB7CCB8),
-            style = Stroke(width = h*.22f, cap = StrokeCap.Round))
-        drawPath(road, Color(0xFFF8FFF6),
+        drawPath(road, Color(0xFFBBCFBF),
+            style = Stroke(width = h * .21f, cap = StrokeCap.Round))
+        drawPath(road, Color(0xFFFCFBF4),
+            style = Stroke(width = h * .17f, cap = StrokeCap.Round))
+        drawPath(road, Color(0xFF50856C),
             style = Stroke(
-                width = h*.018f,
+                width = h * .017f,
                 cap = StrokeCap.Round,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(h*.08f, h*.08f))
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(h * .044f, h * .046f)
+                )
             ))
-        // Cheerful illustrated mini-car, moving only a few pixels.
-        val cx = w*.52f + (movement-.5f)*12f
-        val cy = h*.60f - movement * 4f
-        drawRoundRect(Color(0xFF257B65), topLeft = Offset(cx-h*.19f, cy),
-            size = Size(h*.38f, h*.16f), cornerRadius = CornerRadius(h*.045f))
-        drawRoundRect(Color(0xFF3C9477), topLeft = Offset(cx-h*.11f, cy-h*.078f),
-            size = Size(h*.22f, h*.12f), cornerRadius = CornerRadius(h*.043f))
-        drawRoundRect(Color(0xFFCDEFE8), topLeft = Offset(cx-h*.065f, cy-h*.053f),
-            size = Size(h*.13f, h*.066f), cornerRadius = CornerRadius(h*.018f))
-        drawCircle(Color(0xFF273E38), radius = h*.033f,
-            center = Offset(cx-h*.117f, cy+h*.15f))
-        drawCircle(Color(0xFF273E38), radius = h*.033f,
-            center = Offset(cx+h*.117f, cy+h*.15f))
-        drawCircle(Color.White, radius = h*.014f,
-            center = Offset(cx-h*.055f, cy+h*.08f))
-        drawCircle(Color.White, radius = h*.014f,
-            center = Offset(cx+h*.055f, cy+h*.08f))
-        drawLine(Color(0xFFF5D8A3), Offset(cx-h*.025f, cy+h*.117f),
-            Offset(cx+h*.025f, cy+h*.117f), strokeWidth = h*.012f,
-            cap = StrokeCap.Round)
+        val point = when (variant) {
+            1 -> Offset(w * .53f, h * .23f)
+            2 -> Offset(w * .24f, h * .52f)
+            else -> Offset(w * .71f, h * .58f)
+        }
+        val highlight = if (variant == 2) Color(0xFF367A62) else Color(0xFFD48D5C)
+        drawCircle(Color.White, radius = h * .107f, center = point)
+        drawCircle(highlight, radius = h * .077f, center = point)
+        drawCircle(Color.White, radius = h * .027f, center = point)
+        if (motionAllowed && variant == 1) {
+            drawCircle(
+                color = highlight.copy(alpha = (1f - pulse) * .6f),
+                radius = h * (.08f + pulse * .15f),
+                center = point,
+                style = Stroke(width = h * .011f)
+            )
+        }
+        // A small evidence node, not a decorative landscape character.
+        val node = Offset(w * .15f, h * .26f)
+        drawCircle(Color(0xFF316F59), radius = h * .032f, center = node)
+        drawCircle(Color(0xFFE0A170), radius = h * .018f,
+            center = Offset(w * .84f, h * .21f))
     }
 }

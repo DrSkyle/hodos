@@ -75,7 +75,7 @@ fun HodosOnboarding(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
                         painter = painterResource(R.drawable.hodos_brand_icon),
-                        contentDescription = "Hodos forest road icon",
+                        contentDescription = "Hodos road mark",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.size(54.dp).clip(RoundedCornerShape(14.dp))
                     )
@@ -170,21 +170,12 @@ private fun OnboardingArtwork(step: Int) {
     // Brand artwork supplied by the creator, not a placeholder Material icon.
     Surface(
         shape = RoundedCornerShape(32.dp),
-        color = Color(0xFFE5EFE8),
+        color = Color(0xFFE8EEE7),
         modifier = Modifier.fillMaxWidth().height(255.dp)
     ) {
         Box {
-            if (step == 0) {
-                Image(
-                    painter = painterResource(R.drawable.hodos_brand_icon),
-                    contentDescription = "Forest, mountains and the winding Hodos road",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                // Original vector artwork animates subtly without third-party assets.
-                RoadDoodle(Modifier.fillMaxSize())
-            }
+            // A consistent cartographic illustration for every onboarding step.
+            RoadDoodle(Modifier.fillMaxSize(), variant = step)
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(13.dp),
                 color = Color(0xEC133D31),
