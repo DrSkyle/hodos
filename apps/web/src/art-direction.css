@@ -1,0 +1,86 @@
+/* Hodos illustrated art direction: clear controls, warm editorial typography, handmade motifs. */
+:root{--story-ink:#173e31;--story-green:#236953;--story-cream:#f8f7ea;--story-mint:#ecf5e9}
+button,a,summary{cursor:pointer}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #205f49;outline-offset:4px;border-radius:8px}
+.site-header{background:#f9fbf5ee;border-color:#e2e9dc}
+.hero-reimagined{background:radial-gradient(ellipse at 85% 12%,#e4f4dc 0,transparent 44%),linear-gradient(125deg,#fffcf2 0%,#f5faec 58%,#e1efe0 100%)}
+.landscape{opacity:.55}
+.hero-intro h1{color:#18372c}.hero-intro h1 span{color:#345e50}
+.hero-eyebrow{color:#3d806b}.hero-reimagined-lede{color:#48645b}
+.hero-reimagined .btn-primary,.btn-primary{background:#176750;transition:background-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.hero-reimagined .btn-primary:hover,.btn-primary:hover{background:#0c493a;transform:translateY(-2px);box-shadow:0 12px 23px #124e382d}
+.btn img,.header-links img,.footer img{display:inline-block;vertical-align:middle;flex:none}
+.hero-benefits{margin-top:39px}
+.benefit-icon{border-radius:16px;background:#e7f2e7;width:48px;height:48px;transform:rotate(-4deg)}
+.benefit-icon .doodle-icon{width:31px;height:31px}
+.hero-benefits .benefit-icon img{filter:none}
+.hero-benefits article:nth-child(2) .benefit-icon{background:#fff0d4;transform:rotate(3deg)}
+.hero-benefits article:nth-child(3) .benefit-icon{background:#f7e7e6}
+.doodle-icon{display:block;width:100%;height:100%;object-fit:contain}
+.doodle-journey{width:min(100%,445px);min-height:90px;padding:0 18px 0 6px;border:1.5px dashed #b7cdb7;background:#f4f7e9;border-radius:24px;box-shadow:0 7px 0 #dbe9d733;gap:11px}
+.doodle-journey picture{width:90px;height:90px;flex:0 0 90px}
+.doodle-journey-car{display:block;width:90px;height:90px;object-fit:contain;animation:tiny-bounce 3.1s ease-in-out infinite;will-change:transform}
+.doodle-journey-caption{font-size:13px;max-width:156px;color:#315f4e}
+.doodle-journey-path{border-color:#75ac85;flex-basis:38px}
+.doodle-journey-flower{width:38px;height:38px;flex-basis:38px}
+@keyframes tiny-bounce{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+.proof-band{background:#204b3c;color:#f1f6e8}.proof-grid b{color:#b8e3bb}.proof-grid>div{border-color:#547565}
+.step{background:#fefef9;border:1px solid #d5e4d4;box-shadow:0 6px 0 #dceade40;transition:transform .22s ease,box-shadow .22s ease}
+.step:hover{transform:translateY(-5px);box-shadow:0 14px 27px #204a3213}
+.step-icon{width:78px;height:78px;background:#e3f1db;border-radius:26px;display:grid;place-items:center;transform:rotate(-5deg)}
+.step:nth-child(2) .step-icon{background:#fff0cd;transform:rotate(5deg)}
+.step:nth-child(3) .step-icon{background:#e5f5ee}
+.step-icon .doodle-icon{width:49px;height:49px}.step-number{color:#557565}
+.principles{background:#eaf3e6}
+.principles-list>div{grid-template-columns:46px 1fr}
+.principles-list>div>b{display:grid;place-items:center;width:40px;height:40px;background:#fffdf2;border-radius:14px}
+.principles-list>div>b img{width:27px;height:27px}
+.road-story{position:relative;padding:110px 0 125px;overflow:hidden;background:#fbf6e7}
+.road-story-layout{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:85px}
+.road-story-copy h2{font-family:Manrope,sans-serif;font-size:clamp(42px,5.1vw,67px);line-height:1.08;letter-spacing:-.067em;margin:20px 0 25px;color:var(--story-ink)}
+.road-story-copy h2 em{font-style:normal;color:#3c8c68}
+.road-story-copy>p{font-size:17px;line-height:1.75;color:#607666;max-width:550px}
+.road-story-benefits{display:grid;gap:16px;margin-top:35px}
+.road-story-benefits article{display:flex;align-items:flex-start;gap:16px}
+.road-story-benefits h3{margin:0 0 4px;color:#1c4434;font-size:17px;letter-spacing:-.035em}
+.road-story-benefits p{margin:0;color:#67776b;line-height:1.6;font-size:13px}
+.road-story-stamp{display:grid;place-items:center;flex:none;width:51px;height:51px;border-radius:17px;background:#e0eddb;transform:rotate(-6deg);padding:11px}
+.road-story-benefits article:nth-child(2) .road-story-stamp{background:#fae4b6;transform:rotate(4deg)}
+.road-story-benefits article:nth-child(3) .road-story-stamp{background:#f4dfdc}
+.road-story-illustration{height:450px;border:2px solid #d4e4d5;border-radius:50px 50px 100px 50px;background:radial-gradient(circle at 73% 22%,#fff2c7 0 11%,transparent 12%),linear-gradient(#e7f3e8,#d9ebd7);position:relative;overflow:hidden;box-shadow:14px 17px 0 #e3ecd8}
+.road-story-illustration .doodle-icon{width:100%;height:100%}
+.illustration-road{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.illustration-sun,.illustration-cloud,.illustration-tree,.illustration-car,.illustration-flower{position:absolute;display:block;z-index:2}
+.illustration-sun{width:72px;height:72px;right:12%;top:9%;transform:rotate(8deg)}
+.illustration-cloud{width:68px;height:68px;top:12%;left:12%}
+.illustration-tree{width:95px;height:95px}
+.illustration-tree.one{top:30%;left:9%;transform:rotate(-5deg)}
+.illustration-tree.two{top:15%;right:19%;transform:rotate(7deg)}
+.illustration-car{width:130px;height:130px;left:38%;bottom:12%;animation:car-jiggle 4s ease-in-out infinite}
+.illustration-flower{width:70px;height:70px;left:16%;bottom:8%}
+.illustration-note{position:absolute;z-index:3;bottom:20px;right:18px;left:18px;width:max-content;max-width:calc(100% - 36px);padding:10px 13px;border-radius:20px;background:#fffcf3de;border:1px solid #d5e6d1;color:#205443;font-weight:700;font-size:12px;box-shadow:0 4px 14px #1c5e3b12;display:flex;align-items:center;gap:8px}
+@keyframes car-jiggle{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(8px,-6px) rotate(3deg)}}
+.impact-story{align-self:center}.impact-icons{display:flex;gap:14px;margin:0 0 10px}
+.impact-icons .doodle-icon{width:47px;height:47px;padding:7px;background:#e8f4e5;border-radius:15px;transform:rotate(-6deg)}
+.impact-icons .doodle-icon:nth-child(2){background:#fff1d9;transform:rotate(8deg)}
+.impact-icons .doodle-icon:nth-child(3){background:#f4e4e9}.impact-story p{margin:0}
+.faq-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.faq-heading>.doodle-icon{width:75px;height:75px;flex:0 0 75px;transform:rotate(8deg)}
+.faq details[open]{background:#f7faf0;border-radius:14px;padding-left:13px;padding-right:13px}
+.faq summary:hover{color:#14644a}
+.closing{position:relative}.closing-art{display:flex;gap:8px;margin-bottom:8px}
+.closing-art .doodle-icon{width:52px;height:52px;background:#e6f2e1;border-radius:18px;padding:8px}
+.closing-art .doodle-icon:nth-child(2){background:#fff2cd}
+.showcase-nav>span{gap:2px}.showcase-nav>span img{height:19px;width:19px;opacity:.68}.showcase-nav>span.active img{opacity:1}
+.showcase-map-search img{width:18px;height:18px}
+.showcase-location .doodle-icon{width:25px;height:25px}
+.mapping-icon .doodle-icon{width:33px;height:33px}
+.trip-map .doodle-icon{height:30px;width:30px}
+.mock-hazard .hazard-icon img{height:17px;width:17px}
+.mock-hazard>span:last-child img,.mock-trip>span:last-child img{width:15px;height:15px}
+.phone-toolbar>span img{width:15px;height:15px;transform:rotate(180deg)}
+.permission-card b{display:flex;align-items:center;gap:6px}.permission-card b img{height:15px;width:15px}
+@media(max-width:1000px){.road-story-layout{gap:36px}}
+@media(max-width:800px){.road-story{padding:75px 0 88px}.road-story-layout{grid-template-columns:1fr;gap:38px}.road-story-illustration{height:360px;width:min(100%,520px);margin-inline:auto}.road-story-copy h2{font-size:clamp(43px,8vw,64px)}}
+@media(max-width:620px){.doodle-journey{min-height:78px;padding:0 12px 0 2px}.doodle-journey picture{width:72px;height:72px;flex-basis:72px}.doodle-journey-car{width:72px;height:72px}.doodle-journey-path{max-width:24px}.doodle-journey-caption{font-size:11px}.doodle-journey-flower{flex-basis:32px;width:32px;height:32px}.road-story-illustration{height:330px;border-radius:32px}.illustration-car{width:104px;height:104px}.illustration-tree{width:72px;height:72px}.illustration-note{font-size:10px}.faq-heading>.doodle-icon{width:54px;height:54px;flex-basis:54px}}
+@media(prefers-reduced-motion:reduce){.doodle-journey-car,.illustration-car,.step,.btn-primary{animation:none!important;transition:none!important;transform:none!important}html{scroll-behavior:auto}}

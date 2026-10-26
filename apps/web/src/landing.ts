@@ -1,5 +1,7 @@
 import "./landing.css";
 import "./showcase.css";
+import "./art-direction.css";
+import "./art-direction.css";
 const year = document.getElementById("year");
 if (year) year.textContent = String(new Date().getFullYear());
 // Retire the previous offline browser app and its cached resources.
