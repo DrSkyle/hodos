@@ -11,6 +11,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -260,14 +263,22 @@ fun HodosApp(
                                 screen = tab
                             },
                             icon = {
-                                Icon(
-                                    imageVector = when (tab) {
-                                        Screen.MAP -> Icons.Outlined.Map
-                                        Screen.MAPPING -> Icons.Outlined.DirectionsCar
-                                        Screen.YOU -> Icons.Outlined.PersonOutline
+                                val scale by animateFloatAsState(
+                                    targetValue = if (screen == tab) 1.10f else 0.94f,
+                                    animationSpec = tween(durationMillis = 240),
+                                    label = "selected road tab"
+                                )
+                                DoodleIcon(
+                                    symbol = when (tab) {
+                                        Screen.MAP -> DoodleSymbol.MAP
+                                        Screen.MAPPING -> DoodleSymbol.CAR
+                                        Screen.YOU -> DoodleSymbol.PERSON
                                     },
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp)
+                                    tint = if (screen == tab) Forest else Muted,
+                                    modifier = Modifier.size(29.dp).graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                    }
                                 )
                             },
                             label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.SemiBold else FontWeight.Normal) },
@@ -300,6 +311,8 @@ fun HodosApp(
                                     .padding(bottom = 16.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    DoodleIcon(DoodleSymbol.MAP, Modifier.size(27.dp), Forest)
+                                    Spacer(Modifier.width(10.dp))
                                     Column(Modifier.weight(1f)) {
                                         Text("Nearby hazards", fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
                                         Text(
@@ -315,11 +328,30 @@ fun HodosApp(
                                 }
                                 Spacer(Modifier.height(14.dp))
                                 if (visibleHazards.isEmpty()) {
-                                    Text(
-                                        if (hazards.isEmpty()) "As independent journeys confirm road defects, you'll see them here."
-                                        else "Try another search or severity filter.",
-                                        color = Muted, fontSize = 13.sp
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp)) {
+                                        Surface(color = Mist, shape = RoundedCornerShape(17.dp)) {
+                                            DoodleIcon(
+                                                if (hazards.isEmpty()) DoodleSymbol.SUN else DoodleSymbol.MAP,
+                                                modifier = Modifier.padding(12.dp).size(35.dp),
+                                                tint = Forest
+                                            )
+                                        }
+                                        Spacer(Modifier.width(13.dp))
+                                        Column {
+                                            Text(
+                                                if (hazards.isEmpty()) "A blank map is a beginning."
+                                                else "Nothing matched just yet.",
+                                                fontWeight = FontWeight.SemiBold, color = Ink,
+                                                fontSize = 15.sp
+                                            )
+                                            Text(
+                                                if (hazards.isEmpty()) "As independent journeys confirm bumps, you'll see them here."
+                                                else "Try clearing your search or changing the severity filter.",
+                                                color = Muted, fontSize = 12.sp, lineHeight = 18.sp
+                                            )
+                                        }
+                                    }
                                 } else {
                                     LazyColumn(Modifier.heightIn(max = 320.dp)) {
                                         items(visibleHazards, key = { it.id }) { hazard ->
@@ -692,10 +724,19 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            Modifier.size(11.dp).clip(CircleShape)
-                .background(if (hazard.fixed) Forest else if (hazard.severity >= 3) Danger else Orange)
-        )
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = if (hazard.fixed) Color(0xFFE7F5EB)
+                else if (hazard.severity >= 3) Color(0xFFFFECE7)
+                else Color(0xFFFFF3DE)
+        ) {
+            DoodleIcon(
+                if (hazard.fixed) DoodleSymbol.CHECK else DoodleSymbol.WARNING,
+                tint = if (hazard.fixed) Forest
+                    else if (hazard.severity >= 3) Danger else Orange,
+                modifier = Modifier.padding(9.dp).size(27.dp)
+            )
+        }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(hazard.title, fontWeight = FontWeight.Medium)
@@ -744,7 +785,7 @@ private fun MappingScreen(
             Surface(shape = RoundedCornerShape(25.dp), color = Mist) {
                 Column(Modifier.padding(22.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.DirectionsCar, null, tint = Forest, modifier = Modifier.size(30.dp))
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(36.dp), tint = Forest)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(if (armed) "Detection is on" else "Automatic mapping is off", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -786,7 +827,7 @@ private fun MappingScreen(
             Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Map, contentDescription = null, tint = Forest)
+                        DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(30.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
                         Text("Offline nearby maps", fontSize = 19.sp,
                             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -1016,7 +1057,11 @@ private fun YouScreen(
             Spacer(Modifier.height(12.dp))
             HodosBrand()
             Spacer(Modifier.height(16.dp))
-            Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f))
+                DoodleIcon(DoodleSymbol.SUN, modifier = Modifier.size(37.dp), tint = Orange)
+            }
             Text("Every journey makes the roads a little better understood.", color = Muted)
         }
         item {
@@ -1045,7 +1090,7 @@ private fun YouScreen(
             Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Shield, null, tint = Forest)
+                        DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(27.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
                         Text("Privacy comes first", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                     }

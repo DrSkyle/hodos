@@ -84,13 +84,13 @@ jobs:
       - name: Name beta package clearly
         run: |
           test -s apps/web/android/app/build/outputs/apk/debug/app-debug.apk
-          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.22-beta.apk
+          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk Hodos-1.1.23-beta.apk
       - name: Verify APK
-        run: test -s Hodos-1.1.22-beta.apk
+        run: test -s Hodos-1.1.23-beta.apk
       - uses: actions/upload-artifact@v4
         with:
           name: hodos-android
-          path: Hodos-1.1.22-beta.apk
+          path: Hodos-1.1.23-beta.apk
           if-no-files-found: error
       # Keep release-signing keys in repository Actions secrets, never Git.
       - name: Assemble signed release
@@ -109,26 +109,26 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         run: |
           test -s apps/web/android/app/build/outputs/apk/release/app-release.apk
-          cp apps/web/android/app/build/outputs/apk/release/app-release.apk Hodos-1.1.22.apk
+          cp apps/web/android/app/build/outputs/apk/release/app-release.apk Hodos-1.1.23.apk
       - name: Publish signed release
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && env.HODOS_KEYSTORE_BASE64 != '' && env.HODOS_STORE_PASSWORD != '' && env.HODOS_KEY_ALIAS != '' && env.HODOS_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.22
-          name: Hodos 1.1.22
+          tag_name: v1.1.23
+          name: Hodos 1.1.23
           body: |
-            A new local My Roads bookmark experience, correct map/navigation icons, and real road-status updates.
+            Native hand-drawn vector icon system throughout map, mapping and your roads.
             Includes journey-summary regression tests and Android startup checks.
-          files: Hodos-1.1.22.apk
+          files: Hodos-1.1.23.apk
           prerelease: true
       - name: Publish debug-signed beta APK when no release key is configured
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && (env.HODOS_KEYSTORE_BASE64 == '' || env.HODOS_STORE_PASSWORD == '' || env.HODOS_KEY_ALIAS == '' || env.HODOS_KEY_PASSWORD == '') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.22-beta.1
-          name: Hodos 1.1.22 beta
+          tag_name: v1.1.23-beta.1
+          name: Hodos 1.1.23 beta
           body: |
-            Save and revisit public hazard reports on-device; see updated repair status.
+            Native hand-drawn vector icon system with subtle tab and onboarding motion.
             Distinct map/navigation icons and original animated illustrations.
             Road observations remain optional and private summaries never reveal routes.
             
@@ -136,5 +136,5 @@ jobs:
             It may not install over versions signed with another key; keep a copy
             of any important data before reinstalling. Sensor detection has not
             yet been validated with a labelled multi-device road test.
-          files: Hodos-1.1.22-beta.apk
+          files: Hodos-1.1.23-beta.apk
           prerelease: true

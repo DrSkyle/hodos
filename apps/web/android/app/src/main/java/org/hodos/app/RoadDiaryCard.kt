@@ -78,8 +78,12 @@ internal fun RoadDiaryCard(
                 Modifier.padding(start = 19.dp, end = 19.dp, bottom = 19.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("YOUR LITTLE ROAD DIARY", color = DiaryForest,
-                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DoodleIcon(DoodleSymbol.DIARY, modifier = Modifier.size(29.dp), tint = DiaryForest)
+                    Spacer(Modifier.width(9.dp))
+                    Text("YOUR LITTLE ROAD DIARY", color = DiaryForest,
+                        fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                }
                 Text(
                     if (summary.journeysThisWeek == 0) "A fresh week of roads."
                     else if (summary.activeDaysThisWeek == 1) "One day out exploring!"

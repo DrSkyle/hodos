@@ -1,5 +1,6 @@
 package org.hodos.app
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -88,7 +89,9 @@ fun HodosOnboarding(
                 }
 
                 Spacer(Modifier.height(30.dp))
-                OnboardingArtwork(step)
+                Crossfade(targetState = step, label = "Hodos onboarding illustration") { currentStep ->
+                    OnboardingArtwork(currentStep)
+                }
                 Spacer(Modifier.height(30.dp))
 
                 Text(page.eyebrow, fontSize = 11.sp, fontWeight = FontWeight.Bold,
@@ -106,8 +109,7 @@ fun HodosOnboarding(
                             Modifier.fillMaxWidth().padding(15.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Outlined.Shield, contentDescription = null,
-                                tint = Forest, modifier = Modifier.size(25.dp))
+                            DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(29.dp), tint = Forest)
                             Spacer(Modifier.width(12.dp))
                             Text("No account needed. Motion analysis happens on your phone.",
                                 fontSize = 13.sp, color = Ink, lineHeight = 19.sp)

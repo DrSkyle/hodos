@@ -53,8 +53,7 @@ internal fun SavedRoadsSection(
             verticalArrangement = Arrangement.spacedBy(11.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.BookmarkBorder, contentDescription = null,
-                    tint = DeepGreen, modifier = Modifier.size(22.dp))
+                DoodleIcon(DoodleSymbol.BOOKMARK, modifier = Modifier.size(30.dp), tint = DeepGreen)
                 Spacer(Modifier.width(9.dp))
                 Text("My Roads", color = DeepInk, fontSize = 21.sp,
                     fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -73,14 +72,14 @@ internal fun SavedRoadsSection(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (hazard == null) {
-                        Icon(Icons.Outlined.WarningAmber, null,
-                            tint = QuietGreen, modifier = Modifier.size(20.dp))
+                        DoodleIcon(DoodleSymbol.WARNING,
+                            tint = QuietGreen, modifier = Modifier.size(27.dp))
                     } else if (hazard.fixed) {
-                        Icon(Icons.Outlined.CheckCircle, null,
-                            tint = DeepGreen, modifier = Modifier.size(20.dp))
+                        DoodleIcon(DoodleSymbol.CHECK,
+                            tint = DeepGreen, modifier = Modifier.size(27.dp))
                     } else {
-                        Icon(Icons.Outlined.WarningAmber, null,
-                            tint = Color(0xFFC18A45), modifier = Modifier.size(20.dp))
+                        DoodleIcon(DoodleSymbol.WARNING,
+                            tint = Color(0xFFC18A45), modifier = Modifier.size(27.dp))
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(
