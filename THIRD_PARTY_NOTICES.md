@@ -34,7 +34,7 @@ Consult upstream distribution notices when making a packaged release.
 
 ## Oreo Doodle Icons
 
-The website's `apps/web/public/doodles/` assets are drawn from
+The website's `apps/web/public/doodles/` SVG assets, and the Android\n`apps/web/android/app/src/main/res/drawable/doodle_*.xml` vector adaptations,\nare drawn from
 [Oreo Doodle Icons](https://github.com/oreo-design/doodle-icons),
 licensed MIT, Copyright (c) 2026 Nicole Tang.
 
