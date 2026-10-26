@@ -35,8 +35,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #20
 .principles-list>div{grid-template-columns:46px 1fr}
 .principles-list>div>b{display:grid;place-items:center;width:40px;height:40px;background:#fffdf2;border-radius:14px}
 .principles-list>div>b img{width:27px;height:27px}
-.road-story{position:relative;padding:110px 0 125px;overflow:hidden;background:#fbf6e7}
-.road-story-layout{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:85px}
+.road-story{position:relative;padding:110px 0 125px;overflow:hidden;background:radial-gradient(ellipse at 85% 44%,#ecf4dd 0,transparent 44%),#fdf8ed}
+.road-story-layout{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);align-items:center;gap:clamp(20px,4vw,70px)}
 .road-story-copy h2{font-family:Manrope,sans-serif;font-size:clamp(42px,5.1vw,67px);line-height:1.08;letter-spacing:-.067em;margin:20px 0 25px;color:var(--story-ink)}
 .road-story-copy h2 em{font-style:normal;color:#3c8c68}
 .road-story-copy>p{font-size:17px;line-height:1.75;color:#607666;max-width:550px}
@@ -47,19 +47,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #20
 .road-story-stamp{display:grid;place-items:center;flex:none;width:51px;height:51px;border-radius:17px;background:#e0eddb;transform:rotate(-6deg);padding:11px}
 .road-story-benefits article:nth-child(2) .road-story-stamp{background:#fae4b6;transform:rotate(4deg)}
 .road-story-benefits article:nth-child(3) .road-story-stamp{background:#f4dfdc}
-.road-story-illustration{height:450px;border:2px solid #d4e4d5;border-radius:50px 50px 100px 50px;background:radial-gradient(circle at 73% 22%,#fff2c7 0 11%,transparent 12%),linear-gradient(#e7f3e8,#d9ebd7);position:relative;overflow:hidden;box-shadow:14px 17px 0 #e3ecd8}
-.road-story-illustration .doodle-icon{width:100%;height:100%}
-.illustration-road{position:absolute;inset:0;width:100%;height:100%;z-index:1}
-.illustration-sun,.illustration-cloud,.illustration-tree,.illustration-car,.illustration-flower{position:absolute;display:block;z-index:2}
-.illustration-sun{width:72px;height:72px;right:12%;top:9%;transform:rotate(8deg)}
-.illustration-cloud{width:68px;height:68px;top:12%;left:12%}
-.illustration-tree{width:95px;height:95px}
-.illustration-tree.one{top:30%;left:9%;transform:rotate(-5deg)}
-.illustration-tree.two{top:15%;right:19%;transform:rotate(7deg)}
-.illustration-car{width:130px;height:130px;left:38%;bottom:12%;animation:car-jiggle 4s ease-in-out infinite}
-.illustration-flower{width:70px;height:70px;left:16%;bottom:8%}
-.illustration-note{position:absolute;z-index:3;bottom:20px;right:18px;left:18px;width:max-content;max-width:calc(100% - 36px);padding:10px 13px;border-radius:20px;background:#fffcf3de;border:1px solid #d5e6d1;color:#205443;font-weight:700;font-size:12px;box-shadow:0 4px 14px #1c5e3b12;display:flex;align-items:center;gap:8px}
-@keyframes car-jiggle{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(8px,-6px) rotate(3deg)}}
 .impact-story{align-self:center}.impact-icons{display:flex;gap:14px;margin:0 0 10px}
 .impact-icons .doodle-icon{width:47px;height:47px;padding:7px;background:#e8f4e5;border-radius:15px;transform:rotate(-6deg)}
 .impact-icons .doodle-icon:nth-child(2){background:#fff1d9;transform:rotate(8deg)}
@@ -81,8 +68,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #20
 .phone-toolbar>span img{width:15px;height:15px;transform:rotate(180deg)}
 .permission-card b{display:flex;align-items:center;gap:6px}.permission-card b img{height:15px;width:15px}
 @media(max-width:1000px){.road-story-layout{gap:36px}}
-@media(max-width:800px){.road-story{padding:75px 0 88px}.road-story-layout{grid-template-columns:1fr;gap:38px}.road-story-illustration{height:360px;width:min(100%,520px);margin-inline:auto}.road-story-copy h2{font-size:clamp(43px,8vw,64px)}}
-@media(max-width:620px){.doodle-journey{min-height:78px;padding:0 12px 0 2px}.doodle-journey picture{width:72px;height:72px;flex-basis:72px}.doodle-journey-car{width:72px;height:72px}.doodle-journey-path{max-width:24px}.doodle-journey-caption{font-size:11px}.doodle-journey-flower{flex-basis:32px;width:32px;height:32px}.road-story-illustration{height:330px;border-radius:32px}.illustration-car{width:104px;height:104px}.illustration-tree{width:72px;height:72px}.illustration-note{font-size:10px}.faq-heading>.doodle-icon{width:54px;height:54px;flex-basis:54px}}
+@media(max-width:800px){.road-story{padding:75px 0 88px}.road-story-layout{grid-template-columns:1fr;gap:38px}.road-story-copy h2{font-size:clamp(43px,8vw,64px)}}
+@media(max-width:620px){.doodle-journey{min-height:78px;padding:0 12px 0 2px}.doodle-journey picture{width:72px;height:72px;flex-basis:72px}.doodle-journey-car{width:72px;height:72px}.doodle-journey-path{max-width:24px}.doodle-journey-caption{font-size:11px}.doodle-journey-flower{flex-basis:32px;width:32px;height:32px}.faq-heading>.doodle-icon{width:54px;height:54px;flex-basis:54px}}
 @media(prefers-reduced-motion:reduce){.doodle-journey-car,.illustration-car,.step,.btn-primary{animation:none!important;transition:none!important;transform:none!important}html{scroll-behavior:auto}}
 
 /* Usable small-screen navigation: previously all section links disappeared. */
@@ -103,3 +90,22 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #20
 .activity-row span img{width:15px;height:15px}
 .detail-actions strong{display:flex;justify-content:center;align-items:center;gap:4px}.detail-actions strong img{filter:brightness(0) invert(1);width:13px;height:13px}
 .permission-card>span img{width:16px;height:16px}
+
+/* Illustrated atlas: a single original, sharp illustration instead of a
+   patchwork of floating animated icons. */
+.road-atlas-art{margin:0;position:relative;isolation:isolate;padding:4px 0 0}
+.road-atlas-art::before{content:"";position:absolute;z-index:-1;inset:15% 3% 12%;border-radius:50%;background:#e3edda;filter:blur(36px);opacity:.5}
+.road-atlas-art>img{display:block;width:100%;max-width:760px;height:auto;margin-inline:auto;filter:drop-shadow(0 16px 25px #3b6b4a13);transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.road-atlas-art:hover>img{transform:translateY(-5px)}
+.road-atlas-art figcaption{display:flex;align-items:center;gap:9px;width:max-content;max-width:94%;margin:-10px auto 0;color:#547563;font-size:12px;font-weight:700;letter-spacing:.015em}
+.atlas-caption-dot{width:8px;height:8px;border-radius:50%;background:#e4a75e;box-shadow:0 0 0 4px #f5e8c9}
+.road-story-copy h2{font-size:clamp(44px,5.4vw,72px);line-height:1.04}
+.road-story-copy>p{max-width:470px;font-size:16px}
+.road-story-benefits{gap:10px;margin-top:31px}
+.road-story-benefits article{padding:12px 13px 12px 10px;gap:15px;border:1px solid transparent;border-radius:17px;transition:background-color .2s,border-color .2s,transform .2s}
+.road-story-benefits article:hover{background:#fffdf8;border-color:#e0e7d8;transform:translateX(3px)}
+.road-story-stamp{width:52px;height:52px;padding:10px;box-shadow:0 2px 0 #355c4020}
+.road-story-copy .overline{display:inline-block;padding:8px 13px;border:1px solid #d3e4d4;border-radius:40px;background:#eaf3e6;letter-spacing:.11em;font-size:10px}
+@media(max-width:800px){.road-atlas-art{width:min(100%,630px);margin:0 auto}.road-story-layout{gap:14px}.road-story{padding-bottom:70px}.road-atlas-art figcaption{margin-top:-5px}}
+@media(max-width:620px){.road-story-copy h2{font-size:clamp(43px,11vw,62px)}.road-story-copy>p{font-size:15px}.road-story-benefits{gap:4px}.road-atlas-art{margin-top:13px}}
+@media(prefers-reduced-motion:reduce){.road-atlas-art>img,.road-story-benefits article{transition:none!important;transform:none!important}}
