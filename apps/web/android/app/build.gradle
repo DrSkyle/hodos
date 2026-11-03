@@ -6,6 +6,12 @@ plugins {
 
 android {
     signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
             def keystorePath = System.getenv('HODOS_KEYSTORE_PATH')
             if (keystorePath) {
@@ -23,12 +29,15 @@ android {
         applicationId 'org.hodos.app'
         minSdk 23
         targetSdk 35
-        versionCode 26
-        versionName '1.1.24'
+        versionCode 27
+        versionName '1.1.25'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             if (System.getenv('HODOS_KEYSTORE_PATH')) {
                 signingConfig signingConfigs.release

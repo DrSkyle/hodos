@@ -37,12 +37,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
- import java.io.InputStreamReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -84,23 +85,57 @@ public class HodosService extends Service implements SensorEventListener {
   private ScheduledExecutorService scheduler;
   private EventOutbox outbox;
   private volatile boolean sampling = false;
+  private volatile boolean isManualTrip = false;
+  private volatile double cumulativeDistanceM = 0;
+  private volatile int totalGpsFixes = 0;
+  private volatile Location previousFix = null;
   private volatile long lastMovementAt = 0;
   private volatile String activeTripId;
   private volatile String activeDeviceId;
   private volatile long lastSyncScheduledAt = 0;
+  private volatile long lastCheckpointAt = 0;
+  private volatile long lastHistoryFlushAt = 0;
+  private volatile long lastNotificationUpdateAt = 0;
   private long tripStartedAt = 0;
+  private LocationCallback idleLocationCallback = null;
 
   @Override
   public void onCreate() {
     super.onCreate();
-    // This is a new service instance: the previous process's journey cannot
-    // still be collecting motion. Never show a phantom active-trip flag.
-    getSharedPreferences("hodos", MODE_PRIVATE)
-        .edit().putBoolean("tripActive", false).apply();
     sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
     locationClient = LocationServices.getFusedLocationProviderClient(this);
     createChannel();
     outbox = new EventOutbox(this);
+
+    SharedPreferences prefs = getSharedPreferences("hodos", MODE_PRIVATE);
+    if (prefs.getBoolean("tripActive", false)) {
+      long startedAt = prefs.getLong("tripStartedAt", 0);
+      long lastCheck = prefs.getLong("tripLastCheckpoint", 0);
+      long now = System.currentTimeMillis();
+      // If service died recently (within 15 minutes) during an active trip, restore state
+      if (startedAt > 0 && (now - lastCheck < 15 * 60_000L)) {
+        activeTripId = prefs.getString("activeTripId", null);
+        tripStartedAt = startedAt;
+        cumulativeDistanceM = prefs.getFloat("tripDistanceM", 0f);
+        totalGpsFixes = prefs.getInt("tripFixes", 0);
+        isManualTrip = prefs.getBoolean("isManualTrip", false);
+      } else {
+        sealStaleTrip(prefs);
+        prefs.edit().putBoolean("tripActive", false).apply();
+      }
+    }
+  }
+
+  private void sealStaleTrip(SharedPreferences prefs) {
+    String trip = prefs.getString("activeTripId", null);
+    long startedAt = prefs.getLong("tripStartedAt", 0);
+    int impactCount = prefs.getInt("tripImpacts", 0);
+    int fixCount = prefs.getInt("tripFixes", 0);
+    double dist = prefs.getFloat("tripDistanceM", 0f);
+    long elapsedS = prefs.getLong("tripElapsedS", 0);
+    if (startedAt > 0 && trip != null) {
+      TripHistory.recordOrUpdate(prefs, trip, startedAt, impactCount, fixCount, dist, elapsedS);
+    }
   }
 
   @Override
@@ -108,7 +143,6 @@ public class HodosService extends Service implements SensorEventListener {
     String action = intent == null ? null : intent.getAction();
     if (ACTION_DISABLE.equals(action)) {
       // Finish and persist an active journey before tearing down the service.
-      // Previously, switching mapping off silently discarded collected impacts.
       endTrip();
       // Deliberate user opt-out, unlike Android reclaiming this service.
       getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", false).commit();
@@ -119,18 +153,23 @@ public class HodosService extends Service implements SensorEventListener {
     }
 
     if (ACTION_START_TRIP.equals(action) || ACTION_END_TRIP.equals(action)) {
-      if (!getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+      if (ACTION_START_TRIP.equals(action)) {
+        // Auto-arm if user directly initiates a journey
+        getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", true).commit();
+      } else if (!getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
         stopSelf();
         return START_NOT_STICKY;
       }
       startForegroundCompat();
       HodosSyncWorker.schedule(this);
       if (ACTION_START_TRIP.equals(action)) {
+        isManualTrip = true;
         if (!sampling) {
           lastMovementAt = System.currentTimeMillis();
           startTrip();
         }
       } else {
+        isManualTrip = false;
         endTrip();
       }
       return START_STICKY;
@@ -159,6 +198,9 @@ public class HodosService extends Service implements SensorEventListener {
     }
     startForegroundCompat();
     registerActivityTransitions();
+    if (!sampling) {
+      startIdleMotionWatcher();
+    }
     HodosSyncWorker.schedule(this);
     lastMovementAt = System.currentTimeMillis();
     return START_STICKY;
@@ -190,6 +232,24 @@ public class HodosService extends Service implements SensorEventListener {
     manager.createNotificationChannel(channel);
   }
 
+  private static String formatDuration(long seconds) {
+    if (seconds < 0) seconds = 0;
+    long hours = seconds / 3600;
+    long minutes = (seconds % 3600) / 60;
+    long secs = seconds % 60;
+    if (hours > 0) {
+      return String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs);
+    }
+    return String.format(Locale.US, "%02d:%02d", minutes, secs);
+  }
+
+  private static String formatDistance(double meters) {
+    if (meters >= 1000.0) {
+      return String.format(Locale.US, "%.1f km", meters / 1000.0);
+    }
+    return String.format(Locale.US, "%d m", Math.round(meters));
+  }
+
   private Notification buildNotification(String text) {
     Intent open = new Intent(this, MainActivity.class);
     int pendingFlags =
@@ -202,6 +262,7 @@ public class HodosService extends Service implements SensorEventListener {
         .setContentText(text)
         .setSmallIcon(R.drawable.hodos_notification)
         .setOngoing(true)
+        .setOnlyAlertOnce(true)
         .setContentIntent(content)
         .build();
   }
@@ -292,6 +353,7 @@ public class HodosService extends Service implements SensorEventListener {
       updateNotification("Location permission needed");
       return;
     }
+    removeIdleLocationWatcher();
     try {
       // A single stable identity must cover all observations from this journey.
       activeDeviceId = deviceId();
@@ -303,13 +365,31 @@ public class HodosService extends Service implements SensorEventListener {
     lastSyncScheduledAt = 0;
     sampling = true;
     lastMovementAt = System.currentTimeMillis();
-    getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("tripActive", true).apply();
     tripStartedAt = System.currentTimeMillis();
+    cumulativeDistanceM = 0;
+    totalGpsFixes = 0;
+    previousFix = null;
+    lastCheckpointAt = System.currentTimeMillis();
+    lastHistoryFlushAt = System.currentTimeMillis();
+    lastNotificationUpdateAt = System.currentTimeMillis();
+
+    getSharedPreferences("hodos", MODE_PRIVATE).edit()
+        .putBoolean("tripActive", true)
+        .putString("activeTripId", activeTripId)
+        .putLong("tripStartedAt", tripStartedAt)
+        .putBoolean("isManualTrip", isManualTrip)
+        .putLong("tripLastCheckpoint", tripStartedAt)
+        .putFloat("tripDistanceM", 0f)
+        .putInt("tripImpacts", 0)
+        .putInt("tripFixes", 0)
+        .putLong("tripElapsedS", 0)
+        .commit();
+
     synchronized (samples) { samples.clear(); }
     synchronized (motionCoverageTimes) { motionCoverageTimes.clear(); }
     synchronized (fixes) { fixes.clear(); }
     synchronized (impacts) { impacts.clear(); }
-    updateNotification("Mapping your route");
+    updateNotification("Mapping: 00:00 · 0 m (0 hazards)");
 
     Sensor accelerometer =
         sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -333,15 +413,30 @@ public class HodosService extends Service implements SensorEventListener {
                 last.getTime(), System.currentTimeMillis(), last.getLatitude(),
                 last.getLongitude(), last.getAccuracy(), last.getSpeed(), last.hasSpeed(),
                 last.isFromMockProvider())) {
-              // Transitions arrive only when motion class changes; GPS speed
-              // keeps long journeys active between transitions.
-              if (last.hasSpeed() && last.getSpeed() >= 2.5f) {
+              totalGpsFixes++;
+              if (previousFix != null && last.getTime() > previousFix.getTime()) {
+                float[] res = new float[1];
+                Location.distanceBetween(previousFix.getLatitude(), previousFix.getLongitude(),
+                    last.getLatitude(), last.getLongitude(), res);
+                double elapsed = (last.getTime() - previousFix.getTime()) / 1000.0;
+                if (res[0] >= 0 && res[0] <= elapsed * 45 + 30) {
+                  cumulativeDistanceM += res[0];
+                  if (res[0] >= 15) {
+                    lastMovementAt = System.currentTimeMillis();
+                  }
+                }
+              }
+              previousFix = last;
+              if (last.hasSpeed() && last.getSpeed() >= 2.0f) {
                 lastMovementAt = System.currentTimeMillis();
               }
               synchronized (fixes) {
                 fixes.add(new MotionDetector.Fix(
                     last.getTime(), last.getLatitude(), last.getLongitude(),
                     last.getAccuracy(), last.getSpeed(), last.hasSpeed()));
+                if (fixes.size() > 2400) {
+                  fixes.subList(0, 800).clear();
+                }
               }
             }
           }
@@ -374,9 +469,49 @@ public class HodosService extends Service implements SensorEventListener {
         if (sample.t >= cutoff) window.add(sample);
       }
     }
-    // A stationary journey must end even when no more accelerometer samples
-    // arrive (for example after screen-off sensor throttling).
-    if (System.currentTimeMillis() - lastMovementAt > STOP_AFTER_STILL_MS) {
+    long now = System.currentTimeMillis();
+    long elapsedMs = startedAt > 0 ? now - startedAt : 0;
+    long elapsedS = elapsedMs / 1000;
+
+    int currentImpacts;
+    synchronized (impacts) { currentImpacts = impacts.size(); }
+
+    // Periodic durable checkpoint to SharedPreferences for UI display
+    if (now - lastCheckpointAt >= 4000L) {
+      lastCheckpointAt = now;
+      getSharedPreferences("hodos", MODE_PRIVATE).edit()
+          .putBoolean("tripActive", true)
+          .putString("activeTripId", trip)
+          .putLong("tripStartedAt", startedAt)
+          .putLong("tripLastCheckpoint", now)
+          .putLong("tripElapsedS", elapsedS)
+          .putFloat("tripDistanceM", (float) cumulativeDistanceM)
+          .putInt("tripImpacts", currentImpacts)
+          .putInt("tripFixes", totalGpsFixes)
+          .apply();
+    }
+
+    // Periodic durable commit to TripHistory every 20 seconds so multi-hour journeys are never lost
+    if (now - lastHistoryFlushAt >= 20_000L) {
+      lastHistoryFlushAt = now;
+      TripHistory.recordOrUpdate(
+          getSharedPreferences("hodos", MODE_PRIVATE),
+          trip, startedAt, currentImpacts, totalGpsFixes,
+          cumulativeDistanceM, elapsedS);
+    }
+
+    // Periodic notification update with live timer and metrics
+    if (now - lastNotificationUpdateAt >= 5000L) {
+      lastNotificationUpdateAt = now;
+      String timeStr = formatDuration(elapsedS);
+      String distStr = formatDistance(cumulativeDistanceM);
+      updateNotification("Mapping: " + timeStr + " · " + distStr + " (" + currentImpacts + " hazards)");
+    }
+
+    // Allow longer stillness on manual journeys (25 mins) or bus stops (8 mins)
+    long stillDuration = now - lastMovementAt;
+    long maxStillAllowed = isManualTrip ? (25 * 60_000L) : (8 * 60_000L);
+    if (stillDuration > maxStillAllowed) {
       endTrip();
       return;
     }
@@ -408,15 +543,11 @@ public class HodosService extends Service implements SensorEventListener {
     for (MotionDetector.Impact impact : newImpacts) {
       persisted |= postEvent(device, trip, impact, startedAt);
     }
-    long now = System.currentTimeMillis();
     if (persisted && (lastSyncScheduledAt == 0 ||
         now - lastSyncScheduledAt >= 60_000L)) {
       lastSyncScheduledAt = now;
       // WorkManager retains the work across process death and network loss.
       HodosSyncWorker.schedule(this);
-    }
-    if (System.currentTimeMillis() - lastMovementAt > STOP_AFTER_STILL_MS) {
-      endTrip();
     }
   }
 
@@ -449,13 +580,15 @@ public class HodosService extends Service implements SensorEventListener {
       coverage = new ArrayList<>(motionCoverageTimes);
     }
     // Persist the evidence BEFORE returning to Android or stopping the
-    // foreground service. Previously, the just-finished trip only reached
-    // SQLite on a detached thread, so Android could kill the process first.
+    // foreground service.
     final String device = activeDeviceId;
     final String trip = activeTripId;
     final long startedAt = tripStartedAt;
     if (device == null || trip == null) {
       updateNotification("Waiting for a journey");
+      if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+        startIdleMotionWatcher();
+      }
       return;
     }
     for (MotionDetector.Impact impact : finished) {
@@ -464,9 +597,24 @@ public class HodosService extends Service implements SensorEventListener {
     }
     // Save an actual journey summary before the service stops; a detached
     // upload worker must not be responsible for the local history existing.
-    TripHistory.record(getSharedPreferences("hodos", MODE_PRIVATE),
-        System.currentTimeMillis(), finished.size(), route.size(), distanceMetres(route));
+    double totalDistance = Math.max(cumulativeDistanceM, distanceMetres(route));
+    int fixCount = Math.max(totalGpsFixes, route.size());
+    long elapsedS = startedAt > 0 ? (System.currentTimeMillis() - startedAt) / 1000 : 0;
+
+    TripHistory.recordOrUpdate(getSharedPreferences("hodos", MODE_PRIVATE),
+        trip, startedAt > 0 ? startedAt : System.currentTimeMillis(),
+        finished.size(), fixCount, totalDistance, elapsedS);
+
+    getSharedPreferences("hodos", MODE_PRIVATE).edit()
+        .putBoolean("tripActive", false)
+        .putLong("tripElapsedS", 0)
+        .remove("activeTripId")
+        .apply();
+
     updateNotification("Waiting for a journey");
+    if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
+      startIdleMotionWatcher();
+    }
     // WorkManager owns upload retries even if mapping is disabled, the device
     // loses connectivity, or Android reclaims this foreground service.
     HodosSyncWorker.schedule(this);
@@ -487,6 +635,7 @@ public class HodosService extends Service implements SensorEventListener {
       locationClient.removeLocationUpdates(locationCallback);
       locationCallback = null;
     }
+    removeIdleLocationWatcher();
     Intent intent = new Intent(this, HodosActivityReceiver.class);
     int flags =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
@@ -500,6 +649,43 @@ public class HodosService extends Service implements SensorEventListener {
     }
     // Preserve the opt-in across ordinary service teardown; a sticky restart
     // needs to know whether Android stopped us or the user turned us off.
+  }
+
+  private synchronized void startIdleMotionWatcher() {
+    if (sampling || idleLocationCallback != null || !hasLocationPermission()) {
+      return;
+    }
+    LocationRequest idleReq = new LocationRequest.Builder(
+        Priority.PRIORITY_BALANCED_POWER_ACCURACY, 25_000L)
+        .setMinUpdateIntervalMillis(15_000L)
+        .build();
+    idleLocationCallback = new LocationCallback() {
+      @Override
+      public void onLocationResult(LocationResult result) {
+        if (sampling) return;
+        Location loc = result.getLastLocation();
+        if (loc != null && LocationFixPolicy.validCoordinates(loc.getLatitude(), loc.getLongitude())) {
+          // If vehicle speed >= 3.5 m/s (~13 km/h), auto-start mapping!
+          if (loc.hasSpeed() && loc.getSpeed() >= 3.5f) {
+            isManualTrip = false;
+            startTrip();
+          }
+        }
+      }
+    };
+    try {
+      locationClient.requestLocationUpdates(idleReq, idleLocationCallback, Looper.getMainLooper());
+    } catch (SecurityException ignored) {
+    }
+  }
+
+  private synchronized void removeIdleLocationWatcher() {
+    if (idleLocationCallback != null) {
+      try {
+        locationClient.removeLocationUpdates(idleLocationCallback);
+      } catch (Exception ignored) {}
+      idleLocationCallback = null;
+    }
   }
 
   @Override

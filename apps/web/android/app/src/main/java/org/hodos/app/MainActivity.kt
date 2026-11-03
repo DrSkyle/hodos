@@ -3,8 +3,11 @@ package org.hodos.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +27,7 @@ class MainActivity : ComponentActivity() {
     private var refreshSignal by mutableIntStateOf(0)
     private var onboardingComplete by mutableStateOf(false)
     private var mapLocationGranted by mutableStateOf(false)
+    private var pendingStartJourney by mutableStateOf(false)
 
     private val mapLocationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -38,8 +42,17 @@ class MainActivity : ComponentActivity() {
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        if (hasForegroundPermissions()) continueEnabling()
-        else Toast.makeText(this, "Automatic mapping needs precise location and motion permission. The map works with approximate location.", Toast.LENGTH_LONG).show()
+        if (hasForegroundPermissions()) {
+            if (pendingStartJourney) {
+                pendingStartJourney = false
+                startManualJourney()
+            } else {
+                continueEnabling()
+            }
+        } else {
+            pendingStartJourney = false
+            Toast.makeText(this, "Mapping needs precise location and motion permission.", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,8 +85,10 @@ class MainActivity : ComponentActivity() {
                 refreshSignal = refreshSignal,
                 onToggle = { if (it) continueEnabling() else stopMapping() },
                 onRefresh = { refreshSignal++ },
-                onStartJourney = { journeyAction(HodosService.ACTION_START_TRIP) },
-                onFinishJourney = { journeyAction(HodosService.ACTION_END_TRIP) }
+                onStartJourney = { startManualJourney() },
+                onFinishJourney = { finishJourneyAction() },
+                onRequestBackgroundLocation = { requestBackgroundLocation() },
+                onRequestBatteryOptimization = { requestBatteryOptimization() }
             )
         }
     }
@@ -146,16 +161,72 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun journeyAction(action: String) {
-        if (!armed || !hasForegroundPermissions()) {
-            Toast.makeText(this, "Enable automatic mapping first", Toast.LENGTH_SHORT).show()
+    private fun startManualJourney() {
+        if (!hasForegroundPermissions()) {
+            pendingStartJourney = true
+            continueEnabling()
             return
         }
         try {
-            startService(Intent(this, HodosService::class.java).apply { this.action = action })
+            armed = true
+            getSharedPreferences("hodos", MODE_PRIVATE).edit().putBoolean("armed", true).apply()
+            val intent = Intent(this, HodosService::class.java).apply {
+                action = HodosService.ACTION_START_TRIP
+            }
+            ContextCompat.startForegroundService(this, intent)
             refreshSignal++
         } catch (error: Exception) {
-            Toast.makeText(this, "Couldn't control journey: ${error.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Couldn't start journey: ${error.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun finishJourneyAction() {
+        try {
+            val intent = Intent(this, HodosService::class.java).apply {
+                action = HodosService.ACTION_END_TRIP
+            }
+            startService(intent)
+            refreshSignal++
+        } catch (error: Exception) {
+            Toast.makeText(this, "Couldn't finish journey: ${error.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun requestBackgroundLocation() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                startActivity(Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:$packageName")
+                ))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Could not open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun requestBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val pm = getSystemService(POWER_SERVICE) as? PowerManager
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                try {
+                    startActivity(Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:$packageName")
+                    ))
+                } catch (_: Exception) {
+                    try {
+                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    } catch (_: Exception) {
+                        startActivity(Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:$packageName")
+                        ))
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Battery optimization is already unrestricted!", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

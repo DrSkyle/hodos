@@ -67,4 +67,47 @@ class HodosTripHistoryTest {
             prefs.edit().clear().commit()
         }
     }
+
+    @Test fun recordOrUpdateUpdatesActiveTripMetricsInPlace() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences(
+            "test-trip-history-${UUID.randomUUID()}", Context.MODE_PRIVATE
+        )
+        try {
+            val tripId = "trip-${UUID.randomUUID()}"
+            assertTrue(TripHistory.recordOrUpdate(prefs, tripId, 1_700_000_000_000L, 2, 10, 500.0, 60L))
+            var trips = JSONArray(prefs.getString("autoTrips", "[]"))
+            assertEquals(1, trips.length())
+            assertEquals(2, trips.getJSONObject(0).getInt("impacts"))
+            assertEquals(500L, trips.getJSONObject(0).getLong("distanceM"))
+
+            // Periodic checkpoint updates in-place
+            assertTrue(TripHistory.recordOrUpdate(prefs, tripId, 1_700_000_000_000L, 7, 35, 2400.0, 360L))
+            trips = JSONArray(prefs.getString("autoTrips", "[]"))
+            assertEquals(1, trips.length())
+            assertEquals(7, trips.getJSONObject(0).getInt("impacts"))
+            assertEquals(35, trips.getJSONObject(0).getInt("gpsFixes"))
+            assertEquals(2400L, trips.getJSONObject(0).getLong("distanceM"))
+            assertEquals(360L, trips.getJSONObject(0).getLong("durationS"))
+        } finally {
+            prefs.edit().clear().commit()
+        }
+    }
+
+    @Test fun recordOrUpdateAppendsNewTripWhenTripIdChanges() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences(
+            "test-trip-history-${UUID.randomUUID()}", Context.MODE_PRIVATE
+        )
+        try {
+            assertTrue(TripHistory.recordOrUpdate(prefs, "trip-1", 1_000L, 1, 5, 200.0, 30L))
+            assertTrue(TripHistory.recordOrUpdate(prefs, "trip-2", 2_000L, 4, 18, 900.0, 150L))
+            val trips = JSONArray(prefs.getString("autoTrips", "[]"))
+            assertEquals(2, trips.length())
+            assertEquals("trip-1", trips.getJSONObject(0).getString("tripId"))
+            assertEquals("trip-2", trips.getJSONObject(1).getString("tripId"))
+        } finally {
+            prefs.edit().clear().commit()
+        }
+    }
 }

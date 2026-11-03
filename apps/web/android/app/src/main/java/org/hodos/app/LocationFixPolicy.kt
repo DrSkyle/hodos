@@ -30,6 +30,7 @@ internal object LocationFixPolicy {
             accuracyMeters.isFinite() && accuracyMeters in 0f..50f &&
             (!hasSpeed || (speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0f))
 
+    @JvmStatic
     fun validCoordinates(latitude: Double, longitude: Double): Boolean =
         latitude.isFinite() && longitude.isFinite() &&
             latitude in -90.0..90.0 && longitude in -180.0..180.0

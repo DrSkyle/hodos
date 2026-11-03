@@ -2,10 +2,11 @@ package org.hodos.app
 
 import android.Manifest
 import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -78,7 +79,9 @@ fun HodosApp(
     onToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onStartJourney: () -> Unit,
-    onFinishJourney: () -> Unit
+    onFinishJourney: () -> Unit,
+    onRequestBackgroundLocation: () -> Unit = {},
+    onRequestBatteryOptimization: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val internetConnected by rememberInternetConnectivity()
@@ -154,10 +157,28 @@ fun HodosApp(
         savedRoadIds = result
     }
     var tripActive by remember { mutableStateOf(prefs.getBoolean("tripActive", false)) }
+    var tripElapsedS by remember { mutableLongStateOf(0L) }
+    var tripDistanceM by remember { mutableFloatStateOf(0f) }
+    var tripImpacts by remember { mutableIntStateOf(0) }
+    var backgroundLocationGranted by remember { mutableStateOf(false) }
+    var batteryOptimizationIgnored by remember { mutableStateOf(false) }
+
+    fun checkDevicePermissions() {
+        backgroundLocationGranted = if (Build.VERSION.SDK_INT >= 29) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
+        } else true
+
+        val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+        batteryOptimizationIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && powerManager != null) {
+            powerManager.isIgnoringBatteryOptimizations(context.packageName)
+        } else true
+    }
+
     var waitingUploads by remember { mutableIntStateOf(0) }
     var rejectedUploads by remember { mutableIntStateOf(0) }
     var syncMetricsReady by remember { mutableStateOf(false) }
     LaunchedEffect(screen, refreshSignal) {
+        checkDevicePermissions()
         while (screen == Screen.MAPPING) {
             val counts = try {
                 withContext(Dispatchers.IO) {
@@ -179,6 +200,16 @@ fun HodosApp(
     LaunchedEffect(screen, refreshSignal) {
         while (screen == Screen.MAPPING) {
             tripActive = prefs.getBoolean("tripActive", false)
+            if (tripActive) {
+                val startedAt = prefs.getLong("tripStartedAt", 0L)
+                tripElapsedS = if (startedAt > 0) (System.currentTimeMillis() - startedAt) / 1000 else 0L
+                tripDistanceM = prefs.getFloat("tripDistanceM", 0f)
+                tripImpacts = prefs.getInt("tripImpacts", 0)
+            } else {
+                tripElapsedS = 0L
+                tripDistanceM = 0f
+                tripImpacts = 0
+            }
             delay(1000L)
         }
     }
@@ -504,11 +535,19 @@ fun HodosApp(
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
-                        armed, trips,
+                        armed = armed,
+                        trips = trips,
                         offlineMaps = offlineMaps,
                         onToggle = onToggle,
                         onRefresh = onRefresh,
                         tripActive = tripActive,
+                        tripElapsedS = tripElapsedS,
+                        tripDistanceM = tripDistanceM,
+                        tripImpacts = tripImpacts,
+                        backgroundLocationGranted = backgroundLocationGranted,
+                        batteryOptimizationIgnored = batteryOptimizationIgnored,
+                        onRequestBackgroundLocation = onRequestBackgroundLocation,
+                        onRequestBatteryOptimization = onRequestBatteryOptimization,
                         waitingUploads = waitingUploads,
                         rejectedUploads = rejectedUploads,
                         syncMetricsReady = syncMetricsReady,
@@ -751,6 +790,29 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
     HorizontalDivider(color = Mist)
 }
 
+private fun formatDuration(seconds: Long): String {
+    if (seconds <= 0) return "00:00"
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val secs = seconds % 60
+    return if (hours > 0) {
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs)
+    } else {
+        String.format(Locale.US, "%02d:%02d", minutes, secs)
+    }
+}
+
+private fun formatDurationFriendly(seconds: Long): String {
+    if (seconds <= 0) return ""
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    return if (hours > 0) {
+        "${hours}h ${minutes}m"
+    } else {
+        "${minutes}m"
+    }
+}
+
 @Composable
 private fun MappingScreen(
     armed: Boolean,
@@ -759,6 +821,13 @@ private fun MappingScreen(
     onToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     tripActive: Boolean,
+    tripElapsedS: Long,
+    tripDistanceM: Float,
+    tripImpacts: Int,
+    backgroundLocationGranted: Boolean,
+    batteryOptimizationIgnored: Boolean,
+    onRequestBackgroundLocation: () -> Unit,
+    onRequestBatteryOptimization: () -> Unit,
     waitingUploads: Int,
     rejectedUploads: Int,
     syncMetricsReady: Boolean,
@@ -776,52 +845,263 @@ private fun MappingScreen(
     ) {
         item {
             HodosBrand()
-            Spacer(Modifier.height(17.dp))
-            Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
-            Spacer(Modifier.height(7.dp))
-            Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
+            Spacer(Modifier.height(14.dp))
+            Text("Road mapping", fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
+            Spacer(Modifier.height(5.dp))
+            Text("Live sensor detection and crowdsourced road hazard mapping.", color = Muted, fontSize = 14.sp)
         }
-        item {
-            Surface(shape = RoundedCornerShape(25.dp), color = Mist) {
-                Column(Modifier.padding(22.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(36.dp), tint = Forest)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(if (armed) "Detection is on" else "Automatic mapping is off", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text(if (armed) "Detecting when a journey starts" else "Enable it to detect road hazards", color = Muted, fontSize = 12.sp)
+
+        // Live Active Journey Hero Card
+        if (tripActive) {
+            item {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xFFF1F8F4),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Forest.copy(alpha = 0.35f)),
+                    shadowElevation = 2.dp
+                ) {
+                    Column(Modifier.padding(22.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Danger)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "MAPPING ROUTE LIVE",
+                                color = Danger,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.6.sp
+                            )
                         }
-                        Switch(
-                            checked = armed, onCheckedChange = onToggle,
-                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            formatDuration(tripElapsedS),
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Ink,
+                            letterSpacing = (-1.2).sp
                         )
-                    }
-                    Spacer(Modifier.height(18.dp))
-                    HorizontalDivider(color = Color(0xFFD0E2D7))
-                    Spacer(Modifier.height(14.dp))
-                    Text("Your motion data stays on this phone. A persistent foreground notification shows when mapping is active. Android may stop tracking when you force-stop Hodos or restrict its battery use.", color = Muted, fontSize = 13.sp)
-                    Spacer(Modifier.height(13.dp))
-                    Text("For more reliable screen-off mapping:", color = Ink, fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold)
-                    val context = LocalContext.current
-                    TextButton(onClick = {
-                        context.startActivity(Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.parse("package:" + context.packageName)
-                        ))
-                    }) { Text("Location · Allow all the time") }
-                    TextButton(onClick = {
-                        try {
-                            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                        } catch (_: Exception) {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.parse("package:" + context.packageName)))
+                        Text("Active mapping time · Saved to disk periodically", color = Muted, fontSize = 12.sp)
+                        Spacer(Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(Modifier.padding(14.dp)) {
+                                    Text("Distance", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        if (tripDistanceM >= 1000f) String.format(Locale.US, "%.1f km", tripDistanceM / 1000f)
+                                        else "${tripDistanceM.roundToInt()} m",
+                                        color = Forest,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(Modifier.padding(14.dp)) {
+                                    Text("Hazards", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "$tripImpacts found",
+                                        color = if (tripImpacts > 0) Orange else Ink,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
-                    }) { Text("Review battery optimization") }
-                    Text("These settings are optional, and availability varies by Android device.", color = Muted, fontSize = 12.sp)
+                        Spacer(Modifier.height(18.dp))
+                        Button(
+                            onClick = onFinishJourney,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFDEEEB),
+                                contentColor = Danger
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 0.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp)
+                        ) {
+                            Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Finish Journey", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    }
+                }
+            }
+        } else {
+            // Start Journey Card (Always available)
+            item {
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(Modifier.padding(22.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(32.dp), tint = Forest)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Record a journey", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Text("On-device road hazard detection", color = Muted, fontSize = 12.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "Mount your phone and start driving or riding. Hodos continuously measures road impacts, calculates distance, and saves every hazard safely to your phone.",
+                            color = Muted,
+                            fontSize = 13.sp,
+                            lineHeight = 19.sp
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        Button(
+                            onClick = onStartJourney,
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest, contentColor = Color.White),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp)
+                        ) {
+                            Icon(Icons.Outlined.DirectionsCar, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Start Journey", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    }
                 }
             }
         }
+
+        // Background Auto-Detection Switch
+        item {
+            Surface(shape = RoundedCornerShape(22.dp), color = Mist) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(30.dp), tint = Forest)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Background auto-detect", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(if (armed) "Detecting vehicle or bus motion" else "Background detection is off", color = Muted, fontSize = 12.sp)
+                        }
+                        Switch(
+                            checked = armed,
+                            onCheckedChange = onToggle,
+                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Automatically detects when you board a bus, car, or bicycle and starts mapping quietly in the background without needing to open the app.",
+                        color = Muted,
+                        fontSize = 12.5.sp,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+        }
+
+        // Reliability & Permissions
+        item {
+            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Reliability & Permissions", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Prevents Android from stopping mapping during long journeys:", color = Muted, fontSize = 12.5.sp)
+                    Spacer(Modifier.height(14.dp))
+
+                    // Location status
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (backgroundLocationGranted) Color(0xFFF1F8F4) else Color(0xFFFDF6EE),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (backgroundLocationGranted) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
+                                contentDescription = null,
+                                tint = if (backgroundLocationGranted) Forest else Orange,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    if (backgroundLocationGranted) "Location: Allow all the time" else "Location: Only while in use",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.5.sp,
+                                    color = Ink
+                                )
+                                Text(
+                                    if (backgroundLocationGranted) "Background mapping runs continuously"
+                                    else "May pause when phone screen locks",
+                                    color = Muted,
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                            if (!backgroundLocationGranted) {
+                                TextButton(onClick = onRequestBackgroundLocation) {
+                                    Text("Settings", fontWeight = FontWeight.Bold, color = Orange)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+
+                    // Battery status
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (batteryOptimizationIgnored) Color(0xFFF1F8F4) else Color(0xFFFDF6EE),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (batteryOptimizationIgnored) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
+                                contentDescription = null,
+                                tint = if (batteryOptimizationIgnored) Forest else Orange,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    if (batteryOptimizationIgnored) "Battery: Unrestricted" else "Battery: Restricted by Android",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.5.sp,
+                                    color = Ink
+                                )
+                                Text(
+                                    if (batteryOptimizationIgnored) "Android will not terminate multi-hour trips"
+                                    else "Battery saver may kill background app",
+                                    color = Muted,
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                            if (!batteryOptimizationIgnored) {
+                                TextButton(onClick = onRequestBatteryOptimization) {
+                                    Text("Fix", fontWeight = FontWeight.Bold, color = Orange)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Offline nearby maps
         item {
             val saved = offlineMaps.state
             Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
@@ -829,7 +1109,7 @@ private fun MappingScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(30.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
-                        Text("Offline nearby maps", fontSize = 19.sp,
+                        Text("Offline nearby maps", fontSize = 18.sp,
                             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         Switch(
                             checked = saved.autoEnabled,
@@ -838,9 +1118,9 @@ private fun MappingScreen(
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Automatically save roads within 20 km on Wi-Fi after you allow location. No mobile-data map downloads.",
+                    Text("Automatically save roads within 20 km on Wi-Fi after you allow location.",
                         fontSize = 13.sp, color = Muted)
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(saved.status, fontSize = 13.sp, color = Ink,
                         fontWeight = FontWeight.SemiBold)
                     if (saved.downloading && saved.required > 0) {
@@ -866,6 +1146,8 @@ private fun MappingScreen(
                 }
             }
         }
+
+        // Observation Sync
         item {
             Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
@@ -909,36 +1191,6 @@ private fun MappingScreen(
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
-                Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
-                        Spacer(Modifier.width(10.dp))
-                        Text(if (tripActive) "Journey in progress" else "Record a journey",
-                            fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(Modifier.height(9.dp))
-                    Text(
-                        if (tripActive) "Hodos is collecting real motion and location readings. Finish when your trip ends."
-                        else "Mapping detects journeys automatically. You can also start recording a real journey yourself.",
-                        fontSize = 13.sp, color = Muted
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    Button(
-                        enabled = armed,
-                        onClick = if (tripActive) onFinishJourney else onStartJourney,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (tripActive) "Finish journey" else "Start journey")
-                    }
-                    if (!armed) {
-                        Spacer(Modifier.height(8.dp))
-                        Text("Switch on automatic mapping to record a journey.", color = Muted, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-        item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Your journeys", fontSize = 21.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                 TextButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, null); Text("Update") }
@@ -958,34 +1210,46 @@ private fun MappingScreen(
             }
         } else {
             items(trips, key = { it.at }) { trip ->
+                val durationText = trip.durationS?.let { formatDurationFriendly(it) }
                 Surface(color = Color.White, shape = RoundedCornerShape(17.dp)) {
                     Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.DirectionsCar, null, tint = Forest)
                         Spacer(Modifier.width(15.dp))
                         Column(Modifier.weight(1f)) {
                             Text(DateFormat.format("d MMM · h:mm a", Date(trip.at)).toString(), fontWeight = FontWeight.SemiBold)
-                            Text("${trip.impacts} impacts · " +
-                                (trip.gpsFixes?.let { "$it GPS fixes" }
-                                    ?: "${trip.locations} potential spots"),
-                                color = Muted, fontSize = 12.sp)
+                            Text(
+                                "${trip.impacts} hazards · " +
+                                    (if (!durationText.isNullOrEmpty()) "$durationText · " else "") +
+                                    (trip.gpsFixes?.let { "$it GPS fixes" } ?: "${trip.locations} spots"),
+                                color = Muted, fontSize = 12.sp
+                            )
                         }
                         Text(
                             if (trip.distanceM >= 1000.0)
                                 String.format(Locale.US, "%.1f km", trip.distanceM / 1000.0)
                             else "${trip.distanceM.roundToInt()} m",
-                            color = Forest, fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
+                            color = Forest, fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(17.dp), color = Mist) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Outlined.Shield, null, tint = Forest)
-                    Spacer(Modifier.width(12.dp))
-                    Text("Your phone processes movement locally. Only small road observations are submitted, not full sensor recordings.", fontSize = 13.sp, color = Ink)
+            Surface(shape = RoundedCornerShape(18.dp), color = Mist) {
+                Column(Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Info, null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Privacy & Open Data", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• On-device motion analysis: Only shock intensity and coordinates of road hazards are uploaded to the shared map.\n" +
+                        "• Zero route tracking: Hodos never records or uploads your personal journey paths or identity.\n" +
+                        "• Sustainable open source: App and public maps are 100% free. Development is supported by municipal road quality reports and fleet road safety indexes.",
+                        fontSize = 12.sp, color = Ink, lineHeight = 17.5.sp
+                    )
                 }
             }
         }
