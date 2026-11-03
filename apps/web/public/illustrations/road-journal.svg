@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 720" role="img" aria-labelledby="title desc">
+<title id="title">Roads have stories</title>
+<desc id="desc">An open field journal and a curving road through leafy hills, with a coral map pin, a golden bookmark and sunlit mountains.</desc>
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff4d5"/><stop offset="1" stop-color="#edf7e7"/></linearGradient>
+ <linearGradient id="field" x1="0" x2=".8" y2="1"><stop stop-color="#bcd58d"/><stop offset=".55" stop-color="#91be83"/><stop offset="1" stop-color="#79a777"/></linearGradient>
+ <linearGradient id="hill" x1="0" x2="1" y2="1"><stop stop-color="#d6e8b0"/><stop offset="1" stop-color="#9fbf8f"/></linearGradient>
+ <linearGradient id="road" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff7df"/><stop offset="1" stop-color="#f1dec0"/></linearGradient>
+ <linearGradient id="page" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#faefd6"/></linearGradient>
+ <filter id="soft-shadow" x="-30%" y="-40%" width="160%" height="180%"><feDropShadow dx="0" dy="13" stdDeviation="13" flood-color="#36563b" flood-opacity=".16"/></filter>
+ <symbol id="pine" viewBox="0 0 80 115">
+  <path d="M40 106V69" stroke="#355e42" stroke-width="9" stroke-linecap="round"/>
+  <path d="M40 7 16 44h11L9 75h62L53 44h11Z" fill="#598d62" stroke="#335b46" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M40 13 27 40h10L22 70" fill="none" stroke="#9fc48a" stroke-width="5" stroke-linecap="round"/>
+ </symbol>
+ <symbol id="bush" viewBox="0 0 126 95">
+  <path d="M13 87C-2 74 5 49 28 47c-3-29 29-43 47-18 24-16 48 7 38 29 20 18 5 38-16 35Z" fill="#6ca16e" stroke="#315944" stroke-width="4"/>
+  <path d="M29 73c14-14 24-18 41-16m7 16 18-18" stroke="#b6d093" stroke-width="5" fill="none" stroke-linecap="round"/>
+ </symbol>
+ <symbol id="flower" viewBox="0 0 44 56">
+  <path d="M22 55V23" stroke="#497a54" stroke-width="4" stroke-linecap="round"/>
+  <path d="M22 43C13 29 6 33 8 41c4 9 11 10 14 2m0 5c8-12 15-9 16-2-4 7-12 7-16 2" fill="#80aa69"/>
+  <path d="M22 4c7-9 17 4 9 12 13-3 13 13 1 15-4 12-15 10-18 1C2 33 0 18 13 15 9 5 18 0 22 4Z" fill="#fffaf0" stroke="#456044" stroke-width="2.6"/>
+  <circle cx="22" cy="19" r="7" fill="#f6be53" stroke="#d49739" stroke-width="2"/>
+ </symbol>
+</defs>
+<!-- One organic backdrop rather than a card full of loose icons -->
+<path d="M101 222c55-109 142-142 239-124 128-76 290-9 353 97 119 30 156 132 108 214 42 97-41 206-135 230-79 75-197 51-261 30-113 69-238 18-276-70C14 580-17 462 50 374c-2-61 9-107 51-152Z" fill="url(#sky)"/>
+<!-- distant light -->
+<circle cx="660" cy="162" r="66" fill="#ffda79" opacity=".52"/>
+<circle cx="660" cy="162" r="46" fill="#ffd374"/>
+<g stroke="#e9b84c" stroke-width="5" stroke-linecap="round">
+ <path d="M658 96V79M658 243v-18M581 164h-16m185 0h-17m-130-58-12-12m128 129-12-13m2-104 13-12"/>
+</g>
+<path d="M390 312 479 214 515 258 570 183 644 275 690 223 751 318Z" fill="#a6c6af" stroke="#3e6a55" stroke-width="4" stroke-linejoin="round"/>
+<path d="m469 232 10-18 34 44 57-75 26 36-27-11-24 41-30-19-22 21Z" fill="#f2f7dc"/>
+<path d="M245 346c112-91 172-53 249-67 78-16 176 9 269 81l16 153H174Z" fill="#c2daa5"/>
+<path d="M100 429c114-73 169-32 268-80 76-37 161-3 212-2 88-4 149 24 214 82l6 151H68Z" fill="url(#hill)" stroke="#769877" stroke-width="3"/>
+<path d="M48 542c104-89 210-91 320-57 135-73 320-54 430 20l-10 106-122 58H231L73 620Z" fill="url(#field)"/>
+<!-- pines appear rooted in the hills -->
+<use href="#pine" x="428" y="292" width="65" height="95"/>
+<use href="#pine" x="501" y="283" width="81" height="112"/>
+<use href="#pine" x="709" y="315" width="74" height="105"/>
+<use href="#pine" x="608" y="292" width="54" height="78"/>
+<!-- winding road: no car, the actual journey is the subject -->
+<path d="M716 355c-60 19-154 16-166 69-10 40 67 43 77 74 24 73-178 57-161 126 9 36 114 50 195 88" fill="none" stroke="#5b8162" stroke-width="92" stroke-linecap="round"/>
+<path d="M716 355c-60 19-154 16-166 69-10 40 67 43 77 74 24 73-178 57-161 126 9 36 114 50 195 88" fill="none" stroke="url(#road)" stroke-width="83" stroke-linecap="round"/>
+<path d="M716 355c-60 19-154 16-166 69-10 40 67 43 77 74 24 73-178 57-161 126 9 36 114 50 195 88" fill="none" stroke="#eecaa4" stroke-width="5" stroke-linecap="round" stroke-dasharray="22 25"/>
+<use href="#bush" x="652" y="444" width="106" height="83"/>
+<use href="#bush" x="68" y="469" width="146" height="108"/>
+<use href="#bush" x="101" y="545" width="111" height="83"/>
+<use href="#bush" x="697" y="562" width="110" height="85"/>
+<!-- coral map marker, deliberately the visual anchor -->
+<g filter="url(#soft-shadow)" transform="translate(673 443) rotate(8)">
+  <path d="M0-73c-36 0-65 27-65 62 0 52 65 110 65 110S65 41 65-11C65-46 36-73 0-73Z" fill="#f27f69" stroke="#754d46" stroke-width="4.5"/>
+  <path d="M-38-43c21-21 54-19 74 0" stroke="#ffbc99" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cy="-11" r="25" fill="#fff4df" stroke="#754d46" stroke-width="4"/>
+  <circle cy="-11" r="10" fill="#f8d18e"/>
+</g>
+<!-- open journal with hand-drawn pages -->
+<g filter="url(#soft-shadow)" transform="translate(63 408) rotate(-7 210 130)">
+  <path d="M19 45q84-24 189 5 118-31 222-6l-1 252q-109-25-221 3Q102 268 20 292Z" fill="#c28b4e" stroke="#5d553f" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M27 33q95-23 180 12l1 244Q107 262 28 281Z" fill="url(#page)" stroke="#5b644c" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M207 45q117-34 210-9l-1 246q-106-27-208 7Z" fill="#fff9e8" stroke="#5b644c" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M206 51q7 115 2 231" stroke="#e4cf9d" stroke-width="7" fill="none"/>
+  <path d="M50 83c62-14 101-10 131 4M50 99c46-8 75-8 99-3" fill="none" stroke="#d2bb93" stroke-width="4" stroke-linecap="round"/>
+  <path d="M53 215c37-9 84-7 126 10M53 231c30-7 51-7 72-2M52 247c54-8 91-6 129 8" fill="none" stroke="#ddc5a2" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 176 96 139l31 20 22-38 35 59Z" fill="#a8c6a1" stroke="#51765a" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="165" cy="113" r="14" fill="#f4c669"/>
+  <path d="M234 89q57-18 138-6M235 104q56-10 97-8" stroke="#d9c098" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M239 132c44 1 16 40 51 51s65-10 72 19" stroke="#d4ad7b" stroke-width="5" stroke-linecap="round" stroke-dasharray="3 11" fill="none"/>
+  <path d="M237 236q70-12 145-1M237 253q57-9 112-2" stroke="#dcc6a4" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M335 145c4-12 22-13 28-1 7-12 26-10 29 2 4 18-25 32-29 39-8-8-34-23-28-40Z" fill="#ed937e"/>
+  <path d="M367 36h43l-3 87-23-16-18 15Z" fill="#f4b84d" stroke="#795e36" stroke-width="3.5" stroke-linejoin="round"/>
+</g>
+<use href="#flower" x="66" y="589" width="53" height="67"/>
+<use href="#flower" x="790" y="563" width="42" height="53"/>
+<g fill="none" stroke="#648e6d" stroke-width="4" stroke-linecap="round">
+ <path d="M136 622q-17-20-20-36M136 622q0-28 14-45M144 623q6-18 23-27M753 638q-10-31-24-40M760 638q5-27 22-40"/>
+</g>
+<g fill="#f5bd63"><circle cx="510" cy="304" r="4"/><circle cx="803" cy="434" r="4"/><circle cx="459" cy="658" r="5"/></g>
+<g stroke="#e6bc71" stroke-width="4" stroke-linecap="round"><path d="m417 179-4-14m-12 19-14-2m38 8 12-8"/></g>
+</svg>
