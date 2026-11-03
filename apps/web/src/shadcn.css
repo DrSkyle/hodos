@@ -542,3 +542,100 @@ body {
   background: transparent !important;
   color: hsl(var(--foreground)) !important;
 }
+
+/* Parallax & Slide-Up Reveal Effects (modern-web-guidance) */
+.parallax-wrapper {
+  position: relative;
+  overflow: clip;
+}
+
+@keyframes parallax-bg {
+  from { transform: translateY(0); }
+  to { transform: translateY(80px); }
+}
+
+@keyframes parallax-fg {
+  from { transform: translateY(0); }
+  to { transform: translateY(-40px); }
+}
+
+@keyframes parallax-slow {
+  from { transform: translateY(0); }
+  to { transform: translateY(30px); }
+}
+
+@supports ((animation-timeline: view()) and (animation-range: entry)) {
+  .parallax-wrapper {
+    view-timeline: --hero-parallax block;
+  }
+  .parallax-layer-bg {
+    animation: parallax-bg linear both;
+    animation-timeline: --hero-parallax;
+    animation-range: entry 0% exit 100%;
+  }
+  .parallax-layer-fg {
+    animation: parallax-fg linear both;
+    animation-timeline: --hero-parallax;
+    animation-range: entry 0% exit 100%;
+  }
+  .parallax-layer-slow {
+    animation: parallax-slow linear both;
+    animation-timeline: --hero-parallax;
+    animation-range: entry 0% exit 100%;
+  }
+}
+
+/* Slide-Up Scroll Reveals */
+@keyframes slide-up-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@supports ((animation-timeline: view()) and (animation-range: entry)) {
+  .scroll-reveal {
+    view-timeline: --item-reveal block;
+    animation: slide-up-reveal linear both;
+    animation-timeline: --item-reveal;
+    animation-range: entry 10% entry 40%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parallax-layer-bg,
+  .parallax-layer-fg,
+  .parallax-layer-slow,
+  .scroll-reveal {
+    animation: none !important;
+  }
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+.bg-grid-pattern {
+  background-image: radial-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark .bg-grid-pattern {
+  background-image: radial-gradient(hsl(var(--muted-foreground) / 0.22) 1px, transparent 1px);
+}
