@@ -1,7 +1,6 @@
 import { Map, NavigationControl, AttributionControl, GeolocateControl, Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FeatureCollection, Point, LineString } from "geojson";
-import { VERIFIED_ROAD_CORRIDORS, buildCorridorsGeoJSON, type RoadCorridor } from "./road-corridors";
+import type { FeatureCollection, Point } from "geojson";
 
 export interface WebHazard {
   id: string;
@@ -16,174 +15,105 @@ export interface WebHazard {
   locationName: string;
   confidence?: number;
   lastSeen?: string;
+  firstSeen?: string;
 }
 
 export interface MapInstanceHandle {
   map: Map;
   hazards: WebHazard[];
-  corridors: RoadCorridor[];
   filterByKind: (kind: string) => void;
   fitAllHazards: () => void;
+  flyToHazard: (id: string) => void;
   exportData: (format: "geojson" | "gpx") => void;
 }
 
-// Rock-solid, instant-loading OpenStreetMap raster style (never hangs, zero font/sprite dependencies)
-const RELIABLE_MAP_STYLE: any = {
+// Crisp, muted, high-contrast basemap (Carto Positron)
+// Neutral gray roads so defects stand out with 100% clarity without competing colors
+const HIGH_CONTRAST_STYLE: any = {
   version: 8,
   sources: {
-    "osm-tiles": {
+    "carto-positron": {
       type: "raster",
       tiles: [
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
       ],
       tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
     }
   },
   layers: [
     {
-      id: "osm-tiles-layer",
+      id: "carto-positron-layer",
       type: "raster",
-      source: "osm-tiles",
+      source: "carto-positron",
       minzoom: 0,
       maxzoom: 19
     }
   ]
 };
 
-// Verified baseline hazards ready immediately on load
-const INITIAL_HAZARDS: WebHazard[] = [
-  {
-    id: "h-001",
-    lat: 28.6527,
-    lng: 81.0695,
-    kind: "rough_pavement",
-    severity: 2,
-    passes: 42,
-    devices: 16,
-    fixed: false,
-    title: "Rough Road Surface",
-    locationName: "Ratna Highway Corridor (28.6527, 81.0695)"
-  },
-  {
-    id: "h-002",
-    lat: 28.6503,
-    lng: 81.0774,
-    kind: "pothole",
-    severity: 3,
-    passes: 64,
-    devices: 22,
-    fixed: false,
-    title: "Deep Road Pothole",
-    locationName: "Birendranagar Route (28.6503, 81.0774)"
-  },
-  {
-    id: "h-003",
-    lat: 28.6512,
-    lng: 81.0744,
-    kind: "rough_pavement",
-    severity: 1,
-    passes: 29,
-    devices: 9,
-    fixed: false,
-    title: "Surface Rutting & Settlement",
-    locationName: "Mid-Hill Link (28.6512, 81.0744)"
-  },
-  {
-    id: "h-004",
-    lat: 27.7172,
-    lng: 85.3240,
-    kind: "pothole",
-    severity: 3,
-    passes: 88,
-    devices: 31,
-    fixed: false,
-    title: "Asphalt Pothole",
-    locationName: "Lazimpat Avenue (27.7172, 85.3240)"
-  },
-  {
-    id: "h-005",
-    lat: 27.6954,
-    lng: 85.3206,
-    kind: "speed_bump",
-    severity: 2,
-    passes: 104,
-    devices: 43,
-    fixed: false,
-    title: "Unmarked Speed Bump",
-    locationName: "Tripureshwor - Thapathali (27.6954, 85.3206)"
-  },
-  {
-    id: "h-006",
-    lat: 27.6830,
-    lng: 85.3480,
-    kind: "rough_pavement",
-    severity: 2,
-    passes: 56,
-    devices: 19,
-    fixed: false,
-    title: "Sunken Road Trench",
-    locationName: "Koteshwor Ring Road Junction (27.6830, 85.3480)"
-  },
-  {
-    id: "h-007",
-    lat: 27.7340,
-    lng: 85.3312,
-    kind: "rough_pavement",
-    severity: 1,
-    passes: 27,
-    devices: 11,
-    fixed: true,
-    title: "Resurfaced Road Patch",
-    locationName: "Maharajgunj Intersection (27.7340, 85.3312)"
-  },
-  {
-    id: "h-008",
-    lat: 37.7749,
-    lng: -122.4194,
-    kind: "pothole",
-    severity: 2,
-    passes: 35,
-    devices: 12,
-    fixed: false,
-    title: "Asphalt Depression",
-    locationName: "Market Street Corridor, San Francisco"
-  },
-  {
-    id: "h-009",
-    lat: 51.5074,
-    lng: -0.1278,
-    kind: "rough_pavement",
-    severity: 1,
-    passes: 48,
-    devices: 17,
-    fixed: false,
-    title: "Surface Settling & Rutting",
-    locationName: "Westminster Arterial, London"
+function parseAppwriteRow(r: any): WebHazard | null {
+  const lat = Number(r.lat);
+  const lng = Number(r.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return null;
   }
-];
+  const kind =
+    r.kind === "speed_bump" || r.kind === "rough_pavement" || r.kind === "pothole"
+      ? r.kind
+      : "pothole";
+  const severity = Math.max(1, Math.min(3, Number(r.severity) || 1));
+  const passes = Number(r.passCount ?? r.passes ?? 1);
+  const devices = Number(r.deviceCount ?? r.devices ?? 1);
+  const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1));
+  const title =
+    kind === "speed_bump"
+      ? "Speed Bump"
+      : kind === "rough_pavement"
+      ? "Rough Road Pavement"
+      : "Pothole";
+
+  return {
+    id: String(r.$id || r.id || r.hazardId || `${lat}:${lng}`),
+    lat,
+    lng,
+    kind,
+    severity,
+    passes,
+    devices,
+    fixed,
+    title,
+    locationName: `GPS ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    confidence: Number(r.confidence) || 0.8,
+    firstSeen: r.firstSeen || r.$createdAt,
+    lastSeen: r.lastSeen || r.$updatedAt
+  };
+}
 
 export function initWebMap(
   containerId: string,
   statusId?: string,
-  onLoaded?: (handle: MapInstanceHandle) => void
+  onLoaded?: (handle: MapInstanceHandle) => void,
+  onHazardsUpdated?: (hazards: WebHazard[]) => void
 ): MapInstanceHandle | null {
   const container = document.getElementById(containerId);
   if (!container) return null;
 
   const statusEl = statusId ? document.getElementById(statusId) : null;
-  let hazards: WebHazard[] = [...INITIAL_HAZARDS];
+  let hazards: WebHazard[] = [];
 
   if (statusEl) {
-    statusEl.textContent = `Loading road map...`;
+    statusEl.textContent = `Connecting to road observations...`;
   }
 
-  // 1. Initialize MapLibre immediately with the reliable OpenStreetMap raster style
+  // 1. Initialize MapLibre with clean neutral basemap
   const map = new Map({
     container,
-    style: RELIABLE_MAP_STYLE,
-    center: [81.5, 28.5],
-    zoom: 6.5,
+    style: HIGH_CONTRAST_STYLE,
+    center: [82.5, 28.1],
+    zoom: 7,
     attributionControl: false
   });
 
@@ -215,7 +145,9 @@ export function initWebMap(
         devices: h.devices,
         fixed: h.fixed,
         locationName: h.locationName,
-        confidence: h.confidence ?? 0.8
+        confidence: h.confidence ?? 0.8,
+        firstSeen: h.firstSeen,
+        lastSeen: h.lastSeen
       }
     }))
   });
@@ -236,7 +168,7 @@ export function initWebMap(
           [minLng - pad, minLat - pad],
           [maxLng + pad, maxLat + pad]
         ],
-        { padding: 45, maxZoom: 13.5, duration: 800 }
+        { padding: 50, maxZoom: 14, duration: 900 }
       );
     }
   };
@@ -247,99 +179,55 @@ export function initWebMap(
       src.setData(buildGeoJSON(hazards));
     }
     if (statusEl) {
-      statusEl.textContent = `${hazards.length} road hazards loaded`;
+      statusEl.textContent = `${hazards.length} verified defects mapped`;
     }
+    onHazardsUpdated?.(hazards);
   };
 
   const handle: MapInstanceHandle = {
     map,
     hazards,
-    corridors: VERIFIED_ROAD_CORRIDORS,
     filterByKind: (kind: string) => {
-      const hazardSrc = map.getSource("hodos-hazards") as any;
-      const corridorSrc = map.getSource("hodos-corridors") as any;
-      if (!hazardSrc || !corridorSrc) return;
+      const src = map.getSource("hodos-hazards") as any;
+      if (!src) return;
 
-      if (kind === "corridors") {
-        map.setLayoutProperty("corridors-line", "visibility", "visible");
-        map.setLayoutProperty("corridors-casing", "visibility", "visible");
-        map.setLayoutProperty("hazard-point", "visibility", "none");
-        map.setLayoutProperty("hazard-glow", "visibility", "none");
-        corridorSrc.setData(buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS));
-        if (statusEl) statusEl.textContent = `${VERIFIED_ROAD_CORRIDORS.length} road corridors shown (IRI Roughness)`;
-        return;
-      }
+      const filtered =
+        kind === "all"
+          ? hazards
+          : kind === "fixed"
+          ? hazards.filter((h) => h.fixed)
+          : hazards.filter((h) => h.kind === kind && !h.fixed);
 
-      map.setLayoutProperty("corridors-line", "visibility", "visible");
-      map.setLayoutProperty("corridors-casing", "visibility", "visible");
-      map.setLayoutProperty("hazard-point", "visibility", "visible");
-      map.setLayoutProperty("hazard-glow", "visibility", "visible");
-
-      if (kind === "all") {
-        hazardSrc.setData(buildGeoJSON(hazards));
-        corridorSrc.setData(buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS));
-        if (statusEl) {
-          statusEl.textContent = `${hazards.length} hazards & ${VERIFIED_ROAD_CORRIDORS.length} road corridors shown`;
-        }
-      } else if (kind === "smooth" || kind === "fair" || kind === "severe") {
-        const filteredCorridors = VERIFIED_ROAD_CORRIDORS.filter((c) => c.rating === kind);
-        corridorSrc.setData(buildCorridorsGeoJSON(filteredCorridors));
-        map.setLayoutProperty("hazard-point", "visibility", "none");
-        map.setLayoutProperty("hazard-glow", "visibility", "none");
-        if (statusEl) {
-          statusEl.textContent = `${filteredCorridors.length} ${kind} corridors shown`;
-        }
-      } else if (kind === "fixed") {
-        const filtered = hazards.filter((h) => h.fixed);
-        hazardSrc.setData(buildGeoJSON(filtered));
-        map.setLayoutProperty("corridors-line", "visibility", "none");
-        map.setLayoutProperty("corridors-casing", "visibility", "none");
-        if (statusEl) {
-          statusEl.textContent = `${filtered.length} repaired hazards shown`;
-        }
-      } else {
-        const filtered = hazards.filter((h) => h.kind === kind && !h.fixed);
-        hazardSrc.setData(buildGeoJSON(filtered));
-        map.setLayoutProperty("corridors-line", "visibility", "none");
-        map.setLayoutProperty("corridors-casing", "visibility", "none");
-        if (statusEl) {
-          statusEl.textContent = `${filtered.length} ${kind} defects shown`;
-        }
+      src.setData(buildGeoJSON(filtered));
+      if (statusEl) {
+        statusEl.textContent = `${filtered.length} defects shown (${kind === "all" ? "all categories" : kind})`;
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards),
+    flyToHazard: (id: string) => {
+      const target = hazards.find((h) => h.id === id);
+      if (target) {
+        map.flyTo({ center: [target.lng, target.lat], zoom: 15, duration: 1200 });
+        showPopupForHazard(target);
+      }
+    },
     exportData: (format: "geojson" | "gpx") => {
       let content: string;
       let filename: string;
       let mime: string;
       if (format === "geojson") {
-        const combined: FeatureCollection = {
-          type: "FeatureCollection",
-          features: [
-            ...buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS).features,
-            ...buildGeoJSON(hazards).features
-          ]
-        };
-        content = JSON.stringify(combined, null, 2);
-        filename = "hodos-road-network-and-hazards.geojson";
+        content = JSON.stringify(buildGeoJSON(hazards), null, 2);
+        filename = "hodos-road-defects.geojson";
         mime = "application/geo+json";
       } else {
         const wpt = hazards
           .map(
             (h) =>
-              `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Passes: ${h.passes}</desc></wpt>`
+              `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Recorded: ${h.firstSeen || "N/A"}</desc></wpt>`
           )
           .join("\n");
-        const trk = VERIFIED_ROAD_CORRIDORS.map(
-          (c) =>
-            `  <trk><name>${c.name} (IRI ${c.iri})</name><trkseg>\n` +
-            c.coordinates
-              .map((pt) => `    <trkpt lat="${pt[1]}" lon="${pt[0]}"></trkpt>`)
-              .join("\n") +
-            `\n  </trkseg></trk>`
-        ).join("\n");
-        content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n${trk}\n</gpx>`;
-        filename = "hodos-road-network.gpx";
+        content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n</gpx>`;
+        filename = "hodos-road-defects.gpx";
         mime = "application/gpx+xml";
       }
       const blob = new Blob([content], { type: mime });
@@ -352,208 +240,135 @@ export function initWebMap(
     }
   };
 
+  function showPopupForHazard(h: WebHazard) {
+    const kindName =
+      h.kind === "speed_bump"
+        ? "Speed Bump"
+        : h.kind === "rough_pavement"
+        ? "Rough Pavement"
+        : "Pothole";
+
+    const badgeColor = h.fixed
+      ? "#15803D"
+      : h.kind === "pothole"
+      ? "#DC2626"
+      : h.kind === "speed_bump"
+      ? "#4F46E5"
+      : "#D97706";
+
+    const badgeLabel = h.fixed
+      ? "Repaired"
+      : h.kind === "pothole"
+      ? "Pothole"
+      : h.kind === "speed_bump"
+      ? "Speed Hump"
+      : "Rough Surface";
+
+    const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Recorded";
+
+    const html = `
+      <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 220px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
+          <strong style="font-size: 14px; color: #111827;">${kindName}</strong>
+          <span style="background: ${badgeColor}; color: #ffffff; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px;">
+            ${badgeLabel}
+          </span>
+        </div>
+        <div style="font-size: 12px; color: #4B5563; margin-bottom: 6px; font-family: ui-monospace, monospace;">
+          ${h.locationName}
+        </div>
+        <div style="font-size: 12px; color: #1F2937; margin-bottom: 10px; background: #F3F4F6; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
+          • Impact Severity: <strong>Tier ${h.severity}</strong><br/>
+          • Detection Date: <strong>${dateStr}</strong><br/>
+          • Passes: <strong>${h.passes}</strong>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="btn-verify-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #111827; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Still There</button>
+          <button id="btn-fixed-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #E5E7EB; color: #111827; border: none; border-radius: 6px; cursor: pointer;">Mark Repaired</button>
+        </div>
+      </div>
+    `;
+
+    new Popup({ offset: 12, closeButton: true })
+      .setLngLat([h.lng, h.lat])
+      .setHTML(html)
+      .addTo(map);
+
+    setTimeout(() => {
+      const verifyBtn = document.getElementById(`btn-verify-${h.id}`);
+      const fixedBtn = document.getElementById(`btn-fixed-${h.id}`);
+      verifyBtn?.addEventListener("click", () => {
+        verifyBtn.textContent = "Verified";
+        verifyBtn.style.background = "#15803D";
+      });
+      fixedBtn?.addEventListener("click", () => {
+        fixedBtn.textContent = "Marked Fixed";
+        fixedBtn.style.background = "#15803D";
+        fixedBtn.style.color = "#fff";
+      });
+    }, 50);
+  }
+
   const setupLayers = () => {
     if (map.getSource("hodos-hazards")) return;
 
-    // 1. Add road corridors source & layers (rendered underneath point markers)
-    map.addSource("hodos-corridors", {
-      type: "geojson",
-      data: buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS)
-    });
-
-    map.addLayer({
-      id: "corridors-casing",
-      type: "line",
-      source: "hodos-corridors",
-      layout: {
-        "line-cap": "round",
-        "line-join": "round"
-      },
-      paint: {
-        "line-width": 8,
-        "line-color": "rgba(23, 45, 36, 0.28)"
-      }
-    });
-
-    map.addLayer({
-      id: "corridors-line",
-      type: "line",
-      source: "hodos-corridors",
-      layout: {
-        "line-cap": "round",
-        "line-join": "round"
-      },
-      paint: {
-        "line-width": 5,
-        "line-color": [
-          "match",
-          ["get", "rating"],
-          "smooth", "#257B65",
-          "fair", "#D97706",
-          "severe", "#DC2626",
-          "#257B65"
-        ],
-        "line-opacity": 0.95
-      }
-    });
-
-    // 2. Add hazard points source & layers
     map.addSource("hodos-hazards", {
       type: "geojson",
       data: buildGeoJSON(hazards)
     });
 
+    // High contrast glow halo for prominent visibility
     map.addLayer({
       id: "hazard-glow",
       type: "circle",
       source: "hodos-hazards",
       paint: {
-        "circle-radius": ["match", ["get", "severity"], 3, 16, 2, 12, 9],
+        "circle-radius": [
+          "match", ["get", "kind"],
+          "pothole", 14,
+          "rough_pavement", 10,
+          11
+        ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#2C5530",
-          ["==", ["get", "kind"], "speed_bump"], "#D97706",
-          ["==", ["get", "kind"], "rough_pavement"], "#E11D48",
-          "#DC2626"
+          ["get", "fixed"], "#15803D",
+          ["==", ["get", "kind"], "pothole"], "#DC2626",
+          ["==", ["get", "kind"], "speed_bump"], "#4F46E5",
+          "#D97706"
         ],
-        "circle-opacity": 0.28
+        "circle-opacity": 0.25
       }
     });
 
+    // Distinct crisp marker circle with stark white border & drop shadow
     map.addLayer({
       id: "hazard-point",
       type: "circle",
       source: "hodos-hazards",
       paint: {
-        "circle-radius": ["match", ["get", "severity"], 3, 8, 2, 6.5, 5],
+        "circle-radius": [
+          "match", ["get", "kind"],
+          "pothole", 7.5,
+          "rough_pavement", 5.5,
+          6.5
+        ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#2C5530",
-          ["==", ["get", "kind"], "speed_bump"], "#D97706",
-          ["==", ["get", "kind"], "rough_pavement"], "#E11D48",
-          "#DC2626"
+          ["get", "fixed"], "#15803D",
+          ["==", ["get", "kind"], "pothole"], "#DC2626",
+          ["==", ["get", "kind"], "speed_bump"], "#4F46E5",
+          "#D97706"
         ],
         "circle-stroke-width": 2,
         "circle-stroke-color": "#FFFFFF"
       }
     });
 
-    fitBoundsToData(hazards);
-    if (statusEl) {
-      statusEl.textContent = `${hazards.length} hazards & ${VERIFIED_ROAD_CORRIDORS.length} corridors loaded`;
-    }
-
-    // Corridor click handler
-    map.on("click", "corridors-line", (e: MapLayerMouseEvent) => {
-      const feat = e.features?.[0];
-      if (!feat || !feat.properties) return;
-      const p = feat.properties as any;
-      const lngLat = e.lngLat;
-      const badgeColor =
-        p.rating === "smooth"
-          ? "#257B65"
-          : p.rating === "severe"
-          ? "#DC2626"
-          : "#D97706";
-      const ratingLabel =
-        p.rating === "smooth"
-          ? `Smooth (IRI ${p.iri} m/km)`
-          : p.rating === "severe"
-          ? `Severe Roughness (IRI ${p.iri} m/km)`
-          : `Fair / Worn (IRI ${p.iri} m/km)`;
-
-      const html = `
-        <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px 2px; min-width: 230px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
-            <strong style="font-size: 14px; color: #1F2421;">${p.name}</strong>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <span style="background: ${badgeColor}; color: #fff; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.3px;">
-              ${ratingLabel}
-            </span>
-          </div>
-          <div style="font-size: 12px; color: #1F2421; margin-bottom: 8px; background: #F4F7F4; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
-            • Segment Length: <strong>${p.lengthKm} km</strong><br/>
-            • Potholes Detected: <strong>${p.potholesCount}</strong><br/>
-            • Speed Bumps: <strong>${p.speedBumpsCount}</strong><br/>
-            • Monitored Passes: <strong>${p.passes} trips</strong>
-          </div>
-          <div style="font-size: 11px; color: #6A726A;">Last surveyed: ${p.lastSurveyed} · ASTM E1926 Standard</div>
-        </div>
-      `;
-
-      new Popup({ offset: 10, closeButton: true })
-        .setLngLat(lngLat)
-        .setHTML(html)
-        .addTo(map);
-    });
-
-    map.on("mouseenter", "corridors-line", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "corridors-line", () => {
-      map.getCanvas().style.cursor = "";
-    });
-
     map.on("click", "hazard-point", (e: MapLayerMouseEvent) => {
       const feat = e.features?.[0];
-      if (!feat || !feat.geometry || feat.geometry.type !== "Point") return;
-      const props = feat.properties as any;
-      const coords = (feat.geometry as Point).coordinates.slice() as [number, number];
-
-      const kindName =
-        props.kind === "speed_bump"
-          ? "Speed Bump"
-          : props.kind === "rough_pavement"
-          ? "Rough Surface"
-          : "Pothole";
-      const statusBadge = props.fixed
-        ? "Repaired"
-        : props.severity >= 3
-        ? "Severe Defect"
-        : "Moderate Bump";
-      const badgeColor = props.fixed
-        ? "#2C5530"
-        : props.severity >= 3
-        ? "#DC2626"
-        : "#D97706";
-
-      const html = `
-        <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px 2px; min-width: 200px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
-            <strong style="font-size: 14px; color: #1F2421;">${kindName}</strong>
-            <span style="background: ${badgeColor}; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 99px;">${statusBadge}</span>
-          </div>
-          <div style="color: #6A726A; font-size: 12px; margin-bottom: 6px;">${props.locationName || ""}</div>
-          <div style="font-size: 12px; color: #1F2421; margin-bottom: 8px; background: #F4F7F4; padding: 6px 8px; border-radius: 8px;">
-            • Corroborated by <strong>${props.passes} passes</strong><br/>
-            • <strong>${props.devices} independent devices</strong>
-          </div>
-          <div style="display: flex; gap: 6px; margin-top: 8px;">
-            <button id="btn-verify-${props.id}" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: bold; background: #2C5530; color: #fff; border: none; border-radius: 8px; cursor: pointer;">Still There</button>
-            <button id="btn-fixed-${props.id}" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: bold; background: #EAE6DB; color: #1F2421; border: none; border-radius: 8px; cursor: pointer;">Mark Fixed</button>
-          </div>
-        </div>
-      `;
-
-      new Popup({ offset: 12, closeButton: true })
-        .setLngLat(coords)
-        .setHTML(html)
-        .addTo(map);
-
-      setTimeout(() => {
-        const verifyBtn = document.getElementById(`btn-verify-${props.id}`);
-        const fixedBtn = document.getElementById(`btn-fixed-${props.id}`);
-        verifyBtn?.addEventListener("click", () => {
-          verifyBtn.textContent = "Verified!";
-          verifyBtn.style.background = "#1F2421";
-        });
-        fixedBtn?.addEventListener("click", () => {
-          fixedBtn.textContent = "Marked Fixed";
-          fixedBtn.style.background = "#2C5530";
-          fixedBtn.style.color = "#fff";
-        });
-      }, 50);
+      if (!feat || !feat.properties) return;
+      const target = hazards.find((h) => h.id === feat.properties?.id);
+      if (target) showPopupForHazard(target);
     });
 
     map.on("mouseenter", "hazard-point", () => {
@@ -563,24 +378,47 @@ export function initWebMap(
       map.getCanvas().style.cursor = "";
     });
 
+    if (hazards.length > 0) {
+      fitBoundsToData(hazards);
+      if (statusEl) {
+        statusEl.textContent = `${hazards.length} verified defects loaded`;
+      }
+    }
+
     onLoaded?.(handle);
   };
 
-  // Setup layers on load or immediately if style already loaded
   map.on("load", setupLayers);
-  // Fail-safe: if load didn't trigger in 300ms, force setup
   setTimeout(() => {
-    if (!map.getSource("hodos-hazards")) {
-      setupLayers();
-    }
-  }, 300);
+    if (!map.getSource("hodos-hazards")) setupLayers();
+  }, 250);
 
   setTimeout(() => map.resize(), 100);
   window.addEventListener("resize", () => map.resize());
 
-  // 2. Fetch fresh records from Appwrite asynchronously in the background
+  // 2. Load the 438 verified records immediately from local bundle
+  fetch("/data/hazards.json")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data && Array.isArray(data.rows) && data.rows.length > 0) {
+        const parsed: WebHazard[] = data.rows
+          .map(parseAppwriteRow)
+          .filter((h: WebHazard | null): h is WebHazard => h !== null);
+        if (parsed.length > 0) {
+          hazards = parsed;
+          handle.hazards = parsed;
+          updateSourceData();
+          fitBoundsToData(hazards);
+        }
+      }
+    })
+    .catch((err) => {
+      console.warn("Local static hazards load error:", err);
+    });
+
+  // 3. Fetch latest live updates from Appwrite backend asynchronously
   fetch(
-    "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/hazards/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B250%5D%7D",
+    "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/hazards/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B500%5D%7D",
     {
       headers: { "X-Appwrite-Project": "6ad7939a002ff135e419" }
     }
@@ -589,56 +427,18 @@ export function initWebMap(
     .then((data) => {
       if (data && Array.isArray(data.rows) && data.rows.length > 0) {
         const remote: WebHazard[] = data.rows
-          .map((r: any) => {
-            const lat = Number(r.lat);
-            const lng = Number(r.lng);
-            const kind =
-              r.kind === "speed_bump" || r.kind === "rough_pavement" || r.kind === "pothole"
-                ? r.kind
-                : "pothole";
-            const severity = Math.max(1, Math.min(3, Number(r.severity) || 1));
-            const passes = Number(r.passCount ?? r.passes ?? 1);
-            const devices = Number(r.deviceCount ?? r.devices ?? 1);
-            const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 2));
-            const title =
-              kind === "speed_bump"
-                ? "Speed Bump"
-                : kind === "rough_pavement"
-                ? "Rough Pavement / Rutting"
-                : "Asphalt Pothole";
-            return {
-              id: String(r.$id || r.id || `${lat}:${lng}`),
-              lat,
-              lng,
-              kind,
-              severity,
-              passes,
-              devices,
-              fixed,
-              title,
-              locationName: `GPS ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-              confidence: Number(r.confidence) || 0.8,
-              lastSeen: r.lastSeen || r.$updatedAt
-            };
-          })
-          .filter(
-            (h: WebHazard) =>
-              Number.isFinite(h.lat) &&
-              Number.isFinite(h.lng) &&
-              Math.abs(h.lat) <= 90 &&
-              Math.abs(h.lng) <= 180
-          );
+          .map(parseAppwriteRow)
+          .filter((h: WebHazard | null): h is WebHazard => h !== null);
 
         if (remote.length > 0) {
           hazards = remote;
           handle.hazards = remote;
           updateSourceData();
-          fitBoundsToData(hazards);
         }
       }
     })
     .catch((err) => {
-      console.warn("Background Appwrite fetch skipped (using verified baseline):", err);
+      console.warn("Background Appwrite fetch skipped:", err);
     });
 
   return handle;
