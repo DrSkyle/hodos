@@ -1,4 +1,4 @@
-import "./milestone.css";
+import "./telemetry.css";
 import { initWebMap, type MapInstanceHandle, type WebHazard } from "./web-map";
 
 let handle: MapInstanceHandle | null = null;
@@ -11,39 +11,38 @@ const drawer = document.getElementById("defect-drawer");
 function renderDrawerList(items: WebHazard[]) {
   if (!drawerList) return;
   if (items.length === 0) {
-    drawerList.innerHTML = `<div style="padding:24px; text-align:center; color:var(--ink-muted); font-size:12.5px; font-family:var(--font-mono);">No matching road defects in current filter.</div>`;
+    drawerList.innerHTML = `<div style="padding:20px; text-align:center; color:#64748B; font-size:12px; font-family:'DM Sans', sans-serif;">No matching defects found.</div>`;
     return;
   }
 
   drawerList.innerHTML = items
     .map((h) => {
-      const badgeClass = h.fixed
-        ? "fixed"
+      const badgeBg = h.fixed
+        ? "#10B981"
         : h.kind === "pothole"
-        ? "pothole"
+        ? "#FF4D36"
         : h.kind === "speed_bump"
-        ? "speed_bump"
-        : "rough_pavement";
+        ? "#38BDF8"
+        : "#F59E0B";
 
-      const kindLabel = h.fixed
-        ? "REPAIRED"
-        : h.kind === "pothole"
-        ? "POTHOLE"
-        : h.kind === "speed_bump"
-        ? "SPEED HUMP"
-        : "ROUGH ROAD";
+      const kindLabel =
+        h.kind === "pothole"
+          ? "Pothole"
+          : h.kind === "speed_bump"
+          ? "Speed Bump"
+          : "Rough Road";
 
-      const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "RECORDED";
+      const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Logged";
 
       return `
-        <div class="defect-ledger-card" data-id="${h.id}">
-          <div class="ledger-card-top">
-            <span class="defect-kind-badge ${badgeClass}">${kindLabel}</span>
-            <span style="font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--ink);">TIER ${h.severity}</span>
+        <div class="defect-item" data-id="${h.id}">
+          <div class="defect-item-top">
+            <span class="defect-badge" style="background:${badgeBg}; color:#0B0E14;">${kindLabel}</span>
+            <span style="font-size:11px; font-weight:700; color:#E2E8F0; font-family:'JetBrains Mono', monospace;">Tier ${h.severity}</span>
           </div>
-          <div class="defect-coords-mono">GPS ${h.lat.toFixed(4)}°N, ${h.lng.toFixed(4)}°E</div>
-          <div class="defect-meta-row">
-            <span>Passes: <strong>${h.passes}</strong></span>
+          <div class="defect-coords">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</div>
+          <div class="defect-meta">
+            <span>Passes: ${h.passes}</span>
             <span>${dateStr}</span>
           </div>
         </div>
@@ -52,7 +51,7 @@ function renderDrawerList(items: WebHazard[]) {
     .join("");
 
   // Attach click listeners to fly to hazard
-  drawerList.querySelectorAll(".defect-ledger-card").forEach((el) => {
+  drawerList.querySelectorAll(".defect-item").forEach((el) => {
     el.addEventListener("click", () => {
       const id = el.getAttribute("data-id");
       if (id && handle) {
@@ -93,9 +92,9 @@ handle = initWebMap(
 );
 
 // Filter chip event handlers
-document.querySelectorAll(".filter-milestone-chip").forEach((btn) => {
+document.querySelectorAll(".filter-chip").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".filter-milestone-chip").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".filter-chip").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     const kind = btn.getAttribute("data-kind") || "all";
     handle?.filterByKind(kind);

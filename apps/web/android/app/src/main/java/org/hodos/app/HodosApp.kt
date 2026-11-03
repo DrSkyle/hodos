@@ -62,19 +62,15 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Ink = Color(0xFF111316)
-private val AsphaltBlack = Color(0xFF111417)
-private val MilestoneYellow = Color(0xFFF5B800)
-private val MilestoneYellowLight = Color(0xFFFEF7DA)
-private val Forest = Color(0xFF111417)
-private val Paper = Color(0xFFF4F3EE)
-private val Muted = Color(0xFF636B76)
-private val Mist = Color(0xFFFAF9F6)
-private val StoneBorder = Color(0xFFD5D1C6)
-private val Orange = Color(0xFFD97706)
-private val Danger = Color(0xFFD9381E)
-private val Cobalt = Color(0xFF1D4ED8)
-private val FixedGreen = Color(0xFF15803D)
+private val Ink = Color(0xFFF8FAFC)
+private val Forest = Color(0xFFFF6647)
+private val Paper = Color(0xFF0B0E14)
+private val Muted = Color(0xFF94A3B8)
+private val Mist = Color(0xFF182030)
+private val Orange = Color(0xFFF59E0B)
+private val Danger = Color(0xFFDE3618)
+private val Cyan = Color(0xFF38BDF8)
+private val Emerald = Color(0xFF10B981)
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
 
@@ -275,28 +271,24 @@ fun HodosApp(
     }
 
     val colors = lightColorScheme(
-        primary = MilestoneYellow, onPrimary = AsphaltBlack,
-        secondary = AsphaltBlack, onSecondary = Color.White,
-        tertiary = Cobalt,
-        background = Paper, onBackground = Ink,
+        primary = Forest, onPrimary = Color.White,
+        secondary = Ink, background = Paper, onBackground = Ink,
         surface = Color.White, onSurface = Ink,
-        surfaceVariant = Mist, onSurfaceVariant = Muted,
-        outline = StoneBorder,
-        error = Danger
+        surfaceVariant = Mist, onSurfaceVariant = Muted
     )
     MaterialTheme(
         colorScheme = colors,
         shapes = Shapes(
-            small = RoundedCornerShape(4.dp),
-            medium = RoundedCornerShape(8.dp),
-            large = RoundedCornerShape(20.dp)
+            small = RoundedCornerShape(12.dp),
+            medium = RoundedCornerShape(18.dp),
+            large = RoundedCornerShape(26.dp)
         )
     ) {
         Scaffold(
             containerColor = Paper,
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                NavigationBar(containerColor = Color.White, tonalElevation = 2.dp) {
+                NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
                     Screen.entries.forEach { tab ->
                         NavigationBarItem(
                             selected = screen == tab,
@@ -316,18 +308,18 @@ fun HodosApp(
                                         Screen.MAPPING -> DoodleSymbol.CAR
                                         Screen.YOU -> DoodleSymbol.PERSON
                                     },
-                                    tint = if (screen == tab) AsphaltBlack else Muted,
+                                    tint = if (screen == tab) Forest else Muted,
                                     modifier = Modifier.size(29.dp).graphicsLayer {
                                         scaleX = scale
                                         scaleY = scale
                                     }
                                 )
                             },
-                            label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.Bold else FontWeight.Normal) },
+                            label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.SemiBold else FontWeight.Normal) },
                             alwaysShowLabel = true,
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = AsphaltBlack, selectedTextColor = AsphaltBlack,
-                                indicatorColor = MilestoneYellow, unselectedIconColor = Muted, unselectedTextColor = Muted
+                                selectedIconColor = Forest, selectedTextColor = Forest,
+                                indicatorColor = Mist, unselectedIconColor = Muted, unselectedTextColor = Muted
                             )
                         )
                     }
@@ -875,10 +867,7 @@ private fun MappingScreen(
                     Switch(
                         checked = armed,
                         onCheckedChange = onToggle,
-                        colors = SwitchDefaults.colors(
-                            checkedTrackColor = MilestoneYellow,
-                            checkedThumbColor = AsphaltBlack
-                        )
+                        colors = SwitchDefaults.colors(checkedTrackColor = Forest)
                     )
                 }
             }
@@ -913,10 +902,7 @@ private fun MappingScreen(
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = if (tripActive) onFinishJourney else onStartJourney,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MilestoneYellow,
-                            contentColor = AsphaltBlack
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = Forest, contentColor = Color.White),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(if (tripActive) "Finish journey" else "Start journey")
@@ -1196,10 +1182,7 @@ private fun MappingScreen(
                                 val gpx = TripDetailStore.exportGPX(context, trail)
                                 TripDetailStore.shareFile(context, gpx, "application/gpx+xml", "Export Hodos GPX Journey")
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MilestoneYellow,
-                                contentColor = AsphaltBlack
-                            ),
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(Icons.Outlined.Share, null, modifier = Modifier.size(16.dp))

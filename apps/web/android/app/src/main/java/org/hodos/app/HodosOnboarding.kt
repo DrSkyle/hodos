@@ -28,12 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val MilestoneYellow = Color(0xFFF5B800)
-private val AsphaltBlack = Color(0xFF111417)
-private val Forest = Color(0xFF111417)
-private val Ink = Color(0xFF111316)
-private val Muted = Color(0xFF636B76)
-private val Paper = Color(0xFFF4F3EE)
+private val Forest = Color(0xFFFF6647)
+private val Ink = Color(0xFFF8FAFC)
+private val Muted = Color(0xFF94A3B8)
+private val Paper = Color(0xFF0B0E14)
 
 private data class IntroPage(val eyebrow: String, val title: String, val description: String)
 
@@ -65,7 +63,7 @@ fun HodosOnboarding(
     val page = pages[step]
 
     MaterialTheme(colorScheme = lightColorScheme(
-        primary = MilestoneYellow, onPrimary = AsphaltBlack, surface = Paper, onSurface = Ink
+        primary = Forest, onPrimary = Color.White, surface = Paper, onSurface = Ink
     )) {
         Surface(Modifier.fillMaxSize(), color = Paper) {
             Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
@@ -142,10 +140,7 @@ fun HodosOnboarding(
                         onClick = { if (step == pages.lastIndex) onFinish() else step++ },
                         modifier = Modifier.fillMaxWidth().height(55.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MilestoneYellow,
-                            contentColor = AsphaltBlack
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Forest)
                     ) {
                         Text(if (step == pages.lastIndex) "Open Hodos" else "Continue",
                             fontSize = 16.sp, fontWeight = FontWeight.SemiBold)

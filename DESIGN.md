@@ -1,147 +1,114 @@
 ---
 name: Hodos
-description: Global autonomous road hazard mapping and pavement intelligence
+description: Global autonomous road hazard mapping and telemetry cartography
 colors:
-  primary: "#F5B800"
-  primary-hover: "#E0A700"
-  neutral-bg: "#F4F3EE"
-  neutral-surface: "#FAF9F6"
-  neutral-card: "#FFFFFF"
-  dark-asphalt: "#111417"
-  dark-stone: "#1B1F24"
-  dark-border: "#2D343D"
-  ink: "#111316"
-  ink-secondary: "#424953"
-  ink-muted: "#636B76"
-  defect-pothole: "#D9381E"
-  defect-rough: "#D97706"
-  defect-hump: "#1D4ED8"
-  defect-fixed: "#15803D"
-  border-stone: "#D5D1C6"
-  border-strong: "#A8A396"
+  primary: "#DE3618"
+  primary-hover: "#C52D12"
+  primary-bright: "#FF6647"
+  bg-canvas: "#0B0E14"
+  bg-surface: "#111622"
+  bg-surface-elevated: "#182030"
+  bg-card: "#141B29"
+  bg-terminal: "#07090D"
+  border-subtle: "#1E293B"
+  border-prominent: "#334155"
+  text-bright: "#F8FAFC"
+  text-primary: "#E2E8F0"
+  text-secondary: "#94A3B8"
+  text-muted: "#94A3B8"
+  hazard-pothole: "#FF6647"
+  hazard-rough: "#F59E0B"
+  hazard-hump: "#38BDF8"
+  hazard-fixed: "#10B981"
+  badge-bg: "rgba(255, 102, 71, 0.12)"
+  white: "#FFFFFF"
 typography:
   display:
-    fontFamily: "Barlow Semi Condensed, -apple-system, sans-serif"
-    fontSize: "3.5rem"
-    fontWeight: 900
-    lineHeight: 1.02
-    letterSpacing: "-0.01em"
-  headline:
-    fontFamily: "Barlow Semi Condensed, -apple-system, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 900
-    lineHeight: 1.1
-    letterSpacing: "-0.01em"
-  title:
-    fontFamily: "Barlow Semi Condensed, -apple-system, sans-serif"
-    fontSize: "1.45rem"
+    fontFamily: "Outfit, system-ui, sans-serif"
+    fontSize: "3.75rem"
     fontWeight: 800
-    lineHeight: 1.25
-    letterSpacing: "0.02em"
+    lineHeight: 1.05
+    letterSpacing: "-0.025em"
+  headline:
+    fontFamily: "Outfit, system-ui, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: 700
+    lineHeight: 1.15
+    letterSpacing: "-0.02em"
+  title:
+    fontFamily: "Outfit, system-ui, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "-0.01em"
   body:
-    fontFamily: "Barlow, system-ui, -apple-system, sans-serif"
+    fontFamily: "DM Sans, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.65
     letterSpacing: "0em"
+  body-sm:
+    fontFamily: "DM Sans, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.55
+    letterSpacing: "0em"
   mono:
     fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "0.875rem"
-    fontWeight: 600
-    lineHeight: 1.5
-    letterSpacing: "0.04em"
-rounded:
-  sm: "4px"
-  md: "6px"
-  lg: "8px"
-  pillar: "24px 24px 8px 8px"
-spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  xl: "32px"
-  xxl: "48px"
-components:
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "14px 26px"
-  button-stone:
-    backgroundColor: "{colors.neutral-card}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "14px 24px"
-  card-monolith:
-    backgroundColor: "{colors.neutral-card}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.lg}"
-    padding: "24px"
+    fontSize: "0.8125rem"
+    fontWeight: 500
+    lineHeight: 1.4
+    letterSpacing: "0.02em"
 ---
 
-# Design System: Highway Milestone & Survey Monolith
+# Design System: Obsidian Asphalt & Electric Telemetry
 
-<!-- impeccable:design-schema 1 -->
+## Visual World
 
-## Overview
+Hodos is an autonomous, global road surface intelligence network. It turns ambient vehicle movement into high-precision, verified cartography without human intervention. The visual world—**Obsidian Asphalt & Electric Telemetry**—captures the nocturnal precision of high-speed transit and laboratory-grade road vibration telemetry.
 
-The Hodos visual world draws its authority from national highway milestone pillars, geodetic survey monuments, and mechanical chassis diagnostic benches. Road conditions are an unyielding physical reality, not abstract cloud software. This system replaces generic SaaS gradients and rounded floating cards with heavy stone silhouettes, highway caution chrome yellow, deep asphalt black, and chiseled tabular typography.
+We abandon rustic highway stone and construction markers in favor of clean, contemporary dark cartography. The interface evokes the cockpit instruments of modern electric vehicles and high-density geospatial mapping platforms: deep obsidian roadbed grounds, luminous signal-coral and amber hazard vectors, and crisp monospace telemetry.
 
-## Colors
+## Color Strategy
 
-- **Highway Caution Yellow (`#F5B800`):** Primary action color. Authoritative road signage yellow used for primary callouts, milestone caps, active filters, and text selection. Hover shifts to `#E0A700`.
-- **Weathered Concrete Ground (`#F4F3EE`):** Matte stone ground establishing high readability without optical glare.
-- **Deep Asphalt Black (`#111417`):** Roadbed black used for telemetry consoles, section headers, and high-contrast stone borders.
-- **Pitch Ink (`#111316`):** Deepest body text color ensuring WCAG AA / AAA contrast (>12:1 against light stone grounds).
-- **Hazard Defect Signals:**
-  - Pothole / Severe Shock: `#D9381E` (Survey Marker Red)
-  - Rough Road Pavement: `#D97706` (Caution Amber)
-  - Speed Hump / Control Point: `#1D4ED8` (Survey Cobalt)
-  - Repaired Road: `#15803D` (Fixed Green)
+- **Canvas Ground (`#0B0E14`):** Deep, pure asphalt-black ground that minimizes glare, creates boundless contrast, and allows hazard points to radiate.
+- **Card Surfaces (`#111622`, `#141B29`):** Sculpted dark slate containers with subtle 1px hairlines (`#1E293B`) separating information layers with razor-sharp clarity.
+- **Electric Signal Coral (`#FF6647` for text/vectors, `#DE3618` for buttons):** High-visibility, modern, urgent without being aggressive. Meets 6.2:1 contrast against dark surfaces and 4.52:1 against white text in buttons.
+- **Telemetry Amber (`#F59E0B`):** Represents rough pavement sections and caution noise-floor envelopes.
+- **Pulse Cyan (`#38BDF8`):** Indicates speed humps, GPS fix status, and satellite telemetry lock.
+- **Corroborated Emerald (`#10B981`):** Represents verified repairs and active background sensor sampling.
+- **Text Hierarchy:** High-contrast off-white (`#F8FAFC`) for titles, neutral silver (`#E2E8F0`) for body, and muted slate (`#94A3B8`) for telemetry metadata. All combinations achieve minimum 5.5:1 contrast against their containers.
 
 ## Typography
 
-- **Display & Headings:** `Barlow Semi Condensed` (weights 700 to 900). Chiseled, industrial, and bold with uppercase tracking. Conveys highway signage permanence.
-- **Body & Prose:** `Barlow` (weights 400 to 600). Modeled after California highway lettering and public transit signage. Clean, legible, and highly functional.
-- **Telemetry & Coordinates:** `JetBrains Mono` with `font-variant-numeric: tabular-nums`. Used for GPS coordinates, jerk G/s thresholds, timestamps, and route manifests.
+- **Display & Headlines:** `Outfit` (`wght@700;800`). Modern, geometric, sculpted grotesque with circular curves and open counters. Confident and technical without archaic styling.
+- **Body & Controls:** `DM Sans` (`wght@400;500;600`). Crisp geometric sans designed for extreme legibility across screens of all sizes.
+- **Telemetry & Data:** `JetBrains Mono` (`wght@500;700`). Monospaced tabular numerals for coordinates (lat/lng), G-force thresholds, timestamps, and pass counts.
 
-## Layout
+## Shapes & Geometry
 
-- **Width Constraint:** `width: min(1200px, calc(100% - 48px)); margin-inline: auto;`.
-- **Split Hero Grid:** Asymmetric `1.15fr 0.85fr` layout anchoring primary action copy beside the physical milestone monolith pillar card.
-- **Traverse Strip:** Full-width dark asphalt transit strip with dashed progress rules representing continuous highway kilometers.
-- **Defect Ledger Drawer:** Floating technical slide-out drawer (`380px` wide) on the interactive map with coordinate search and instant fly-to navigation.
-
-## Elevation & Depth
-
-- **Tactile Stone Offsets:** No zero-offset decorative blur halos. Cards and buttons carry directional stone bevel shadows (`box-shadow: 0 3px 0 var(--milestone-black)` or `box-shadow: 0 4px 0 var(--stone-border-strong)`).
-- **2px Chiseled Borders:** High-contrast 2px solid borders (`var(--ink)`) define the silhouette of milestone caps and primary cards.
-
-## Shapes
-
-- **Milestone Pillar Container:** Arched upper corners with flat lower stone base (`border-radius: 24px 24px 8px 8px`).
-- **Highway Route Badges:** Compact rectangular pills (`border-radius: 4px`) carrying route manifests and GPS coordinates.
-- **Buttons:** Crisp, beveled rectangular forms (`border-radius: 6px`).
+- **Containers:** Crisp rounded rectangles (`border-radius: 12px` on cards, `8px` on control pills, `6px` on data badges).
+- **Hairline Borders:** Exact 1px structural strokes (`#1E293B`) creating crystalline component delineation.
+- **Interactive Buttons:** Solid coral pill for the primary action; translucent slate with hairline border for secondary actions.
 
 ## Components
 
-- **Milestone Masthead:** Sticky header featuring the authentic v1.1.20 master mark, industrial uppercase title, and live global status indicator.
-- **Pillar Monolith Card:** Signature physical card featuring a yellow highway cap (`GLOBAL REGISTRY`), central large-number hazard metric (`438`), and a 3-column defect breakdown box.
-- **Interactive Telemetry Deck:** Diagnostic oscilloscope monitor rendering real-time accelerometer jerk traces against calibrated MAD noise floor dashed thresholds.
-- **Dual-Licensing Tablet:** Two high-contrast monolith cards contrasting open-source software (MIT) against community-protected crowdsourced road telemetry (CC BY-NC-SA 4.0).
-- **Interactive Web Map:** Carto Positron raster basemap with high-contrast milestone defect markers (potholes, rough road, humps) and structured maintenance dispatch popups.
+- **Telemetry Masthead:** Sticky header featuring the authentic v1.1.20 master mark, live global catalog pill, clear navigation, and direct CTA to the live map.
+- **Hero Telemetry Terminal:** Dual-panel command deck pairing direct, human developer copy on the left with an active interactive sensor oscilloscope canvas on the right.
+- **Sensor Waveform Oscilloscope:** Real-time 60fps canvas tracing the vehicle's dynamic Median Absolute Deviation (MAD) noise floor against transient pothole jerk violations.
+- **Proving Metric Matrix:** Ground-truth metrics highlighting the 438 verified hazards, 100% autonomous operation, 0 distractions, and 250m privacy perimeter.
+- **Dual Licensing Matrix:** High-contrast split tablet contrasting the MIT software code against the community-safeguarded CC BY-NC-SA 4.0 hazard dataset.
+- **Interactive Technical FAQ:** Crisp accessible `<details>` elements with smooth CSS reveal.
 
-## Do's and Don'ts
+## Browser Surfaces
 
-### Do
-- Do maintain WCAG AA contrast (minimum 4.5:1 for body copy and 3:1 for display).
-- Do use tabular numerals for all GPS coordinates and defect counters.
-- Do use authentic SVG icon vectors with 2.5px consistent stroke weight.
-- Do keep phone interactions 100% silent (no vibration, no intrusive haptics).
+- **Selection:** Glowing coral background (`#DE3618`) with bright white text (`#FFFFFF`).
+- **Focus Rings:** Distinct 2px electric coral outline with 2px offset (`#FF6647`).
+- **Scrollbars:** Sleek 6px obsidian track with subtle slate thumb (`#334155`).
 
-### Don't
-- Never use green/yellow/red circle emojis (`🟢`, `🟡`, `🔴`) or decorative emojis in code, maps, or UI.
-- Never use kickers or eyebrows above headings. Headings carry their own weight.
-- Never use gradient text or soft decorative glassmorphism blur.
-- Never display mock or simulated hazard corridors on public maps; show only verified ground-truth data.
+## Durable Commitments
+
+- Zero emojis anywhere in UI code, maps, or badges.
+- 100% silent phone operation (no haptics or vibration).
+- Real verified data only; zero artificial demo corridors.
+- Global positioning: built for road travelers everywhere in the world.
