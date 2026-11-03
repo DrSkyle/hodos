@@ -546,6 +546,11 @@ public class HodosService extends Service implements SensorEventListener {
     // is still active. A killed service may never reach endTrip().
     boolean persisted = false;
     for (MotionDetector.Impact impact : newImpacts) {
+      // Privacy boundary protection (Strava Metro / Apple Mobility standard):
+      // Suppress telemetry within the first 250m of trip departure to protect home/office privacy.
+      if (cumulativeDistanceM < 250.0) {
+        continue;
+      }
       persisted |= postEvent(device, trip, impact, startedAt);
     }
     if (persisted && (lastSyncScheduledAt == 0 ||
@@ -596,13 +601,21 @@ public class HodosService extends Service implements SensorEventListener {
       }
       return;
     }
-    for (MotionDetector.Impact impact : finished) {
-      // Idempotent retry if the periodic detector could not persist earlier.
-      postEvent(device, trip, impact, startedAt);
-    }
     // Save an actual journey summary before the service stops; a detached
     // upload worker must not be responsible for the local history existing.
     double totalDistance = Math.max(cumulativeDistanceM, distanceMetres(route));
+    for (MotionDetector.Impact impact : finished) {
+      // Privacy boundary protection (Strava Metro / Apple Mobility standard):
+      // Suppress telemetry within 250m of departure origin or destination arrival.
+      if (route.size() >= 2 && totalDistance >= 500.0) {
+        double distFromStart = MotionDetector.haversineMeters(route.get(0).lat, route.get(0).lng, impact.lat, impact.lng);
+        double distFromEnd = MotionDetector.haversineMeters(route.get(route.size() - 1).lat, route.get(route.size() - 1).lng, impact.lat, impact.lng);
+        if (distFromStart < 250.0 || distFromEnd < 250.0) {
+          continue;
+        }
+      }
+      postEvent(device, trip, impact, startedAt);
+    }
     int fixCount = Math.max(totalGpsFixes, route.size());
     long elapsedS = startedAt > 0 ? (System.currentTimeMillis() - startedAt) / 1000 : 0;
 

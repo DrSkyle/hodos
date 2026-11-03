@@ -8,3 +8,5 @@ export * from "./clearance";
 export * from "./cluster";
 export * from "./iri";
 export * from "./export-gis";
+export * from "./h3";
+export * from "./map-match";
