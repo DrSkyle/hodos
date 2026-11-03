@@ -1,4 +1,10 @@
-MIT License
+# Hodos Dual Licensing Model
+
+The Hodos project operates under a dual-licensing framework that keeps the client software open, transparent, and auditable, while legally protecting the crowdsourced road defect dataset from unauthorized commercial exploitation.
+
+---
+
+## 1. Client & Core Software (MIT License)
 
 Copyright (c) 2026 DrSkyle, Devilabs
 
@@ -19,3 +25,35 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## 2. Road Condition Dataset & Telemetry Layers (CC BY-NC-SA 4.0)
+
+Copyright (c) 2026 Devilabs
+
+All aggregated road hazard coordinates, pavement roughness scores (ASTM E1926 IRI),
+pothole clusters, speed bump locations, and community observation data
+published by Hodos are licensed under the
+**Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+
+### Community & Open Research Rights:
+You are free to:
+- **Share:** Copy and redistribute the data in any medium or format.
+- **Adapt:** Remix, transform, and build upon the data for personal, educational, civic, and non-commercial research purposes.
+
+### Terms:
+- **Attribution (BY):** You must give appropriate credit to Hodos (https://hodos.devilabs.dev), provide a link to the license, and indicate if changes were made.
+- **Non-Commercial (NC):** You may NOT use the dataset, live API feeds, or derived road quality layers for commercial purposes—including but not limited to commercial vehicle routing, fleet dispatch, ride-hailing services, insurance telematics, or proprietary data reselling.
+- **Share-Alike (SA):** If you remix, transform, or build upon the material, you must distribute your contributions under the same license.
+
+---
+
+## 3. Commercial & Fleet Enterprise Licensing
+
+Commercial operators, ride-hailing platforms, logistics networks, paving contractors,
+and municipal equipment vendors wishing to utilize the Hodos road condition dataset,
+live defect alert APIs, automated contractor work order tools, or vehicle wear telemetry
+can obtain a commercial enterprise license.
+
+Contact: **contact@devilabs.dev** · Web: **https://hodos.devilabs.dev**

@@ -99,6 +99,9 @@ Hodos identifies potential road hazards. Results depend on device hardware, vehi
 
 ---
 
-## License
+## Licensing
 
-Developed by **Devilabs** · [MIT License](LICENSE)
+Hodos uses a dual-licensing framework to balance open-source transparency with dataset protection:
+
+- **Software Code:** [MIT License](LICENSE) — The Android application, web viewer, and signal detection libraries are free and open source.
+- **Road Condition Dataset:** [CC BY-NC-SA 4.0](LICENSE) — All crowdsourced defect coordinates, road roughness layers, and telemetry are freely accessible for personal, civic, and non-commercial research use. Commercial use (fleet routing, logistics, insurance, or contractor dispatch) requires an enterprise commercial license from [Devilabs](https://hodos.devilabs.dev).
