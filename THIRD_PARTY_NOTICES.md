@@ -1,6 +1,6 @@
 # Third-party attribution
 
-Hodos' own maintained source code: GNU AGPL-3.0-only (see LICENSE).
+Hodos' own maintained source code: MIT License (see LICENSE).
 
 ## Lucide Icons
 
@@ -28,7 +28,7 @@ The Lucide icons named here are not in the Feather-derived MIT subset.
 
 Hodos also uses Jetpack Compose/AndroidX, MapLibre, OkHttp, Kotlin, OpenFreeMap,
 Vite, Vitest, and other independent open-source components and services.
-Their licenses and service terms remain separate. The Hodos AGPL license
+Their licenses and service terms remain separate. The Hodos MIT license
 does not relicense third-party code, libraries, fonts, maps, or brand artwork.
 Consult upstream distribution notices when making a packaged release.
 
