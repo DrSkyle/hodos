@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#172d29" />
-  <meta name="description" content="Autonomous crowdsourced road intelligence. Measure road roughness, detect potholes, and monitor road networks globally with privacy by design." />
+  <meta name="theme-color" content="#111417" />
+  <meta name="description" content="Autonomous, crowdsourced road hazard mapping globally. Detect potholes, rough pavement, and speed humps passively using on-device inertial sensors anywhere in the world." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos — Global Autonomous Road Intelligence" />
-  <meta property="og:description" content="Turn everyday rides into high-precision road surface maps. From driver navigation to municipal pavement engineering." />
+  <meta property="og:description" content="Turn everyday rides into high-precision road hazard maps globally. Passive sensing with zero distraction and privacy by design." />
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
   <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
   <link rel="canonical" href="https://hodos.devilabs.dev/" />
@@ -16,286 +16,392 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1.2.0" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1.2.0" />
   <link rel="manifest" href="/site.webmanifest" />
-  <title>Hodos — Autonomous Road Intelligence</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,700&family=Barlow:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-display: 'Barlow Semi Condensed', -apple-system, sans-serif;
+      --font-body: 'Barlow', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    h1 { font-family: var(--font-display); font-size: 3.5rem; line-height: 1.02; font-weight: 900; }
+    h2 { font-family: var(--font-display); font-size: 2.25rem; line-height: 1.1; font-weight: 900; }
+    h3 { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.25; font-weight: 800; }
+    p { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: #424953; }
+  </style>
+  
+  <title>Hodos — The Road Maps Itself</title>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
+
+  <!-- Milestone Masthead -->
   <header class="site-header">
-    <div class="site-header-inner wrap">
-      <a class="brand" href="/" aria-label="Hodos home">
-        <img src="/hodos-icon.png" alt="Hodos" width="36" height="36" style="border-radius: 8px;"/>
-        <span>hodos<span class="brand-stop">.</span></span>
+    <div class="wrap site-header-inner">
+      <a class="brand-monolith" href="/" aria-label="Hodos Home">
+        <div class="brand-icon-frame">
+          <img src="/hodos-icon.png" alt="Hodos v1.1.20 Master Brandmark" width="40" height="40" />
+        </div>
+        <div class="brand-text-stack">
+          <span class="brand-title">HODOS</span>
+          <span class="brand-route-badge">GLOBAL ROAD INTELLIGENCE</span>
+        </div>
       </a>
-      <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="/map" style="font-weight: 700; color: #257B65;">Explore Live Map</a>
-        <a href="#how">How it works</a>
-        <a href="#municipal">Municipal & GIS</a>
-        <a href="#impact">Community</a>
-        <a href="#values">Privacy</a>
-        <a href="#faq">Questions</a>
+
+      <nav class="desktop-nav" aria-label="Main Navigation">
+        <a class="nav-live" href="/map">Live Global Map</a>
+        <a href="#telemetry">Sensor Engine</a>
+        <a href="#gis">Municipal & GIS</a>
+        <a href="#licensing">Data Licensing</a>
+        <a href="#faq">FAQ</a>
       </nav>
-      <a class="header-cta" href="/map">Open Map <span class="button-trail" aria-hidden="true"></span></a>
-      <details class="mobile-nav">
-        <summary aria-label="Toggle site navigation"><span></span><span></span></summary>
-        <nav aria-label="Mobile navigation">
-          <a href="/map">Explore Live Map</a>
-          <a href="#how">How it works</a>
-          <a href="#municipal">Municipal & GIS</a>
-          <a href="#impact">Community</a>
-          <a href="#values">Privacy</a>
-          <a href="#faq">Questions</a>
-          <a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download Android App</a>
-        </nav>
-      </details>
+
+      <a class="header-cta-btn" href="/map">
+        <span>Explore Map</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
     </div>
   </header>
+
   <main id="content">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="signal-dot"></span> GLOBAL ROAD SENSING</p>
-          <h1 id="hero-title">Know the road.<br/><em>Anywhere in the world.</em></h1>
-          <p class="hero-description">
-            Hodos turns everyday phone observations into high-precision road condition maps. No manual logging, no phone-buzzing distraction, and zero privacy compromise. Just drive, ride, or cycle—the road maps itself.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-dark" href="/map">Explore the Live Map</a>
-            <a class="button button-outline" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Get Android App</a>
+    <!-- Hero Section: Physical Milestone Layout -->
+    <section class="hero-milestone" aria-labelledby="hero-title">
+      <div class="wrap hero-split-grid">
+        <div class="hero-content">
+          <div class="hero-route-tag">
+            <span class="hero-route-tag-indicator"></span>
+            <span>AUTONOMOUS ROAD DEFECT SENSING • ANYWHERE IN THE WORLD</span>
           </div>
-          <p class="beta-note">
-            Production release 1.2.0. Clean, autonomous road detection on any paved or unpaved route worldwide.
+
+          <h1 class="hero-title" id="hero-title">THE ROAD MAPS ITSELF.</h1>
+
+          <p class="hero-subhead">
+            Turn everyday car drives, bus commutes, and motorcycle trips into high-precision road hazard maps anywhere in the world. Hodos runs silently in your pocket or vehicle mount, using on-device motion sensors and adaptive noise-floor calibration to log potholes and severe road rutting with zero screen distraction and zero privacy compromise.
           </p>
-          <div class="hero-index"><span>01 / AUTONOMOUS SENSING</span><span>02 / ASTM E1926 IRI</span><span>03 / GLOBAL GIS</span></div>
+
+          <div class="hero-actions-row">
+            <a class="btn-milestone-primary" href="/map">
+              <span>Inspect Live Global Map</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"></path><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+            </a>
+            <a class="btn-milestone-stone" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">
+              <span>Download Android App (v1.2.0)</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </a>
+          </div>
+
+          <div class="hero-provenance-bar">
+            <span><strong>100%</strong> Autonomous</span>
+            <span><strong>0</strong> Screen Distraction</span>
+            <span><strong>250m</strong> Trip Geofence Trim</span>
+            <span><strong>MIT + CC BY-NC-SA 4.0</strong> Dual License</span>
+          </div>
         </div>
-        <div class="hero-visual">
-          <div class="map-plate" aria-label="Live map gateway plate">
-            <div class="plate-heading"><span class="plate-kicker">HODOS / LIVE NETWORK</span><span class="plate-label"><span class="plate-indicator"></span> Global Telemetry</span></div>
-            <div class="map-canvas" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; text-align:center; background:#EFF3ED;">
-              <img src="/hodos-icon.png" alt="Hodos Icon" width="96" height="96" style="border-radius:20px; box-shadow:0 8px 24px rgba(0,0,0,0.12); margin-bottom:18px;" />
-              <h3 style="font-size:21px; font-weight:800; color:var(--ink); margin-bottom:8px;">Interactive Road Hazard Map</h3>
-              <p style="font-size:14px; color:var(--muted); max-width:380px; line-height:1.5; margin-bottom:20px;">
-                Inspect crowdsourced potholes, speed humps, and pavement roughness corridors across hundreds of kilometers. Filter defects and export GIS layers.
+
+        <!-- Authentic Physical Milestone Pillar Card -->
+        <div class="milestone-pillar" aria-label="Highway Survey Milestone Pillar">
+          <div class="milestone-pillar-cap">
+            <span class="milestone-route-code">GLOBAL REGISTRY</span>
+            <span class="milestone-route-sub">LIVE TELEMETRY</span>
+          </div>
+
+          <div class="milestone-pillar-body">
+            <div class="milestone-metric-display">
+              <div class="milestone-large-number">438</div>
+              <div class="milestone-metric-label">Verified Road Hazards Mapped</div>
+            </div>
+
+            <div class="milestone-breakdown-row">
+              <div class="breakdown-box">
+                <div class="breakdown-count potholes">108</div>
+                <div class="breakdown-label">Potholes</div>
+              </div>
+              <div class="breakdown-box">
+                <div class="breakdown-count rough">318</div>
+                <div class="breakdown-label">Rough Sections</div>
+              </div>
+              <div class="breakdown-box">
+                <div class="breakdown-count humps">12</div>
+                <div class="breakdown-label">Speed Humps</div>
+              </div>
+            </div>
+
+            <div class="milestone-gps-route">
+              <strong>Live Telemetry Network:</strong><br/>
+              Inaugural high-density transit corridor mapped across 500+ km of rugged highways. Multi-trip corroboration distinguishes transient road bumps from permanent structural pavement craters.
+            </div>
+          </div>
+
+          <div class="milestone-pillar-footer">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-secondary); font-weight: 700;">OPEN GEOSPATIAL DATA</span>
+            <a href="/map" class="btn-milestone-primary" style="padding: 8px 16px; font-size: 12.5px;">Open Map</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Global Transit Strip -->
+    <div class="highway-traverse-strip">
+      <div class="wrap traverse-inner">
+        <div class="traverse-endpoint">
+          <span class="endpoint-km">GLOBAL</span>
+          <span class="endpoint-name">Worldwide Road Coverage</span>
+        </div>
+
+        <div class="traverse-bar-track" aria-hidden="true">
+          <div class="traverse-bar-progress"></div>
+        </div>
+
+        <div class="traverse-endpoint" style="text-align: right;">
+          <span class="endpoint-km">ASTM E1926</span>
+          <span class="endpoint-name">International Roughness Index</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Sensor Telemetry & Noise-Floor Tracking -->
+    <section class="section-telemetry" id="telemetry" aria-labelledby="telemetry-title">
+      <div class="wrap">
+        <div class="section-heading-block">
+          <h2 class="section-heading-title" id="telemetry-title">AUTONOMOUS SENSOR ENGINE</h2>
+          <p class="section-heading-desc">
+            How Hodos extracts clean pavement intelligence on any vehicle globally—from diesel buses and delivery vans to passenger cars and scooters.
+          </p>
+        </div>
+
+        <div class="telemetry-split-grid">
+          <!-- Real-Time Oscilloscope / Waveform Deck -->
+          <div class="telemetry-deck" aria-label="Interactive Sensor Telemetry Deck">
+            <div class="telemetry-deck-header">
+              <span class="deck-title">ACCELEROMETER MOTION TELEMETRY</span>
+              <span class="deck-status">
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="#10B981" aria-hidden="true"><circle cx="4" cy="4" r="4"></circle></svg>
+                ACTIVE SAMPLING
+              </span>
+            </div>
+
+            <div class="deck-canvas-box">
+              <canvas id="sensor-canvas" class="telemetry-canvas" width="500" height="200" aria-label="Simulated accelerometer waveform canvas"></canvas>
+            </div>
+
+            <div class="telemetry-metrics-grid">
+              <div class="telemetry-metric-item">
+                <small>Jerk Threshold</small>
+                <strong>2.4 G/s</strong>
+              </div>
+              <div class="telemetry-metric-item">
+                <small>Noise Tracking</small>
+                <strong>MAD Dynamic</strong>
+              </div>
+              <div class="telemetry-metric-item">
+                <small>Filtering</small>
+                <strong>Butterworth 4-Pole</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technical Pipeline Steps -->
+          <div class="telemetry-steps-list">
+            <div class="telemetry-step-card">
+              <div class="step-card-header">
+                <span class="step-num-pill">01</span>
+                <h3 class="step-card-title">Dynamic Noise Floor Tracking</h3>
+              </div>
+              <p class="step-card-text">
+                Continuous Median Absolute Deviation (MAD) envelope tracking calculates the chassis vibration baseline in real-time. Heavy bus leaf springs or motorcycle engine vibrations dynamically raise the baseline so normal vehicle rumble is ignored.
               </p>
-              <a class="button button-dark" href="/map" style="padding:12px 24px; font-size:14px;">Open Full-Screen Map &rarr;</a>
             </div>
-            <div class="plate-bottom"><span>MUNICIPAL & COMMUNITY INTELLIGENCE</span><span>PUBLICLY AUDITABLE</span></div>
+
+            <div class="telemetry-step-card">
+              <div class="step-card-header">
+                <span class="step-num-pill">02</span>
+                <h3 class="step-card-title">Zero Driver Distraction</h3>
+              </div>
+              <p class="step-card-text">
+                Completely silent background execution. Android Activity Recognition arms sampling only during vehicular movement. No popups, no buttons to tap while driving, and zero haptic vibrations when striking bumps.
+              </p>
+            </div>
+
+            <div class="telemetry-step-card">
+              <div class="step-card-header">
+                <span class="step-num-pill">03</span>
+                <h3 class="step-card-title">Privacy by Construction</h3>
+              </div>
+              <p class="step-card-text">
+                Raw motion traces stay strictly in device RAM. The first and last 250 meters of every trip are trimmed on-device so residential streets and endpoints are never transmitted. Hazards only publish after multi-trip independent corroboration.
+              </p>
+            </div>
           </div>
-          <div class="hero-side-note" aria-hidden="true">The map starts with a road.<br/>The picture gets clearer together.</div>
         </div>
       </div>
     </section>
 
-    <div class="method-strip"><div class="wrap method-strip-inner"><span>100% AUTONOMOUS</span><span>GLOBAL COMPATIBILITY</span><span>ASTM E1926 ROUGHNESS</span><span>CODE MIT · DATA CC BY-NC-SA 4.0</span></div></div>
-
-    <section class="section section-how wrap" id="how" aria-labelledby="how-title">
-      <div class="section-intro">
-        <div><span class="overline">01 / HOW IT WORKS</span><h2 id="how-title">Pure motion.<br/><em>Zero distraction.</em></h2></div>
-        <p>Road conditions evolve every day after rains, frost, and heavy vehicle traffic. Hodos extracts pavement intelligence quietly in the background without needing you to touch your phone.</p>
-      </div>
-      <div class="process-grid">
-        <article class="process-card">
-          <span class="process-index">01</span>
-          <div class="process-symbol process-symbol-one" aria-hidden="true"><span class="process-path"></span></div>
-          <h3>Self-Calibrating Sensing</h3>
-          <p>Continuous Median Absolute Deviation (MAD) envelope tracking automatically adapts to heavy bus leaf springs, passenger cars, or scooters.</p>
-          <span class="process-foot">NO MANUAL CONFIGURATION</span>
-        </article>
-        <article class="process-card">
-          <span class="process-index">02</span>
-          <div class="process-symbol process-symbol-two" aria-hidden="true"><span class="process-impulse"></span></div>
-          <h3>Corroborated Impact Filter</h3>
-          <p>A single bump never publishes a defect. Hodos requires multiple independent passes and distinct devices before a hazard is confirmed.</p>
-          <span class="process-foot">BAYESIAN VALIDATION</span>
-        </article>
-        <article class="process-card">
-          <span class="process-index">03</span>
-          <div class="process-symbol process-symbol-three" aria-hidden="true"><span class="process-points"><i></i><i></i><i></i></span></div>
-          <h3>Global GIS Heatmaps</h3>
-          <p>Raw impact clusters are converted into Uber H3 hexagonal spatial bins and International Roughness Index (IRI) data for city planners.</p>
-          <span class="process-foot">OPEN GEOSPATIAL</span>
-        </article>
-      </div>
-    </section>
-
-    <section class="section section-roads" id="municipal" aria-labelledby="municipal-title">
-      <div class="wrap roads-grid">
-        <div class="roads-copy">
-          <span class="overline">02 / OPEN MUNICIPAL DATA</span>
-          <h2 id="municipal-title">Open road data<br/>for <em>better cities.</em></h2>
-          <p>
-            Traditional inertial profiler surveys are slow and expensive. Hodos provides open, crowdsourced road condition maps directly to city road departments, municipal engineers, and citizens worldwide—completely free and public.
+    <!-- Section: Municipal & GIS Integration -->
+    <section class="section-telemetry" id="gis" style="background: var(--ground-elevated);" aria-labelledby="gis-title">
+      <div class="wrap">
+        <div class="section-heading-block">
+          <h2 class="section-heading-title" id="gis-title">MUNICIPAL & OPEN GIS COMPATIBILITY</h2>
+          <p class="section-heading-desc">
+            Standardized geospatial data formats designed for city highway departments, civil engineering contractors, and open-source civic research.
           </p>
-          <div class="road-features">
-            <div>
-              <span class="feature-label">GIS / 01</span>
-              <div>
-                <h3>Standardized ASTM E1926 IRI</h3>
-                <p>Quarter-car dynamic simulation calculates true International Roughness Index (m/km) per street segment.</p>
+        </div>
+
+        <div class="telemetry-split-grid">
+          <div class="telemetry-step-card">
+            <div class="step-card-header">
+              <span class="step-num-pill">GIS</span>
+              <h3 class="step-card-title">Standardized ASTM E1926 IRI</h3>
+            </div>
+            <p class="step-card-text">
+              Quarter-car dynamic simulation calculates true International Roughness Index (IRI m/km) per street segment, enabling pavement engineers to identify resurfacing candidates months before catastrophic failures occur.
+            </p>
+          </div>
+
+          <div class="telemetry-step-card">
+            <div class="step-card-header">
+              <span class="step-num-pill">HEX</span>
+              <h3 class="step-card-title">Uber H3 Hexagonal Spatial Indexing</h3>
+            </div>
+            <p class="step-card-text">
+              Discrete global spatial indexing provides uniform, distortion-free cell aggregations ready for BigQuery, PostGIS, QGIS, and ArcGIS spatial analysis without projection errors.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Dual-Licensing Stone Tablet -->
+    <section class="section-licensing" id="licensing" aria-labelledby="licensing-title">
+      <div class="wrap">
+        <div class="section-heading-block">
+          <h2 class="section-heading-title" id="licensing-title">DUAL-LICENSING FRAMEWORK</h2>
+          <p class="section-heading-desc">
+            Balancing radical open-source transparency with legal protection for community-crowdsourced road datasets worldwide.
+          </p>
+        </div>
+
+        <div class="licensing-grid">
+          <!-- Software Monolith -->
+          <div class="license-monolith-card">
+            <div class="license-header-banner">
+              <span class="license-type-name">Software Application</span>
+              <span class="license-badge-code">MIT LICENSE</span>
+            </div>
+            <div class="license-body">
+              <h3 class="license-headline">100% Free & Open Source</h3>
+              <p>
+                The Android application, sensor signal algorithms, and web map viewer are licensed under the MIT License. Anyone worldwide can audit the privacy guarantees, compile their own APK, or inspect the sensor filtering code.
+              </p>
+              <ul class="license-feature-list">
+                <li>Complete source code hosted on GitHub</li>
+                <li>Zero proprietary tracking or advertising SDKs</li>
+                <li>Public issue tracker and community pull requests</li>
+              </ul>
+              <div style="margin-top: auto; padding-top: 16px;">
+                <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer" class="btn-milestone-stone" style="width: 100%; font-size: 13px;">View GitHub Repository</a>
               </div>
             </div>
-            <div>
-              <span class="feature-label">DATA / 02</span>
-              <div>
-                <h3>Uber H3 Hexagonal Grid</h3>
-                <p>Discrete global spatial indexing provides uniform, boundary-distortion-free cell aggregations ready for BigQuery and PostGIS.</p>
-              </div>
+          </div>
+
+          <!-- Dataset Monolith -->
+          <div class="license-monolith-card">
+            <div class="license-header-banner dataset">
+              <span class="license-type-name">Crowdsourced Dataset</span>
+              <span class="license-badge-code">CC BY-NC-SA 4.0</span>
             </div>
-            <div>
-              <span class="feature-label">EXPORT / 03</span>
-              <div>
-                <h3>Free One-Click GIS Export</h3>
-                <p>Export GeoJSON and GPX files directly into QGIS, ArcGIS, or civil maintenance dispatch work orders.</p>
+            <div class="license-body">
+              <h3 class="license-headline">Protected Community Data</h3>
+              <p>
+                All crowdsourced road defect coordinates, roughness telemetry, and hazard layers are licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0. Free for citizens, researchers, and public infrastructure departments globally.
+              </p>
+              <ul class="license-feature-list">
+                <li>Free GeoJSON and GPX downloads for non-commercial use</li>
+                <li>Commercial fleet routing & logistics require enterprise licensing</li>
+                <li>Prevents unilateral corporate extraction of civic volunteer data</li>
+              </ul>
+              <div style="margin-top: auto; padding-top: 16px;">
+                <a href="mailto:hodos@devilabs.dev?subject=Enterprise%20Commercial%20License%20Inquiry" class="btn-milestone-primary" style="width: 100%; font-size: 13px;">Inquire for Enterprise Fleet License</a>
               </div>
             </div>
           </div>
         </div>
-        <div class="road-record" aria-label="Illustration of municipal GIS road health export">
-          <div class="record-top"><span>HODOS / OPEN GIS</span><span>WORLD BANK SPEC</span></div>
-          <div class="record-map" style="padding:24px; background:#EBF1EC; display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #CCD8CF; padding-bottom:8px;">
-              <span style="font-weight:700; font-size:12px; color:var(--forest);">SEGMENT IRI HEALTH SCORE</span>
-              <span style="font-size:11px; background:#2C5530; color:#fff; padding:2px 8px; border-radius:6px; font-weight:700;">FAIR (3.8 m/km)</span>
-            </div>
-            <div style="font-size:12.5px; color:var(--ink); line-height:1.6;">
-              • <strong>Pothole Density:</strong> 4 severe craters / km<br/>
-              • <strong>H3 Spatial Index:</strong> <code>8a3c029910affff</code> (Res 10)<br/>
-              • <strong>Repair Priority:</strong> Tier 1 (Municipal Action Recommended)
-            </div>
-            <div style="margin-top:8px;">
-              <a href="/map" class="button button-dark" style="width:100%; text-align:center; box-sizing:border-box; font-size:12px; padding:10px;">View in Live Map</a>
-            </div>
-          </div>
-          <div class="record-details">
-            <span class="record-number">GIS—04</span>
-            <div>
-              <span class="record-subhead">OPEN DATA</span>
-              <strong>Free for cities & citizens</strong>
-              <p>Download open GeoJSON datasets to plan resurfacing or verify repairs in your neighborhood.</p>
-            </div>
-          </div>
-          <div class="record-footer"><span>OPEN SOURCE MIT</span><span>GLOBAL NETWORK</span></div>
-        </div>
       </div>
     </section>
 
-    <section class="section section-impact wrap" id="impact" aria-labelledby="impact-title">
-      <div class="section-intro">
+    <!-- Section: Technical FAQ -->
+    <section class="section-faq" id="faq" aria-labelledby="faq-title">
+      <div class="wrap faq-split-grid">
         <div>
-          <span class="overline">03 / COMMUNITY IMPACT</span>
-          <h2 id="impact-title">Mapped by people.<br/><em>Verified together.</em></h2>
+          <h2 class="section-heading-title" id="faq-title">TECHNICAL QUESTIONS</h2>
+          <p class="section-heading-desc">
+            Answers regarding global sensor filtering, device mounting, battery usage, and dataset governance.
+          </p>
         </div>
-        <p>
-          Hodos runs quietly in pockets, backpacks, and dashboard mounts of everyday commuters. Together, our daily rides build a living public record of road conditions without phone distraction.
-        </p>
-      </div>
-      <div class="impact-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 40px;">
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: 0 4px 16px rgba(29, 48, 40, 0.04);">
-          <div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--fern); letter-spacing: 0.08em; margin-bottom: 8px;">VERIFIED DEFECTS</div>
-          <div style="font-size: 38px; font-weight: 800; color: var(--ink); line-height: 1.1; margin-bottom: 8px;">438</div>
-          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0;">Real road observations actively mapped and recorded in the database.</p>
-        </div>
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: 0 4px 16px rgba(29, 48, 40, 0.04);">
-          <div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--fern); letter-spacing: 0.08em; margin-bottom: 8px;">ASPHALT POTHOLES</div>
-          <div style="font-size: 38px; font-weight: 800; color: #DC2626; line-height: 1.1; margin-bottom: 8px;">108</div>
-          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0;">Impulse shocks and deep surface craters detected by accelerometer motion sensors.</p>
-        </div>
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: 0 4px 16px rgba(29, 48, 40, 0.04);">
-          <div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--fern); letter-spacing: 0.08em; margin-bottom: 8px;">ROUGH ROAD SECTIONS</div>
-          <div style="font-size: 38px; font-weight: 800; color: #D97706; line-height: 1.1; margin-bottom: 8px;">318</div>
-          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0;">Continuous surface rutting, aggregate wear, and sunken utility trenches.</p>
-        </div>
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: 0 4px 16px rgba(29, 48, 40, 0.04);">
-          <div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--fern); letter-spacing: 0.08em; margin-bottom: 8px;">SPEED BUMPS</div>
-          <div style="font-size: 38px; font-weight: 800; color: #4F46E5; line-height: 1.1; margin-bottom: 8px;">12</div>
-          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0;">Elevated speed tables and traffic calming humps identified along mapped routes.</p>
-        </div>
-      </div>
-    </section>
 
-    <section class="section section-values" id="values" aria-labelledby="values-title">
-      <div class="wrap values-grid">
-        <div><span class="overline">04 / PRIVACY BY DESIGN</span><h2 id="values-title">Useful in public.<br/><em>Careful in private.</em></h2></div>
-        <div class="value-list">
-          <article>
-            <span>01</span>
-            <div>
-              <h3>Automatic Boundary Clipping</h3>
-              <p>The first and last 250 meters of every mapped trip are trimmed on-device so your home, school, and workplace are never exposed.</p>
-            </div>
-          </article>
-          <article>
-            <span>02</span>
-            <div>
-              <h3>Keep raw motion on your phone</h3>
-              <p>Only compact, aggregated hazard events are uploaded. Continuous accelerometer sensor streams never leave your device.</p>
-            </div>
-          </article>
-          <article>
-            <span>03</span>
-            <div>
-              <h3>No account required to explore</h3>
-              <p>The public hazard map and GIS exports are free to browse and audit without handing over an email or phone number.</p>
-            </div>
-          </article>
-          <article>
-            <span>04</span>
-            <div>
-              <h3>Dual Licensed: MIT Code & Protected Dataset</h3>
-              <p>Client software is MIT for public auditability. The crowdsourced road dataset is protected under CC BY-NC-SA 4.0: free for public and civic use, commercial licensing required for corporate fleets.</p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
+        <div class="faq-accordion-group">
+          <details class="faq-stone-item" open>
+            <summary>Does Hodos vibrate my phone when hitting a pothole?</summary>
+            <p>
+              No. Haptic vibration is strictly disabled. The app runs completely silently in your pocket or vehicle mount without interrupting you or distracting drivers.
+            </p>
+          </details>
 
-    <section class="section section-faq wrap" id="faq" aria-labelledby="faq-title">
-      <div class="faq-intro"><span class="overline">05 / QUESTIONS</span><h2 id="faq-title">Good to know.</h2></div>
-      <div class="faq-list">
-        <details>
-          <summary>How does Hodos detect road hazards automatically?</summary>
-          <p>Hodos runs a lightweight background service that evaluates continuous accelerometer and gyroscope data with Median Absolute Deviation (MAD) envelope tracking. When you pass over a pothole or severe bump, the sudden impulse is recorded and verified without manual input.</p>
-        </details>
-        <details>
-          <summary>How does Hodos prevent false alarms from vehicle vibrations?</summary>
-          <p>Continuous noise-floor tracking dynamically adjusts sensitivity. Continuous chassis vibration from buses, trucks, or motorcycles automatically raises the baseline filter so only true road surface shocks trigger an observation.</p>
-        </details>
-        <details>
-          <summary>How is the road data licensed? Can commercial fleets take it?</summary>
-          <p>The client app and core algorithms are open-source under the MIT License. However, the crowdsourced road defect dataset is protected under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 (CC BY-NC-SA 4.0) license. Citizens, universities, and public communities can explore and download it freely for non-commercial use. Commercial operators, logistics fleets, and ride-hailing platforms cannot exploit or resell the data without an enterprise commercial license.</p>
-        </details>
-        <details>
-          <summary>Does Hodos vibrate my phone when hitting a bump?</summary>
-          <p>No. Haptic vibration is disabled so your phone stays quiet in your pocket or vehicle mount without distracting you.</p>
-        </details>
-      </div>
-    </section>
+          <details class="faq-stone-item">
+            <summary>How does Hodos prevent false alarms from vehicle vibration?</summary>
+            <p>
+              Continuous Median Absolute Deviation (MAD) noise-floor tracking dynamically adjusts sensitivity. Continuous chassis vibration from heavy trucks, buses, or motorcycles automatically raises the detection threshold so normal engine rumble is ignored.
+            </p>
+          </details>
 
-    <section class="closing">
-      <div class="wrap closing-inner">
-        <div>
-          <span class="overline">GLOBAL PAVEMENT INTELLIGENCE</span>
-          <h2>Every road counts.<br/>Better journeys start here.</h2>
-        </div>
-        <div>
-          <a class="button button-light" href="/map">Explore Live Map</a>
-          <p>Available on Android & Web worldwide. Software MIT · Dataset CC BY-NC-SA 4.0.</p>
+          <details class="faq-stone-item">
+            <summary>Can commercial logistics fleets extract this data for free?</summary>
+            <p>
+              No. The crowdsourced dataset is protected under the CC BY-NC-SA 4.0 license. While citizens, civic tech groups, and universities can access it freely for non-commercial research, commercial entities (logistics fleets, ride-hailing services, insurance underwriters) must obtain an enterprise commercial license from Devilabs.
+            </p>
+          </details>
+
+          <details class="faq-stone-item">
+            <summary>Does Hodos work in any country?</summary>
+            <p>
+              Yes. The sensor signal algorithms and GPS observation pipeline operate autonomously anywhere on Earth. OpenFreeMap vector basemaps are downloaded and cached automatically over Wi-Fi so the app operates even across remote offline corridors.
+            </p>
+          </details>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- Industrial Footer -->
   <footer class="site-footer">
-    <div class="wrap footer-inner">
-      <a class="footer-brand" href="/">
-        <img src="/hodos-icon.png" alt="Hodos" width="28" height="28" style="border-radius: 6px;"/> hodos.
-      </a>
-      <p>An open road project by Devilabs.</p>
-      <div>
-        <a href="/map">Live Map</a>
-        <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">Source code</a>
-        <a href="/privacy.html">Privacy</a>
+    <div class="wrap">
+      <div class="footer-top-grid">
+        <div class="brand-monolith">
+          <div class="brand-icon-frame">
+            <img src="/hodos-icon.png" alt="Hodos" width="40" height="40" />
+          </div>
+          <div class="brand-text-stack">
+            <span class="brand-title footer-title">HODOS</span>
+            <span class="brand-route-badge footer-route">THE ROAD MAPS ITSELF</span>
+          </div>
+        </div>
+
+        <nav class="footer-nav" aria-label="Footer Navigation">
+          <a href="/map">Live Global Map</a>
+          <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">Source Code (MIT)</a>
+          <a href="mailto:hodos@devilabs.dev">Contact Devilabs</a>
+        </nav>
+      </div>
+
+      <div class="footer-bottom-row">
+        <span>© <span data-year>2026</span> Hodos. Developed by Devilabs.</span>
+        <span>Software: MIT License • Road Condition Dataset: CC BY-NC-SA 4.0</span>
       </div>
     </div>
   </footer>
+
   <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>

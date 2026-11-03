@@ -1,0 +1,1344 @@
+/* ==========================================================================
+   HODOS DESIGN SYSTEM: HIGHWAY MILESTONE & SURVEY MONOLITH
+   Direction: Candidate 1 (Highway Milestone & Survey Monolith)
+   Platform: Adaptive (Web Showcase & Live Map)
+   Enforces: Zero Emojis, No Eyebrows/Kickers, No Fake Halos, High Contrast
+   ========================================================================== */
+
+:root {
+  /* Concrete & Stone Grounds */
+  --ground: #F4F3EE;
+  --ground-elevated: #FAF9F6;
+  --surface-card: #FFFFFF;
+  --dark-asphalt: #111417;
+  --dark-stone: #1B1F24;
+  --dark-border: #2D343D;
+
+  /* Ink & Text */
+  --ink: #111316;
+  --ink-secondary: #424953;
+  --ink-muted: #636B76;
+  --ink-inverted: #F8F9FA;
+
+  /* Highway Milestone Accents */
+  --milestone-yellow: #F5B800;
+  --milestone-yellow-hover: #E0A700;
+  --milestone-yellow-light: #FEF7DA;
+  --milestone-black: #111316;
+
+  /* Survey Defect Signals */
+  --survey-red: #D9381E;
+  --survey-red-subtle: #FDF2F0;
+  --rough-amber: #D97706;
+  --rough-amber-subtle: #FEF7ED;
+  --control-cobalt: #1D4ED8;
+  --control-cobalt-subtle: #EFF6FF;
+  --fixed-green: #15803D;
+
+  /* Chiseled Stone Borders */
+  --stone-border: #D5D1C6;
+  --stone-border-strong: #A8A396;
+  --stone-bevel: 0 2px 0 #D5D1C6;
+
+  /* Typography Stacks */
+  --font-display: 'Barlow Semi Condensed', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ==========================================================================
+   Base & Craft Floor Enforcement
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+  background-color: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--ground);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* Explicit Hierarchical Type Scale (Impeccable Slop Filter Check) */
+h1 {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 2.35rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+p {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+}
+
+/* Browser Surfaces Theming (Mandatory Craft Floor) */
+::selection {
+  background-color: var(--milestone-yellow);
+  color: var(--milestone-black);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ground);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--stone-border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--milestone-yellow);
+  outline-offset: 2px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Container Constraint */
+.wrap {
+  width: min(1200px, calc(100% - 48px));
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  top: -120px;
+  left: 20px;
+  background: var(--surface-card);
+  color: var(--ink);
+  font-weight: 700;
+  padding: 10px 16px;
+  border: 2px solid var(--ink);
+  z-index: 9999;
+  border-radius: 4px;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 16px;
+}
+
+/* ==========================================================================
+   Milestone Header & Masthead
+   ========================================================================== */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  background: var(--ground-elevated);
+  border-bottom: 2px solid var(--stone-border);
+  z-index: 100;
+  transition: background 0.2s;
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  gap: 20px;
+}
+
+.brand-monolith {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon-frame {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--surface-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.brand-icon-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-text-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.brand-route-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.desktop-nav a {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  transition: color 0.15s;
+  padding: 6px 0;
+}
+
+.desktop-nav a:hover {
+  color: var(--ink);
+}
+
+.desktop-nav a.nav-live {
+  color: var(--ink);
+  background: var(--milestone-yellow);
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.header-cta-btn {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  padding: 10px 18px;
+  border: 2px solid var(--milestone-black);
+  border-radius: 6px;
+  box-shadow: 0 2px 0 var(--milestone-black);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.header-cta-btn:hover {
+  background: var(--milestone-yellow-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--milestone-black);
+}
+
+.header-cta-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--milestone-black);
+}
+
+/* Mobile Nav Details */
+.mobile-nav {
+  display: none;
+}
+.mobile-nav summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 8px;
+}
+.mobile-nav summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ==========================================================================
+   Buttons & Milestone Chips
+   ========================================================================== */
+
+.btn-milestone-primary {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  border: 2px solid var(--milestone-black);
+  border-radius: 6px;
+  padding: 14px 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 3px 0 var(--milestone-black);
+  transition: all 0.15s;
+}
+.btn-milestone-primary:hover {
+  background: var(--milestone-yellow-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--milestone-black);
+}
+.btn-milestone-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--milestone-black);
+}
+
+.btn-milestone-stone {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 14px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 3px 0 var(--stone-border-strong);
+  transition: all 0.15s;
+}
+.btn-milestone-stone:hover {
+  background: var(--ground);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--stone-border-strong);
+}
+.btn-milestone-stone:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--stone-border-strong);
+}
+
+/* ==========================================================================
+   Hero Section: Physical Milestone Layout
+   ========================================================================== */
+
+.hero-milestone {
+  padding: 72px 0 64px;
+  background: var(--ground);
+  border-bottom: 2px solid var(--stone-border);
+}
+
+.hero-split-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hero-route-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--surface-card);
+  border: 1px solid var(--stone-border-strong);
+  border-radius: 4px;
+  padding: 4px 10px;
+  width: fit-content;
+  color: var(--ink-secondary);
+}
+
+.hero-route-tag-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--milestone-yellow);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 6vw, 76px);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.hero-subhead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink-secondary);
+  max-width: 580px;
+}
+
+.hero-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.hero-provenance-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-top: 1px solid var(--stone-border);
+  padding-top: 20px;
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+  flex-wrap: wrap;
+}
+
+.hero-provenance-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-provenance-bar strong {
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   Milestone Monolith Pillar (The Authentic Physical Milestone Card)
+   ========================================================================== */
+
+.milestone-pillar {
+  background: var(--surface-card);
+  border: 2px solid var(--ink);
+  border-radius: 24px 24px 8px 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 0 var(--stone-border-strong);
+  display: flex;
+  flex-direction: column;
+}
+
+.milestone-pillar-cap {
+  background: var(--milestone-yellow);
+  border-bottom: 2px solid var(--ink);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.milestone-route-code {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--milestone-black);
+}
+
+.milestone-route-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--milestone-black);
+}
+
+.milestone-pillar-body {
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #FFFFFF;
+}
+
+.milestone-metric-display {
+  text-align: center;
+  border-bottom: 1px solid var(--stone-border);
+  padding-bottom: 20px;
+}
+
+.milestone-large-number {
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.milestone-metric-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  margin-top: 6px;
+}
+
+.milestone-breakdown-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: center;
+}
+
+.breakdown-box {
+  background: var(--ground);
+  border: 1px solid var(--stone-border);
+  border-radius: 6px;
+  padding: 10px 8px;
+}
+
+.breakdown-count {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.breakdown-count.potholes { color: var(--survey-red); }
+.breakdown-count.rough { color: var(--rough-amber); }
+.breakdown-count.humps { color: var(--control-cobalt); }
+
+.breakdown-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+.milestone-gps-route {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--ground);
+  border-left: 3px solid var(--milestone-yellow);
+  padding: 10px 12px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
+.milestone-pillar-footer {
+  padding: 16px 20px;
+  background: var(--ground-elevated);
+  border-top: 1px solid var(--stone-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ==========================================================================
+   Section: Physical Highway Traverse (Route Corridor Strip)
+   ========================================================================== */
+
+.highway-traverse-strip {
+  background: var(--dark-asphalt);
+  color: var(--ink-inverted);
+  padding: 24px 0;
+  border-block: 2px solid var(--ink);
+}
+
+.traverse-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.traverse-endpoint {
+  display: flex;
+  flex-direction: column;
+}
+
+.endpoint-km {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--milestone-yellow);
+}
+
+.endpoint-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #CBD5E1;
+}
+
+.traverse-bar-track {
+  flex: 1;
+  min-width: 240px;
+  height: 8px;
+  background: #2D343D;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.traverse-bar-progress {
+  height: 100%;
+  width: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--milestone-yellow) 0px,
+    var(--milestone-yellow) 12px,
+    transparent 12px,
+    transparent 20px
+  );
+}
+
+/* ==========================================================================
+   Section: Sensor Telemetry & Noise-Floor Tracking (Operate Mode Inside Persuade)
+   ========================================================================== */
+
+.section-telemetry {
+  padding: 88px 0;
+  border-bottom: 2px solid var(--stone-border);
+  background: var(--ground);
+}
+
+.section-heading-block {
+  margin-bottom: 48px;
+}
+
+.section-heading-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.5vw, 56px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.section-heading-desc {
+  font-size: 17px;
+  color: var(--ink-secondary);
+  max-width: 640px;
+  margin-top: 14px;
+}
+
+.telemetry-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: stretch;
+}
+
+.telemetry-deck {
+  background: var(--dark-asphalt);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 24px;
+  color: #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 0 var(--stone-border-strong);
+}
+
+.telemetry-deck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--dark-border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.deck-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--milestone-yellow);
+}
+
+.deck-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #10B981;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deck-canvas-box {
+  background: #090B0D;
+  border: 1px solid var(--dark-border);
+  border-radius: 4px;
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.telemetry-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.telemetry-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+  border-top: 1px solid var(--dark-border);
+  padding-top: 16px;
+}
+
+.telemetry-metric-item {
+  font-family: var(--font-mono);
+}
+.telemetry-metric-item small {
+  display: block;
+  font-size: 10px;
+  color: #CBD5E1;
+  text-transform: uppercase;
+}
+.telemetry-metric-item strong {
+  font-size: 16px;
+  color: #F9FAFB;
+}
+
+.telemetry-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.telemetry-step-card {
+  background: var(--surface-card);
+  border: 1.5px solid var(--stone-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 0 var(--stone-border);
+  transition: border-color 0.15s;
+}
+.telemetry-step-card:hover {
+  border-color: var(--ink);
+}
+
+.step-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.step-num-pill {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  padding: 2px 8px;
+  line-height: 1;
+}
+
+.step-card-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.step-card-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+}
+
+/* ==========================================================================
+   Section: Dual-Licensing Stone Tablet (Data Sovereignty)
+   ========================================================================== */
+
+.section-licensing {
+  padding: 88px 0;
+  background: var(--ground-elevated);
+  border-bottom: 2px solid var(--stone-border);
+}
+
+.licensing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 36px;
+}
+
+.license-monolith-card {
+  background: var(--surface-card);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 0 var(--stone-border-strong);
+  display: flex;
+  flex-direction: column;
+}
+
+.license-header-banner {
+  padding: 16px 20px;
+  background: var(--dark-asphalt);
+  color: #FFFFFF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.license-header-banner.dataset {
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  border-bottom: 2px solid var(--ink);
+}
+
+.license-type-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.license-badge-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.15);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.license-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.license-headline {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.license-body p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+}
+
+.license-feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  font-family: var(--font-mono);
+  color: var(--ink-secondary);
+  border-top: 1px solid var(--stone-border);
+  padding-top: 16px;
+}
+
+.license-feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.license-feature-list li::before {
+  content: "—";
+  font-weight: 800;
+  color: var(--milestone-yellow);
+}
+
+/* ==========================================================================
+   Section: Frequently Answered Questions (Technical Accordion)
+   ========================================================================== */
+
+.section-faq {
+  padding: 88px 0;
+  border-bottom: 2px solid var(--stone-border);
+}
+
+.faq-split-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 48px;
+}
+
+.faq-accordion-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-stone-item {
+  background: var(--surface-card);
+  border: 1.5px solid var(--stone-border);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 0 var(--stone-border);
+}
+
+.faq-stone-item summary {
+  padding: 18px 20px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+.faq-stone-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-stone-item summary::after {
+  content: "+";
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--ink-muted);
+}
+.faq-stone-item[open] summary::after {
+  content: "−";
+}
+
+.faq-stone-item p {
+  padding: 0 20px 20px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-secondary);
+  border-top: 1px solid var(--stone-border);
+  padding-top: 14px;
+}
+
+/* ==========================================================================
+   Footer: Industrial Survey Masthead
+   ========================================================================== */
+
+.footer-title {
+  color: #FFFFFF !important;
+}
+.footer-route {
+  color: #CBD5E1 !important;
+}
+
+.site-footer {
+  background: var(--dark-asphalt);
+  color: #E5E7EB;
+  border-top: 2px solid var(--ink);
+  padding: 48px 0 36px;
+}
+
+.footer-top-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  border-bottom: 1px solid var(--dark-border);
+  padding-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.footer-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #CBD5E1;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 24px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.footer-nav a:hover {
+  color: var(--milestone-yellow);
+}
+
+/* ==========================================================================
+   Map Interface (apps/web/map/index.html & apps/web/map.html)
+   ========================================================================== */
+
+.map-layout-body {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+}
+
+.map-control-masthead {
+  background: var(--surface-card);
+  border-bottom: 2px solid var(--ink);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 1000;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 0 var(--stone-border-strong);
+}
+
+.map-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.map-route-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  border: 1.5px solid var(--milestone-black);
+  border-radius: 4px;
+  padding: 3px 8px;
+  line-height: 1;
+}
+
+.map-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+
+.filter-milestone-chip {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1.5px solid var(--stone-border-strong);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.filter-milestone-chip:hover {
+  background: var(--surface-card);
+  border-color: var(--ink);
+}
+
+.filter-milestone-chip.active {
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  border-color: var(--milestone-black);
+  box-shadow: 0 2px 0 var(--milestone-black);
+}
+
+.map-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-map-utility {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface-card);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--stone-border-strong);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn-map-utility:hover {
+  background: var(--ground);
+  transform: translateY(-1px);
+}
+
+.btn-map-utility.accent {
+  background: var(--milestone-yellow);
+  color: var(--milestone-black);
+  box-shadow: 0 2px 0 var(--milestone-black);
+}
+
+.map-container-frame {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 65px);
+}
+
+/* Defect Ledger Drawer */
+.defect-ledger-drawer {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  background: var(--surface-card);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 0 6px 0 var(--stone-border-strong);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.defect-ledger-drawer.hidden {
+  transform: translateX(-410px);
+}
+
+.drawer-top-banner {
+  background: var(--dark-asphalt);
+  color: #FFFFFF;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-title-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--milestone-yellow);
+}
+
+.drawer-search-bar {
+  padding: 10px 14px;
+  background: var(--ground);
+  border-bottom: 1px solid var(--stone-border);
+}
+
+.drawer-search-input {
+  width: 100%;
+  background: var(--surface-card);
+  border: 1.5px solid var(--stone-border-strong);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+}
+.drawer-search-input:focus {
+  border-color: var(--ink);
+  outline: 2px solid var(--milestone-yellow);
+}
+
+.drawer-items-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.defect-ledger-card {
+  background: var(--surface-card);
+  border: 1.5px solid var(--stone-border);
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 0 var(--stone-border);
+}
+
+.defect-ledger-card:hover {
+  border-color: var(--ink);
+  background: var(--ground-elevated);
+  transform: translateX(2px);
+}
+
+.ledger-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.defect-kind-badge {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: #FFFFFF;
+}
+
+.defect-kind-badge.pothole { background: var(--survey-red); }
+.defect-kind-badge.rough_pavement { background: var(--rough-amber); }
+.defect-kind-badge.speed_bump { background: var(--control-cobalt); }
+.defect-kind-badge.fixed { background: var(--fixed-green); }
+
+.defect-coords-mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.defect-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  margin-top: 6px;
+  border-top: 1px dashed var(--stone-border);
+  padding-top: 4px;
+}
+
+/* MapLibre Popup Styling Override */
+.maplibregl-popup-content {
+  background: var(--surface-card) !important;
+  border: 2px solid var(--ink) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 0 var(--stone-border-strong) !important;
+  padding: 16px !important;
+}
+
+.maplibregl-popup-close-button {
+  font-size: 16px !important;
+  color: var(--ink) !important;
+  padding: 4px 8px !important;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .hero-split-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .telemetry-split-grid {
+    grid-template-columns: 1fr;
+  }
+  .licensing-grid {
+    grid-template-columns: 1fr;
+  }
+  .faq-split-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .desktop-nav {
+    display: none;
+  }
+}

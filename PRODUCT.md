@@ -8,16 +8,16 @@ adaptive
 
 ## Users
 
-- **Data Contributors (Drivers & Commuters):** Everyday drivers, motorcyclists, bus passengers, and transport workers traveling paved and unpaved roadways (initial launch in Nepal, across inter-city routes such as Birendranagar to Kathmandu). Job: Passively and safely record road hazards during regular journeys without manual taps, distractions, or privacy loss.
-- **Data Consumers (Civic & Commercial):** Municipal highway and urban authorities (e.g., Department of Roads Nepal, Kathmandu Metropolitan City), civic technology groups (Kathmandu Living Labs), and logistics/fleet managers (Pathao, InDrive, transport dispatchers). Job: Inspect verified, ground-truth surface hazard data to prioritize road maintenance, optimize routing, and minimize vehicle suspension/cargo damage.
+- **Data Contributors (Drivers & Commuters Worldwide):** Everyday drivers, motorcyclists, cyclists, bus passengers, and transport workers traveling paved and unpaved roadways globally. Job: Passively and safely record road hazards during regular journeys anywhere in the world without manual taps, distractions, or privacy loss.
+- **Data Consumers (Civic & Commercial):** Municipal highway and urban authorities, civic technology groups, civil engineering researchers, and global logistics/fleet managers (couriers, ride-hailing services, freight dispatchers). Job: Inspect verified, ground-truth surface hazard data to prioritize road maintenance, optimize routing, and minimize vehicle suspension/cargo damage.
 
 ## Product Purpose
 
-Hodos exists to crowdsource road surface hazard mapping without requiring active human reporting. It makes the invisible degradation of public road infrastructure visible, actionable, and accountable ("The road maps itself"). Success means a high-density, corroborated map of potholes, rough sections, and speed humps built completely passively from ambient smartphone sensor readings, governed by a sustainable dual-license model.
+Hodos exists to crowdsource global road surface hazard mapping without requiring active human reporting. It makes the invisible degradation of public road infrastructure visible, actionable, and accountable across any road in the world ("The road maps itself"). Success means a high-density, corroborated worldwide map of potholes, rough sections, and speed humps built completely passively from ambient smartphone sensor readings, governed by a sustainable dual-license model.
 
 ## Positioning
 
-Unlike manual crowdsourcing apps (e.g., Waze or civic complaint hotlines) that require drivers to dangerously look at screens and tap buttons while driving, Hodos operates 100% autonomously in the background using on-device inertial sensors (accelerometer and gyroscope) coupled with adaptive Median Absolute Deviation (MAD) noise floor tracking to distinguish vehicle vibrations from actual road defects. Unlike closed commercial fleet telematics, Hodos combines free open-source software (MIT) with a community-protected open dataset (CC BY-NC-SA 4.0 for civic/academic use, paid commercial license for enterprise logistics).
+Unlike manual crowdsourcing apps (e.g., Waze or civic complaint hotlines) that require drivers to dangerously look at screens and tap buttons while driving, Hodos operates 100% autonomously in the background anywhere on earth using on-device inertial sensors (accelerometer and gyroscope) coupled with adaptive Median Absolute Deviation (MAD) noise floor tracking to distinguish vehicle vibrations from actual road defects. Unlike closed commercial fleet telematics, Hodos combines free open-source software (MIT) with a community-protected open dataset (CC BY-NC-SA 4.0 for civic/academic use, paid commercial license for enterprise logistics).
 
 ## Operating Context
 
@@ -45,9 +45,9 @@ Unlike manual crowdsourcing apps (e.g., Waze or civic complaint hotlines) that r
 
 ## Evidence on Hand
 
-- 438 verified road hazard points logged during an actual 500+ km bus trip across Nepal (108 potholes, 318 rough road sections, 12 speed humps), committed in [`apps/web/public/data/hazards.json`](file:///Users/sky/hodos/apps/web/public/data/hazards.json) and live-synced from Appwrite.
-- Live web deployment at `https://hodos.devilabs.dev/map`.
-- Production Android APK release v1.2.0 at `https://github.com/DrSkyle/hodos/releases`.
+- 438 verified road hazard points logged during an actual 500+ km proving journey (108 potholes, 318 rough road sections, 12 speed humps), committed in [`apps/web/public/data/hazards.json`](file:///Users/sky/hodos/apps/web/public/data/hazards.json) and live-synced from Appwrite as the inaugural high-density global dataset.
+- Live web deployment serving global users at `https://hodos.devilabs.dev/map`.
+- Production Android APK release v1.2.0 at `https://github.com/DrSkyle/hodos/releases` ready for global device deployment.
 - Transactional outreach infrastructure configured via Resend (`hodos@devilabs.dev` in [`scripts/send-launch-email.mjs`](file:///Users/sky/hodos/scripts/send-launch-email.mjs)).
 
 ## Product Principles

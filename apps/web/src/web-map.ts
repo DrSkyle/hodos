@@ -251,40 +251,40 @@ export function initWebMap(
     const badgeColor = h.fixed
       ? "#15803D"
       : h.kind === "pothole"
-      ? "#DC2626"
+      ? "#D9381E"
       : h.kind === "speed_bump"
-      ? "#4F46E5"
+      ? "#1D4ED8"
       : "#D97706";
 
     const badgeLabel = h.fixed
-      ? "Repaired"
+      ? "REPAIRED"
       : h.kind === "pothole"
-      ? "Pothole"
+      ? "POTHOLE"
       : h.kind === "speed_bump"
-      ? "Speed Hump"
-      : "Rough Surface";
+      ? "SPEED HUMP"
+      : "ROUGH ROAD";
 
-    const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Recorded";
+    const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "RECORDED";
 
     const html = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 220px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
-          <strong style="font-size: 14px; color: #111827;">${kindName}</strong>
-          <span style="background: ${badgeColor}; color: #ffffff; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px;">
+      <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 230px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; border-bottom: 1.5px solid #111417; padding-bottom: 6px;">
+          <strong style="font-family: 'Barlow Semi Condensed', sans-serif; font-size: 16px; font-weight: 900; letter-spacing: 0.03em; text-transform: uppercase; color: #111417;">${kindName}</strong>
+          <span style="font-family: 'Barlow Semi Condensed', sans-serif; background: ${badgeColor}; color: #ffffff; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;">
             ${badgeLabel}
           </span>
         </div>
-        <div style="font-size: 12px; color: #4B5563; margin-bottom: 6px; font-family: ui-monospace, monospace;">
+        <div style="font-size: 11.5px; color: #424953; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-weight: 600;">
           ${h.locationName}
         </div>
-        <div style="font-size: 12px; color: #1F2937; margin-bottom: 10px; background: #F3F4F6; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
-          • Impact Severity: <strong>Tier ${h.severity}</strong><br/>
-          • Detection Date: <strong>${dateStr}</strong><br/>
-          • Passes: <strong>${h.passes}</strong>
+        <div style="font-size: 12px; color: #111417; margin-bottom: 12px; background: #F4F3EE; border: 1px solid #D5D1C6; padding: 8px 10px; border-radius: 4px; line-height: 1.6; font-family: 'JetBrains Mono', monospace;">
+          • Impact: <strong>Tier ${h.severity}</strong><br/>
+          • Multi-Pass: <strong>${h.passes} passes</strong><br/>
+          • Date: <strong>${dateStr}</strong>
         </div>
         <div style="display: flex; gap: 6px;">
-          <button id="btn-verify-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #111827; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Still There</button>
-          <button id="btn-fixed-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #E5E7EB; color: #111827; border: none; border-radius: 6px; cursor: pointer;">Mark Repaired</button>
+          <button id="btn-verify-${h.id}" style="flex: 1; padding: 8px 10px; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; background: #F5B800; color: #111417; border: 1.5px solid #111417; border-radius: 4px; cursor: pointer;">Still Present</button>
+          <button id="btn-fixed-${h.id}" style="flex: 1; padding: 8px 10px; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; background: #FFFFFF; color: #111417; border: 1.5px solid #111417; border-radius: 4px; cursor: pointer;">Mark Fixed</button>
         </div>
       </div>
     `;
@@ -300,11 +300,12 @@ export function initWebMap(
       verifyBtn?.addEventListener("click", () => {
         verifyBtn.textContent = "Verified";
         verifyBtn.style.background = "#15803D";
+        verifyBtn.style.color = "#FFFFFF";
       });
       fixedBtn?.addEventListener("click", () => {
         fixedBtn.textContent = "Marked Fixed";
         fixedBtn.style.background = "#15803D";
-        fixedBtn.style.color = "#fff";
+        fixedBtn.style.color = "#FFFFFF";
       });
     }, 50);
   }
@@ -325,22 +326,22 @@ export function initWebMap(
       paint: {
         "circle-radius": [
           "match", ["get", "kind"],
-          "pothole", 14,
+          "pothole", 13,
           "rough_pavement", 10,
           11
         ],
         "circle-color": [
           "case",
           ["get", "fixed"], "#15803D",
-          ["==", ["get", "kind"], "pothole"], "#DC2626",
-          ["==", ["get", "kind"], "speed_bump"], "#4F46E5",
+          ["==", ["get", "kind"], "pothole"], "#D9381E",
+          ["==", ["get", "kind"], "speed_bump"], "#1D4ED8",
           "#D97706"
         ],
-        "circle-opacity": 0.25
+        "circle-opacity": 0.22
       }
     });
 
-    // Distinct crisp marker circle with stark white border & drop shadow
+    // Distinct crisp marker circle with solid stone border
     map.addLayer({
       id: "hazard-point",
       type: "circle",
@@ -355,12 +356,12 @@ export function initWebMap(
         "circle-color": [
           "case",
           ["get", "fixed"], "#15803D",
-          ["==", ["get", "kind"], "pothole"], "#DC2626",
-          ["==", ["get", "kind"], "speed_bump"], "#4F46E5",
+          ["==", ["get", "kind"], "pothole"], "#D9381E",
+          ["==", ["get", "kind"], "speed_bump"], "#1D4ED8",
           "#D97706"
         ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": "#FFFFFF"
+        "circle-stroke-color": "#111417"
       }
     });
 
