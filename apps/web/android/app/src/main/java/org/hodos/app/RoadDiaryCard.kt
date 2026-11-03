@@ -46,10 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
-private val DiaryForest = Color(0xFF145B46)
-private val DiaryInk = Color(0xFF18372D)
-private val DiaryMuted = Color(0xFF526F61)
-private val DiaryMint = Color(0xFFDDF4E2)
+private val DiaryForest = Color(0xFF111417)
+private val DiaryInk = Color(0xFF111316)
+private val DiaryMuted = Color(0xFF636B76)
+private val DiaryMint = Color(0xFFFEF7DA)
+private val MilestoneYellow = Color(0xFFF5B800)
 
 /**
  * Small private comeback ritual: revisit the map, see which days had journeys,
@@ -66,8 +67,9 @@ internal fun RoadDiaryCard(
         summarizeRoadDiary(trips, System.currentTimeMillis())
     }
     Surface(
-        shape = RoundedCornerShape(27.dp),
-        color = Color(0xFFE7F5E9),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFFFAF9F6),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFD5D1C6)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
