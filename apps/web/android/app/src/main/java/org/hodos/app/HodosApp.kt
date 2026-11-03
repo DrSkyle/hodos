@@ -841,8 +841,6 @@ private fun MappingScreen(
     var confirmDeleteQueued by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
-    var vehicleProfile by remember { mutableStateOf(prefs.getString("vehicleProfile", "car") ?: "car") }
-    var hapticEnabled by remember { mutableStateOf(prefs.getBoolean("hapticFeedback", true)) }
     var selectedTrip by remember { mutableStateOf<RoadTrip?>(null) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
@@ -906,71 +904,6 @@ private fun MappingScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(if (tripActive) "Finish journey" else "Start journey")
-                    }
-                }
-            }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
-                Column(Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
-                        Spacer(Modifier.width(10.dp))
-                        Text("Vehicle & detection profile", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text("Tunes sensor noise thresholds for your vehicle suspension:", color = Muted, fontSize = 12.5.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf("bus" to "Bus / Truck", "car" to "Car / Sedan", "motorcycle" to "Motorcycle").forEach { (key, label) ->
-                            val isSelected = vehicleProfile == key
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) Forest else Mist,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable {
-                                        vehicleProfile = key
-                                        prefs.edit().putString("vehicleProfile", key).apply()
-                                    }
-                            ) {
-                                Box(
-                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        label,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else Ink,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(14.dp))
-                    HorizontalDivider(color = Mist)
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Haptic defect alert", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            Text("Brief vibration when an impact is recorded", color = Muted, fontSize = 11.5.sp)
-                        }
-                        Switch(
-                            checked = hapticEnabled,
-                            onCheckedChange = {
-                                hapticEnabled = it
-                                prefs.edit().putBoolean("hapticFeedback", it).apply()
-                            },
-                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
-                        )
                     }
                 }
             }

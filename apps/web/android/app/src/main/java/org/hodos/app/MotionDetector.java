@@ -337,10 +337,6 @@ public final class MotionDetector {
   }
 
   public static List<Impact> detect(List<Sample> samples, List<Fix> fixes) {
-    return detect(samples, fixes, "car");
-  }
-
-  public static List<Impact> detect(List<Sample> samples, List<Fix> fixes, String vehicleProfile) {
     List<Impact> impacts = new ArrayList<>();
     if (samples.isEmpty()) {
       return impacts;
@@ -384,30 +380,20 @@ public final class MotionDetector {
 
     String mode = resolveMode(fixes);
     boolean vehicle = "vehicle".equals(mode);
-    double floorAbs;
-    double noiseK;
-    if (vehicle) {
-      if ("bus".equalsIgnoreCase(vehicleProfile) || "truck".equalsIgnoreCase(vehicleProfile)) {
-        floorAbs = 2.4;
-        noiseK = 3.8;
-      } else if ("motorcycle".equalsIgnoreCase(vehicleProfile) || "scooter".equalsIgnoreCase(vehicleProfile)) {
-        floorAbs = 1.2;
-        noiseK = 2.6;
-      } else {
-        floorAbs = VEHICLE_FLOOR;
-        noiseK = VEHICLE_K;
-      }
-    } else {
-      floorAbs = PEDESTRIAN_FLOOR;
-      noiseK = PEDESTRIAN_K;
-    }
+    double floorAbs = vehicle ? VEHICLE_FLOOR : PEDESTRIAN_FLOOR;
+    double noiseK = vehicle ? VEHICLE_K : PEDESTRIAN_K;
     double minSpeedKph = vehicle ? VEHICLE_MIN_KPH : PEDESTRIAN_MIN_KPH;
     int span = (int) Math.max(2, Math.round(250 / Math.max(1, intervalMs)));
 
     long lastEmit = Long.MIN_VALUE / 2;
     int i = 0;
     while (i < n) {
-      double threshold = Math.max(floorAbs, noiseK * floor[i]);
+      // Autonomous self-calibration:
+      // Uses rolling Median Absolute Deviation envelope (floor[i]) to dynamically reject
+      // continuous chassis shudder (heavy diesel buses, stiff suspensions) without manual configuration.
+      double effectiveFloorAbs = vehicle ? Math.max(floorAbs, 1.35 * floor[i]) : floorAbs;
+      double effectiveK = vehicle ? noiseK + Math.min(1.0, Math.max(0.0, (floor[i] - 0.6) * 0.5)) : noiseK;
+      double threshold = Math.max(effectiveFloorAbs, effectiveK * floor[i]);
       if (Math.abs(filtered[i]) < threshold) {
         i++;
         continue;
@@ -415,7 +401,9 @@ public final class MotionDetector {
       int peakIndex = i;
       int j = i;
       while (j < n) {
-        double t = Math.max(floorAbs, noiseK * floor[j]);
+        double currentEffFloor = vehicle ? Math.max(floorAbs, 1.35 * floor[j]) : floorAbs;
+        double currentEffK = vehicle ? noiseK + Math.min(1.0, Math.max(0.0, (floor[j] - 0.6) * 0.5)) : noiseK;
+        double t = Math.max(currentEffFloor, currentEffK * floor[j]);
         if (Math.abs(filtered[j]) < t * RELEASE_FRACTION) {
           break;
         }
@@ -465,6 +453,10 @@ public final class MotionDetector {
       lastEmit = peakTime;
     }
     return impacts;
+  }
+
+  public static List<Impact> detect(List<Sample> samples, List<Fix> fixes, String vehicleProfile) {
+    return detect(samples, fixes);
   }
 
   public static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
