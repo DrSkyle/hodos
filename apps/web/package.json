@@ -1,6 +1,6 @@
 {
   "name": "@hodos/web",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -12,7 +12,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.16.0"
   }
 }

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -838,6 +839,11 @@ private fun MappingScreen(
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
     var confirmDeleteQueued by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
+    var vehicleProfile by remember { mutableStateOf(prefs.getString("vehicleProfile", "car") ?: "car") }
+    var hapticEnabled by remember { mutableStateOf(prefs.getBoolean("hapticFeedback", true)) }
+    var selectedTrip by remember { mutableStateOf<RoadTrip?>(null) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
@@ -900,6 +906,71 @@ private fun MappingScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(if (tripActive) "Finish journey" else "Start journey")
+                    }
+                }
+            }
+        }
+        item {
+            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Vehicle & detection profile", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Tunes sensor noise thresholds for your vehicle suspension:", color = Muted, fontSize = 12.5.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("bus" to "Bus / Truck", "car" to "Car / Sedan", "motorcycle" to "Motorcycle").forEach { (key, label) ->
+                            val isSelected = vehicleProfile == key
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) Forest else Mist,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        vehicleProfile = key
+                                        prefs.edit().putString("vehicleProfile", key).apply()
+                                    }
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        label,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else Ink,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    HorizontalDivider(color = Mist)
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Haptic defect alert", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Text("Brief vibration when an impact is recorded", color = Muted, fontSize = 11.5.sp)
+                        }
+                        Switch(
+                            checked = hapticEnabled,
+                            onCheckedChange = {
+                                hapticEnabled = it
+                                prefs.edit().putBoolean("hapticFeedback", it).apply()
+                            },
+                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                        )
                     }
                 }
             }
@@ -1054,7 +1125,11 @@ private fun MappingScreen(
         } else {
             items(trips, key = { it.at }) { trip ->
                 val durationText = trip.durationS?.let { formatDurationFriendly(it) }
-                Surface(color = Color.White, shape = RoundedCornerShape(17.dp)) {
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(17.dp),
+                    modifier = Modifier.clickable { selectedTrip = trip }
+                ) {
                     Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.DirectionsCar, null, tint = Forest)
                         Spacer(Modifier.width(15.dp))
@@ -1067,13 +1142,17 @@ private fun MappingScreen(
                                 color = Muted, fontSize = 12.sp
                             )
                         }
-                        Text(
-                            if (trip.distanceM >= 1000.0)
-                                String.format(Locale.US, "%.1f km", trip.distanceM / 1000.0)
-                            else "${trip.distanceM.roundToInt()} m",
-                            color = Forest, fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                if (trip.distanceM >= 1000.0)
+                                    String.format(Locale.US, "%.1f km", trip.distanceM / 1000.0)
+                                else "${trip.distanceM.roundToInt()} m",
+                                color = Forest, fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text("Details & Export", color = Muted, fontSize = 11.sp)
+                        }
                     }
                 }
             }
@@ -1127,6 +1206,70 @@ private fun MappingScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmDiscard = false }) { Text("Keep reports") }
+            }
+        )
+    }
+    selectedTrip?.let { trip ->
+        val trail = remember(trip) {
+            TripDetailStore.getTrail(context, trip.tripId ?: trip.at.toString())
+                ?: TripTrail(trip.tripId ?: trip.at.toString(), trip.at, trip.durationS ?: 0L, trip.distanceM, emptyList(), emptyList())
+        }
+        AlertDialog(
+            onDismissRequest = { selectedTrip = null },
+            title = {
+                Text(
+                    DateFormat.format("EEEE, d MMMM · h:mm a", Date(trip.at)).toString(),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Distance: " + (if (trip.distanceM >= 1000f) String.format(Locale.US, "%.1f km", trip.distanceM / 1000f) else "${trip.distanceM.roundToInt()} m") +
+                        (trip.durationS?.let { " · Duration: " + formatDurationFriendly(it) } ?: ""),
+                        color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        "Road defects: ${trip.impacts} hazards recorded" +
+                        (trip.gpsFixes?.let { " · $it GPS fixes" } ?: ""),
+                        color = Muted, fontSize = 13.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text("Export this journey to standard GIS / GPS formats for Google Earth, QGIS, or Strava:", color = Muted, fontSize = 12.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val gpx = TripDetailStore.exportGPX(context, trail)
+                                TripDetailStore.shareFile(context, gpx, "application/gpx+xml", "Export Hodos GPX Journey")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Outlined.Share, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Export GPX", fontSize = 12.sp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val geojson = TripDetailStore.exportGeoJSON(context, trail)
+                                TripDetailStore.shareFile(context, geojson, "application/geo+json", "Export Hodos GeoJSON Journey")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("GeoJSON", fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedTrip = null }) {
+                    Text("Close", color = Forest, fontWeight = FontWeight.Bold)
+                }
             }
         )
     }

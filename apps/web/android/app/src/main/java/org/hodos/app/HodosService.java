@@ -18,6 +18,8 @@ import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -498,6 +500,11 @@ public class HodosService extends Service implements SensorEventListener {
           getSharedPreferences("hodos", MODE_PRIVATE),
           trip, startedAt, currentImpacts, totalGpsFixes,
           cumulativeDistanceM, elapsedS);
+      List<MotionDetector.Fix> fixSnapshot;
+      List<MotionDetector.Impact> impactSnapshot;
+      synchronized (fixes) { fixSnapshot = new ArrayList<>(fixes); }
+      synchronized (impacts) { impactSnapshot = new ArrayList<>(impacts); }
+      TripDetailStore.saveTrail(this, trip, startedAt, elapsedS, cumulativeDistanceM, fixSnapshot, impactSnapshot);
     }
 
     // Periodic notification update with live timer and metrics
@@ -520,7 +527,8 @@ public class HodosService extends Service implements SensorEventListener {
     }
     List<MotionDetector.Fix> locationSnapshot;
     synchronized (fixes) { locationSnapshot = new ArrayList<>(fixes); }
-    List<MotionDetector.Impact> found = MotionDetector.detect(window, locationSnapshot);
+    String vehicleProfile = getSharedPreferences("hodos", MODE_PRIVATE).getString("vehicleProfile", "car");
+    List<MotionDetector.Impact> found = MotionDetector.detect(window, locationSnapshot, vehicleProfile);
     List<MotionDetector.Impact> newImpacts = new ArrayList<>();
     synchronized (impacts) {
       for (MotionDetector.Impact impact : found) {
@@ -536,6 +544,9 @@ public class HodosService extends Service implements SensorEventListener {
           newImpacts.add(impact);
         }
       }
+    }
+    if (!newImpacts.isEmpty()) {
+      triggerHapticFeedback();
     }
     // Persist on this analysis executor, NOT the UI thread, while the journey
     // is still active. A killed service may never reach endTrip().
@@ -605,6 +616,10 @@ public class HodosService extends Service implements SensorEventListener {
         trip, startedAt > 0 ? startedAt : System.currentTimeMillis(),
         finished.size(), fixCount, totalDistance, elapsedS);
 
+    TripDetailStore.saveTrail(
+        this, trip, startedAt > 0 ? startedAt : System.currentTimeMillis(),
+        elapsedS, totalDistance, route, finished);
+
     getSharedPreferences("hodos", MODE_PRIVATE).edit()
         .putBoolean("tripActive", false)
         .putLong("tripElapsedS", 0)
@@ -621,6 +636,22 @@ public class HodosService extends Service implements SensorEventListener {
     // Local summaries and optional pass evidence remain on a worker thread.
     new Thread(() -> upload(finished, route, device, trip, coverage, startedAt),
         "hodos-trip-upload").start();
+  }
+
+  private void triggerHapticFeedback() {
+    try {
+      boolean hapticEnabled = getSharedPreferences("hodos", MODE_PRIVATE)
+          .getBoolean("hapticFeedback", true);
+      if (!hapticEnabled) return;
+      Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+      if (vibrator != null && vibrator.hasVibrator()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          vibrator.vibrate(VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE));
+        } else {
+          vibrator.vibrate(45);
+        }
+      }
+    } catch (Exception ignored) {}
   }
 
   private void stopEverything() {

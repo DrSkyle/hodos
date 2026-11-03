@@ -6,3 +6,5 @@ export * from "./classify";
 export * from "./detect";
 export * from "./clearance";
 export * from "./cluster";
+export * from "./iri";
+export * from "./export-gis";

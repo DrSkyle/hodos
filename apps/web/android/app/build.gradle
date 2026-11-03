@@ -19,6 +19,16 @@ android {
                 storePassword System.getenv('HODOS_STORE_PASSWORD')
                 keyAlias System.getenv('HODOS_KEY_ALIAS')
                 keyPassword System.getenv('HODOS_KEY_PASSWORD')
+            } else if (file('release.keystore').exists()) {
+                storeFile file('release.keystore')
+                storePassword 'hodosrelease2026'
+                keyAlias 'hodos'
+                keyPassword 'hodosrelease2026'
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
             }
         }
     }
@@ -29,8 +39,8 @@ android {
         applicationId 'org.hodos.app'
         minSdk 23
         targetSdk 35
-        versionCode 27
-        versionName '1.1.25'
+        versionCode 28
+        versionName '1.2.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -39,9 +49,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            if (System.getenv('HODOS_KEYSTORE_PATH')) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

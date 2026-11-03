@@ -48,7 +48,8 @@ data class RoadTrip(
     val confirmed: Int,
     val distanceM: Double,
     val gpsFixes: Int? = null,
-    val durationS: Long? = null
+    val durationS: Long? = null,
+    val tripId: String? = null
 )
 
 /**
@@ -186,7 +187,8 @@ class HazardRepository(context: Context) {
                     row.optInt("confirmed"),
                     row.optDouble("distanceM"),
                     if (row.has("gpsFixes")) row.optInt("gpsFixes") else null,
-                    if (row.has("durationS")) row.optLong("durationS") else null
+                    if (row.has("durationS")) row.optLong("durationS") else null,
+                    if (row.has("tripId")) row.optString("tripId") else null
                 ))
             }
         }

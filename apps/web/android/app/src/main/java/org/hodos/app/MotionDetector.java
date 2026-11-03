@@ -337,6 +337,10 @@ public final class MotionDetector {
   }
 
   public static List<Impact> detect(List<Sample> samples, List<Fix> fixes) {
+    return detect(samples, fixes, "car");
+  }
+
+  public static List<Impact> detect(List<Sample> samples, List<Fix> fixes, String vehicleProfile) {
     List<Impact> impacts = new ArrayList<>();
     if (samples.isEmpty()) {
       return impacts;
@@ -380,8 +384,23 @@ public final class MotionDetector {
 
     String mode = resolveMode(fixes);
     boolean vehicle = "vehicle".equals(mode);
-    double floorAbs = vehicle ? VEHICLE_FLOOR : PEDESTRIAN_FLOOR;
-    double noiseK = vehicle ? VEHICLE_K : PEDESTRIAN_K;
+    double floorAbs;
+    double noiseK;
+    if (vehicle) {
+      if ("bus".equalsIgnoreCase(vehicleProfile) || "truck".equalsIgnoreCase(vehicleProfile)) {
+        floorAbs = 2.4;
+        noiseK = 3.8;
+      } else if ("motorcycle".equalsIgnoreCase(vehicleProfile) || "scooter".equalsIgnoreCase(vehicleProfile)) {
+        floorAbs = 1.2;
+        noiseK = 2.6;
+      } else {
+        floorAbs = VEHICLE_FLOOR;
+        noiseK = VEHICLE_K;
+      }
+    } else {
+      floorAbs = PEDESTRIAN_FLOOR;
+      noiseK = PEDESTRIAN_K;
+    }
     double minSpeedKph = vehicle ? VEHICLE_MIN_KPH : PEDESTRIAN_MIN_KPH;
     int span = (int) Math.max(2, Math.round(250 / Math.max(1, intervalMs)));
 

@@ -19,10 +19,10 @@
     <div class="site-header-inner wrap">
       <a class="brand" href="/" aria-label="Hodos home"><img src="/brandmark.svg" alt="" width="42" height="42"/><span>hodos<span class="brand-stop">.</span></span></a>
       <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a>
+        <a href="#how">How it works</a><a href="#live-map">Live map</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a>
       </nav>
-      <a class="header-cta" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta <span class="button-trail" aria-hidden="true"></span></a>
-      <details class="mobile-nav"><summary aria-label="Toggle site navigation"><span></span><span></span></summary><nav aria-label="Mobile navigation"><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a><a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta</a></nav></details>
+      <a class="header-cta" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android app <span class="button-trail" aria-hidden="true"></span></a>
+      <details class="mobile-nav"><summary aria-label="Toggle site navigation"><span></span><span></span></summary><nav aria-label="Mobile navigation"><a href="#how">How it works</a><a href="#live-map">Live map</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a><a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android app</a></nav></details>
     </div>
   </header>
   <main id="content">
@@ -105,6 +105,17 @@
         <div class="record-footer"><span>BUILT FOR REVISITING</span><span>NO FULL ROUTE STORED</span></div>
       </div>
     </div></section>
+    <section class="section section-live-map wrap" id="live-map" aria-labelledby="map-title">
+      <div class="map-intro">
+        <span class="overline">LIVE OBSERVATIONS</span>
+        <h2 id="map-title">Explore crowdsourced road hazards.</h2>
+        <p>Interactive vector map of verified potholes, speed bumps, and rough road surfaces. Click any marker to view device corroboration and submit community feedback.</p>
+      </div>
+      <div class="web-map-frame">
+        <div id="hodos-web-map" class="web-map-container" aria-label="Interactive map of road hazards"></div>
+        <div id="map-status" class="web-map-badge">Connecting to road observations...</div>
+      </div>
+    </section>
     <section class="section section-values" id="values" aria-labelledby="values-title"><div class="wrap values-grid">
       <div><span class="overline">03 / PRINCIPLES</span><h2 id="values-title">Useful in public.<br/><em>Careful in private.</em></h2></div>
       <div class="value-list">

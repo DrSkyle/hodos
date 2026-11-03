@@ -19,6 +19,7 @@ android/app/release/
 *.jks
 *.keystore
 !apps/web/android/app/debug.keystore
+!apps/web/android/app/release.keystore
 .capacitor/
 
 # Appwrite

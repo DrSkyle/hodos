@@ -117,6 +117,13 @@ h1,h2{font-family:Manrope,system-ui,sans-serif;letter-spacing:-.065em}
 .site-footer p{font-size:12px;color:#6c8173;margin:0}
 .site-footer .footer-inner>div{margin-left:auto;display:flex;gap:27px;font-size:12px;font-weight:700}
 .site-footer a:hover{color:#b46c46}
+.section-live-map{display:flex;flex-direction:column;gap:28px;}
+.map-intro{max-width:720px;}
+.map-intro p{font-size:16px;color:var(--muted);line-height:1.6;margin-top:10px;}
+.web-map-frame{position:relative;width:100%;border-radius:18px;overflow:hidden;border:1px solid #b9cbbf;box-shadow:0 12px 32px #173d2e14;background:#fffdf7;}
+.web-map-container{width:100%;height:520px;min-height:420px;}
+.web-map-badge{position:absolute;top:16px;left:16px;background:rgba(255,253,247,0.92);backdrop-filter:blur(8px);border:1px solid #b9cbbf;padding:8px 14px;border-radius:12px;font-size:12px;font-weight:600;color:var(--ink);box-shadow:0 4px 12px rgba(0,0,0,0.06);transition:opacity 0.5s ease;z-index:5;}
+
 @media(max-width:1080px){.wrap{width:calc(100% - 56px)}.desktop-nav{gap:18px}.hero-grid{gap:30px}.hero h1{font-size:clamp(49px,5.6vw,70px)}.map-legend{gap:10px}.roads-grid{gap:35px}}
 @media(max-width:810px){.site-header-inner{min-height:74px}.desktop-nav,.header-cta{display:none}.mobile-nav{display:block;position:relative;margin-left:auto}
 .mobile-nav>summary{width:47px;height:44px;border:1px solid #b9cbbf;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;list-style:none;cursor:pointer;background:#fffdf7}
