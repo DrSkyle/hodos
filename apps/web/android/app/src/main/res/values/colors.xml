@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Same clean white field already present in the browser favicon. -->
-    <color name="hodos_launcher_background">#FFFFFF</color>
+    <color name="hodos_launcher_background">#104E3F</color>
 </resources>

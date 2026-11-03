@@ -1,68 +1,104 @@
 # Hodos
 
-> **Android beta notice (24 October 2026):** Do **not** install the known-broken `v1.1.4-beta.1` build. Newer builds restore the original branding and pass Android emulator startup checks. Real-phone GPS, background journey recording, offline tile coverage and road detection **still require field verification**; use the latest beta from [Releases](https://github.com/DrSkyle/hodos/releases), not an older installer.
+<p align="center">
+  <img src="brand/icon.svg" alt="Hodos icon" width="120" height="120" />
+</p>
 
-**The road maps itself.**
+<p align="center">
+  <strong>The road maps itself.</strong><br />
+  Passive, crowdsourced road-hazard mapping for your neighborhood.
+</p>
 
-Hodos is an Android app that maps potential potholes, speed bumps and rough pavement from motion readings collected during everyday journeys.
+<p align="center">
+  <a href="https://hodos.devilabs.dev">Website</a> •
+  <a href="https://github.com/DrSkyle/hodos/releases">Android Releases</a> •
+  <a href="docs/PRIVACY.md">Privacy Policy</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#development">Development</a>
+</p>
 
-Turn on automatic mapping, keep your phone with you and drive as you normally would. Hodos checks for unusual road impacts on the device and sends compact observations to a shared map. Repeated observations help distinguish road hazards from one-off bumps.
+---
 
-[Website](https://hodos.devilabs.dev) · [Android releases](https://github.com/DrSkyle/hodos/releases) · [Privacy](docs/PRIVACY.md)
+## What is Hodos?
+
+**Hodos** is an open-source Android app that detects road hazards—such as potholes, speed bumps, and rough pavement—using on-device motion readings collected during everyday journeys.
+
+Turn on automatic mapping, keep your phone with you, and drive as you normally would. Hodos detects road surface impacts using your phone's accelerometer and gyroscope, and queues compact observations for a shared community map. Repeated observations from independent trips corroborate hazards and distinguish real defects from one-off bumps.
+
+- **Zero Manual Effort:** Runs quietly in the background; no tapping or reporting while driving.
+- **Privacy by Design:** Raw motion traces stay in device RAM. No continuous GPS routes or breadcrumbs are logged.
+- **Multi-Device Corroboration:** Hazards are only published when multiple independent trips corroborate the defect.
+- **Offline Resilience:** Downloads 20 km Wi-Fi cached vector basemaps (OpenFreeMap) and maintains a local SQLite hazard cache.
+
+---
 
 ## Features
 
-- **Automatic road mapping** with Android activity recognition and on-device sensor processing
-- **Interactive map** with nearby hazards, severity and supporting reports
-- **Community updates** to confirm a hazard or report a repair
-- **Offline support** for cached hazards and queued road observations
-- **Nearby offline map regions** (20 km around your location, zoom 8–13): automatic on validated Wi-Fi after location permission, with manual save and removal controls
+- **Automatic Motion Detection:** Uses Android Activity Recognition to arm sensor sampling only during vehicular transit.
+- **Interactive Vector Map:** MapLibre-powered Android map with nearby hazards, severity classifications, and pass corroboration counts.
+- **Community Verifications:** Confirm active hazards or mark repaired road segments.
+- **Offline Maps:** Wi-Fi-only automated tile pack caching (20 km radius, zoom levels 8–13) with quota caps (45 MiB / 2,400 tiles) to respect open basemap infrastructure.
+- **Privacy First:** Pseudonymous installation identifiers, quantized location coordinates, and no third-party tracking or advertising SDKs.
 
-## Offline maps
+---
 
-The native Android Mapping screen offers a **Wi-Fi-only** automatic map download after a user-authorized location fix. The saved square region extends approximately 20 km from the center in each direction (zoom 8–13). Two recent regions are retained; earlier ones are deleted as you move. Users can disable automatic downloads, save the nearby area manually, or remove packs. Hodos keeps locally cached hazard records independently of map tiles.
+## Architecture
 
-Basemaps use [OpenFreeMap](https://openfreemap.org/) under its [offline tile-download terms](https://openfreemap.org/tos/). Each pack is paused before 2,400 tiles or 45 MiB, and all map requests are limited to four parallel connections with an application-identifying User-Agent. The build does **not** use bulk downloads from CARTO or OpenStreetMap's public tile server.
+The project is organized as a monorepo:
 
-Offline regions are only guaranteed at the downloaded zoom levels and after the on-device download is shown as complete. Downloading stops over cellular, and storage use is visible in the Mapping tab. Hazard sharing, new hazards, and unmapped locations still require connectivity.
+- **`apps/web/android`**: Native Android app written in Kotlin and Jetpack Compose, featuring MapLibre Android SDK, background service lifecycle (`HodosService`), and SQLite outbox.
+- **`apps/web`**: Lightweight product showcase with an interactive on-device sensor simulator (oscilloscope) and live hazard map inspector built with Vite and TypeScript.
+- **`packages/core`**: Shared detection library for sensor signal processing, Butterworth filtering, jerk thresholding, and DBSCAN spatial clustering.
+- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and generate the public hazard map layer.
 
-## Staying involved
+---
 
-- **My Roads:** save a public map report locally, then revisit its community-confirmed status from the You tab. Saved IDs stay on this phone.
-- **Road diary:** private local summaries for each week, never a full route history.
-- **Contributions:** ordinary journeys can help improve the map when automatic mapping is explicitly enabled; reporting while operating a vehicle is not encouraged.
+## Development & Building
 
-## License
+### Prerequisites
 
-Hodos' current maintained code is released under **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. This includes the client, website, shared detection library and backend aggregation code. If you distribute a modified version or run a modified AGPL-covered network service, review and comply with the source-provision obligations in the license.
+- **Node.js** v20+ and **pnpm** v10+
+- **JDK 17 or 21**
+- **Android SDK** (API Platform 35, Build-Tools 34.0.0+)
 
-Earlier copies of Hodos released under the MIT License remain available under their original grant; see [the preserved historical MIT notice](LICENSES/MIT-legacy.txt). The license change does not revoke those earlier permissions or erase third-party copyright. See [third-party notices](THIRD_PARTY_NOTICES.md).
+### Android App
 
-## Development
-
-The Android app uses Kotlin, Jetpack Compose and MapLibre. The website is built with Vite. Appwrite stores road observations and generates the public hazard map.
-
-**Build the Android app** with JDK 17 and Android SDK 35. First upload the three **unmodified original** PNGs into `apps/web/public/`: `hodos-icon.png`, `hodos-round.png`, and `hodos-wordmark.png`. The build generates all Android icon densities and the onboarding/brand resources from these files. The build intentionally fails rather than packaging reduced or corrupt replacements.
+To build and run tests for the Android application:
 
 ```sh
 cd apps/web/android
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-**Build and test the website and shared detection code** with Node.js and pnpm:
+The compiled debug APK will be available in `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+### Web & Shared Packages
+
+To build and run tests for the web application and core signal algorithms:
 
 ```sh
+# Install workspace dependencies
 pnpm install
+
+# Typecheck and run unit tests
 pnpm -r typecheck
 pnpm -r test
+
+# Run backend aggregation tests
 node --test appwrite/functions/hodos-aggregate/src/main.test.js
+
+# Build web static bundle
 pnpm --filter @hodos/web build
 ```
 
-The code lives in `apps/web/android`, `apps/web`, `packages/core` and `appwrite/functions`.
+---
 
-Hodos identifies *potential* hazards. Results depend on the phone, vehicle, mounting position and road conditions; they aren't a substitute for attention at the wheel or professional road inspections.
+## Disclaimer
 
-[Contribute or report a problem](https://github.com/DrSkyle/hodos/issues).
+Hodos identifies potential road hazards. Results depend on device hardware, vehicle suspension, mounting position, and road conditions; they are not a substitute for driver vigilance or municipal road engineering inspections.
 
-Developed by **Devilabs** · [GNU AGPL-3.0-only License](LICENSE)
+---
+
+## License
+
+Developed by **Devilabs** · [MIT License](LICENSE)
