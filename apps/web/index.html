@@ -213,20 +213,20 @@
       <div class="faq-intro"><span class="overline">04 / QUESTIONS</span><h2 id="faq-title">Good to know.</h2></div>
       <div class="faq-list">
         <details>
-          <summary>Can Hodos be used outside of Nepal?</summary>
-          <p>Yes! Hodos is completely global. The autonomous detection models adapt dynamically to any road surface across North America, Europe, Asia, Latin America, and Africa.</p>
+          <summary>How does Hodos detect road hazards automatically?</summary>
+          <p>Hodos runs a lightweight background service that evaluates continuous accelerometer and gyroscope data with Median Absolute Deviation (MAD) envelope tracking. When you pass over a pothole or severe bump, the sudden impulse is recorded and verified without manual input.</p>
         </details>
         <details>
-          <summary>How does Hodos prevent false alarms from diesel engine vibrations?</summary>
-          <p>Hodos uses continuous Median Absolute Deviation (MAD) noise-floor tracking. High-frequency chassis rumble and idling engines raise the baseline threshold automatically so only true road surface shocks trigger a record.</p>
+          <summary>How does Hodos prevent false alarms from vehicle vibrations?</summary>
+          <p>Continuous noise-floor tracking dynamically adjusts sensitivity. Continuous chassis vibration from buses, trucks, or motorcycles automatically raises the baseline filter so only true road surface shocks trigger an observation.</p>
         </details>
         <details>
-          <summary>How is road data monetized for governments and civil contractors?</summary>
-          <p>We aggregate crowdsourced bump clusters into ASTM E1926 International Roughness Index (IRI) ratings and Uber H3 hexagonal heatmaps, licensing calibrated road maintenance layers to municipal public works departments and infrastructure funds.</p>
+          <summary>Who has access to the road condition data?</summary>
+          <p>Everyone. The road defect map and aggregated condition layers are public and open under the MIT License. Municipal road authorities, civil engineers, and citizens can freely view live hazards or download GeoJSON and GPX files for GIS mapping and repair planning.</p>
         </details>
         <details>
           <summary>Does Hodos vibrate my phone when hitting a bump?</summary>
-          <p>No. Haptic vibration is completely disabled. Hodos operates silently in your pocket or vehicle mount without disturbing your ride.</p>
+          <p>No. Haptic vibration is disabled so your phone stays quiet in your pocket or vehicle mount without distracting you.</p>
         </details>
       </div>
     </section>
