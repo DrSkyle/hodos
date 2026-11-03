@@ -2,14 +2,400 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0; url=/map" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#172d29" />
+  <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness. Real road observations verified by commuters." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Hodos Live Map — Real Road Defect Intelligence" />
+  <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness. Free GeoJSON/GPX downloads." />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map" />
-  <title>Redirecting to Live Road Map · Hodos</title>
-  <script>
-    window.location.replace("/map");
-  </script>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1.2.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1.2.0" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <title>Live Road Defects · Hodos</title>
+  <style>
+    :root {
+      --bg: #F9FAFB;
+      --surface: #FFFFFF;
+      --ink: #111827;
+      --muted: #6B7280;
+      --forest: #257B65;
+      --forest-dark: #1A5949;
+      --border: #E5E7EB;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .map-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .brand-group img {
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+    .brand-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: #E8F0EA;
+      color: var(--forest);
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .nav-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0;
+    }
+    .filter-chip {
+      background: #F3F4F6;
+      border: 1px solid var(--border);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 99px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .filter-chip:hover {
+      background: #E5E7EB;
+    }
+    .filter-chip.active {
+      background: #111827;
+      color: #FFFFFF;
+      border-color: #111827;
+    }
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .btn-action {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover {
+      background: #F3F4F6;
+    }
+    .btn-primary {
+      background: #111827;
+      color: #FFFFFF;
+      border-color: #111827;
+    }
+    .btn-primary:hover {
+      background: #1F2937;
+    }
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+    #full-map {
+      flex: 1;
+      height: 100%;
+      width: 100%;
+    }
+    .map-status-floating {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .map-legend-floating {
+      position: absolute;
+      bottom: 24px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-width: 260px;
+    }
+    .legend-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .dot-pothole { background: #DC2626; }
+    .dot-rough { background: #D97706; }
+    .dot-bump { background: #4F46E5; }
+    .dot-fixed { background: #15803D; }
+
+    /* Defect sidebar drawer */
+    .defect-drawer {
+      width: 340px;
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 8;
+      transition: transform 0.25s ease;
+      box-shadow: -4px 0 16px rgba(0,0,0,0.04);
+    }
+    .defect-drawer.hidden {
+      display: none;
+    }
+    .drawer-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .drawer-search {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #F9FAFB;
+    }
+    .drawer-search input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    .drawer-search input:focus {
+      border-color: #111827;
+    }
+    .drawer-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .defect-item {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      background: #FFFFFF;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .defect-item:hover {
+      border-color: #111827;
+      background: #F9FAFB;
+      transform: translateY(-1px);
+    }
+    .defect-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .defect-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .defect-coords {
+      font-size: 11.5px;
+      font-family: ui-monospace, monospace;
+      color: #374151;
+    }
+    .defect-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(17, 24, 39, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      max-width: 520px;
+      width: 100%;
+      padding: 26px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-card h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .modal-card p {
+      font-size: 13.5px;
+      color: #4B5563;
+      line-height: 1.55;
+    }
+    .modal-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #F9FAFB;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+    .modal-features strong { color: #111827; }
+    .modal-close-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
 </head>
-<body style="font-family: system-ui, sans-serif; padding: 40px; text-align: center; color: #1D3028;">
-  <p>Redirecting to <a href="/map" style="color: #257B65; font-weight: bold;">Hodos Live Road Map</a>...</p>
+<body>
+  <header class="map-header">
+    <a href="/" class="brand-group" aria-label="Return to Hodos Home">
+      <img src="/hodos-icon.png" alt="Hodos" width="34" height="34" />
+      <div>
+        <div class="brand-title">hodos<span style="color:var(--forest)">.</span></div>
+      </div>
+      <span class="brand-tag">Real Defect Map</span>
+    </a>
+
+    <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
+      <button class="filter-chip active" data-kind="all">All (438)</button>
+      <button class="filter-chip" data-kind="pothole">Potholes (108)</button>
+      <button class="filter-chip" data-kind="rough_pavement">Rough Road (318)</button>
+      <button class="filter-chip" data-kind="speed_bump">Speed Bumps (12)</button>
+      <button class="filter-chip" data-kind="fixed">Repaired</button>
+    </div>
+
+    <div class="action-group">
+      <button id="btn-fit-all" class="btn-action" title="Fit all recorded data on map">⤢ Fit Route</button>
+      <button id="btn-toggle-drawer" class="btn-action" title="Toggle defect explorer list">Defect List</button>
+      <button id="btn-export-geojson" class="btn-action" title="Export GeoJSON of current map">Download GeoJSON</button>
+      <button id="btn-export-gpx" class="btn-action" title="Export GPX waypoint file">Download GPX</button>
+    </div>
+  </header>
+
+  <main class="map-wrapper">
+    <div id="full-map" aria-label="Interactive road hazard map"></div>
+    <div id="full-map-status" class="map-status-floating">Connecting to real road observations...</div>
+    <div class="map-legend-floating">
+      <div class="legend-title">Detected Road Defects</div>
+      <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole Impact (Severe / Moderate)</span></div>
+      <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough Pavement / Surface Rutting</span></div>
+      <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed Bump / Hump</span></div>
+      <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Community Verified Repaired</span></div>
+    </div>
+
+    <aside id="defect-drawer" class="defect-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Real Defect Observations</span>
+        <button id="btn-close-drawer" style="border:none; background:transparent; cursor:pointer; font-size:16px; color:#6B7280;">✕</button>
+      </div>
+      <div class="drawer-search">
+        <input type="text" id="defect-search" placeholder="Filter by GPS coordinate or category..." />
+      </div>
+      <div id="drawer-list" class="drawer-list">
+        <div style="padding:16px; text-align:center; color:#9CA3AF; font-size:12px;">Loading defect observations...</div>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="/src/map-page.ts"></script>
 </body>
 </html>
