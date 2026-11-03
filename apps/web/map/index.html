@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#172d29" />
+  <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness worldwide. Independent observations, verified by communities and open to all." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Hodos Live Map — Open Road Intelligence" />
+  <meta property="og:description" content="Explore verified potholes, speed bumps, and road roughness corridors across the world. Free GeoJSON/GPX downloads." />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
+  <link rel="canonical" href="https://hodos.devilabs.dev/map" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1.2.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1.2.0" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <title>Live Road Map · Hodos Open Road Intelligence</title>
+  <style>
+    :root {
+      --bg: #F8FAF7;
+      --surface: #FFFFFF;
+      --ink: #1D3028;
+      --muted: #566E64;
+      --forest: #257B65;
+      --forest-dark: #1A5949;
+      --border: #CCD8CF;
+      --shadow: 0 4px 16px rgba(29, 48, 40, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .map-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .brand-group img {
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+    .brand-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: #E8F0EA;
+      color: var(--forest);
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .nav-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0;
+    }
+    .filter-chip {
+      background: #F1F4F1;
+      border: 1px solid var(--border);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 99px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .filter-chip:hover {
+      background: #E5EBE5;
+    }
+    .filter-chip.active {
+      background: var(--forest);
+      color: #FFFFFF;
+      border-color: var(--forest);
+    }
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .btn-action {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: #F4F6F4;
+    }
+    .btn-primary {
+      background: var(--forest);
+      color: #FFFFFF;
+      border-color: var(--forest);
+    }
+    .btn-primary:hover {
+      background: var(--forest-dark);
+    }
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    #full-map {
+      width: 100%;
+      height: 100%;
+    }
+    .map-status-floating {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .map-legend-floating {
+      position: absolute;
+      bottom: 24px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-width: 290px;
+    }
+    .legend-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .legend-line {
+      width: 22px;
+      height: 4px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .line-smooth { background: #257B65; }
+    .line-fair { background: #D97706; }
+    .line-severe { background: #DC2626; }
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-pothole { background: #DC2626; }
+    .dot-bump { background: #D97706; }
+    .dot-fixed { background: #257B65; }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(29, 48, 40, 0.45);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      max-width: 540px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .modal-card p {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .modal-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #F8FAF7;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+    .modal-features strong { color: var(--forest); }
+    .modal-close-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header class="map-header">
+    <a href="/" class="brand-group" aria-label="Return to Hodos Home">
+      <img src="/hodos-icon.png" alt="Hodos" width="36" height="36" />
+      <div>
+        <div class="brand-title">hodos<span style="color:var(--forest)">.</span></div>
+      </div>
+      <span class="brand-tag">Live Road Map</span>
+    </a>
+
+    <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
+      <button class="filter-chip active" data-kind="all">All Data</button>
+      <button class="filter-chip" data-kind="corridors">Road Corridors (IRI)</button>
+      <button class="filter-chip" data-kind="smooth">Smooth Corridors</button>
+      <button class="filter-chip" data-kind="severe">Severe Corridors</button>
+      <button class="filter-chip" data-kind="pothole">Potholes</button>
+      <button class="filter-chip" data-kind="speed_bump">Speed Bumps</button>
+      <button class="filter-chip" data-kind="fixed">Repaired</button>
+    </div>
+
+    <div class="action-group">
+      <button id="btn-fit-all" class="btn-action" title="Fit all recorded data on map">⤢ Fit Data</button>
+      <button id="btn-export-geojson" class="btn-action" title="Export GeoJSON of current map">Download GeoJSON</button>
+      <button id="btn-export-gpx" class="btn-action" title="Export GPX waypoint file">Download GPX</button>
+      <button id="btn-municipal" class="btn-action btn-primary">Open Municipal GIS</button>
+    </div>
+  </header>
+
+  <main class="map-wrapper">
+    <div id="full-map" aria-label="Interactive road hazard map"></div>
+    <div id="full-map-status" class="map-status-floating">Road observations loaded</div>
+    <div class="map-legend-floating">
+      <div class="legend-title">Pavement Roughness (ASTM E1926)</div>
+      <div class="legend-row"><span class="legend-line line-smooth"></span><span>Smooth Corridor (&lt; 2.7 m/km)</span></div>
+      <div class="legend-row"><span class="legend-line line-fair"></span><span>Fair / Worn (2.7 – 4.5 m/km)</span></div>
+      <div class="legend-row"><span class="legend-line line-severe"></span><span>Severe Degradation (&gt; 4.5 m/km)</span></div>
+      <div class="legend-title" style="margin-top: 4px;">Detected Points</div>
+      <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole / Road Impact</span></div>
+      <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed Bump / Hump</span></div>
+      <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Verified Repaired</span></div>
+    </div>
+  </main>
+
+  <div id="modal-municipal" class="modal-backdrop">
+    <div class="modal-card">
+      <h2>Open Road Data for Cities & Communities</h2>
+      <p>
+        All road condition and defect observations collected through Hodos are public and open. City road departments, municipal engineers, and local community groups can directly export and use this data for road maintenance.
+      </p>
+      <div class="modal-features">
+        <div><strong>Free GeoJSON & GPX Exports:</strong> Load crowdsourced road corridors and defect points directly into QGIS, ArcGIS, or civil repair work orders.</div>
+        <div><strong>ASTM E1926 Standard:</strong> Roughness metrics modeled on the International Roughness Index (IRI m/km) to prioritize resurfacing.</div>
+        <div><strong>Publicly Auditable:</strong> Transparent, open-source algorithms under the MIT License—no proprietary lock-in.</div>
+      </div>
+      <div class="modal-close-row">
+        <button id="btn-close-modal" class="btn-action btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/map-page.ts"></script>
+</body>
+</html>

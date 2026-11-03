@@ -1,0 +1,7 @@
+Production Release 1.2.0:
+• Self-calibrating autonomous road sensing with MAD noise floor tracking
+• 250m privacy boundary protection on trip origins and destinations
+• ASTM E1926 International Roughness Index (IRI) calculation
+• One-click GeoJSON and GPX journey and hazard export
+• Silent background operation with haptic vibration disabled
+• Open public live map and GIS layers at https://hodos.devilabs.dev/map

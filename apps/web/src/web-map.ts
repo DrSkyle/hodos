@@ -1,6 +1,7 @@
 import { Map, NavigationControl, AttributionControl, GeolocateControl, Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection, Point, LineString } from "geojson";
+import { VERIFIED_ROAD_CORRIDORS, buildCorridorsGeoJSON, type RoadCorridor } from "./road-corridors";
 
 export interface WebHazard {
   id: string;
@@ -20,6 +21,7 @@ export interface WebHazard {
 export interface MapInstanceHandle {
   map: Map;
   hazards: WebHazard[];
+  corridors: RoadCorridor[];
   filterByKind: (kind: string) => void;
   fitAllHazards: () => void;
   exportData: (format: "geojson" | "gpx") => void;
@@ -252,18 +254,57 @@ export function initWebMap(
   const handle: MapInstanceHandle = {
     map,
     hazards,
+    corridors: VERIFIED_ROAD_CORRIDORS,
     filterByKind: (kind: string) => {
-      if (!map.getSource("hodos-hazards")) return;
-      const filtered =
-        kind === "all"
-          ? hazards
-          : kind === "fixed"
-          ? hazards.filter((h) => h.fixed)
-          : hazards.filter((h) => h.kind === kind && !h.fixed);
-      const src = map.getSource("hodos-hazards") as any;
-      src?.setData(buildGeoJSON(filtered));
-      if (statusEl) {
-        statusEl.textContent = `${filtered.length} hazards shown (${kind})`;
+      const hazardSrc = map.getSource("hodos-hazards") as any;
+      const corridorSrc = map.getSource("hodos-corridors") as any;
+      if (!hazardSrc || !corridorSrc) return;
+
+      if (kind === "corridors") {
+        map.setLayoutProperty("corridors-line", "visibility", "visible");
+        map.setLayoutProperty("corridors-casing", "visibility", "visible");
+        map.setLayoutProperty("hazard-point", "visibility", "none");
+        map.setLayoutProperty("hazard-glow", "visibility", "none");
+        corridorSrc.setData(buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS));
+        if (statusEl) statusEl.textContent = `${VERIFIED_ROAD_CORRIDORS.length} road corridors shown (IRI Roughness)`;
+        return;
+      }
+
+      map.setLayoutProperty("corridors-line", "visibility", "visible");
+      map.setLayoutProperty("corridors-casing", "visibility", "visible");
+      map.setLayoutProperty("hazard-point", "visibility", "visible");
+      map.setLayoutProperty("hazard-glow", "visibility", "visible");
+
+      if (kind === "all") {
+        hazardSrc.setData(buildGeoJSON(hazards));
+        corridorSrc.setData(buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS));
+        if (statusEl) {
+          statusEl.textContent = `${hazards.length} hazards & ${VERIFIED_ROAD_CORRIDORS.length} road corridors shown`;
+        }
+      } else if (kind === "smooth" || kind === "fair" || kind === "severe") {
+        const filteredCorridors = VERIFIED_ROAD_CORRIDORS.filter((c) => c.rating === kind);
+        corridorSrc.setData(buildCorridorsGeoJSON(filteredCorridors));
+        map.setLayoutProperty("hazard-point", "visibility", "none");
+        map.setLayoutProperty("hazard-glow", "visibility", "none");
+        if (statusEl) {
+          statusEl.textContent = `${filteredCorridors.length} ${kind} corridors shown`;
+        }
+      } else if (kind === "fixed") {
+        const filtered = hazards.filter((h) => h.fixed);
+        hazardSrc.setData(buildGeoJSON(filtered));
+        map.setLayoutProperty("corridors-line", "visibility", "none");
+        map.setLayoutProperty("corridors-casing", "visibility", "none");
+        if (statusEl) {
+          statusEl.textContent = `${filtered.length} repaired hazards shown`;
+        }
+      } else {
+        const filtered = hazards.filter((h) => h.kind === kind && !h.fixed);
+        hazardSrc.setData(buildGeoJSON(filtered));
+        map.setLayoutProperty("corridors-line", "visibility", "none");
+        map.setLayoutProperty("corridors-casing", "visibility", "none");
+        if (statusEl) {
+          statusEl.textContent = `${filtered.length} ${kind} defects shown`;
+        }
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards),
@@ -272,8 +313,15 @@ export function initWebMap(
       let filename: string;
       let mime: string;
       if (format === "geojson") {
-        content = JSON.stringify(buildGeoJSON(hazards), null, 2);
-        filename = "hodos-road-hazards.geojson";
+        const combined: FeatureCollection = {
+          type: "FeatureCollection",
+          features: [
+            ...buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS).features,
+            ...buildGeoJSON(hazards).features
+          ]
+        };
+        content = JSON.stringify(combined, null, 2);
+        filename = "hodos-road-network-and-hazards.geojson";
         mime = "application/geo+json";
       } else {
         const wpt = hazards
@@ -282,8 +330,16 @@ export function initWebMap(
               `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Passes: ${h.passes}</desc></wpt>`
           )
           .join("\n");
-        content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n</gpx>`;
-        filename = "hodos-road-hazards.gpx";
+        const trk = VERIFIED_ROAD_CORRIDORS.map(
+          (c) =>
+            `  <trk><name>${c.name} (IRI ${c.iri})</name><trkseg>\n` +
+            c.coordinates
+              .map((pt) => `    <trkpt lat="${pt[1]}" lon="${pt[0]}"></trkpt>`)
+              .join("\n") +
+            `\n  </trkseg></trk>`
+        ).join("\n");
+        content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n${trk}\n</gpx>`;
+        filename = "hodos-road-network.gpx";
         mime = "application/gpx+xml";
       }
       const blob = new Blob([content], { type: mime });
@@ -299,6 +355,49 @@ export function initWebMap(
   const setupLayers = () => {
     if (map.getSource("hodos-hazards")) return;
 
+    // 1. Add road corridors source & layers (rendered underneath point markers)
+    map.addSource("hodos-corridors", {
+      type: "geojson",
+      data: buildCorridorsGeoJSON(VERIFIED_ROAD_CORRIDORS)
+    });
+
+    map.addLayer({
+      id: "corridors-casing",
+      type: "line",
+      source: "hodos-corridors",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-width": 8,
+        "line-color": "rgba(23, 45, 36, 0.28)"
+      }
+    });
+
+    map.addLayer({
+      id: "corridors-line",
+      type: "line",
+      source: "hodos-corridors",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-width": 5,
+        "line-color": [
+          "match",
+          ["get", "rating"],
+          "smooth", "#257B65",
+          "fair", "#D97706",
+          "severe", "#DC2626",
+          "#257B65"
+        ],
+        "line-opacity": 0.95
+      }
+    });
+
+    // 2. Add hazard points source & layers
     map.addSource("hodos-hazards", {
       type: "geojson",
       data: buildGeoJSON(hazards)
@@ -341,8 +440,60 @@ export function initWebMap(
 
     fitBoundsToData(hazards);
     if (statusEl) {
-      statusEl.textContent = `${hazards.length} road hazards loaded`;
+      statusEl.textContent = `${hazards.length} hazards & ${VERIFIED_ROAD_CORRIDORS.length} corridors loaded`;
     }
+
+    // Corridor click handler
+    map.on("click", "corridors-line", (e: MapLayerMouseEvent) => {
+      const feat = e.features?.[0];
+      if (!feat || !feat.properties) return;
+      const p = feat.properties as any;
+      const lngLat = e.lngLat;
+      const badgeColor =
+        p.rating === "smooth"
+          ? "#257B65"
+          : p.rating === "severe"
+          ? "#DC2626"
+          : "#D97706";
+      const ratingLabel =
+        p.rating === "smooth"
+          ? `Smooth (IRI ${p.iri} m/km)`
+          : p.rating === "severe"
+          ? `Severe Roughness (IRI ${p.iri} m/km)`
+          : `Fair / Worn (IRI ${p.iri} m/km)`;
+
+      const html = `
+        <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px 2px; min-width: 230px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
+            <strong style="font-size: 14px; color: #1F2421;">${p.name}</strong>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="background: ${badgeColor}; color: #fff; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.3px;">
+              ${ratingLabel}
+            </span>
+          </div>
+          <div style="font-size: 12px; color: #1F2421; margin-bottom: 8px; background: #F4F7F4; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
+            • Segment Length: <strong>${p.lengthKm} km</strong><br/>
+            • Potholes Detected: <strong>${p.potholesCount}</strong><br/>
+            • Speed Bumps: <strong>${p.speedBumpsCount}</strong><br/>
+            • Monitored Passes: <strong>${p.passes} trips</strong>
+          </div>
+          <div style="font-size: 11px; color: #6A726A;">Last surveyed: ${p.lastSurveyed} · ASTM E1926 Standard</div>
+        </div>
+      `;
+
+      new Popup({ offset: 10, closeButton: true })
+        .setLngLat(lngLat)
+        .setHTML(html)
+        .addTo(map);
+    });
+
+    map.on("mouseenter", "corridors-line", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "corridors-line", () => {
+      map.getCanvas().style.cursor = "";
+    });
 
     map.on("click", "hazard-point", (e: MapLayerMouseEvent) => {
       const feat = e.features?.[0];

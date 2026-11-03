@@ -1,0 +1,40 @@
+Categories:
+  - Navigation
+  - Science & Education
+License: MIT
+AuthorName: Devilabs
+WebSite: https://hodos.devilabs.dev
+SourceCode: https://github.com/DrSkyle/hodos
+IssueTracker: https://github.com/DrSkyle/hodos/issues
+Changelog: https://github.com/DrSkyle/hodos/releases
+
+AutoName: Hodos
+Summary: Autonomous road condition and hazard mapper
+Description: |-
+  Hodos turns ordinary daily rides into high-precision road condition maps.
+  It runs autonomously in the background without manual button presses,
+  vibration distractions, or account logins.
+
+  Features:
+  * Self-calibrating road sensing with adaptive noise gating
+  * Automatic 250m privacy boundary protection on departure and arrival
+  * Pavement roughness (ASTM E1926 IRI) classification
+  * GeoJSON and GPX journey export for QGIS and Google Earth
+  * 100% open-source under MIT, zero advertising, zero tracking
+
+RepoType: git
+Repo: https://github.com/DrSkyle/hodos.git
+
+Builds:
+  - versionName: 1.2.0
+    versionCode: 28
+    commit: v1.2.0
+    subdir: apps/web/android
+    gradle:
+      - yes
+    prebuild: sed -i -e 's/minifyEnabled true/minifyEnabled false/' app/build.gradle
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.2.0
+CurrentVersionCode: 28

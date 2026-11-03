@@ -1,0 +1,17 @@
+Hodos is an open-source road condition and hazard mapping application designed to turn ordinary daily commutes into high-precision pavement intelligence—completely autonomously and with zero distraction.
+
+Traditional road profiling surveys rely on expensive specialized vehicles that municipalities rarely run. Hodos enables drivers, bus commuters, cyclists, and motorcyclists to collectively monitor road surface quality simply by having their phone in a pocket or vehicle mount.
+
+Key Capabilities:
+
+• 100% Autonomous Sensing: Background sensing continuously models accelerometer and gyroscope motion using Median Absolute Deviation (MAD) envelope tracking. Heavy bus chassis vibrations, passenger cars, and two-wheelers are calibrated dynamically without manual configuration.
+
+• Zero Distraction: Haptic vibrations and audible beeps on road impacts are disabled so your device never buzzes or interrupts your ride.
+
+• Privacy by Design: The first and last 250 meters of every mapped trip are trimmed directly on-device so your home, school, and workplace are never exposed or transmitted.
+
+• ASTM E1926 Roughness Index: Vertical motion impulses and vehicle speeds are modeled to estimate International Roughness Index (IRI in m/km) pavement quality.
+
+• Open Geospatial Export: Export your local journey history, GPS paths, and detected hazards into standard RFC 7946 GeoJSON and GPX 1.1 formats for analysis in QGIS, Google Earth, or municipal maintenance dispatch.
+
+• Tracker-Free & Open Source: Licensed under the MIT License with no advertising SDKs, no third-party tracking libraries, and no mandatory user accounts.
