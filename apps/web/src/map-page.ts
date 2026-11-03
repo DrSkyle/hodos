@@ -3,13 +3,9 @@ import { initWebMap, type MapInstanceHandle } from "./web-map";
 
 let handle: MapInstanceHandle | null = null;
 
-// Initialize full-screen map
-void initWebMap("full-map", "full-map-status", (h) => {
+// Initialize map immediately
+handle = initWebMap("full-map", "full-map-status", (h) => {
   handle = h;
-  const countBadge = document.getElementById("counter-badge");
-  if (countBadge) {
-    countBadge.textContent = `${h.hazards.length} Global Hazards`;
-  }
 });
 
 // Filter chip event handlers
@@ -38,7 +34,7 @@ document.getElementById("btn-export-gpx")?.addEventListener("click", () => {
 });
 
 // Municipal modal
-const modal = document.getElementById("municipal-modal");
+const modal = document.getElementById("modal-municipal");
 document.getElementById("btn-municipal")?.addEventListener("click", () => {
   if (modal) modal.style.display = "flex";
 });

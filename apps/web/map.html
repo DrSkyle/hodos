@@ -4,15 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#172d29" />
-  <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness worldwide. Independent observations, verified by communities and municipal analytics." />
+  <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness worldwide. Independent observations, verified by communities and open to all." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Hodos Live Map — Global Road Intelligence" />
-  <meta property="og:description" content="Explore verified potholes, speed bumps, and road roughness across the world. Export GeoJSON/GPX for GIS." />
+  <meta property="og:title" content="Hodos Live Map — Open Road Intelligence" />
+  <meta property="og:description" content="Explore verified potholes, speed bumps, and road roughness across the world. Free GeoJSON/GPX downloads." />
   <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map.html" />
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="/hodos-icon.png" />
-  <title>Live Map · Hodos Road Intelligence</title>
+  <title>Live Map · Hodos Open Road Intelligence</title>
   <style>
     :root {
       --bg: #F8FAF7;
@@ -203,7 +203,7 @@
     .modal-card {
       background: #FFFFFF;
       border-radius: 20px;
-      max-width: 540px;
+      max-width: 520px;
       width: 100%;
       padding: 28px;
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
@@ -247,50 +247,47 @@
       <div>
         <div class="brand-title">hodos<span style="color:var(--forest)">.</span></div>
       </div>
-      <span class="brand-tag">Global Live Map</span>
+      <span class="brand-tag">Live Road Map</span>
     </a>
 
     <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
       <button class="filter-chip active" data-kind="all">All Defects</button>
       <button class="filter-chip" data-kind="pothole">Potholes</button>
       <button class="filter-chip" data-kind="speed_bump">Speed Bumps</button>
-      <button class="filter-chip" data-kind="rough_pavement">Rough Pavement</button>
+      <button class="filter-chip" data-kind="rough_pavement">Rough Road</button>
       <button class="filter-chip" data-kind="fixed">Repaired</button>
     </div>
 
     <div class="action-group">
       <button id="btn-fit-all" class="btn-action" title="Fit all recorded data on map">⤢ Fit Data</button>
-      <button id="btn-export-geojson" class="btn-action" title="Export GeoJSON of current map">Export GeoJSON</button>
-      <button id="btn-export-gpx" class="btn-action" title="Export GPX waypoint file">Export GPX</button>
-      <button id="btn-municipal" class="btn-action btn-primary">Enterprise & Municipal GIS</button>
+      <button id="btn-export-geojson" class="btn-action" title="Export GeoJSON of current map">Download GeoJSON</button>
+      <button id="btn-export-gpx" class="btn-action" title="Export GPX waypoint file">Download GPX</button>
+      <button id="btn-municipal" class="btn-action btn-primary">Open Municipal GIS</button>
     </div>
   </header>
 
   <main class="map-wrapper">
-    <div id="full-map" aria-label="Interactive world road hazard map"></div>
-    <div id="full-map-status" class="map-status-floating">Connecting to global road observations...</div>
+    <div id="full-map" aria-label="Interactive road hazard map"></div>
+    <div id="full-map-status" class="map-status-floating">Road observations loaded</div>
     <div class="map-legend-floating">
       <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole (Severe / Moderate)</span></div>
       <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed Bump / Hump</span></div>
-      <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough Pavement / Trench</span></div>
+      <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough Pavement / Rutting</span></div>
       <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Community Confirmed Repaired</span></div>
     </div>
   </main>
 
-  <div id="municipal-modal" class="modal-backdrop">
+  <div id="modal-municipal" class="modal-backdrop">
     <div class="modal-card">
-      <h2>Municipal & Commercial Road Intelligence</h2>
+      <h2>Open Road Data for Cities & Communities</h2>
       <p>
-        Hodos converts continuous mobile crowdsourcing into FAANG-grade pavement engineering analytics for governments, departments of transportation, infrastructure funds, and civil contractors worldwide.
+        All road condition and defect observations collected through Hodos are public and open. City road departments, municipal engineers, and local community groups can directly export and use this data for road maintenance.
       </p>
       <div class="modal-features">
-        <div><strong>World Bank ASTM E1926 IRI:</strong> Calibrated International Roughness Index calculated per road segment using quarter-car dynamic simulation.</div>
-        <div><strong>Uber H3 Spatial Hexagons:</strong> Multi-resolution hexagonal road condition heatmaps (Resolution 10 and 12) ready for GIS and SQL data warehouses.</div>
-        <div><strong>Automated Pothole Prioritization:</strong> Multi-device corroboration ensures maintenance budgets target real structural failures, not transient bumps.</div>
+        <div><strong>Free GeoJSON & GPX Exports:</strong> Load crowdsourced potholes and roughness directly into QGIS, ArcGIS, or civil repair work orders.</div>
+        <div><strong>ASTM E1926 Standard:</strong> Roughness metrics modeled on the International Roughness Index (IRI m/km) to prioritize resurfacing.</div>
+        <div><strong>Publicly Auditable:</strong> Transparent, open-source algorithms under the MIT License—no proprietary lock-in.</div>
       </div>
-      <p>
-        To license live API feeds, automated municipal road health dashboards, or bulk GIS exports for your region, contact us at <strong>enterprise@devilabs.dev</strong> or inspect our open-source tools.
-      </p>
       <div class="modal-close-row">
         <button id="btn-close-modal" class="btn-action btn-primary">Close</button>
       </div>
