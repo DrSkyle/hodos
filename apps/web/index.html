@@ -1,129 +1,563 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#172d29" />
-  <meta name="description" content="Hodos helps communities understand their roads. Explore reported hazards for free, or opt in to mapping on Android." />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="description" content="The road maps itself. Autonomous, open-source road hazard intelligence. Passive pothole detection, real-time roughness analysis, and open spatial datasets." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Hodos — Roads worth knowing" />
-  <meta property="og:description" content="A clearer view of the roads we share. Independent observations, community reports, and privacy by design." />
+  <meta property="og:title" content="Hodos — The road maps itself" />
+  <meta property="og:description" content="Autonomous, privacy-first road surface intelligence powered by everyday mobile sensors." />
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
   <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" href="/brandmark.svg" type="image/svg+xml" />
-  <title>Hodos — Roads worth knowing</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1.2.0" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1.2.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1.2.0" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <style>
+    h1 { font-size: 3.5rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.025em; }
+    h2 { font-size: 2rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; }
+    h3 { font-size: 1.25rem; line-height: 1.35; font-weight: 600; letter-spacing: -0.015em; }
+  </style>
+
+  <title>Hodos — The road maps itself</title>
 </head>
-<body>
-  <a class="skip-link" href="#content">Skip to content</a>
-  <header class="site-header">
-    <div class="site-header-inner wrap">
-      <a class="brand" href="/" aria-label="Hodos home"><img src="/brandmark.svg" alt="" width="42" height="42"/><span>hodos<span class="brand-stop">.</span></span></a>
-      <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="/map" style="font-weight: 700; color: #257B65;">Live map</a><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a>
-      </nav>
-      <a class="header-cta" href="/map">Live map <span class="button-trail" aria-hidden="true"></span></a>
-      <details class="mobile-nav"><summary aria-label="Toggle site navigation"><span></span><span></span></summary><nav aria-label="Mobile navigation"><a href="/map">Live map</a><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a><a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta</a></nav></details>
+<body class="min-h-screen bg-background font-sans antialiased text-foreground">
+  <a class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-background focus:text-foreground" href="#content">
+    Skip to content
+  </a>
+
+  <!-- Top Sticky Navigation (shadcn/ui style) -->
+  <header class="sticky top-0 z-40 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="container mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div class="flex items-center gap-6">
+        <a class="flex items-center gap-2 text-foreground font-bold text-lg tracking-tight" href="/" aria-label="Hodos Home">
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <i data-lucide="navigation" class="h-4 w-4"></i>
+          </div>
+          <span>hodos</span>
+          <span class="rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono font-medium text-muted-foreground">v1.2.0</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-5 text-sm font-medium text-muted-foreground">
+          <a href="#overview" class="transition-colors hover:text-foreground">Overview</a>
+          <a href="/map" class="flex items-center gap-1.5 transition-colors hover:text-foreground text-foreground">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span>Live Map</span>
+          </a>
+          <a href="#telemetry" class="transition-colors hover:text-foreground">Sensors</a>
+          <a href="#dataset" class="transition-colors hover:text-foreground">Dataset</a>
+          <a href="#faq" class="transition-colors hover:text-foreground">Docs & FAQ</a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Command Trigger Input -->
+        <button
+          type="button"
+          data-command-trigger
+          class="hidden sm:inline-flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground w-44 md:w-56 justify-between"
+        >
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="search" class="h-3.5 w-3.5"></i>
+            <span>Search docs...</span>
+          </span>
+          <kbd class="pointer-events-none rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+        </button>
+
+        <!-- GitHub Repo Link -->
+        <a
+          href="https://github.com/DrSkyle/hodos"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
+          aria-label="GitHub Repository"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+        </a>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button
+          type="button"
+          id="theme-toggle"
+          class="btn btn-ghost btn-icon text-muted-foreground hover:text-foreground"
+          aria-label="Toggle theme"
+        >
+          <i data-lucide="sun" class="h-4 w-4 hidden dark:block"></i>
+          <i data-lucide="moon" class="h-4 w-4 block dark:hidden"></i>
+        </button>
+
+        <a href="/map" class="btn btn-primary btn-sm gap-1.5">
+          <span>Explore Map</span>
+          <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+        </a>
+      </div>
     </div>
   </header>
+
   <main id="content">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="signal-dot"></span> THE ROAD MAPS ITSELF</p>
-          <h1 id="hero-title">Know the road.<br/><em>Keep moving.</em></h1>
-          <p class="hero-description">Everyday journeys can reveal the potholes and rough stretches we all encounter. Hodos brings independent observations together on a public map—one road at a time.</p>
-          <div class="hero-actions">
-            <a class="button button-dark" href="/map">Explore live map</a>
-            <a class="button button-outline" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Android beta</a>
-          </div>
-          <p class="beta-note">Android early access. Road detection is still being validated on real devices; do not rely on Hodos as a sole safety source.</p>
-          <div class="hero-index"><span>01 / OBSERVE</span><span>02 / CORROBORATE</span><span>03 / UNDERSTAND</span></div>
+    <!-- Hero Section -->
+    <section class="container mx-auto max-w-7xl px-4 sm:px-6 pt-12 md:pt-20 pb-16 flex flex-col items-center text-center" id="overview">
+      <!-- Announcement Pill -->
+      <a
+        href="/map"
+        class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground mb-6"
+      >
+        <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+        <span class="font-semibold text-foreground">Hodos 1.2.0</span>
+        <span>•</span>
+        <span>The road maps itself</span>
+        <i data-lucide="arrow-right" class="h-3 w-3"></i>
+      </a>
+
+      <!-- Headline -->
+      <h1 class="text-4xl font-extrabold tracking-tight sm:text-6xl md:text-7xl max-w-4xl leading-[1.08] text-foreground">
+        The road maps itself.
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="max-w-2xl text-muted-foreground text-base sm:text-xl leading-relaxed mt-6">
+        Autonomous, privacy-first road surface intelligence. Passively detect potholes, monitor pavement roughness, and build open spatial datasets using everyday phone motion sensors while you travel.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
+        <a href="/map" class="btn btn-primary btn-lg gap-2 shadow-sm">
+          <span>Explore Live Map</span>
+          <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+
+        <a
+          href="https://github.com/DrSkyle/hodos/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-outline btn-lg gap-2 shadow-sm"
+        >
+          <i data-lucide="download" class="h-4 w-4"></i>
+          <span>Download APK (v1.2.0)</span>
+        </a>
+
+        <button
+          type="button"
+          data-copy="git clone https://github.com/DrSkyle/hodos.git"
+          class="btn btn-outline btn-lg gap-2 font-mono text-xs text-muted-foreground bg-muted/30 hover:text-foreground"
+        >
+          <i data-lucide="terminal" class="h-3.5 w-3.5"></i>
+          <span>git clone hodos.git</span>
+          <i data-lucide="copy" class="h-3 w-3 ml-1"></i>
+        </button>
+      </div>
+
+      <!-- Quick Guarantees Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12 w-full max-w-3xl pt-8 border-t border-border/60 text-left">
+        <div>
+          <div class="font-mono text-xl font-bold text-foreground">100%</div>
+          <div class="text-xs text-muted-foreground">Autonomous Sensing</div>
         </div>
-        <div class="hero-visual">
-          <div class="map-plate" aria-label="Illustrative map of shared road reports, not live data">
-            <div class="plate-heading"><span class="plate-kicker">HODOS / MAP VIEW</span><span class="plate-label"><span class="plate-indicator"></span> Example only</span></div>
-            <div class="map-canvas">
-              <svg class="cartographic-map" viewBox="0 0 610 495" role="img" aria-labelledby="map-title map-desc" preserveAspectRatio="xMidYMid slice">
-                <title id="map-title">A road map schematic</title><desc id="map-desc">Interconnected local roads, a highlighted route, and three example hazard markers.</desc>
-                <defs>
-                  <pattern id="map-grid" width="29" height="29" patternUnits="userSpaceOnUse"><path d="M29 0H0V29" fill="none" stroke="#dfe6df" stroke-width=".6"/></pattern>
-                  <pattern id="district-dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#b8c9bd"/></pattern>
-                </defs>
-                <rect width="610" height="495" fill="#eff2eb"/><rect width="610" height="495" fill="url(#map-grid)" opacity=".75"/>
-                <path d="M27 90L144 24l123 76 113-59 164 103 84-21v162l-125 53-112-33-111 65-178-20L0 417V255Z" fill="#e1eade"/>
-                <path d="M30 356 154 300l113 28 89-88 143 5 142-70" fill="none" stroke="#d3e2cf" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M50-35 119 95 82 235l130 96-8 193M302-30l-40 123 82 95-68 162 82 180M551-30l-87 119 48 109-65 136 153 136M-15 164l165-48 184 62 294-16M-30 410l149-85 160 46 122-125 243 89" stroke="#c9d4cb" stroke-width="31" fill="none" stroke-linecap="round"/>
-                <path d="M50-35 119 95 82 235l130 96-8 193M302-30l-40 123 82 95-68 162 82 180M551-30l-87 119 48 109-65 136 153 136M-15 164l165-48 184 62 294-16M-30 410l149-85 160 46 122-125 243 89" stroke="#fffef8" stroke-width="26" fill="none" stroke-linecap="round"/>
-                <path class="route-line" d="M92 465 212 332 82 235 119 95 263 92 344 187 509 199" fill="none" stroke="#33735b" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="1 0"/>
-                <g font-size="11" fill="#738779" letter-spacing="1.2" font-family="ui-monospace,monospace">
-                  <text x="29" y="56">NORTH SECTOR</text><text x="366" y="449">NEIGHBORHOOD</text><text x="361" y="70">CROSSING 04</text>
-                </g>
-                <g transform="translate(119 95)"><circle r="21" fill="#f7ead7" stroke="#d38b59" stroke-width="2"/><circle r="7" fill="#c97947"/></g>
-                <g transform="translate(344 187)"><circle r="21" fill="#f7ead7" stroke="#d38b59" stroke-width="2"/><path d="M0-8V2" stroke="#a6603c" stroke-width="3.5" stroke-linecap="round"/><circle cy="9" r="2.2" fill="#a6603c"/></g>
-                <g transform="translate(509 199)"><circle r="21" fill="#d8e8d7" stroke="#367b62" stroke-width="2"/><path d="m-8 0 6 6 11-13" fill="none" stroke="#367b62" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></g>
-                <g transform="translate(92 465)"><circle r="15" fill="#317cbd" opacity=".18"/><circle r="7" fill="#317cbd" stroke="#fff" stroke-width="3"/></g>
-              </svg>
-              <div class="map-coordinates">SCHEMATIC <span>·</span> NOT A LIVE LOCATION</div>
+        <div>
+          <div class="font-mono text-xl font-bold text-foreground">0</div>
+          <div class="text-xs text-muted-foreground">Screen Vibrations</div>
+        </div>
+        <div>
+          <div class="font-mono text-xl font-bold text-foreground">250m</div>
+          <div class="text-xs text-muted-foreground">Privacy Buffer</div>
+        </div>
+        <div>
+          <div class="font-mono text-xl font-bold text-foreground">MIT</div>
+          <div class="text-xs text-muted-foreground">Free & Open Source</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Showcase Section (Tabs & Live Card) -->
+    <section class="container mx-auto max-w-5xl px-4 sm:px-6 pb-20" id="telemetry">
+      <div class="text-center mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Live Telemetry &amp; Field Verification</h2>
+      </div>
+      <div class="flex flex-col items-center">
+        <!-- Shadcn Tabs Control -->
+        <div class="tabs-list">
+          <button type="button" class="tabs-trigger active" data-tab-target="tab-telemetry">
+            <i data-lucide="activity" class="h-3.5 w-3.5 mr-1.5"></i>
+            <span>Motion Waveform</span>
+          </button>
+          <button type="button" class="tabs-trigger" data-tab-target="tab-dataset">
+            <i data-lucide="layers" class="h-3.5 w-3.5 mr-1.5"></i>
+            <span>Verified Dataset</span>
+          </button>
+          <button type="button" class="tabs-trigger" data-tab-target="tab-code">
+            <i data-lucide="terminal" class="h-3.5 w-3.5 mr-1.5"></i>
+            <span>API & Exports</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Waveform Monitor Card -->
+        <div class="tabs-content w-full" id="tab-telemetry">
+          <div class="card overflow-hidden">
+            <div class="card-header border-b border-border/60 bg-muted/20">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                  <h3 class="card-title text-base">Autonomous Sensor Telemetry</h3>
+                </div>
+                <span class="badge badge-secondary font-mono text-[11px]">50 Hz Real-Time Sampling</span>
+              </div>
+              <p class="card-description">
+                Adaptive Median Absolute Deviation (MAD) noise floor tracking distinguishes vehicle vibrations from physical road potholes in real time.
+              </p>
             </div>
-            <div class="map-legend" aria-hidden="true"><span><i class="key-route"></i> Observed road</span><span><i class="key-report"></i> Possible hazard</span><span><i class="key-repaired"></i> Reported repaired</span></div>
-            <div class="plate-bottom"><span>PUBLIC ROAD INTELLIGENCE</span><span>ILLUSTRATIVE INTERFACE / NOT LIVE DATA</span></div>
+
+            <div class="card-content pt-4 pb-2">
+              <canvas id="sensor-canvas" width="800" height="180" class="w-full h-44 rounded-lg border border-border/60"></canvas>
+            </div>
+
+            <div class="card-footer py-3 border-t border-border/60 bg-muted/10 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-muted-foreground">
+              <div class="flex items-center gap-4">
+                <span>MAD Noise Floor: <strong class="text-amber-500">±0.35 G</strong></span>
+                <span>Pothole Spike Threshold: <strong class="text-rose-500">2.4 G/s</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>Butterworth 2nd-Order Low-Pass Filter</span>
+              </div>
+            </div>
           </div>
-          <div class="hero-side-note" aria-hidden="true">The map starts with a road.<br/>The picture gets clearer together.</div>
+        </div>
+
+        <!-- Tab 2: Proving Ground Dataset Card -->
+        <div class="tabs-content w-full hidden" id="tab-dataset">
+          <div class="card overflow-hidden">
+            <div class="card-header border-b border-border/60 bg-muted/20">
+              <div class="flex items-center justify-between">
+                <h3 class="card-title text-base">Inaugural 500+ km Proving Transit</h3>
+                <a href="/map" class="btn btn-outline btn-sm gap-1">
+                  <span>Open Full Map</span>
+                  <i data-lucide="external-link" class="h-3 w-3"></i>
+                </a>
+              </div>
+              <p class="card-description">
+                During an actual 500+ kilometer transit from Birendranagar to Kathmandu, the autonomous background service logged 438 verified hazards.
+              </p>
+            </div>
+
+            <div class="card-content pt-6">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="rounded-lg border border-border p-4 bg-muted/20">
+                  <div class="text-3xl font-extrabold font-mono text-rose-500">108</div>
+                  <div class="text-xs text-muted-foreground uppercase font-medium mt-1">Asphalt Potholes</div>
+                </div>
+                <div class="rounded-lg border border-border p-4 bg-muted/20">
+                  <div class="text-3xl font-extrabold font-mono text-amber-500">318</div>
+                  <div class="text-xs text-muted-foreground uppercase font-medium mt-1">Rough Road Sections</div>
+                </div>
+                <div class="rounded-lg border border-border p-4 bg-muted/20">
+                  <div class="text-3xl font-extrabold font-mono text-sky-500">12</div>
+                  <div class="text-xs text-muted-foreground uppercase font-medium mt-1">Speed Humps</div>
+                </div>
+                <div class="rounded-lg border border-border p-4 bg-muted/20">
+                  <div class="text-3xl font-extrabold font-mono text-emerald-500">0</div>
+                  <div class="text-xs text-muted-foreground uppercase font-medium mt-1">Screen Distractions</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer py-3 border-t border-border/60 bg-muted/10 text-xs text-muted-foreground justify-between">
+              <span>All 438 records available as free GeoJSON and GPX downloads.</span>
+              <a href="/map" class="text-foreground font-medium hover:underline">Inspect on interactive map &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: API & CLI Quickstart Card -->
+        <div class="tabs-content w-full hidden" id="tab-code">
+          <div class="card overflow-hidden">
+            <div class="card-header border-b border-border/60 bg-muted/20">
+              <h3 class="card-title text-base">Direct Data Access & API</h3>
+              <p class="card-description">Inspect verified hazards directly via HTTP endpoints or clone the repository to build locally.</p>
+            </div>
+
+            <div class="card-content pt-4 space-y-3 font-mono text-xs">
+              <div class="relative rounded-lg bg-zinc-950 p-4 text-zinc-100 dark:bg-black border border-border/60">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 text-zinc-400">
+                  <span>Download Verified Hazards (JSON)</span>
+                  <button type="button" data-copy="curl -s https://hodos.devilabs.dev/data/hazards.json | jq .rows[0]" class="hover:text-zinc-100" aria-label="Copy code">
+                    <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                  </button>
+                </div>
+                <code>curl -s https://hodos.devilabs.dev/data/hazards.json | jq .rows[0]</code>
+              </div>
+
+              <div class="relative rounded-lg bg-zinc-950 p-4 text-zinc-100 dark:bg-black border border-border/60">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 text-zinc-400">
+                  <span>Build Android App Locally</span>
+                  <button type="button" data-copy="git clone https://github.com/DrSkyle/hodos.git && cd hodos/apps/web/android && ./gradlew assembleDebug" class="hover:text-zinc-100" aria-label="Copy code">
+                    <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                  </button>
+                </div>
+                <code>git clone https://github.com/DrSkyle/hodos.git &amp;&amp; cd hodos/apps/web/android &amp;&amp; ./gradlew assembleDebug</code>
+              </div>
+            </div>
+
+            <div class="card-footer py-3 border-t border-border/60 bg-muted/10 text-xs text-muted-foreground">
+              <span>Licensed under MIT (Code) and CC BY-NC-SA 4.0 (Road Datasets).</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-    <div class="method-strip"><div class="wrap method-strip-inner"><span>OPT-IN MAPPING</span><span>NO ACCOUNT TO EXPLORE</span><span>LOCAL JOURNEY SUMMARIES</span><span>OPEN SOURCE</span></div></div>
-    <section class="section section-how wrap" id="how" aria-labelledby="how-title">
-      <div class="section-intro"><div><span class="overline">01 / THE IDEA</span><h2 id="how-title">Just go where<br/>you were <em>going.</em></h2></div><p>Road conditions change constantly. Hodos helps turn everyday phone observations into a clearer, shared picture—without asking you to file a report at every bump.</p></div>
-      <div class="process-grid">
-        <article class="process-card"><span class="process-index">01</span><div class="process-symbol process-symbol-one" aria-hidden="true"><span class="process-path"></span></div><h3>Choose to map</h3><p>Opt in to automatic road mapping from the Android app. You decide when participation is on.</p><span class="process-foot">YOU'RE IN CONTROL</span></article>
-        <article class="process-card"><span class="process-index">02</span><div class="process-symbol process-symbol-two" aria-hidden="true"><span class="process-impulse"></span></div><h3>Travel as usual</h3><p>On-device motion analysis flags possible road impacts. A single bump is not enough to establish a defect.</p><span class="process-foot">LOCAL ANALYSIS</span></article>
-        <article class="process-card"><span class="process-index">03</span><div class="process-symbol process-symbol-three" aria-hidden="true"><span class="process-points"><i></i><i></i><i></i></span></div><h3>Build confidence</h3><p>Independent observations help corroborate reports. Communities can also submit repair feedback.</p><span class="process-foot">SHARED EVIDENCE</span></article>
-      </div>
-    </section>
-    <section class="section section-roads" id="road-notes" aria-labelledby="roads-title"><div class="wrap roads-grid">
-      <div class="roads-copy"><span class="overline">02 / YOUR ROADS</span><h2 id="roads-title">The places you<br/>care about <em>matter.</em></h2><p>Keep track of the reports that are useful to you. Revisit the map to check a road's current public status, or look back at your own weekly journey summaries.</p>
-        <div class="road-features">
-          <div><span class="feature-label">SAVE / 01</span><div><h3>Keep a road close</h3><p>Save public hazard reports on your phone and return to check for changes.</p></div></div>
-          <div><span class="feature-label">REVISIT / 02</span><div><h3>See what's changed</h3><p>Open a saved report to see its most recently available community status.</p></div></div>
-          <div><span class="feature-label">REMEMBER / 03</span><div><h3>A quiet road diary</h3><p>Weekly summaries stay on your device—without saving your full route.</p></div></div>
+
+    <!-- Features Section (Shadcn Bento Grid) -->
+    <section class="border-t border-border/60 bg-muted/20 py-20" id="features">
+      <div class="container mx-auto max-w-7xl px-4 sm:px-6">
+        <div class="flex flex-col items-center text-center mb-12">
+          <span class="badge badge-secondary mb-3">Core Engineering</span>
+          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
+            Built for unattended precision.
+          </h2>
+          <p class="max-w-xl text-muted-foreground text-sm sm:text-base mt-3">
+            Existing tools require drivers to dangerously tap screens while driving. Hodos operates silently in the background with zero user interaction.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Feature 1 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="activity" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">Adaptive MAD Filtering</h3>
+              <p class="card-description">
+                Dynamic Median Absolute Deviation noise-floor tracking continuously self-calibrates to heavy bus suspensions, motorbikes, or cars without manual tuning.
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">Zero Distraction Guarantee</h3>
+              <p class="card-description">
+                100% silent background foreground-service. The smartphone never chimes, never vibrates on bumps, and never displays intrusive popups while driving.
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="eye-off" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">On-Device Privacy Perimeter</h3>
+              <p class="card-description">
+                The first and last 250 meters of every trip are excised directly on the phone. Home and office locations never leave device RAM.
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="layers" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">Spatial Corroboration</h3>
+              <p class="card-description">
+                Multi-pass density clustering (DBSCAN) aggregates observations from multiple vehicles to confirm persistent physical damage over transient vehicle jolts.
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="scale" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">Dual-License Sustainability</h3>
+              <p class="card-description">
+                Software code is MIT licensed and fully auditable. The hazard dataset is CC BY-NC-SA 4.0, preserving free access for citizens while licensing commercial fleets.
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                <i data-lucide="file-json" class="h-5 w-5"></i>
+              </div>
+              <h3 class="card-title text-lg">Open GIS Formats</h3>
+              <p class="card-description">
+                One-click GeoJSON and GPX exports ready for immediate import into QGIS, Kepler.gl, ArcGIS, or municipal road maintenance dispatch systems.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="road-record" aria-label="Illustration of the saved road record format">
-        <div class="record-top"><span>H / ROAD RECORD</span><span>LOCAL NOTE</span></div>
-        <div class="record-map"><svg viewBox="0 0 520 300" preserveAspectRatio="none" role="img" aria-label="Simple diagram of a curving road and a saved map point">
-          <defs><pattern id="record-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#b6c8b7" stroke-width=".6"/></pattern></defs>
-          <rect width="520" height="300" fill="#dfe9df"/><rect width="520" height="300" fill="url(#record-grid)"/>
-          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#b3c7b4" stroke-width="80" fill="none" stroke-linecap="round"/>
-          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#fffdf5" stroke-width="65" fill="none" stroke-linecap="round"/>
-          <path class="record-route" d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#448168" stroke-width="3" stroke-dasharray="8 12" fill="none"/>
-          <circle cx="266" cy="204" r="30" fill="#f6d6b7" stroke="#b8734e" stroke-width="2"/>
-          <circle cx="266" cy="204" r="11" fill="#bc774d"/>
-          <text x="37" y="45" fill="#4b6857" font-size="12" font-family="monospace" letter-spacing="1">SAVED / PUBLIC REPORT</text>
-        </svg></div>
-        <div class="record-details"><span class="record-number">H—001</span><div><span class="record-subhead">ROAD CONDITION</span><strong>Check back later.</strong><p>Road reports can change as new observations and repair feedback arrive.</p></div><span class="record-status"><span></span> Example</span></div>
-        <div class="record-footer"><span>BUILT FOR REVISITING</span><span>NO FULL ROUTE STORED</span></div>
+    </section>
+
+    <!-- FAQ Section (Shadcn Accordion) -->
+    <section class="container mx-auto max-w-4xl px-4 sm:px-6 py-20" id="faq">
+      <div class="flex flex-col items-center text-center mb-12">
+        <span class="badge badge-secondary mb-3">Documentation</span>
+        <h2 class="text-3xl font-bold tracking-tight text-foreground">Frequently Asked Questions</h2>
+        <p class="text-muted-foreground text-sm sm:text-base mt-2">Everything you need to know about testing and deploying Hodos.</p>
       </div>
-    </div></section>
-    <section class="section section-values" id="values" aria-labelledby="values-title"><div class="wrap values-grid">
-      <div><span class="overline">03 / PRINCIPLES</span><h2 id="values-title">Useful in public.<br/><em>Careful in private.</em></h2></div>
-      <div class="value-list">
-        <article><span>01</span><div><h3>Explore without signing in.</h3><p>The public hazard map is available even when automatic mapping is turned off.</p></div></article>
-        <article><span>02</span><div><h3>Keep raw motion on your phone.</h3><p>Compact geolocated observations can be sent when you participate; raw sensor streams and complete routes are not uploaded.</p></div></article>
-        <article><span>03</span><div><h3>Don't trust a single bump.</h3><p>Multiple independent observations help corroborate possible hazards before they're shown on the shared map.</p></div></article>
-        <article><span>04</span><div><h3>See the code.</h3><p>Hodos is developed in the open under AGPL-3.0. Read the implementation and help make it more dependable.</p></div></article>
+
+      <div class="w-full space-y-2">
+        <div class="accordion-item" data-state="open">
+          <button type="button" class="accordion-trigger">
+            <span>Does my phone vibrate when driving over road bumps?</span>
+            <i data-lucide="chevron-down" class="accordion-chevron h-4 w-4"></i>
+          </button>
+          <div class="accordion-content">
+            No. Hodos enforces a strict Zero Distraction guarantee. The smartphone will never vibrate, buzz, or flash notifications while you are driving. Road safety always comes before telemetry.
+          </div>
+        </div>
+
+        <div class="accordion-item" data-state="closed">
+          <button type="button" class="accordion-trigger">
+            <span>How are home and private locations protected?</span>
+            <i data-lucide="chevron-down" class="accordion-chevron h-4 w-4"></i>
+          </button>
+          <div class="accordion-content">
+            The first 250 meters and final 250 meters of every journey are permanently excised on-device before any observations are stored or synced. Your driveway, residential street, and workplace parking areas are never recorded.
+          </div>
+        </div>
+
+        <div class="accordion-item" data-state="closed">
+          <button type="button" class="accordion-trigger">
+            <span>Do I need an active internet connection while driving?</span>
+            <i data-lucide="chevron-down" class="accordion-chevron h-4 w-4"></i>
+          </button>
+          <div class="accordion-content">
+            No. Road hazard observations are queued locally in an encrypted SQLite database on your device. When you reach Wi-Fi or steady cellular reception, the batch syncs quietly in the background.
+          </div>
+        </div>
+
+        <div class="accordion-item" data-state="closed">
+          <button type="button" class="accordion-trigger">
+            <span>Can commercial fleet operators use the dataset for free?</span>
+            <i data-lucide="chevron-down" class="accordion-chevron h-4 w-4"></i>
+          </button>
+          <div class="accordion-content">
+            No. While citizens, civic organizations, and academic researchers can download and inspect the data freely under CC BY-NC-SA 4.0, commercial logistics operators (delivery fleets, freight carriers, ride-hailing networks) must purchase a commercial fleet license.
+          </div>
+        </div>
+
+        <div class="accordion-item" data-state="closed">
+          <button type="button" class="accordion-trigger">
+            <span>Where can I download the Android app?</span>
+            <i data-lucide="chevron-down" class="accordion-chevron h-4 w-4"></i>
+          </button>
+          <div class="accordion-content">
+            You can download the compiled Android APK release (v1.2.0) directly from our GitHub Releases page, or compile the source code yourself using Android Studio.
+          </div>
+        </div>
       </div>
-    </div></section>
-    <section class="section section-faq wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><span class="overline">04 / QUESTIONS</span><h2 id="faq-title">Good to know.</h2></div><div class="faq-list">
-      <details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos submits compact geolocated road observations when mapping is enabled, not raw accelerometer data or your complete GPS route.</p></details>
-      <details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore publicly confirmed road hazards without enabling automatic mapping.</p></details>
-      <details><summary>When does a hazard appear on the map?</summary><p>Hodos checks for repeated observations from different app installations before publishing a hazard. People can also report when a road has been repaired.</p></details>
-      <details><summary>Can I save maps for offline use?</summary><p>The Android app can save a nearby 20 km map area over Wi-Fi after you allow location. Saved tiles work offline; other regions and fresh hazard updates need internet.</p></details>
-      <details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first and in beta testing. iPhone support is not available yet.</p></details>
-    </div></section>
-    <section class="closing"><div class="wrap closing-inner"><div><span class="overline">EVERY ROAD COUNTS</span><h2>Better journeys start<br/>with better information.</h2></div><div><a class="button button-light" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Explore Android beta</a><p>Early-access software. Report issues on GitHub.</p></div></div></section>
+    </section>
+
+    <!-- Bottom Callout Section -->
+    <section class="border-t border-border/60 py-16 bg-muted/10">
+      <div class="container mx-auto max-w-5xl px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-foreground">Explore the live defect map.</h2>
+          <p class="text-muted-foreground text-sm mt-1">Inspect all 438 verified hazards with high-precision coordinates.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/map" class="btn btn-primary btn-md gap-1.5">
+            <span>Launch Map</span>
+            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+          </a>
+          <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-md gap-1.5">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer class="site-footer"><div class="wrap footer-inner"><a class="footer-brand" href="/"><img src="/brandmark.svg" alt="" width="28" height="28"/> hodos.</a><p>An open road project by Devilabs.</p><div><a href="/map">Live map</a><a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">Source code</a><a href="/privacy.html">Privacy</a></div></div></footer>
+
+  <!-- Shadcn Footer -->
+  <footer class="border-t border-border/60 py-8 bg-background">
+    <div class="container mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+      <div class="flex items-center gap-2">
+        <div class="flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground">
+          <i data-lucide="navigation" class="h-3 w-3"></i>
+        </div>
+        <span>Built by <a href="mailto:hodos@devilabs.dev" class="font-medium text-foreground hover:underline">Devilabs</a>. The source code is available on <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer" class="font-medium text-foreground hover:underline">GitHub</a>.</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/map" class="hover:text-foreground">Live Map</a>
+        <a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer" class="hover:text-foreground">Releases</a>
+        <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer" class="hover:text-foreground">Source Code (MIT)</a>
+        <a href="/privacy.html" class="hover:text-foreground">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Command Palette Dialog (⌘K) -->
+  <div id="command-dialog" class="command-backdrop hidden" role="dialog" aria-modal="true" aria-label="Command search menu">
+    <div class="command-card">
+      <div class="command-input-wrap">
+        <i data-lucide="search" class="h-4 w-4 text-muted-foreground"></i>
+        <input type="text" id="command-input" class="command-input" placeholder="Type a command or search..." autocomplete="off" />
+        <kbd class="rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">ESC</kbd>
+      </div>
+
+      <div class="command-list">
+        <div class="command-group-heading">Navigation</div>
+        <div class="command-item" data-action="map">
+          <i data-lucide="navigation" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Live Defect Map</span>
+        </div>
+        <div class="command-item" data-action="#telemetry">
+          <i data-lucide="activity" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Motion Telemetry Waveform</span>
+        </div>
+        <div class="command-item" data-action="#dataset">
+          <i data-lucide="layers" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Verified Dataset</span>
+        </div>
+        <div class="command-item" data-action="#faq">
+          <i data-lucide="help-circle" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Documentation &amp; FAQ</span>
+        </div>
+
+        <div class="command-group-heading">Preferences &amp; Links</div>
+        <div class="command-item" data-action="theme">
+          <i data-lucide="sun" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Toggle Dark / Light Mode</span>
+        </div>
+        <div class="command-item" data-action="releases">
+          <i data-lucide="download" class="h-4 w-4 text-muted-foreground"></i>
+          <span>Download Android APK (v1.2.0)</span>
+        </div>
+        <div class="command-item" data-action="github">
+          <svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+          <span>View GitHub Source Code</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Root -->
+  <div id="toast-container" class="toast-container"></div>
+
   <script type="module" src="/src/landing.ts"></script>
 <!-- impeccable-live-start -->
 <script src="http://localhost:8400/live.js?token=3fee00cb-0523-4759-ab71-59efea1353cf"></script>

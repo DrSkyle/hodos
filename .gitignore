@@ -31,6 +31,8 @@ appwrite/.claude/
 # Tooling state
 .commandcode/
 .scratch/
+.impeccable/
+apps/web/.impeccable/
 
 # Internal material: not part of the public repo
 internal/

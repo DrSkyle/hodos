@@ -12,7 +12,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/geojson": "^7946.0.16",
+    "lucide": "^1.66.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
   },
