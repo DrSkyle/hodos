@@ -56,7 +56,7 @@ a secret. Compare it with the fingerprint printed by `apksigner verify
 Create the Base64 value without adding the keystore itself to the repository:
 
 ```sh
-base64 < hodos-release.p12 | tr -d '\\n'
+base64 < hodos-release.p12 | tr -d '\n'
 ```
 
 Copy that output directly into the protected `HODOS_KEYSTORE_BASE64` secret.
