@@ -40,6 +40,20 @@ jobs:
         run: |
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager --install "platforms;android-35" "build-tools;35.0.0" > /dev/null
+      - name: Assert release signing fails closed without protected secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if output="$(cd apps/web/android && ./gradlew :app:validateReleaseSigning --no-daemon 2>&1)"; then
+            echo "::error::Release signing validation unexpectedly succeeded without protected secrets."
+            exit 1
+          fi
+          if ! grep -Fq "Release signing is not configured" <<< "$output"; then
+            printf '%s\n' "$output"
+            echo "::error::Release signing failed for an unexpected reason."
+            exit 1
+          fi
+          echo "Confirmed: release signing fails closed when protected secrets are absent."
       - name: Run native unit tests and build debug APK
         run: |
           cd apps/web/android
