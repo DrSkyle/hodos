@@ -97,6 +97,8 @@ public class HodosService extends Service implements SensorEventListener {
   private volatile long lastHistoryFlushAt = 0;
   private volatile long lastNotificationUpdateAt = 0;
   private long tripStartedAt = 0;
+  private volatile long sensorBaseNs = 0;
+  private volatile long sensorBaseEpochMs = 0;
   private LocationCallback idleLocationCallback = null;
 
   @Override
