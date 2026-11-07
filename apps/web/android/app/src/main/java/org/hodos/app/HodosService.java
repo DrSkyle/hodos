@@ -389,6 +389,8 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (motionCoverageTimes) { motionCoverageTimes.clear(); }
     synchronized (fixes) { fixes.clear(); }
     synchronized (impacts) { impacts.clear(); }
+    sensorBaseNs = 0;
+    sensorBaseEpochMs = 0;
     updateNotification("Mapping: 00:00 · 0 m (0 hazards)");
 
     Sensor accelerometer =
@@ -710,12 +712,26 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
+  static long resolveSensorTimestampMs(
+      long eventTimestampNs, long wallNowMs, long baseNs, long baseEpochMs) {
+    if (eventTimestampNs <= 0 || baseNs <= 0 || eventTimestampNs < baseNs) {
+      return wallNowMs;
+    }
+    return baseEpochMs + (eventTimestampNs - baseNs) / 1_000_000L;
+  }
+
   @Override
   public void onSensorChanged(SensorEvent event) {
     if (!sampling) {
       return;
     }
-    long t = System.currentTimeMillis();
+    long wallNow = System.currentTimeMillis();
+    long eventNs = event.timestamp;
+    if (eventNs > 0 && (sensorBaseNs <= 0 || eventNs < sensorBaseNs)) {
+      sensorBaseNs = eventNs;
+      sensorBaseEpochMs = wallNow;
+    }
+    long t = resolveSensorTimestampMs(eventNs, wallNow, sensorBaseNs, sensorBaseEpochMs);
     synchronized (samples) {
       samples.add(new MotionDetector.Sample(
           t, event.values[0], event.values[1], event.values[2]));

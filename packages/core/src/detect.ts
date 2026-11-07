@@ -57,7 +57,7 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   gravityAlpha: 0.02,
 };
 
-function residuals(samples: MotionSample[], alpha: number): ResidualSeries {
+export function residuals(samples: MotionSample[], alpha: number): ResidualSeries {
   const first = samples[0];
   if (first === undefined) {
     return { times: [], vertical: [], lateral: [] };
@@ -83,6 +83,22 @@ function residuals(samples: MotionSample[], alpha: number): ResidualSeries {
     lateral.push(Math.sqrt(Math.max(0, hmag * hmag - v * v)));
   }
   return { times, vertical, lateral };
+}
+
+/**
+ * Autonomous self-calibrating threshold using the rolling MAD envelope (floorVal).
+ * Dynamically rejects continuous chassis shudder (heavy diesel buses, stiff suspensions)
+ * without manual configuration while preserving sensitivity on smooth pavement.
+ */
+export function adaptiveThreshold(mode: TravelMode, modeCfg: ModeOptions, floorVal: number): number {
+  const isVehicle = mode === "vehicle";
+  const effectiveFloorAbs = isVehicle
+    ? Math.max(modeCfg.absoluteFloor, 1.35 * floorVal)
+    : modeCfg.absoluteFloor;
+  const effectiveK = isVehicle
+    ? modeCfg.noiseK + Math.min(1.0, Math.max(0.0, (floorVal - 0.6) * 0.5))
+    : modeCfg.noiseK;
+  return Math.max(effectiveFloorAbs, effectiveK * floorVal);
 }
 
 /** The Device is a vehicle when it is moving at vehicle speed. */
@@ -161,7 +177,7 @@ export function detectImpacts(
   let i = 0;
 
   while (i < ordered.length) {
-    const threshold = Math.max(modeCfg.absoluteFloor, modeCfg.noiseK * (floor[i] ?? 0));
+    const threshold = adaptiveThreshold(mode, modeCfg, floor[i] ?? 0);
     if (Math.abs(filtered[i] ?? 0) < threshold) {
       i += 1;
       continue;
@@ -169,7 +185,7 @@ export function detectImpacts(
     let peakIndex = i;
     let j = i;
     while (j < ordered.length) {
-      const t = Math.max(modeCfg.absoluteFloor, modeCfg.noiseK * (floor[j] ?? 0));
+      const t = adaptiveThreshold(mode, modeCfg, floor[j] ?? 0);
       if (Math.abs(filtered[j] ?? 0) < t * cfg.releaseFraction) {
         break;
       }

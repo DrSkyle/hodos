@@ -66,6 +66,7 @@ public final class MotionDetector {
     public int severity;
     public String kind;
     public String mode;
+    public Features features;
   }
 
   public static final class Observed {
@@ -120,6 +121,18 @@ public final class MotionDetector {
   private static final double HALF_LIFE_DAYS = 90;
 
   private MotionDetector() {}
+
+  private static double round3(double v) {
+    return Math.round(v * 1000.0) / 1000.0;
+  }
+
+  private static double round2(double v) {
+    return Math.round(v * 100.0) / 100.0;
+  }
+
+  private static double round1(double v) {
+    return Math.round(v * 10.0) / 10.0;
+  }
 
   private static double median(List<Double> values) {
     if (values.isEmpty()) {
@@ -227,9 +240,9 @@ public final class MotionDetector {
     }
 
     Features f = new Features();
-    f.peak = peak;
-    f.riseMs = Math.max(0, times[peakIndex] - times[start]);
-    f.widthMs = Math.max(0, times[end] - times[start]);
+    f.peak = round3(peak);
+    f.riseMs = Math.round(Math.max(0, times[peakIndex] - times[start]));
+    f.widthMs = Math.round(Math.max(0, times[end] - times[start]));
 
     double lobeFloor = peak * 0.4;
     int lobes = 0;
@@ -250,8 +263,8 @@ public final class MotionDetector {
       }
       lateralMax = Math.max(lateralMax, Math.abs(lateral[i]));
     }
-    f.jerk = jerk;
-    f.lateralRatio = lateralMax / Math.max(peak, 0.001);
+    f.jerk = round1(jerk);
+    f.lateralRatio = round3(lateralMax / Math.max(peak, 0.001));
     return f;
   }
 
@@ -293,7 +306,7 @@ public final class MotionDetector {
     double margin = clamp((scores[best] - runnerUp) / 0.25, 0, 1);
     Classification out = new Classification();
     out.kind = kinds[best];
-    out.score = clamp(0.7 * scores[best] + 0.3 * margin, 0, 1);
+    out.score = round3(clamp(0.7 * scores[best] + 0.3 * margin, 0, 1));
     return out;
   }
 
@@ -342,17 +355,20 @@ public final class MotionDetector {
       return impacts;
     }
 
-    int n = samples.size();
+    List<Sample> ordered = new ArrayList<>(samples);
+    Collections.sort(ordered, (a, b) -> Long.compare(a.t, b.t));
+
+    int n = ordered.size();
     long[] times = new long[n];
     double[] vertical = new double[n];
     double[] lateral = new double[n];
-    double gx = samples.get(0).ax;
-    double gy = samples.get(0).ay;
-    double gz = samples.get(0).az;
+    double gx = ordered.get(0).ax;
+    double gy = ordered.get(0).ay;
+    double gz = ordered.get(0).az;
     List<Long> timeList = new ArrayList<>(n);
 
     for (int i = 0; i < n; i++) {
-      Sample s = samples.get(i);
+      Sample s = ordered.get(i);
       gx += GRAVITY_ALPHA * (s.ax - gx);
       gy += GRAVITY_ALPHA * (s.ay - gy);
       gz += GRAVITY_ALPHA * (s.az - gz);
@@ -444,11 +460,12 @@ public final class MotionDetector {
       impact.accuracy = fix.accuracy;
       impact.speedKph = speedKph;
       impact.magnitude = features.peak;
-      impact.normalised = features.peak / gain;
+      impact.normalised = round2(features.peak / gain);
       impact.severity = severityOf(impact.normalised);
       impact.kind = classification.kind;
-      impact.confidence = clamp(0.55 * classification.score + 0.3 * snr + 0.15 * accuracyFactor, 0, 1);
+      impact.confidence = round3(clamp(0.55 * classification.score + 0.3 * snr + 0.15 * accuracyFactor, 0, 1));
       impact.mode = mode;
+      impact.features = features;
       impacts.add(impact);
       lastEmit = peakTime;
     }
