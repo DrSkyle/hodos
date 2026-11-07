@@ -122,7 +122,7 @@ fun RoadMap(
             try {
             map = result
             result.cameraPosition = CameraPosition.Builder()
-                .target(LatLng(28.2, 84.0)).zoom(6.0).build()
+                .target(LatLng(20.0, 0.0)).zoom(2.0).build()
             result.uiSettings.isRotateGesturesEnabled = false
             result.uiSettings.setAttributionMargins(12, 0, 12, 170)
             result.setStyle(
@@ -298,8 +298,8 @@ fun RoadMap(
                             LocationManager.NETWORK_PROVIDER,
                             LocationManager.GPS_PROVIDER
                         ).filter { locationManager.isProviderEnabled(it) }
-                        // A cached fix is better than a map stuck on Nepal's
-                        // midpoint. Use a very recent fix immediately; older
+                        // A cached fix is better than a map stuck on the default
+                        // view. Use a very recent fix immediately; older
                         // (<15-minute) fixes are a timeout-only fallback.
                         providers.forEach { provider ->
                             val cached = try { locationManager.getLastKnownLocation(provider) }

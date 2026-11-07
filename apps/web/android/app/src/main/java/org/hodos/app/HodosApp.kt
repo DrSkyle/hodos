@@ -62,15 +62,13 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Ink = Color(0xFFF8FAFC)
-private val Forest = Color(0xFFFF6647)
-private val Paper = Color(0xFF0B0E14)
-private val Muted = Color(0xFF94A3B8)
-private val Mist = Color(0xFF182030)
-private val Orange = Color(0xFFF59E0B)
-private val Danger = Color(0xFFDE3618)
-private val Cyan = Color(0xFF38BDF8)
-private val Emerald = Color(0xFF10B981)
+private val Ink = Color(0xFF162522)
+private val Forest = Color(0xFF125B48)
+private val Paper = Color(0xFFF7FAF8)
+private val Muted = Color(0xFF687C74)
+private val Mist = Color(0xFFEAF3ED)
+private val Orange = Color(0xFFC47B29)
+private val Danger = Color(0xFFCB4E43)
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
 
@@ -438,30 +436,47 @@ fun HodosApp(
                                 }
                                 Spacer(Modifier.height(9.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(
-                                        value = query,
-                                        onValueChange = { query = it },
-                                        singleLine = true,
-                                        placeholder = { Text("Search road hazards", fontSize = 14.sp) },
-                                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(19.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedContainerColor = Color.White,
-                                            unfocusedContainerColor = Color.White,
-                                            focusedBorderColor = Forest,
-                                            unfocusedBorderColor = Color(0xFFDAE7DD)
-                                        )
-                                    )
-                                    FilledIconButton(
-                                        onClick = { filterVisible = !filterVisible },
-                                        modifier = Modifier.size(54.dp),
-                                        colors = IconButtonDefaults.filledIconButtonColors(
-                                            containerColor = if (filterVisible) Forest else Color.White,
-                                            contentColor = if (filterVisible) Color.White else Ink
-                                        )
+                                    Surface(
+                                        modifier = Modifier.weight(1f).height(50.dp),
+                                        shape = RoundedCornerShape(18.dp),
+                                        color = Color.White,
+                                        shadowElevation = 3.dp
                                     ) {
-                                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter hazards")
+                                        TextField(
+                                            value = query,
+                                            onValueChange = { query = it },
+                                            singleLine = true,
+                                            placeholder = { Text("Search road hazards", fontSize = 14.sp, color = Muted) },
+                                            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Forest) },
+                                            modifier = Modifier.fillMaxSize(),
+                                            colors = TextFieldDefaults.colors(
+                                                focusedTextColor = Ink,
+                                                unfocusedTextColor = Ink,
+                                                cursorColor = Forest,
+                                                focusedContainerColor = Color.Transparent,
+                                                unfocusedContainerColor = Color.Transparent,
+                                                focusedIndicatorColor = Color.Transparent,
+                                                unfocusedIndicatorColor = Color.Transparent,
+                                                disabledIndicatorColor = Color.Transparent
+                                            )
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(18.dp),
+                                        color = if (filterVisible) Forest else Color.White,
+                                        shadowElevation = 3.dp,
+                                        modifier = Modifier.size(50.dp)
+                                    ) {
+                                        IconButton(
+                                            onClick = { filterVisible = !filterVisible },
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.FilterList,
+                                                contentDescription = "Filter hazards",
+                                                tint = if (filterVisible) Color.White else Ink
+                                            )
+                                        }
                                     }
                                 }
                                 if (filterVisible) {

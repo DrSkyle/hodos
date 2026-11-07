@@ -8,14 +8,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos Live Map — The road maps itself" />
   <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness." />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.0" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.1" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map" />
-  <link rel="icon" href="/brandmark.svg?v=2.0.0" type="image/svg+xml" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.0" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.0" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.0" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.0" />
-  <link rel="manifest" href="/site.webmanifest?v=2.0.0" />
+  <link rel="icon" href="/brandmark.svg?v=2.0.1" type="image/svg+xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.1" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.1" />
+  <link rel="manifest" href="/site.webmanifest?v=2.0.1" />
   <title>Live Map · Hodos</title>
   <style>
     :root {
@@ -69,6 +69,36 @@
     }
     .brand-stop {
       color: var(--accent);
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      padding: 6px 14px;
+      min-width: 210px;
+      max-width: 280px;
+      flex: 1;
+    }
+    .search-box svg {
+      width: 14px;
+      height: 14px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .search-box input {
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 12.5px;
+      width: 100%;
+      outline: none;
+    }
+    .search-box input::placeholder {
+      color: var(--muted);
     }
     .nav-chips {
       display: flex;
@@ -182,9 +212,14 @@
 <body>
   <header class="map-header">
     <a href="/" class="brand-group" aria-label="Return to Hodos Home">
-      <img src="/hodos-icon.png?v=2.0.0" alt="Hodos" width="34" height="34" />
+      <img src="/hodos-icon.png?v=2.0.1" alt="Hodos" width="34" height="34" />
       <span class="brand-title">hodos<span class="brand-stop">.</span></span>
     </a>
+
+    <label class="search-box" aria-label="Filter observations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="map-search-input" type="search" placeholder="Filter by type or coordinate…" autocomplete="off" />
+    </label>
 
     <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
       <button class="filter-chip active" data-kind="all">All</button>

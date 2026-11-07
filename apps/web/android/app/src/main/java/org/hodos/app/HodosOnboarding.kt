@@ -28,10 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Forest = Color(0xFFFF6647)
-private val Ink = Color(0xFFF8FAFC)
-private val Muted = Color(0xFF94A3B8)
-private val Paper = Color(0xFF0B0E14)
+private val Forest = Color(0xFF125B48)
+private val Ink = Color(0xFF172923)
+private val Muted = Color(0xFF63786D)
+private val Paper = Color(0xFFF7FAF7)
 
 private data class IntroPage(val eyebrow: String, val title: String, val description: String)
 

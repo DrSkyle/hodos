@@ -185,16 +185,25 @@ export function initWebMap(
   const handle: MapInstanceHandle = {
     map,
     hazards,
-    filterByKind: (kind: string) => {
+    filterByKind: (kind: string, query = "") => {
       const src = map.getSource("hodos-hazards") as any;
       if (!src) return;
 
-      const filtered =
-        kind === "all"
-          ? hazards
-          : kind === "fixed"
-          ? hazards.filter((h) => h.fixed)
-          : hazards.filter((h) => h.kind === kind && !h.fixed);
+      const q = query.trim().toLowerCase();
+      const filtered = hazards.filter((h) => {
+        const matchKind =
+          kind === "all"
+            ? true
+            : kind === "fixed"
+            ? h.fixed
+            : h.kind === kind && !h.fixed;
+        const matchQuery =
+          !q ||
+          h.title.toLowerCase().includes(q) ||
+          h.locationName.toLowerCase().includes(q) ||
+          h.id.toLowerCase().includes(q);
+        return matchKind && matchQuery;
+      });
 
       src.setData(buildGeoJSON(filtered));
       if (statusEl) {
