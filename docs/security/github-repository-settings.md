@@ -1,59 +1,135 @@
 # GitHub repository security settings
 
-These controls are not fully expressible through the current connected GitHub
-API. Configure them in the repository settings after reviewing this Phase 0
-change.
+## Current live repository audit (verified via GitHub REST API)
 
-## Protect `main`
+- **Repository visibility:** `public` (`forks_count: 0`)
+- **Rulesets (`GET /repos/DrSkyle/hodos/rulesets`):** `[]` (none configured)
+- **Branch protection (`GET /repos/DrSkyle/hodos/branches/main/protection`):** `404 Branch not protected`
+- **Environments (`GET /repos/DrSkyle/hodos/environments`):** `0` environments (`production-release` not yet created)
+- **Default workflow token permissions:** `read` (`can_approve_pull_request_reviews: false`) — **already compliant**
+- **Secret scanning & push protection:** `secret_scanning: enabled`, `secret_scanning_push_protection: enabled` — **already compliant**
+- **Actions allow-list:** `allowed_actions: all`, `sha_pinning_required: false` (all workflows in repo now pin third-party actions to full commit SHAs)
 
-Open **Settings → Rules → Rulesets** and create an active branch ruleset for
-`main`:
+Because the remote agent's scoped GitHub App token has read access to repository rules/settings and write access to code branches, apply the administrative ruleset and environment settings below from an authenticated owner shell (`gh` with `repo` / `admin:repo_hook` scope) or via the GitHub Settings UI.
 
-- Require a pull request before merging.
-- Require the `CI / test` and `Android verification / verify` status checks.
-- Require conversation resolution.
-- Dismiss stale approvals when new commits are pushed.
-- Block force pushes and branch deletion.
-- Do not allow ordinary workflows to bypass the rules.
-- Keep administrator bypass limited to an intentional break-glass path.
+---
 
-Require at least one independent approval once a second trusted maintainer is
-available. Do not configure a one-approval rule while the repository has only
-one eligible reviewer; that would create a merge deadlock rather than real
-review.
+## 1. Create the protected `production-release` environment
 
-## Protect release tags
+Open **Settings → Environments → New environment** and name it `production-release`:
 
-Create a tag ruleset matching `v*`:
+1. Enable **Required reviewers** and add `DrSkyle`.
+2. Under **Deployment branches and tags**, select **Selected branches and tags** and add a tag pattern rule for `v*` (restricting environment access exclusively to version tags).
+3. Add the four environment secrets (using the newly generated offline keystore, **never** the compromised `CC:9C:1F:E2...` key):
+   - `HODOS_KEYSTORE_BASE64`
+   - `HODOS_STORE_PASSWORD`
+   - `HODOS_KEY_ALIAS`
+   - `HODOS_KEY_PASSWORD`
+4. Add the environment variable:
+   - `HODOS_SIGNING_CERT_SHA256` (set to the SHA-256 fingerprint of the new certificate).
 
-- Restrict tag updates and deletion.
-- Restrict tag creation to repository maintainers.
-- Do not allow ordinary CI jobs or deployment tokens to bypass the rule.
+Equivalent `gh` CLI commands (run locally where your new keystore resides):
 
-The release workflow independently verifies that a version tag points to a
-commit reachable from `main`.
+```sh
+# After creating the environment and reviewer rule in Settings -> Environments:
+gh secret set HODOS_KEYSTORE_BASE64 --env production-release -R DrSkyle/hodos < <(base64 < hodos-release-v2.keystore | tr -d '\n')
+gh secret set HODOS_STORE_PASSWORD --env production-release -R DrSkyle/hodos
+gh secret set HODOS_KEY_ALIAS --env production-release -R DrSkyle/hodos
+gh secret set HODOS_KEY_PASSWORD --env production-release -R DrSkyle/hodos
+gh variable set HODOS_SIGNING_CERT_SHA256 --env production-release -R DrSkyle/hodos --body "<NEW_CERT_SHA256>"
+```
 
-## Protect the production release environment
+---
 
-Open **Settings → Environments** and create `production-release`:
+## 2. Protect `main` with a repository branch ruleset
 
-- Require a trusted reviewer before deployment.
-- Prevent self-review where the repository plan supports it.
-- Restrict deployment branches/tags to version tags matching `v*`.
-- Store the four signing values as environment secrets:
-  `HODOS_KEYSTORE_BASE64`, `HODOS_STORE_PASSWORD`, `HODOS_KEY_ALIAS`,
-  and `HODOS_KEY_PASSWORD`.
-- Store `HODOS_SIGNING_CERT_SHA256` as an environment variable.
+Open **Settings → Rules → Rulesets → New branch ruleset** (or run the `gh api` command below):
 
-Do not copy the exposed v1.2.0 signing key back into the environment. Only add
-the new key after the owner-approved update migration has been tested.
+- **Ruleset Name:** `main-protection`
+- **Enforcement status:** `Active`
+- **Target branches:** Include default branch (`main`)
+- **Rules enabled:**
+  - Restrict deletions
+  - Block force pushes
+  - Require a pull request before merging (`required_approving_review_count: 0` while solo-maintained to avoid merge deadlock; increase to `1` when a second maintainer is added; enable `require_last_push_approval: false`, `dismiss_stale_reviews_on_push: true`, `required_review_thread_resolution: true`)
+  - Require status checks to pass: `test` (`CI`) and `verify` (`Android verification`)
 
-## Limit Actions permissions
+Equivalent `gh api` command:
 
-- Set the repository's default workflow token permission to read-only.
-- Require explicit per-job write permissions only for the draft release job.
-- Restrict allowed Actions to the specific actions Hodos uses, if that setting
-  is compatible with the repository's maintenance workflow.
-- Enable secret scanning and push protection where available.
-- Review all repository, organization, and environment secrets. Remove
-  obsolete signing secrets after the replacement signer has been chosen.
+```sh
+gh api -X POST repos/DrSkyle/hodos/rulesets --input - <<'EOF'
+{
+  "name": "main-protection",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": false,
+        "required_status_checks": [
+          { "context": "test" },
+          { "context": "verify" }
+        ]
+      }
+    }
+  ]
+}
+EOF
+```
+
+---
+
+## 3. Protect release tags (`v*`) with a tag ruleset
+
+Create an active tag ruleset so release tags cannot be force-moved or deleted:
+
+```sh
+gh api -X POST repos/DrSkyle/hodos/rulesets --input - <<'EOF'
+{
+  "name": "release-tags-protection",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/v*"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "update" }
+  ]
+}
+EOF
+```
+
+---
+
+## 4. Require SHA pinning for GitHub Actions
+
+In **Settings → Actions → General**, check **Require actions to be pinned to a full-length commit SHA**, or run:
+
+```sh
+gh api -X PUT repos/DrSkyle/hodos/actions/permissions \
+  -F enabled=true -f allowed_actions=all -F sha_pinning_required=true
+```

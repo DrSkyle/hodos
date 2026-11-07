@@ -11,13 +11,16 @@ def releaseKeystorePath = System.getenv('HODOS_KEYSTORE_PATH')
 def releaseStorePassword = System.getenv('HODOS_STORE_PASSWORD')
 def releaseKeyAlias = System.getenv('HODOS_KEY_ALIAS')
 def releaseKeyPassword = System.getenv('HODOS_KEY_PASSWORD')
+def releaseStoreType = System.getenv('HODOS_STORE_TYPE')
 
 android {
     signingConfigs {
         release {
             if (releaseKeystorePath) {
                 storeFile file(releaseKeystorePath)
-                storeType 'JKS'
+                if (releaseStoreType?.trim()) {
+                    storeType releaseStoreType.trim()
+                }
                 storePassword releaseStorePassword
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword

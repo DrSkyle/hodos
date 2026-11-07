@@ -144,15 +144,22 @@ jobs:
             echo "::error::Android versionCode could not be read."
             exit 1
           fi
-          previous_tag="$(git tag --sort=-version:refname --list 'v[0-9]*' | grep -Fxv "$GITHUB_REF_NAME" | head -n 1 || true)"
-          if [[ -n "$previous_tag" ]]; then
-            previous_code="$(git show "$previous_tag:apps/web/android/app/build.gradle" | sed -nE "s/^[[:space:]]*versionCode[[:space:]]+([0-9]+).*/\\1/p" | head -n 1)"
-            if [[ "$previous_code" =~ ^[0-9]+$ ]] && (( current_code <= previous_code )); then
-              echo "::error::Android versionCode ($current_code) must exceed $previous_tag's versionCode ($previous_code)."
-              exit 1
+          max_previous_code=0
+          max_previous_tag=""
+          while IFS= read -r tag; do
+            [[ -z "$tag" || "$tag" == "$GITHUB_REF_NAME" ]] && continue
+            code="$(git show "$tag:apps/web/android/app/build.gradle" 2>/dev/null | sed -nE "s/^[[:space:]]*versionCode[[:space:]]+([0-9]+).*/\1/p" | head -n 1 || true)"
+            if [[ "$code" =~ ^[0-9]+$ ]] && (( code > max_previous_code )); then
+              max_previous_code="$code"
+              max_previous_tag="$tag"
             fi
+          done < <(git tag --list 'v[0-9]*')
+          if (( max_previous_code > 0 && current_code <= max_previous_code )); then
+            echo "::error::Android versionCode ($current_code) must exceed $max_previous_tag's versionCode ($max_previous_code)."
+            exit 1
           fi
           echo "version=$expected" >> "$GITHUB_OUTPUT"
+          echo "version_code=$current_code" >> "$GITHUB_OUTPUT"
       - name: Build production APK
         run: |
           cd apps/web/android
@@ -162,6 +169,7 @@ jobs:
         shell: bash
         env:
           EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+          EXPECTED_VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
           set -euo pipefail
           apk="apps/web/android/app/build/outputs/apk/release/app-release.apk"
@@ -176,10 +184,11 @@ jobs:
           fi
           badging="$("$build_tools/aapt" dump badging "$apk")"
           grep -Fq "package: name='org.hodos.app'" <<< "$badging"
+          grep -Fq "versionCode='$EXPECTED_VERSION_CODE'" <<< "$badging"
           grep -Fq "versionName='$EXPECTED_VERSION'" <<< "$badging"
           cp "$apk" "$RUNNER_TEMP/Hodos-$EXPECTED_VERSION.apk"
           sha256sum "$RUNNER_TEMP/Hodos-$EXPECTED_VERSION.apk"
-          echo "Verified production APK: org.hodos.app $EXPECTED_VERSION"
+          echo "Verified production APK: org.hodos.app $EXPECTED_VERSION (versionCode $EXPECTED_VERSION_CODE)"
           echo "Verified signer SHA-256: $actual_cert"
       - name: Create draft GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3

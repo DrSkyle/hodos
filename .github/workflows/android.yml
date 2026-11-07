@@ -13,7 +13,9 @@ on:
     paths:
       - "apps/web/android/**"
       - "apps/web/public/hodos-*.png"
+      - "apps/web/public/favicon-32.png"
       - ".github/workflows/android.yml"
+      - ".github/workflows/release-android.yml"
   workflow_dispatch:
 
 permissions:
