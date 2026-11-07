@@ -117,9 +117,9 @@
 
       <div class="parallax-layer-slow hidden xl:block absolute top-36 right-8 pointer-events-none z-0" aria-hidden="true">
         <div class="card p-2.5 shadow-md backdrop-blur bg-background/85 flex items-center gap-2 text-xs font-mono text-muted-foreground border-border/80">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>500+ km Transit Corroborated</span>
-          <span class="badge badge-secondary text-[10px] py-0 px-1">438 Hazards</span>
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>Nepal Highway Pilot Telemetry</span>
+          <span class="badge badge-secondary text-[10px] py-0 px-1">438 Observations</span>
         </div>
       </div>
 
@@ -194,10 +194,10 @@
     <!-- Real Defect Intelligence & GIS Data Explorer Section (Slide-Up Reveal) -->
     <section class="container mx-auto max-w-5xl px-4 sm:px-6 py-20" id="explorer">
       <div class="text-center mb-10">
-        <span class="badge badge-secondary mb-3">Live Crowdsourced Intelligence</span>
-        <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Verified Road Defects</h2>
+        <span class="badge badge-secondary mb-3">Field Pilot &amp; Corroborated Intelligence</span>
+        <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Road Surface Observations</h2>
         <p class="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl mx-auto">
-          Direct insight into 438 physical road anomalies corroborated across 500+ km of multi-vehicle transits.
+          Inspect 438 real accelerometer-detected road anomalies recorded during our Nepal highway field runs. Public hazard status requires ≥3 passes across ≥2 independent devices; single-pass pilot readings are explicitly badged as <strong>Pilot (1 pass · awaiting corroboration)</strong>.
         </p>
       </div>
 
@@ -425,7 +425,7 @@
   <footer class="border-t border-border/60 py-8 bg-background">
     <div class="container mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
       <div class="flex items-center gap-2.5">
-        <img src="/brandmark.svg" alt="Hodos" class="h-6 w-6 object-contain" width="24" height="24" />
+        <img src="/hodos-icon.png?v=2.0.0" alt="Hodos" class="h-7 w-7 rounded-lg object-cover shadow-2xs" width="28" height="28" />
         <span>Built by <a href="mailto:hodos@devilabs.dev" class="font-medium text-foreground hover:underline">Devilabs</a>. Open source under the MIT License.</span>
       </div>
 
@@ -489,8 +489,5 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script type="module" src="/src/landing.ts"></script>
-<!-- impeccable-live-start -->
-<script src="http://localhost:8400/live.js?token=3fee00cb-0523-4759-ab71-59efea1353cf"></script>
-<!-- impeccable-live-end -->
 </body>
 </html>

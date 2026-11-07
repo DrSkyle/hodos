@@ -1,62 +1,86 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Resvg } from '@resvg/resvg-js';
+import { execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const brandDir = path.join(rootDir, 'brand');
 const webPublicDir = path.join(rootDir, 'apps/web/public');
-const androidResDir = path.join(rootDir, 'apps/web/android/app/src/main/res');
+const masterPngPath = path.join(webPublicDir, 'hodos-icon.png');
+
+if (!fs.existsSync(masterPngPath)) {
+  throw new Error(`Missing master Hodos icon at ${masterPngPath}`);
+}
 
 fs.mkdirSync(brandDir, { recursive: true });
 fs.mkdirSync(webPublicDir, { recursive: true });
 
-// Master SVGs
-const masterSquareSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Hodos">
-  <rect width="128" height="128" rx="30" fill="#104e3f"/>
-  <path d="M34 99 57 29Q64 13 71 29L94 99" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <path d="M48 74h32" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="10"/>
-</svg>`;
+// Derive all raster sizes, SVGs, ICO, and wordmark from the master apps/web/public/hodos-icon.png via Python Pillow
+const pyScript = `
+import base64
+import io
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
 
-const masterRoundSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Hodos">
-  <circle cx="64" cy="64" r="64" fill="#104e3f"/>
-  <path d="M34 99 57 29Q64 13 71 29L94 99" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <path d="M48 74h32" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="10"/>
-</svg>`;
+root = Path(${JSON.stringify(rootDir)})
+web_pub = root / "apps/web/public"
+brand_dir = root / "brand"
+master = Image.open(web_pub / "hodos-icon.png").convert("RGBA")
 
-const wordmarkSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
-  <rect x="20" y="20" width="160" height="160" rx="38" fill="#104e3f"/>
-  <path d="M62 144 L91 56 Q100 36 109 56 L138 144" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-  <path d="M80 112 h40" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="12"/>
-  <text x="210" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="#104e3f" letter-spacing="-3">hodos<tspan fill="#10b981">.</tspan></text>
-</svg>`;
+# 1. Standard raster icons
+for name, size in [
+    ("favicon-16.png", 16),
+    ("favicon-32.png", 32),
+    ("apple-touch-icon.png", 180),
+    ("icon-192.png", 192),
+    ("icon-512.png", 512),
+]:
+    master.resize((size, size), Image.Resampling.LANCZOS).save(web_pub / name, "PNG", optimize=True)
 
-// Save SVG files
-fs.writeFileSync(path.join(brandDir, 'icon.svg'), masterSquareSvg);
-fs.writeFileSync(path.join(webPublicDir, 'icon.svg'), masterSquareSvg);
-fs.writeFileSync(path.join(webPublicDir, 'icon-round.svg'), masterRoundSvg);
+# 2. Multi-size favicon.ico
+master.resize((32, 32), Image.Resampling.LANCZOS).save(
+    web_pub / "favicon.ico", format="ICO", sizes=[(16, 16), (32, 32)]
+)
 
-function renderPng(svg, size, width, height) {
-  const w = width || size;
-  const h = height || size;
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: w }
-  });
-  return resvg.render().asPng();
-}
+# 3. Circular master (1024x1024)
+size = 1024
+round_img = master.resize((size, size), Image.Resampling.LANCZOS)
+circle_mask = Image.new("L", (size, size), 0)
+ImageDraw.Draw(circle_mask).ellipse((0, 0, size, size), fill=255)
+round_out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+round_out.paste(round_img, (0, 0), circle_mask)
+round_out.save(web_pub / "hodos-round.png", "PNG", optimize=True)
 
-console.log('Rendering web icons...');
-// Render Web PNG assets
-fs.writeFileSync(path.join(webPublicDir, 'favicon-16.png'), renderPng(masterSquareSvg, 16));
-fs.writeFileSync(path.join(webPublicDir, 'favicon-32.png'), renderPng(masterSquareSvg, 32));
-fs.writeFileSync(path.join(webPublicDir, 'apple-touch-icon.png'), renderPng(masterSquareSvg, 180));
-fs.writeFileSync(path.join(webPublicDir, 'icon-192.png'), renderPng(masterSquareSvg, 192));
-fs.writeFileSync(path.join(webPublicDir, 'icon-512.png'), renderPng(masterSquareSvg, 512));
+# 4. Embedded SVG brandmarks (brand/icon.svg, apps/web/public/brandmark.svg, icon.svg, icon-round.svg)
+buf = io.BytesIO()
+master.resize((512, 512), Image.Resampling.LANCZOS).convert("RGB").save(buf, format="JPEG", quality=90, optimize=True)
+b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
-// Square and round masters (1024x1024)
-fs.writeFileSync(path.join(webPublicDir, 'hodos-icon.png'), renderPng(masterSquareSvg, 1024));
-fs.writeFileSync(path.join(webPublicDir, 'hodos-round.png'), renderPng(masterRoundSvg, 1024));
-fs.writeFileSync(path.join(webPublicDir, 'hodos-wordmark.png'), renderPng(wordmarkSvg, 0, 1200, 400));
+square_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Hodos">
+  <defs>
+    <clipPath id="squircle">
+      <rect width="512" height="512" rx="112" ry="112" />
+    </clipPath>
+  </defs>
+  <image href="data:image/jpeg;base64,{b64}" width="512" height="512" preserveAspectRatio="xMidYMid slice" clip-path="url(#squircle)" />
+</svg>
+"""
 
-console.log('Brand assets generation complete!');
+round_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Hodos">
+  <defs>
+    <clipPath id="circle">
+      <circle cx="256" cy="256" r="256" />
+    </clipPath>
+  </defs>
+  <image href="data:image/jpeg;base64,{b64}" width="512" height="512" preserveAspectRatio="xMidYMid slice" clip-path="url(#circle)" />
+</svg>
+"""
+
+for p in [brand_dir / "icon.svg", web_pub / "brandmark.svg", web_pub / "icon.svg"]:
+    p.write_text(square_svg, encoding="utf-8")
+(web_pub / "icon-round.svg").write_text(round_svg, encoding="utf-8")
+`;
+
+execFileSync('python3', ['-c', pyScript], { stdio: 'inherit' });
+console.log('Brand assets synchronized from apps/web/public/hodos-icon.png');

@@ -13,6 +13,20 @@ import {
 } from "lucide";
 import { initWebMap, type MapInstanceHandle, type WebHazard } from "./web-map";
 
+// 0. Unregister any legacy PWA service workers & caches so visitors never see stale shells
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((items) => Promise.all(items.map((item) => item.unregister())))
+    .catch(() => {});
+}
+if ("caches" in window) {
+  void caches
+    .keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => {});
+}
+
 // 1. Initialize Lucide Icons
 function initLucide() {
   createIcons({
@@ -89,6 +103,9 @@ function renderDrawerList(items: WebHazard[]) {
           : "Rough Road";
 
       const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Logged";
+      const statusBadge = h.published
+        ? `Verified (${h.passes} passes · ${h.devices} dev)`
+        : `Pilot (${h.passes} ${h.passes > 1 ? "passes" : "pass"})`;
 
       return `
         <div class="card p-3 hover:border-foreground/40 transition-colors cursor-pointer flex flex-col gap-1.5" data-id="${h.id}">
@@ -98,7 +115,7 @@ function renderDrawerList(items: WebHazard[]) {
           </div>
           <div class="font-mono text-xs text-foreground font-medium">${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</div>
           <div class="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-            <span>Passes: ${h.passes}</span>
+            <span>${statusBadge}</span>
             <span>${dateStr}</span>
           </div>
         </div>

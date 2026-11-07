@@ -30,6 +30,20 @@ import {
   RefreshCw
 } from "lucide";
 
+// 0. Unregister any legacy PWA service workers & caches so visitors never see stale shells
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((items) => Promise.all(items.map((item) => item.unregister())))
+    .catch(() => {});
+}
+if ("caches" in window) {
+  void caches
+    .keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => {});
+}
+
 // 1. Initialize Lucide Icons
 function initLucide() {
   createIcons({
@@ -271,6 +285,8 @@ interface HazardItem {
   kind: string;
   severity: number;
   passes: number;
+  devices: number;
+  published: boolean;
   firstSeen?: string;
 }
 
@@ -291,16 +307,18 @@ async function loadHazardsData() {
       kind: r.kind || "pothole",
       severity: Number(r.severity) || 1,
       passes: Number(r.passCount) || 1,
+      devices: Number(r.deviceCount) || 1,
+      published: Boolean(r.published),
       firstSeen: r.firstSeen || r.$createdAt
     }));
   } catch {
     // High-precision fallback records if static file is unavailable
     hazardsCache = [
-      { id: "pn27.7951e84.7327", lat: 27.7951, lng: 84.7327, kind: "pothole", severity: 2, passes: 3 },
-      { id: "rn27.7948e84.7318", lat: 27.7948, lng: 84.7318, kind: "rough_pavement", severity: 3, passes: 4 },
-      { id: "sn27.7951e84.7297", lat: 27.7951, lng: 84.7297, kind: "speed_bump", severity: 1, passes: 2 },
-      { id: "pn28.6463e81.0923", lat: 28.6463, lng: 81.0923, kind: "pothole", severity: 1, passes: 1 },
-      { id: "rn28.6512e81.0744", lat: 28.6512, lng: 81.0744, kind: "rough_pavement", severity: 1, passes: 1 }
+      { id: "pn27.7951e84.7327", lat: 27.7951, lng: 84.7327, kind: "pothole", severity: 2, passes: 3, devices: 2, published: true },
+      { id: "rn27.7948e84.7318", lat: 27.7948, lng: 84.7318, kind: "rough_pavement", severity: 3, passes: 4, devices: 2, published: true },
+      { id: "sn27.7951e84.7297", lat: 27.7951, lng: 84.7297, kind: "speed_bump", severity: 1, passes: 2, devices: 1, published: false },
+      { id: "pn28.6463e81.0923", lat: 28.6463, lng: 81.0923, kind: "pothole", severity: 1, passes: 1, devices: 1, published: false },
+      { id: "rn28.6512e81.0744", lat: 28.6512, lng: 81.0744, kind: "rough_pavement", severity: 1, passes: 1, devices: 1, published: false }
     ];
   }
 
@@ -328,11 +346,11 @@ function renderExplorerList(filterKind: string, searchQuery: string) {
 
   const countBadge = document.getElementById("explorer-count");
   if (countBadge) {
-    countBadge.textContent = `${filtered.length} hazards`;
+    countBadge.textContent = `${filtered.length} observations`;
   }
 
   if (filtered.length === 0) {
-    explorerList.innerHTML = `<div class="p-8 text-center text-xs text-muted-foreground">No matching corroborated hazards found.</div>`;
+    explorerList.innerHTML = `<div class="p-8 text-center text-xs text-muted-foreground">No matching road observations found.</div>`;
     return;
   }
 
@@ -353,6 +371,10 @@ function renderExplorerList(filterKind: string, searchQuery: string) {
           ? "Speed Bump"
           : "Rough Pavement";
 
+      const verificationLabel = h.published
+        ? `Verified (${h.passes} passes · ${h.devices} devices)`
+        : `Pilot (${h.passes} ${h.passes > 1 ? "passes" : "pass"} · ${h.devices} dev)`;
+
       return `
         <div class="card p-3.5 hover:border-foreground/30 transition-colors flex flex-col gap-2 group cursor-pointer" onclick="window.location.href='/map'">
           <div class="flex items-center justify-between">
@@ -361,7 +383,7 @@ function renderExplorerList(filterKind: string, searchQuery: string) {
           </div>
           <div class="flex items-center justify-between font-mono text-xs text-foreground font-medium pt-1">
             <span>${h.lat.toFixed(4)}°, ${h.lng.toFixed(4)}°</span>
-            <span class="text-[11px] text-muted-foreground">${h.passes} ${h.passes > 1 ? "passes" : "pass"}</span>
+            <span class="text-[10.5px] text-muted-foreground">${verificationLabel}</span>
           </div>
         </div>
       `;
@@ -394,12 +416,20 @@ document.getElementById("btn-download-geojson")?.addEventListener("click", () =>
     metadata: {
       generatedAt: new Date().toISOString(),
       generator: "Hodos Telemetry Engine v1.2.0",
+      calibratedIri: false,
       totalFeatures: hazardsCache.length
     },
     features: hazardsCache.map((h) => ({
       type: "Feature",
       geometry: { type: "Point", coordinates: [h.lng, h.lat] },
-      properties: { id: h.id, kind: h.kind, severity: h.severity, passes: h.passes }
+      properties: {
+        id: h.id,
+        kind: h.kind,
+        severity: h.severity,
+        passes: h.passes,
+        devices: h.devices,
+        corroborated: h.published
+      }
     }))
   };
 

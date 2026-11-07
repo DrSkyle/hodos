@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Clean white field from v1.1.20 -->
-    <color name="hodos_launcher_background">#FFFFFF</color>
+    <!-- Warm golden-hour sunset background matching the Hodos home-road icon -->
+    <color name="hodos_launcher_background">#E69A4C</color>
 </resources>

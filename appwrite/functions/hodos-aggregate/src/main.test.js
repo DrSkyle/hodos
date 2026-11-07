@@ -389,3 +389,52 @@ test("entirely invalid event history cannot unpublish existing road hazards", as
     global.fetch = originalFetch;
   }
 });
+
+test("clusterEvents produces identical centroids and rowIds regardless of input order", () => {
+  const e1 = { ...base, recordedAt: "2026-10-24T03:50:00.000Z", lat: 27.71720, lng: 85.32400, deviceId: "d1", tripId: "t1" };
+  const e2 = { ...base, recordedAt: "2026-10-24T03:51:00.000Z", lat: 27.71725, lng: 85.32404, deviceId: "d2", tripId: "t2" };
+  const e3 = { ...base, recordedAt: "2026-10-24T03:52:00.000Z", lat: 27.71718, lng: 85.32398, deviceId: "d1", tripId: "t3" };
+
+  const forward = testing.clusterEvents([e1, e2, e3]);
+  const reverse = testing.clusterEvents([e3, e2, e1]);
+  assert.equal(forward.length, 1);
+  assert.equal(reverse.length, 1);
+  assert.deepEqual(forward[0].centre, reverse[0].centre);
+});
+
+test("uncorroborated single-device observations are not written as new rows in public hazards table", async () => {
+  const originalFetch = global.fetch;
+  const timestamp = new Date(Date.now() - 60_000).toISOString();
+  const singleDeviceIncident = [
+    { ...base, recordedAt: timestamp, deviceId: "solo-device", tripId: "solo-trip" }
+  ];
+  let hazardPostCalls = 0;
+  global.fetch = async (url, options = {}) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith("/events/rows") && !options.method) {
+      return { ok: true, json: async () => ({ rows: singleDeviceIncident }) };
+    }
+    if (path.endsWith("/hazards/rows") && !options.method) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (path.endsWith("/hazards/rows") && options.method === "POST") {
+      hazardPostCalls++;
+      return { ok: true, status: 201 };
+    }
+    throw new Error("Unexpected request: " + url);
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.created, 0);
+    assert.equal(result.body.published, 0);
+    assert.equal(hazardPostCalls, 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+

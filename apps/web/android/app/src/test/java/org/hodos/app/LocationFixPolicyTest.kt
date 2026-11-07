@@ -38,8 +38,18 @@ class LocationFixPolicyTest {
         assertFalse(accepts(accuracy = 51f))
         assertFalse(accepts(accuracy = -1f))
         assertFalse(accepts(speed = Float.POSITIVE_INFINITY))
+        assertFalse(accepts(speed = 75f))
         assertFalse(accepts(speed = -1f))
         assertFalse(accepts(mocked = true))
+    }
+
+    @Test fun plausibleTransitionRejectsMultipathJumpsAndBackwardsTimestamps() {
+        assertTrue(LocationFixPolicy.plausibleTransition(now, now + 2_000L, 32.0))
+        assertTrue(LocationFixPolicy.plausibleTransition(now, now + 2_000L, 120.0))
+        assertFalse(LocationFixPolicy.plausibleTransition(now, now + 2_000L, 450.0))
+        assertFalse(LocationFixPolicy.plausibleTransition(now, now, 10.0))
+        assertFalse(LocationFixPolicy.plausibleTransition(now + 1_000L, now, 10.0))
+        assertFalse(LocationFixPolicy.plausibleTransition(now, now + 2_000L, -5.0))
     }
 
     @Test fun invalidCoordinatesCannotCenterTheMap() {

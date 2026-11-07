@@ -18,8 +18,8 @@ android/app/release/
 *.aab
 *.jks
 *.keystore
-!apps/web/android/app/debug.keystore
-!apps/web/android/app/release.keystore
+*.p12
+*.pfx
 .capacitor/
 
 # Appwrite

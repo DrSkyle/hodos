@@ -97,6 +97,8 @@ public class HodosService extends Service implements SensorEventListener {
   private volatile long lastHistoryFlushAt = 0;
   private volatile long lastNotificationUpdateAt = 0;
   private long tripStartedAt = 0;
+  private volatile long sensorBaseNs = 0;
+  private volatile long sensorBaseEpochMs = 0;
   private LocationCallback idleLocationCallback = null;
 
   @Override
@@ -119,9 +121,40 @@ public class HodosService extends Service implements SensorEventListener {
         cumulativeDistanceM = prefs.getFloat("tripDistanceM", 0f);
         totalGpsFixes = prefs.getInt("tripFixes", 0);
         isManualTrip = prefs.getBoolean("isManualTrip", false);
+        restoreSavedTrailState(activeTripId);
       } else {
         sealStaleTrip(prefs);
         prefs.edit().putBoolean("tripActive", false).apply();
+      }
+    }
+  }
+
+  private void restoreSavedTrailState(String tripId) {
+    if (tripId == null || tripId.isEmpty()) return;
+    TripTrail saved = TripDetailStore.getTrail(this, tripId);
+    if (saved == null) return;
+    synchronized (fixes) {
+      fixes.clear();
+      for (SavedFix f : saved.getFixes()) {
+        fixes.add(new MotionDetector.Fix(
+            f.getT(), f.getLat(), f.getLng(), 10.0, f.getSpeed(), f.getSpeed() > 0));
+      }
+    }
+    synchronized (impacts) {
+      impacts.clear();
+      for (SavedImpact imp : saved.getImpacts()) {
+        MotionDetector.Impact restored = new MotionDetector.Impact();
+        restored.t = imp.getT();
+        restored.lat = imp.getLat();
+        restored.lng = imp.getLng();
+        restored.accuracy = 10.0;
+        restored.speedKph = 0.0;
+        restored.magnitude = imp.getSeverity() * 2.0;
+        restored.severity = imp.getSeverity();
+        restored.kind = imp.getKind();
+        restored.confidence = 0.8;
+        restored.mode = "vehicle";
+        impacts.add(restored);
       }
     }
   }
@@ -199,7 +232,11 @@ public class HodosService extends Service implements SensorEventListener {
     startForegroundCompat();
     registerActivityTransitions();
     if (!sampling) {
-      startIdleMotionWatcher();
+      if (activeTripId != null && tripStartedAt > 0) {
+        resumeRecoveredTrip();
+      } else {
+        startIdleMotionWatcher();
+      }
     }
     HodosSyncWorker.schedule(this);
     lastMovementAt = System.currentTimeMillis();
@@ -389,8 +426,42 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (motionCoverageTimes) { motionCoverageTimes.clear(); }
     synchronized (fixes) { fixes.clear(); }
     synchronized (impacts) { impacts.clear(); }
+    sensorBaseNs = 0;
+    sensorBaseEpochMs = 0;
     updateNotification("Mapping: 00:00 · 0 m (0 hazards)");
+    beginSensorsAndScheduler();
+  }
 
+  private synchronized void resumeRecoveredTrip() {
+    if (!hasLocationPermission() || activeTripId == null || tripStartedAt <= 0) {
+      startIdleMotionWatcher();
+      return;
+    }
+    removeIdleLocationWatcher();
+    try {
+      activeDeviceId = deviceId();
+    } catch (RuntimeException error) {
+      startIdleMotionWatcher();
+      return;
+    }
+    sampling = true;
+    long now = System.currentTimeMillis();
+    lastMovementAt = now;
+    lastCheckpointAt = now;
+    lastHistoryFlushAt = now;
+    lastNotificationUpdateAt = now;
+    sensorBaseNs = 0;
+    sensorBaseEpochMs = 0;
+    long elapsedS = Math.max(0L, (now - tripStartedAt) / 1000L);
+    int impactCount;
+    synchronized (impacts) { impactCount = impacts.size(); }
+    updateNotification(
+        "Mapping: " + formatDuration(elapsedS) + " · " + formatDistance(cumulativeDistanceM)
+            + " (" + impactCount + " hazards)");
+    beginSensorsAndScheduler();
+  }
+
+  private void beginSensorsAndScheduler() {
     Sensor accelerometer =
         sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     if (accelerometer == null ||
@@ -418,8 +489,8 @@ public class HodosService extends Service implements SensorEventListener {
                 float[] res = new float[1];
                 Location.distanceBetween(previousFix.getLatitude(), previousFix.getLongitude(),
                     last.getLatitude(), last.getLongitude(), res);
-                double elapsed = (last.getTime() - previousFix.getTime()) / 1000.0;
-                if (res[0] >= 0 && res[0] <= elapsed * 45 + 30) {
+                if (LocationFixPolicy.plausibleTransition(
+                    previousFix.getTime(), last.getTime(), res[0])) {
                   cumulativeDistanceM += res[0];
                   if (res[0] >= 15) {
                     lastMovementAt = System.currentTimeMillis();
@@ -710,12 +781,26 @@ public class HodosService extends Service implements SensorEventListener {
     }
   }
 
+  static long resolveSensorTimestampMs(
+      long eventTimestampNs, long wallNowMs, long baseNs, long baseEpochMs) {
+    if (eventTimestampNs <= 0 || baseNs <= 0 || eventTimestampNs < baseNs) {
+      return wallNowMs;
+    }
+    return baseEpochMs + (eventTimestampNs - baseNs) / 1_000_000L;
+  }
+
   @Override
   public void onSensorChanged(SensorEvent event) {
     if (!sampling) {
       return;
     }
-    long t = System.currentTimeMillis();
+    long wallNow = System.currentTimeMillis();
+    long eventNs = event.timestamp;
+    if (eventNs > 0 && (sensorBaseNs <= 0 || eventNs < sensorBaseNs)) {
+      sensorBaseNs = eventNs;
+      sensorBaseEpochMs = wallNow;
+    }
+    long t = resolveSensorTimestampMs(eventNs, wallNow, sensorBaseNs, sensorBaseEpochMs);
     synchronized (samples) {
       samples.add(new MotionDetector.Sample(
           t, event.values[0], event.values[1], event.values[2]));
