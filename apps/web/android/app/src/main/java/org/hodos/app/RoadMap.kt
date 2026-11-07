@@ -189,6 +189,8 @@ fun RoadMap(
         }
     }
 
+    var initialFitDone by remember { mutableStateOf(false) }
+
     LaunchedEffect(hazards, ready) {
         if (ready) {
             val features = hazards.map { hazard ->
@@ -197,16 +199,27 @@ fun RoadMap(
                     addStringProperty(
                         "color",
                         if (hazard.fixed) "#10B981"
-                        else when (hazard.severity) {
-                            3 -> "#E11D48"
-                            2 -> "#D97706"
-                            else -> "#7C3AED"
+                        else when (hazard.kind) {
+                            "pothole" -> "#E11D48"
+                            "speed_bump" -> "#7C3AED"
+                            else -> "#D97706"
                         }
                     )
                 }
             }
             map?.style?.getSourceAs<GeoJsonSource>("hodos-hazards")
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
+
+            if (!initialFitDone && userFix == null && hazards.isNotEmpty()) {
+                initialFitDone = true
+                val avgLat = hazards.map { it.lat }.average()
+                val avgLng = hazards.map { it.lng }.average()
+                if (avgLat.isFinite() && avgLng.isFinite()) {
+                    map?.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(LatLng(avgLat, avgLng), 11.5)
+                    )
+                }
+            }
         }
     }
 

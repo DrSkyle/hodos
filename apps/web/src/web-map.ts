@@ -358,15 +358,14 @@ export function initWebMap(
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
       if (data && Array.isArray(data.rows) && data.rows.length > 0) {
-        const remoteCorroborated: WebHazard[] = data.rows
-          .filter((r: any) => r && r.published === true)
+        const remoteRows: WebHazard[] = data.rows
           .map(parseAppwriteRow)
           .filter((h: WebHazard | null): h is WebHazard => h !== null);
 
-        if (remoteCorroborated.length > 0) {
+        if (remoteRows.length > 0) {
           const byId = new globalThis.Map<string, WebHazard>();
           for (const h of hazards) byId.set(h.id, h);
-          for (const h of remoteCorroborated) byId.set(h.id, h);
+          for (const h of remoteRows) byId.set(h.id, h);
           hazards = Array.from(byId.values());
           handle.hazards = hazards;
           updateSourceData();

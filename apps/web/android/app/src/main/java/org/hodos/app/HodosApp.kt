@@ -139,6 +139,14 @@ fun HodosApp(
     var filterVisible by remember { mutableStateOf(false) }
     var severity by remember { mutableStateOf("All") }
     var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
+    var latestRelease by remember { mutableStateOf<AppReleaseInfo?>(null) }
+
+    LaunchedEffect(internetConnected, refreshSignal) {
+        if (internetConnected) {
+            val info = AppUpdateAndShare.checkLatestRelease(context)
+            if (info != null) latestRelease = info
+        }
+    }
     // After foreground location permission is granted, automatically locate
     // once so the Wi-Fi-only neighborhood pack can be downloaded.
     LaunchedEffect(Unit) {
@@ -421,6 +429,25 @@ fun HodosApp(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     HodosBrand()
                                     Spacer(Modifier.weight(1f))
+                                    if (latestRelease?.isNewer == true) {
+                                        Surface(
+                                            color = Color(0xFFD97706),
+                                            shape = RoundedCornerShape(20.dp),
+                                            shadowElevation = 2.dp,
+                                            modifier = Modifier.clickable {
+                                                AppUpdateAndShare.openApkUpdate(context, latestRelease)
+                                            }
+                                        ) {
+                                            Text(
+                                                "Update ${latestRelease!!.tagName} ↓",
+                                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                                                color = Color.White,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(Modifier.width(6.dp))
+                                    }
                                     Surface(
                                         color = Color(0xF9FFFFFF),
                                         shape = RoundedCornerShape(20.dp),
@@ -610,21 +637,28 @@ fun HodosApp(
                         trips = trips,
                         hazards = hazards,
                         savedRoadIds = savedRoadIds,
+                        latestRelease = latestRelease,
+                        onCheckUpdates = {
+                            scope.launch {
+                                val info = AppUpdateAndShare.checkLatestRelease(context)
+                                if (info != null) {
+                                    latestRelease = info
+                                    if (info.isNewer) {
+                                        AppUpdateAndShare.openApkUpdate(context, info)
+                                    } else {
+                                        snackbar.showSnackbar("You are on the latest Hodos release (${info.tagName})")
+                                    }
+                                } else {
+                                    AppUpdateAndShare.openApkUpdate(context, null)
+                                }
+                            }
+                        },
                         onSelectSavedRoad = { selected = it },
                         onRemoveSavedRoad = { id -> updateSavedRoad(id, false) },
                         onOpenMapping = { screen = Screen.MAPPING },
                         onShare = {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "A better road map starts with our journeys. Explore Hodos: https://hodos.devilabs.dev"
-                                )
-                            }
-                            runCatching {
-                                context.startActivity(Intent.createChooser(intent, "Share Hodos"))
-                            }.onFailure {
-                                scope.launch { snackbar.showSnackbar("No sharing app available") }
+                            scope.launch {
+                                AppUpdateAndShare.shareInstalledApk(context)
                             }
                         },
                         onClearHistory = {
@@ -875,17 +909,48 @@ private fun MappingScreen(
         }
         item {
             Surface(shape = RoundedCornerShape(22.dp), color = Mist) {
-                Row(Modifier.fillMaxWidth().padding(22.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Automatic mapping", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(4.dp))
-                        Text(if (armed) "Sensor detection is active" else "Sensor detection is stopped", color = Muted, fontSize = 13.sp)
+                Column(Modifier.fillMaxWidth().padding(22.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Automatic mapping (Recommended)", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                if (armed) "Active · Automatically records when you ride or drive"
+                                else "Turn on once · Maps roads hands-free when you move",
+                                color = Muted,
+                                fontSize = 13.sp
+                            )
+                        }
+                        Switch(
+                            checked = armed,
+                            onCheckedChange = onToggle,
+                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                        )
                     }
-                    Switch(
-                        checked = armed,
-                        onCheckedChange = onToggle,
-                        colors = SwitchDefaults.colors(checkedTrackColor = Forest)
-                    )
+                    if (tripActive) {
+                        Spacer(Modifier.height(12.dp))
+                        Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(20.dp), tint = Forest)
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    "Moving · ${formatDuration(tripElapsedS)} · " +
+                                        (if (tripDistanceM >= 1000f) String.format(Locale.US, "%.1f km", tripDistanceM / 1000f) else "${tripDistanceM.roundToInt()} m") +
+                                        " · $tripImpacts hazards",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Ink,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = onFinishJourney) {
+                                    Text("Stop", fontSize = 12.sp, color = Forest, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -895,7 +960,7 @@ private fun MappingScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(color = Color(0x26D97706), shape = RoundedCornerShape(980.dp)) {
                             Text(
-                                "SPONSORED PIT-STOP · RIDESHARE PERK",
+                                "DRIVER REWARDS & PIT-STOP PERKS",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 color = Color(0xFFB45309),
                                 fontSize = 10.sp,
@@ -905,77 +970,47 @@ private fun MappingScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Built for Pathao, inDrive & daily riders",
+                        "Earn with Hodos · Built for Pathao & inDrive riders",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Keep Hodos running in the background while taking rides or deliveries. Partner tire, brake, suspension & engine oil shops offer up to 15% off when you show your active Hodos journey counter.",
+                        "Keep Automatic Mapping on while you ride. Active riders get 15% off at partner tire, brake & oil Pit-Stops—and as our Sponsored Ads & Fleet Data revenue scales, we share payouts directly with verified high-mileage riders who map the roads.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp
                     )
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Join%20Hodos%20Driver%20Rewards%20%28Pathao%20%2F%20inDrive%29")
+                                    )
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706), contentColor = Color.White),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Join Driver Rewards", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
                         OutlinedButton(
                             onClick = {
                                 context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship")
+                                    )
                                 )
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Partner perks", fontSize = 12.sp)
+                            Text("Sponsor an Ad", fontSize = 12.sp)
                         }
-                        TextButton(
-                            onClick = {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Sponsorship"))
-                                )
-                            }
-                        ) {
-                            Text("Sponsor a Pit-Stop →", fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
-                Column(Modifier.padding(22.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            if (tripActive) "Journey in progress" else "Record a journey",
-                            fontSize = 18.sp, fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Spacer(Modifier.height(9.dp))
-                    if (tripActive) {
-                        Text(
-                            "${formatDuration(tripElapsedS)} · " +
-                                (if (tripDistanceM >= 1000f) String.format(Locale.US, "%.1f km", tripDistanceM / 1000f) else "${tripDistanceM.roundToInt()} m") +
-                                " · ${tripImpacts} hazards",
-                            fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Ink
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text("Active road readings are saved periodically to local storage.", fontSize = 12.sp, color = Muted)
-                    } else {
-                        Text(
-                            "Mapping detects journeys automatically. You can also start recording a real journey yourself.",
-                            fontSize = 13.sp, color = Muted
-                        )
-                    }
-                    Spacer(Modifier.height(14.dp))
-                    Button(
-                        onClick = if (tripActive) onFinishJourney else onStartJourney,
-                        colors = ButtonDefaults.buttonColors(containerColor = Forest, contentColor = Color.White),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (tripActive) "Finish journey" else "Start journey")
                     }
                 }
             }
@@ -990,28 +1025,34 @@ private fun MappingScreen(
                             Text("Background reliability", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                         }
                         Spacer(Modifier.height(6.dp))
-                        Text("To keep mapping continuously on long bus or car journeys without Android stopping it:", color = Muted, fontSize = 13.sp)
+                        Text("Allow both settings below so Android never stops Hodos while you use Pathao, inDrive, or Google Maps:", color = Muted, fontSize = 13.sp)
                         if (!backgroundLocationGranted) {
                             Spacer(Modifier.height(10.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("Location: Allow all the time", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                                    Text("Required for background road detection", color = Muted, fontSize = 11.5.sp)
+                                    Text("Required for hands-free background detection", color = Muted, fontSize = 11.5.sp)
                                 }
-                                TextButton(onClick = onRequestBackgroundLocation) {
-                                    Text("Settings", fontWeight = FontWeight.Bold, color = Forest)
+                                Button(
+                                    onClick = onRequestBackgroundLocation,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                                ) {
+                                    Text("Allow", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                             }
                         }
                         if (!batteryOptimizationIgnored) {
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("Battery: Unrestricted", fontWeight = FontWeight.Medium, fontSize = 13.sp)
                                     Text("Prevents battery saver from stopping trips", color = Muted, fontSize = 11.5.sp)
                                 }
-                                TextButton(onClick = onRequestBatteryOptimization) {
-                                    Text("Settings", fontWeight = FontWeight.Bold, color = Forest)
+                                Button(
+                                    onClick = onRequestBatteryOptimization,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                                ) {
+                                    Text("Allow", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                             }
                         }
@@ -1026,7 +1067,7 @@ private fun MappingScreen(
             Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(30.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(26.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
                         Text("Offline nearby maps", fontSize = 18.sp,
                             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -1123,7 +1164,7 @@ private fun MappingScreen(
                         Spacer(Modifier.height(12.dp))
                         Text("Your first journey starts here", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                         Spacer(Modifier.height(5.dp))
-                        Text("Enable automatic mapping and drive or cycle normally. Trips will appear once the service records them.", color = Muted, fontSize = 13.sp)
+                        Text("Keep Automatic Mapping enabled and ride or drive normally. Completed trips appear here automatically.", color = Muted, fontSize = 13.sp)
                     }
                 }
             }
@@ -1285,6 +1326,8 @@ private fun YouScreen(
     trips: List<RoadTrip>,
     hazards: List<RoadHazard>,
     savedRoadIds: Set<String>,
+    latestRelease: AppReleaseInfo?,
+    onCheckUpdates: () -> Unit,
     onSelectSavedRoad: (RoadHazard) -> Unit,
     onRemoveSavedRoad: (String) -> Unit,
     onOpenMapping: () -> Unit,
@@ -1293,6 +1336,7 @@ private fun YouScreen(
 ) {
     val total = trips.sumOf { it.impacts }
     val context = LocalContext.current
+    val currentVer = remember(context) { AppUpdateAndShare.currentVersionName(context) }
     var confirmClearHistory by remember { mutableStateOf(false) }
     LazyColumn(
         Modifier.fillMaxSize().background(Paper),
@@ -1303,12 +1347,71 @@ private fun YouScreen(
             Spacer(Modifier.height(12.dp))
             HodosBrand()
             Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f))
-                DoodleIcon(DoodleSymbol.SUN, modifier = Modifier.size(37.dp), tint = Orange)
+            Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
+            Text("Every journey makes the roads better understood.", color = Muted)
+        }
+        item {
+            // App Updates & Direct APK Sharing (Quick Share / Bluetooth)
+            Surface(
+                color = if (latestRelease?.isNewer == true) Color(0xFFFFF8ED) else Color.White,
+                shape = RoundedCornerShape(22.dp),
+                shadowElevation = 2.dp
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Share, contentDescription = null, tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                if (latestRelease?.isNewer == true)
+                                    "Update available · ${latestRelease.tagName}"
+                                else "Share APK & In-App Updates",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = Ink
+                            )
+                            Text(
+                                "Installed v$currentVer" +
+                                    (latestRelease?.let { " · Latest GitHub release ${it.tagName}" } ?: ""),
+                                fontSize = 12.sp,
+                                color = Muted
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Send the Hodos APK file directly to nearby Pathao & inDrive riders over Quick Share, Bluetooth, or WhatsApp—or pull the newest APK straight from GitHub.",
+                        fontSize = 13.sp,
+                        color = Muted,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = onShare,
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Quick Share APK", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedButton(
+                            onClick = onCheckUpdates,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(
+                                if (latestRelease?.isNewer == true) "Install ${latestRelease.tagName}"
+                                else "Check Update",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
             }
-            Text("Every journey makes the roads a little better understood.", color = Muted)
         }
         item {
             RoadDiaryCard(trips, onOpenMapping = onOpenMapping, onShare = onShare)
@@ -1332,55 +1435,63 @@ private fun YouScreen(
             Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(27.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
-                        Text("How Hodos stays free", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                        Text("How Hodos earns & pays drivers", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "1. Sponsored Pit-Stops & Driver Perks: Local tire shops, suspension mechanics, engine oil centers, and fuel stops sponsor native perks for Pathao, inDrive & daily commuters.",
+                        "1. Driver Mapping Rewards: As Hodos grows its ad & fleet revenue, we share payouts and Pit-Stop service discounts with active Pathao, inDrive & daily riders who map the roads.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "2. Commercial Fleet & Municipal API: Ride-hailing platforms, logistics fleets, insurers, and city road engineers license live corroborated road roughness feeds.",
+                        "2. Sponsored Pit-Stops (Contextual Ads): Local tire shops, suspension mechanics, engine oil centers, and fuel stations sponsor perks for active riders.",
+                        color = Muted, fontSize = 13.sp, lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "3. Commercial Fleet & Municipal Data API: Ride-hailing platforms, logistics fleets, insurers, and city road engineers license live road roughness feeds.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(
+                        Button(
                             onClick = {
                                 context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Sponsorship"))
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Join%20Hodos%20Driver%20Rewards%20Program")
+                                    )
                                 )
                             },
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Sponsor a Pit-Stop", fontSize = 12.sp)
+                            Text("Driver Rewards", fontSize = 12.sp)
                         }
                         OutlinedButton(
                             onClick = {
                                 context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20%2F%20Fleet%20API%20Inquiry")
+                                    )
                                 )
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Fleet Data API", fontSize = 12.sp)
+                            Text("Email to Partner", fontSize = 12.sp)
                         }
                     }
                 }
             }
         }
         item {
-            Text("Built for the road", fontWeight = FontWeight.SemiBold, fontSize = 20.sp)
-            Text("Hodos turns ordinary phones into a collaborative map of potholes, rough roads and speed bumps. No manual recording needed after you enable mapping.", color = Muted, fontSize = 14.sp)
-        }
-        item {
             Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(27.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(24.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
                         Text("Privacy comes first", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                     }
@@ -1406,7 +1517,7 @@ private fun YouScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Info, null, tint = Forest)
                 Spacer(Modifier.width(10.dp))
-                Text("Hodos · by Devilabs", color = Muted, fontSize = 13.sp)
+                Text("Hodos v$currentVer · hodos@devilabs.dev", color = Muted, fontSize = 13.sp)
             }
         }
     }
@@ -1441,7 +1552,10 @@ private fun DriverPerkBanner(context: android.content.Context) {
         color = Color(0xFFFFF8ED),
         modifier = Modifier.fillMaxWidth().clickable {
             context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Driver%20Rewards%20%26%20Pit-Stop%20Partner")
+                )
             )
         }
     ) {
@@ -1451,7 +1565,7 @@ private fun DriverPerkBanner(context: android.content.Context) {
         ) {
             Surface(color = Color(0x26D97706), shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    "PERK",
+                    "EARN",
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     color = Color(0xFFB45309),
                     fontSize = 10.sp,
@@ -1461,13 +1575,13 @@ private fun DriverPerkBanner(context: android.content.Context) {
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Pathao & inDrive rider perk · 15% off tire & oil service",
+                    "Pathao & inDrive riders · Earn rewards & 15% off service",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Ink
                 )
                 Text(
-                    "Sponsored Pit-Stop · Tap to partner or claim",
+                    "Sponsored Pit-Stop & Driver Revenue Share · Tap to email us",
                     fontSize = 11.sp,
                     color = Muted
                 )

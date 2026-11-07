@@ -27,21 +27,29 @@ class MainActivity : ComponentActivity() {
     private var refreshSignal by mutableIntStateOf(0)
     private var onboardingComplete by mutableStateOf(false)
     private var mapLocationGranted by mutableStateOf(false)
+    private var backgroundLocationGrantedState by mutableStateOf(false)
+    private var batteryUnrestrictedState by mutableStateOf(false)
     private var pendingStartJourney by mutableStateOf(false)
 
     private val mapLocationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
-            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        updatePermissionStates()
         if (!mapLocationGranted) {
             Toast.makeText(this, "You can still explore the map without location access", Toast.LENGTH_SHORT).show()
         }
     }
 
+    private val backgroundLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        updatePermissionStates()
+    }
+
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
+        updatePermissionStates()
         if (hasForegroundPermissions()) {
             if (pendingStartJourney) {
                 pendingStartJourney = false
@@ -55,28 +63,47 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun updatePermissionStates() {
+        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
+            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        backgroundLocationGrantedState = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+            has(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        val pm = getSystemService(POWER_SERVICE) as? PowerManager
+        batteryUnrestrictedState = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            pm?.isIgnoringBatteryOptimizations(packageName) == true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("hodos", MODE_PRIVATE)
         armed = prefs.getBoolean("armed", false)
         onboardingComplete = prefs.getBoolean("onboardingComplete", false)
-        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
-            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        updatePermissionStates()
         setContent {
             if (!onboardingComplete) {
                 HodosOnboarding(
                     locationGranted = mapLocationGranted,
+                    backgroundLocationGranted = backgroundLocationGrantedState,
+                    batteryUnrestricted = batteryUnrestrictedState,
                     onRequestLocation = {
-                        mapLocationPermission.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_COARSE_LOCATION,
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                            )
+                        val needed = mutableListOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION
                         )
+                        if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
+                        if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
+                        mapLocationPermission.launch(needed.toTypedArray())
                     },
-                    onFinish = {
+                    onRequestBackgroundLocation = { requestBackgroundLocation() },
+                    onRequestBatteryOptimization = { requestBatteryOptimization() },
+                    onFinishAndEnableAutoMapping = {
                         prefs.edit().putBoolean("onboardingComplete", true).apply()
                         onboardingComplete = true
+                        if (hasForegroundPermissions()) {
+                            startMapping()
+                        } else {
+                            continueEnabling()
+                        }
                         refreshSignal++
                     }
                 )
@@ -95,8 +122,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        mapLocationGranted = has(Manifest.permission.ACCESS_COARSE_LOCATION) ||
-            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        updatePermissionStates()
         val enabled = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)
         if (enabled && !hasForegroundPermissions()) {
             stopMapping()
@@ -104,8 +130,6 @@ class MainActivity : ComponentActivity() {
         } else {
             armed = enabled
             if (enabled) {
-                // Returning to Hodos should repair a foreground service that
-                // Android reclaimed, without requiring another toggle.
                 try {
                     ContextCompat.startForegroundService(
                         this, Intent(this, HodosService::class.java).apply {
@@ -121,7 +145,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        // Retry any evidence from earlier journeys even if mapping is off.
         HodosSyncWorker.schedule(this)
         refreshSignal++
     }
@@ -194,13 +217,27 @@ class MainActivity : ComponentActivity() {
 
     private fun requestBackgroundLocation() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (!has(Manifest.permission.ACCESS_FINE_LOCATION) && !has(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                Toast.makeText(this, "Allow step 1 (Location & Motion) first, then tap Allow all the time.", Toast.LENGTH_SHORT).show()
+                val needed = mutableListOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+                if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
+                mapLocationPermission.launch(needed.toTypedArray())
+                return
+            }
             try {
-                startActivity(Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:$packageName")
-                ))
-            } catch (e: Exception) {
-                Toast.makeText(this, "Could not open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } catch (_: Exception) {
+                try {
+                    startActivity(Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:$packageName")
+                    ))
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Could not open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -225,6 +262,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             } else {
+                updatePermissionStates()
                 Toast.makeText(this, "Battery optimization is already unrestricted!", Toast.LENGTH_SHORT).show()
             }
         }

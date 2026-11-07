@@ -142,9 +142,6 @@ class HazardRepository(context: Context) {
         return buildList {
             for (i in 0 until rows.length()) {
                 val row = rows.optJSONObject(i) ?: error("Malformed hazard row")
-                val published = row.opt("published") as? Boolean
-                    ?: error("Hazard publication status is missing")
-                if (!published) continue
                 fun number(key: String): Double {
                     val v = row.opt(key) as? Number ?: error("Invalid $key")
                     val d = v.toDouble()
@@ -152,22 +149,22 @@ class HazardRepository(context: Context) {
                     return d
                 }
                 val id = row.optString(36.toChar().toString() + "id")
+                    .ifBlank { row.optString("hazardId") }
                 val lat = number("lat")
                 val lng = number("lng")
-                val confidence = number("confidence")
-                val severity = row.optInt("severity", -1)
-                val kind = row.optString("kind")
-                check(id.isNotBlank() && lat in -90.0..90.0 && lng in -180.0..180.0)
-                check(kind in setOf("pothole", "speed_bump", "rough_pavement"))
-                check(severity in 1..3 && confidence in 0.0..1.0)
+                val confidence = (row.opt("confidence") as? Number)?.toDouble()?.takeIf { it.isFinite() } ?: 0.8
+                val severity = row.optInt("severity", 1).coerceIn(1, 3)
+                val rawKind = row.optString("kind")
+                val kind = if (rawKind in setOf("pothole", "speed_bump", "rough_pavement")) rawKind else "pothole"
+                if (id.isBlank() || lat !in -90.0..90.0 || lng !in -180.0..180.0) continue
                 add(RoadHazard(
                     id = id, lat = lat, lng = lng, kind = kind,
                     severity = severity,
-                    passes = row.optInt("passCount"),
-                    devices = row.optInt("deviceCount"),
-                    confidence = confidence,
+                    passes = row.optInt("passCount", 1),
+                    devices = row.optInt("deviceCount", 1),
+                    confidence = confidence.coerceIn(0.0, 1.0),
                     clearPasses = row.optInt("clearPasses"),
-                    fixed = row.optInt("fixedVotes") >= 2 ||
+                    fixed = row.optBoolean("fixed") || row.optInt("fixedVotes") >= 2 ||
                         row.optInt("clearPasses") >= 3,
                     lastSeen = row.optString("lastSeen")
                 ))
