@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if output="$(cd apps/web/android && ./gradlew :app:validateReleaseSigning --no-daemon 2>&1)"; then
+          if output="$(cd apps/web/android && ./gradlew :app:assembleRelease --no-daemon 2>&1)"; then
             echo "::error::Release signing validation unexpectedly succeeded without protected secrets."
             exit 1
           fi
