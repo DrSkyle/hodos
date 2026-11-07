@@ -82,7 +82,7 @@ internal fun RoadDiaryCard(
             )
             Text(
                 if (summary.journeysThisWeek == 0)
-                    "Keep Automatic Mapping enabled while riding with Pathao, inDrive, or your daily commute."
+                    "Keep Automatic Mapping enabled while you drive, ride, or commute."
                 else "${summary.journeysThisWeek} ${if (summary.journeysThisWeek == 1) "journey" else "journeys"} · " +
                     String.format(Locale.US, "%.1f km", summary.distanceMetersThisWeek / 1000.0) +
                     " mapped this week.",

@@ -322,7 +322,7 @@ fun RoadMap(
                     Feature.fromGeometry(Point.fromLngLat(fix.longitude, fix.latitude))
                 )))
             // If GPS resolved while the style was still loading, center the
-            // camera now instead of silently keeping it over Nepal's midpoint.
+            // camera now instead of silently keeping it over the world view.
             val fine = ContextCompat.checkSelfPermission(
                 context, Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
@@ -497,7 +497,7 @@ fun RoadMap(
                         append("\n\n")
                         append(activePartner.offer)
                         if (activePartner.sample) {
-                            append("\n\nSample placement — sponsor a Pit-Stop to claim this spot.")
+                            append("\n\nSample placement — become a partner to claim this spot.")
                         }
                     }
                 )
@@ -512,7 +512,7 @@ fun RoadMap(
                         context.startActivity(
                             Intent(
                                 Intent.ACTION_VIEW,
-                                Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship")
+                                Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
                             )
                         )
                     }

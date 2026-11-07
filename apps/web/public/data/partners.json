@@ -2,23 +2,23 @@
   "updated": "2026-11-07",
   "partners": [
     {
-      "id": "sample-surkhet",
-      "name": "Sample Pit-Stop — Surkhet Road",
+      "id": "sample-tire-works",
+      "name": "Sample Tire & Service Works",
       "category": "garage",
-      "lat": 28.608,
-      "lng": 81.115,
-      "offer": "15% off suspension, tire & oil service for active Hodos riders",
-      "sponsorLabel": "Sponsored",
+      "lat": 51.5007,
+      "lng": -0.1278,
+      "offer": "15% off suspension, tire & oil service for drivers who map regularly",
+      "sponsorLabel": "Partner",
       "sample": true
     },
     {
-      "id": "sample-dang",
-      "name": "Sample Pit-Stop — Dang Valley",
+      "id": "sample-fuel-stop",
+      "name": "Sample Fuel Stop",
       "category": "fuel",
-      "lat": 28.285,
-      "lng": 81.62,
-      "offer": "15% off fuel & maintenance for drivers who map weekly",
-      "sponsorLabel": "Sponsored",
+      "lat": 48.8584,
+      "lng": 2.2945,
+      "offer": "Weekly route-map reward: discounted fuel & maintenance",
+      "sponsorLabel": "Partner",
       "sample": true
     }
   ]

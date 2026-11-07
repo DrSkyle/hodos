@@ -19,7 +19,7 @@ data class PartnerPoi(
 )
 
 /**
- * Sponsored Pit-Stop placements ship as a static JSON file on the website, so
+ * Partner shop placements ship as a static JSON file on the website, so
  * sponsor changes deploy like web content and never cost database reads.
  */
 object PartnerOffers {

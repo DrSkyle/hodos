@@ -414,7 +414,7 @@ fun HodosApp(
                                     }
                                 }
                                 Spacer(Modifier.height(10.dp))
-                                DriverPerkBanner(context, partners)
+                                PartnerOfferBanner(context, partners)
                             }
                         },
                         containerColor = Color.Transparent
@@ -1011,7 +1011,7 @@ private fun MappingScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(color = Color(0x26D97706), shape = RoundedCornerShape(980.dp)) {
                             Text(
-                                "DRIVER REWARDS & PIT-STOP PERKS",
+                                "NEARBY SERVICE · PARTNER OFFERS",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 color = Color(0xFFB45309),
                                 fontSize = 10.sp,
@@ -1021,46 +1021,32 @@ private fun MappingScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Earn with Hodos · Built for Pathao & inDrive riders",
+                        "A little care for the car that maps the roads.",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Keep Automatic Mapping on while you ride. Active riders get 15% off at partner tire, brake & oil Pit-Stops—and as our Sponsored Ads & Fleet Data revenue scales, we share payouts directly with verified high-mileage riders who map the roads.",
+                        "Optional, clearly labeled offers from nearby garages, tire shops, and fuel stops. Nothing pops up over your route, and nothing is personalised from your location history.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Button(
-                            onClick = {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Join%20Hodos%20Driver%20Rewards%20%28Pathao%20%2F%20inDrive%29")
-                                    )
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706), contentColor = Color.White),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Join Driver Rewards", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        }
                         OutlinedButton(
                             onClick = {
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship")
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
                                     )
                                 )
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Sponsor a Pit-Stop", fontSize = 12.sp)
+                            Text("Become a partner", fontSize = 12.sp)
                         }
                     }
                 }
@@ -1076,7 +1062,7 @@ private fun MappingScreen(
                             Text("Background reliability", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                         }
                         Spacer(Modifier.height(6.dp))
-                        Text("Allow both settings below so Android never stops Hodos while you use Pathao, inDrive, or Google Maps:", color = Muted, fontSize = 13.sp)
+                        Text("Allow both settings below so Android never stops Hodos while you use maps, music, or any other app:", color = Muted, fontSize = 13.sp)
                         if (!backgroundLocationGranted) {
                             Spacer(Modifier.height(10.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1432,7 +1418,7 @@ private fun YouScreen(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Send the Hodos APK file directly to nearby Pathao & inDrive riders over Quick Share, Bluetooth, or WhatsApp—or pull the newest APK straight from GitHub.",
+                        "Send the Hodos APK directly to anyone nearby over Quick Share, Bluetooth, or WhatsApp—or pull the newest build straight from GitHub.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp
@@ -1489,21 +1475,21 @@ private fun YouScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
-                        Text("Free for drivers. Funded by partners.", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("Free to use. Funded by partners.", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "1 · Drivers — Free forever: live hazard map, hands-free Automatic Mapping, 20 km offline maps, Quick Share, and in-app updates. No subscription, no ads sold against you.",
+                        "1 · Everyone — Free always: live hazard map, hands-free Automatic Mapping, 20 km offline maps, Quick Share, and in-app updates. No subscription, no ads sold against you.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "2 · Sponsored Pit-Stops — Local garages, tire shops, and fuel brands pay to place perks here, and active riders get 15% off service at partner Pit-Stops.",
+                        "2 · Partner shops — Local garages, tire shops, and fuel stops can place a clearly labeled offer on the map.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "3 · Fleet & City Data API — Logistics fleets, ride-hailing platforms, and cities license live road-roughness feeds. That revenue is what keeps the driver app free.",
+                        "3 · Fleet & City Data — Fleets, platforms, and cities license aggregated road-quality feeds. That revenue is what keeps the app free.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
@@ -1513,27 +1499,27 @@ private fun YouScreen(
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Join%20Hodos%20Driver%20Rewards%20Program")
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
                                     )
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Forest),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Join Driver Rewards", fontSize = 12.sp)
+                            Text("Become a partner", fontSize = 12.sp)
                         }
                         OutlinedButton(
                             onClick = {
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20%2F%20Fleet%20API%20Inquiry")
+                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Commercial%20Data%20API")
                                     )
                                 )
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Sponsor or License", fontSize = 12.sp)
+                            Text("License data", fontSize = 12.sp)
                         }
                     }
                 }
@@ -1549,7 +1535,7 @@ private fun YouScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
                             Spacer(Modifier.width(10.dp))
-                            Text("Rider perks", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Text("Partner offers", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                         }
                         partners.take(2).forEach { partner ->
                             Surface(
@@ -1643,7 +1629,7 @@ private fun YouScreen(
 }
 
 @Composable
-private fun DriverPerkBanner(context: android.content.Context, partners: List<PartnerPoi>) {
+private fun PartnerOfferBanner(context: android.content.Context, partners: List<PartnerPoi>) {
     val partner = partners.firstOrNull()
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -1652,7 +1638,7 @@ private fun DriverPerkBanner(context: android.content.Context, partners: List<Pa
             context.startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Driver%20Rewards%20%26%20Pit-Stop%20Partner")
+                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
                 )
             )
         }
@@ -1663,7 +1649,7 @@ private fun DriverPerkBanner(context: android.content.Context, partners: List<Pa
         ) {
             Surface(color = Color(0x26D97706), shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    partner?.sponsorLabel?.uppercase() ?: "EARN",
+                    partner?.sponsorLabel?.uppercase() ?: "PARTNER",
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     color = Color(0xFFB45309),
                     fontSize = 10.sp,
@@ -1673,7 +1659,7 @@ private fun DriverPerkBanner(context: android.content.Context, partners: List<Pa
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    partner?.offer ?: "Pathao & inDrive riders · Earn rewards & 15% off service",
+                    partner?.offer ?: "Nearby service offers from partner shops",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Ink,
@@ -1681,8 +1667,8 @@ private fun DriverPerkBanner(context: android.content.Context, partners: List<Pa
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (partner != null) "${partner.name} · Sponsored placement"
-                    else "Rewards are funded by partner sponsorships — tap to join or sponsor.",
+                    if (partner != null) "${partner.name} · Partner placement"
+                    else "Labeled placements keep the map free — tap to become a partner.",
                     fontSize = 11.sp,
                     color = Muted,
                     maxLines = 1,

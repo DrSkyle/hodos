@@ -79,10 +79,10 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 240
           script: cd apps/web/android && ./gradlew :app:connectedDebugAndroidTest --no-daemon
-      - name: Test on Android 15 (API 35)
+      - name: Test on Android 14 (API 34)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_3a

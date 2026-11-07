@@ -307,7 +307,7 @@ export function initWebMap(
             ? `<div style="font-size: 11px; color: #86868b; margin-bottom: 6px;">Sample placement showing how partner slots render on the map.</div>`
             : ""
         }
-        <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Sponsor this spot →</a>
+        <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Partner%20Placement" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Become a partner →</a>
       </div>
     `;
 
