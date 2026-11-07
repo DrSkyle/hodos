@@ -80,9 +80,13 @@ class HazardRepository(context: Context) {
         private const val CACHE_KEY = "hazards-cache-v1"
     }
 
-    fun savedHazards(): List<RoadHazard> =
-        runCatching { decodeSnapshot(prefs.getString(CACHE_KEY, null).orEmpty()) }
-            .getOrDefault(emptyList())
+    fun savedHazards(): List<RoadHazard> {
+        val raw = prefs.getString(CACHE_KEY, null).orEmpty()
+        return runCatching {
+            val confirmed = decodeSnapshot(raw, allowUnconfirmed = false)
+            if (confirmed.isNotEmpty()) confirmed else decodeSnapshot(raw, allowUnconfirmed = true)
+        }.getOrDefault(emptyList())
+    }
 
     suspend fun refreshHazards(): Result<List<RoadHazard>> = withContext(Dispatchers.IO) {
         runCatching {
@@ -115,6 +119,7 @@ class HazardRepository(context: Context) {
                     val row = page.optJSONObject(i)
                         ?: error("Unexpected hazard row; saved map preserved")
                     val id = row.optString(36.toChar().toString() + "id")
+                        .ifBlank { row.optString("hazardId") }
                     check(id.isNotBlank() && encountered.add(id)) {
                         "Map changed during refresh; saved copy preserved"
                     }
@@ -124,7 +129,8 @@ class HazardRepository(context: Context) {
                 offset += page.length()
             }
             val raw = JSONObject().put("rows", combined).toString()
-            val hazards = decodeSnapshot(raw)
+            val parsedConfirmed = runCatching { decodeSnapshot(raw, allowUnconfirmed = false) }.getOrDefault(emptyList())
+            val hazards = if (parsedConfirmed.isNotEmpty()) parsedConfirmed else decodeSnapshot(raw, allowUnconfirmed = true)
             check(prefs.edit().putString(CACHE_KEY, raw).commit()) {
                 "Could not save offline map"
             }
@@ -136,12 +142,15 @@ class HazardRepository(context: Context) {
      * Parse strictly before committing a new cache. Failure must be visible to
      * the caller; a malformed server response is not an empty neighbourhood.
      */
-    internal fun decodeSnapshot(raw: String): List<RoadHazard> {
+    internal fun decodeSnapshot(raw: String, allowUnconfirmed: Boolean = false): List<RoadHazard> {
         val rows = JSONObject(raw).optJSONArray("rows")
             ?: error("Map response is missing its rows")
         return buildList {
             for (i in 0 until rows.length()) {
                 val row = rows.optJSONObject(i) ?: error("Malformed hazard row")
+                val published = row.opt("published") as? Boolean
+                    ?: error("Hazard publication status is missing")
+                if (!published && !allowUnconfirmed) continue
                 fun number(key: String): Double {
                     val v = row.opt(key) as? Number ?: error("Invalid $key")
                     val d = v.toDouble()
@@ -152,17 +161,18 @@ class HazardRepository(context: Context) {
                     .ifBlank { row.optString("hazardId") }
                 val lat = number("lat")
                 val lng = number("lng")
-                val confidence = (row.opt("confidence") as? Number)?.toDouble()?.takeIf { it.isFinite() } ?: 0.8
-                val severity = row.optInt("severity", 1).coerceIn(1, 3)
-                val rawKind = row.optString("kind")
-                val kind = if (rawKind in setOf("pothole", "speed_bump", "rough_pavement")) rawKind else "pothole"
-                if (id.isBlank() || lat !in -90.0..90.0 || lng !in -180.0..180.0) continue
+                val confidence = number("confidence")
+                val severity = row.optInt("severity", -1)
+                val kind = row.optString("kind")
+                check(id.isNotBlank() && lat in -90.0..90.0 && lng in -180.0..180.0)
+                check(kind in setOf("pothole", "speed_bump", "rough_pavement"))
+                check(severity in 1..3 && confidence in 0.0..1.0)
                 add(RoadHazard(
                     id = id, lat = lat, lng = lng, kind = kind,
                     severity = severity,
                     passes = row.optInt("passCount", 1),
                     devices = row.optInt("deviceCount", 1),
-                    confidence = confidence.coerceIn(0.0, 1.0),
+                    confidence = confidence,
                     clearPasses = row.optInt("clearPasses"),
                     fixed = row.optBoolean("fixed") || row.optInt("fixedVotes") >= 2 ||
                         row.optInt("clearPasses") >= 3,
