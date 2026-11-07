@@ -10,6 +10,7 @@ export interface WebHazard {
   severity: number;
   passes: number;
   devices: number;
+  published: boolean;
   fixed: boolean;
   title: string;
   locationName: string;
@@ -67,7 +68,8 @@ function parseAppwriteRow(r: any): WebHazard | null {
   const severity = Math.max(1, Math.min(3, Number(r.severity) || 1));
   const passes = Number(r.passCount ?? r.passes ?? 1);
   const devices = Number(r.deviceCount ?? r.devices ?? 1);
-  const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1));
+  const published = Boolean(r.published);
+  const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1) || (r.clearPasses && r.clearPasses >= 3));
   const title =
     kind === "speed_bump"
       ? "Speed Bump"
@@ -83,6 +85,7 @@ function parseAppwriteRow(r: any): WebHazard | null {
     severity,
     passes,
     devices,
+    published,
     fixed,
     title,
     locationName: `GPS ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
@@ -143,6 +146,7 @@ export function initWebMap(
         severity: h.severity,
         passes: h.passes,
         devices: h.devices,
+        published: h.published,
         fixed: h.fixed,
         locationName: h.locationName,
         confidence: h.confidence ?? 0.8,
@@ -179,7 +183,11 @@ export function initWebMap(
       src.setData(buildGeoJSON(hazards));
     }
     if (statusEl) {
-      statusEl.textContent = `${hazards.length} verified defects mapped`;
+      const corroboratedCount = hazards.filter((h) => h.published).length;
+      statusEl.textContent =
+        corroboratedCount > 0
+          ? `${corroboratedCount} corroborated hazards · ${hazards.length} total observations`
+          : `${hazards.length} field pilot observations mapped`;
     }
     onHazardsUpdated?.(hazards);
   };
@@ -200,7 +208,7 @@ export function initWebMap(
 
       src.setData(buildGeoJSON(filtered));
       if (statusEl) {
-        statusEl.textContent = `${filtered.length} defects shown (${kind === "all" ? "all categories" : kind})`;
+        statusEl.textContent = `${filtered.length} observations shown (${kind === "all" ? "all categories" : kind})`;
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards),
@@ -223,7 +231,7 @@ export function initWebMap(
         const wpt = hazards
           .map(
             (h) =>
-              `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Recorded: ${h.firstSeen || "N/A"}</desc></wpt>`
+              `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Passes: ${h.passes}, Devices: ${h.devices}, Corroborated: ${h.published}, Recorded: ${h.firstSeen || "N/A"}</desc></wpt>`
           )
           .join("\n");
         content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n</gpx>`;
@@ -265,9 +273,13 @@ export function initWebMap(
       : "Rough Surface";
 
     const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Recorded";
+    const statusText = h.published
+      ? `Multi-Device Corroborated (${h.passes} passes · ${h.devices} devices)`
+      : `Pilot Sensor Reading (${h.passes} ${h.passes === 1 ? "pass" : "passes"} · awaiting 2nd device)`;
+    const confPct = Math.round((h.confidence ?? 0.5) * 100);
 
     const html = `
-      <div style="font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 220px; color: #E2E8F0;">
+      <div style="font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 230px; color: #E2E8F0;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
           <strong style="font-family: 'Outfit', sans-serif; font-size: 14px; color: #F8FAFC;">${kindName}</strong>
           <span style="background: ${badgeColor}; color: #0B0E14; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px;">
@@ -277,14 +289,13 @@ export function initWebMap(
         <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace;">
           ${h.locationName}
         </div>
-        <div style="font-size: 12px; color: #CBD5E1; margin-bottom: 10px; background: #111622; border: 1px solid #1E293B; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
+        <div style="font-size: 12px; color: #CBD5E1; margin-bottom: 8px; background: #111622; border: 1px solid #1E293B; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
           • Impact Severity: <strong style="color:#F8FAFC;">Tier ${h.severity}</strong><br/>
-          • Detection Date: <strong style="color:#F8FAFC;">${dateStr}</strong><br/>
-          • Passes: <strong style="color:#F8FAFC;">${h.passes}</strong>
+          • Evidence: <strong style="color:#F8FAFC;">${statusText}</strong><br/>
+          • Confidence: <strong style="color:#F8FAFC;">${confPct}%</strong> · Logged <strong style="color:#F8FAFC;">${dateStr}</strong>
         </div>
-        <div style="display: flex; gap: 6px;">
-          <button id="btn-verify-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #FF4D36; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Still There</button>
-          <button id="btn-fixed-${h.id}" style="flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 700; background: #1E293B; color: #E2E8F0; border: none; border-radius: 6px; cursor: pointer;">Mark Repaired</button>
+        <div style="font-size: 10.5px; color: #94A3B8; line-height: 1.4;">
+          Corroboration &amp; repair verification are recorded on-device via the Hodos Android app.
         </div>
       </div>
     `;
@@ -293,20 +304,6 @@ export function initWebMap(
       .setLngLat([h.lng, h.lat])
       .setHTML(html)
       .addTo(map);
-
-    setTimeout(() => {
-      const verifyBtn = document.getElementById(`btn-verify-${h.id}`);
-      const fixedBtn = document.getElementById(`btn-fixed-${h.id}`);
-      verifyBtn?.addEventListener("click", () => {
-        verifyBtn.textContent = "Verified";
-        verifyBtn.style.background = "#15803D";
-      });
-      fixedBtn?.addEventListener("click", () => {
-        fixedBtn.textContent = "Marked Fixed";
-        fixedBtn.style.background = "#15803D";
-        fixedBtn.style.color = "#fff";
-      });
-    }, 50);
   }
 
   const setupLayers = () => {
@@ -380,9 +377,7 @@ export function initWebMap(
 
     if (hazards.length > 0) {
       fitBoundsToData(hazards);
-      if (statusEl) {
-        statusEl.textContent = `${hazards.length} verified defects loaded`;
-      }
+      updateSourceData();
     }
 
     onLoaded?.(handle);
@@ -396,7 +391,7 @@ export function initWebMap(
   setTimeout(() => map.resize(), 100);
   window.addEventListener("resize", () => map.resize());
 
-  // 2. Load the 438 verified records immediately from local bundle
+  // 2. Load the 438 pilot records immediately from local bundle
   fetch("/data/hazards.json")
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
@@ -416,7 +411,7 @@ export function initWebMap(
       console.warn("Local static hazards load error:", err);
     });
 
-  // 3. Fetch latest live updates from Appwrite backend asynchronously
+  // 3. Fetch latest live corroborated updates from Appwrite backend asynchronously
   fetch(
     "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/hazards/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B500%5D%7D",
     {
@@ -426,13 +421,19 @@ export function initWebMap(
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
       if (data && Array.isArray(data.rows) && data.rows.length > 0) {
-        const remote: WebHazard[] = data.rows
+        // Only replace the map with live backend rows if they are published corroborated hazards,
+        // or merge published live hazards with the static pilot dataset
+        const remoteCorroborated: WebHazard[] = data.rows
+          .filter((r: any) => r && r.published === true)
           .map(parseAppwriteRow)
           .filter((h: WebHazard | null): h is WebHazard => h !== null);
 
-        if (remote.length > 0) {
-          hazards = remote;
-          handle.hazards = remote;
+        if (remoteCorroborated.length > 0) {
+          const byId = new globalThis.Map<string, WebHazard>();
+          for (const h of hazards) byId.set(h.id, h);
+          for (const h of remoteCorroborated) byId.set(h.id, h);
+          hazards = Array.from(byId.values());
+          handle.hazards = hazards;
           updateSourceData();
         }
       }
