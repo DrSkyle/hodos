@@ -20,7 +20,7 @@ internal object LocationFixPolicy {
         fixMillis > 0L && nowMillis >= fixMillis &&
             nowMillis - fixMillis <= maxAgeMillis
 
-    /** Reject stale, inaccurate or malformed fixes before recording road evidence. */
+    /** Reject stale, inaccurate, implausibly fast, or malformed fixes before recording road evidence. */
     @JvmStatic
     fun validRoadFix(
         fixMillis: Long, nowMillis: Long, latitude: Double, longitude: Double,
@@ -28,7 +28,20 @@ internal object LocationFixPolicy {
     ): Boolean =
         !mocked && isFresh(fixMillis, nowMillis) && validCoordinates(latitude, longitude) &&
             accuracyMeters.isFinite() && accuracyMeters in 0f..50f &&
-            (!hasSpeed || (speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0f))
+            (!hasSpeed || (speedMetersPerSecond.isFinite() && speedMetersPerSecond in 0f..70f))
+
+    /**
+     * Reject impossible GPS multipath jumps between consecutive fixes while allowing
+     * ordinary location jitter (<= 45 m/s * dt + 30 m).
+     */
+    @JvmStatic
+    fun plausibleTransition(prevMillis: Long, currentMillis: Long, distanceMeters: Double): Boolean {
+        if (currentMillis <= prevMillis || !distanceMeters.isFinite() || distanceMeters < 0.0) {
+            return false
+        }
+        val elapsedSeconds = (currentMillis - prevMillis) / 1000.0
+        return distanceMeters <= elapsedSeconds * 45.0 + 30.0
+    }
 
     @JvmStatic
     fun validCoordinates(latitude: Double, longitude: Double): Boolean =

@@ -94,8 +94,14 @@ object TripDetailStore {
             }
             root.put("impacts", impactsJson)
 
-            val file = File(getTripDir(context), "$tripId.json")
-            file.writeText(root.toString())
+            val dir = getTripDir(context)
+            val file = File(dir, "$tripId.json")
+            val tmpFile = File(dir, "$tripId.json.tmp")
+            tmpFile.writeText(root.toString())
+            if (!tmpFile.renameTo(file)) {
+                file.writeText(root.toString())
+                tmpFile.delete()
+            }
         } catch (_: Exception) {}
     }
 
