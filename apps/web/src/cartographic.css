@@ -55,7 +55,7 @@ a {
 }
 
 .container {
-  width: min(1080px, calc(100% - 48px));
+  width: min(1100px, calc(100% - 48px));
   margin: 0 auto;
 }
 
@@ -71,7 +71,7 @@ a {
 }
 
 .nav-inner {
-  width: min(1080px, calc(100% - 48px));
+  width: min(1100px, calc(100% - 48px));
   margin: 0 auto;
   height: 56px;
   display: flex;
@@ -101,7 +101,7 @@ a {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 30px;
 }
 
 .nav-links a {
@@ -133,10 +133,10 @@ a {
 /* Hero Stage with Parallax */
 .hero-stage {
   position: relative;
-  padding: 96px 0 110px;
+  padding: 108px 0 104px;
   text-align: center;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 18%, rgba(245, 158, 11, 0.12), transparent 58%), var(--bg);
+  background: radial-gradient(circle at 50% 18%, rgba(245, 158, 11, 0.11), transparent 58%), var(--bg);
 }
 
 .hero-glow {
@@ -146,7 +146,7 @@ a {
   left: 50%;
   top: 6%;
   margin-left: -340px;
-  background: radial-gradient(circle, rgba(230, 154, 76, 0.22) 0%, rgba(251, 251, 253, 0) 70%);
+  background: radial-gradient(circle, rgba(230, 154, 76, 0.2) 0%, rgba(251, 251, 253, 0) 70%);
   pointer-events: none;
   z-index: 0;
   will-change: transform;
@@ -155,35 +155,12 @@ a {
 .hero-container {
   position: relative;
   z-index: 1;
-  width: min(920px, calc(100% - 40px));
+  width: min(960px, calc(100% - 40px));
   margin: 0 auto;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 980px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid var(--line);
-  font-size: 12px;
-  font-weight: 600;
-  color: #424245;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  margin-bottom: 28px;
-  will-change: transform;
-}
-
-.badge-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
 .hero-headline {
-  font-size: clamp(52px, 8.2vw, 92px);
+  font-size: clamp(54px, 8.4vw, 96px);
   line-height: 1.02;
   font-weight: 700;
   letter-spacing: -0.045em;
@@ -200,7 +177,7 @@ a {
 }
 
 .hero-subhead {
-  max-width: 620px;
+  max-width: 650px;
   margin: 0 auto 38px;
   font-size: clamp(18px, 2.2vw, 22px);
   line-height: 1.5;
@@ -254,55 +231,34 @@ a {
   background: #ffffff;
 }
 
-/* Parallax Showcase Stage */
-.parallax-showcase {
-  position: relative;
-  margin: 76px auto 0;
-  max-width: 760px;
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-monolith {
-  position: relative;
-  z-index: 2;
-  border-radius: 48px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 32px 72px rgba(29, 29, 31, 0.16), 0 4px 16px rgba(0, 0, 0, 0.05);
+/* Parallax Floating Cards Row */
+.parallax-grid {
+  margin: 64px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 920px;
   will-change: transform;
 }
 
-.icon-monolith img {
-  display: block;
-  width: 210px;
-  height: 210px;
-  border-radius: 40px;
-}
-
 .floating-pill {
-  position: absolute;
-  z-index: 3;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   text-align: left;
-  padding: 14px 18px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.86);
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.06);
   will-change: transform;
 }
 
 .floating-pill strong {
   display: block;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -310,24 +266,9 @@ a {
 
 .floating-pill span {
   display: block;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--muted);
-}
-
-.pill-left {
-  left: 0;
-  top: 22px;
-}
-
-.pill-right {
-  right: 0;
-  top: 48px;
-}
-
-.pill-bottom {
-  bottom: -18px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 2px;
 }
 
 .status-dot {
@@ -354,14 +295,14 @@ a {
 
 /* Bento Section */
 .section-bento {
-  padding: 120px 0;
+  padding: 116px 0;
   background: var(--surface-alt);
   border-top: 1px solid var(--line);
 }
 
 .section-header {
   text-align: center;
-  max-width: 680px;
+  max-width: 700px;
   margin: 0 auto 64px;
   will-change: transform;
 }
@@ -431,7 +372,7 @@ a {
 .bento-card p {
   font-size: 16px;
   color: var(--muted);
-  max-width: 620px;
+  max-width: 660px;
   line-height: 1.6;
 }
 
@@ -450,6 +391,178 @@ a {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink);
+}
+
+/* Monetization / Pricing & Partners Section */
+.section-pricing {
+  padding: 120px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.price-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03);
+  will-change: transform;
+}
+
+.price-card-featured {
+  border: 2px solid var(--ink);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.08);
+}
+
+.price-badge {
+  position: absolute;
+  top: -13px;
+  left: 28px;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 980px;
+}
+
+.price-tag {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.price-amount {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.price-amount span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.price-desc {
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+.price-features {
+  list-style: none;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.price-features li {
+  font-size: 14px;
+  color: #424245;
+  line-height: 1.45;
+  padding-left: 20px;
+  position: relative;
+}
+
+.price-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--fixed);
+  font-weight: 700;
+}
+
+.price-btn {
+  width: 100%;
+}
+
+/* Native Sponsored Driver Perk Strip */
+.sponsor-strip {
+  margin-top: 32px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-radius: 24px;
+  padding: 26px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  will-change: transform;
+}
+
+.sponsor-strip-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.sponsor-pill {
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border-radius: 980px;
+  white-space: nowrap;
+}
+
+.sponsor-strip strong {
+  display: block;
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sponsor-strip p {
+  font-size: 13.5px;
+  color: #57534e;
+  margin-top: 2px;
+}
+
+.sponsor-cta {
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 980px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sponsor-cta:hover {
+  opacity: 0.88;
 }
 
 /* Dark Section */
@@ -580,12 +693,6 @@ a {
   will-change: transform;
 }
 
-.closing-icon {
-  border-radius: 18px;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
-}
-
 .closing-box h2 {
   font-size: clamp(32px, 4.5vw, 48px);
   font-weight: 700;
@@ -643,23 +750,12 @@ a {
   color: var(--ink);
 }
 
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .nav-links {
     display: none;
   }
-  .parallax-showcase {
-    flex-direction: column;
-    gap: 14px;
-    min-height: unset;
-    margin-top: 48px;
-  }
-  .floating-pill,
-  .pill-bottom {
-    position: static;
-    transform: none !important;
-    width: 100%;
-    max-width: 360px;
-  }
+  .parallax-grid,
+  .pricing-grid,
   .bento-grid,
   .privacy-grid {
     grid-template-columns: 1fr;
@@ -668,8 +764,13 @@ a {
     grid-column: span 1;
   }
   .bento-card,
-  .privacy-item {
+  .privacy-item,
+  .price-card {
     padding: 28px;
+  }
+  .sponsor-strip-left {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

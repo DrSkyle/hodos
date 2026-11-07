@@ -385,12 +385,14 @@ fun HodosApp(
                                         }
                                     }
                                 } else {
-                                    LazyColumn(Modifier.heightIn(max = 320.dp)) {
+                                    LazyColumn(Modifier.heightIn(max = 260.dp)) {
                                         items(visibleHazards, key = { it.id }) { hazard ->
                                             HazardRow(hazard, lastKnownLocation?.let { distanceTo(hazard, it) }) { selected = hazard }
                                         }
                                     }
                                 }
+                                Spacer(Modifier.height(10.dp))
+                                DriverPerkBanner(context)
                             }
                         },
                         containerColor = Color.Transparent
@@ -888,6 +890,59 @@ private fun MappingScreen(
             }
         }
         item {
+            Surface(shape = RoundedCornerShape(22.dp), color = Color(0xFFFFF8ED)) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(color = Color(0x26D97706), shape = RoundedCornerShape(980.dp)) {
+                            Text(
+                                "SPONSORED PIT-STOP · RIDESHARE PERK",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                color = Color(0xFFB45309),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Built for Pathao, inDrive & daily riders",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Keep Hodos running in the background while taking rides or deliveries. Partner tire, brake, suspension & engine oil shops offer up to 15% off when you show your active Hodos journey counter.",
+                        fontSize = 13.sp,
+                        color = Muted,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Partner perks", fontSize = 12.sp)
+                        }
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Sponsorship"))
+                                )
+                            }
+                        ) {
+                            Text("Sponsor a Pit-Stop →", fontSize = 12.sp, color = Color(0xFFB45309), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+        item {
             Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
                 Column(Modifier.padding(22.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1274,6 +1329,50 @@ private fun YouScreen(
             }
         }
         item {
+            Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(27.dp), tint = Forest)
+                        Spacer(Modifier.width(10.dp))
+                        Text("How Hodos stays free", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "1. Sponsored Pit-Stops & Driver Perks: Local tire shops, suspension mechanics, engine oil centers, and fuel stops sponsor native perks for Pathao, inDrive & daily commuters.",
+                        color = Muted, fontSize = 13.sp, lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "2. Commercial Fleet & Municipal API: Ride-hailing platforms, logistics fleets, insurers, and city road engineers license live corroborated road roughness feeds.",
+                        color = Muted, fontSize = 13.sp, lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Sponsorship"))
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Sponsor a Pit-Stop", fontSize = 12.sp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Fleet Data API", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+        item {
             Text("Built for the road", fontWeight = FontWeight.SemiBold, fontSize = 20.sp)
             Text("Hodos turns ordinary phones into a collaborative map of potholes, rough roads and speed bumps. No manual recording needed after you enable mapping.", color = Muted, fontSize = 14.sp)
         }
@@ -1332,6 +1431,48 @@ private fun YouScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun DriverPerkBanner(context: android.content.Context) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFFF8ED),
+        modifier = Modifier.fillMaxWidth().clickable {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/#pricing"))
+            )
+        }
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(color = Color(0x26D97706), shape = RoundedCornerShape(8.dp)) {
+                Text(
+                    "PERK",
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    color = Color(0xFFB45309),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Pathao & inDrive rider perk · 15% off tire & oil service",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink
+                )
+                Text(
+                    "Sponsored Pit-Stop · Tap to partner or claim",
+                    fontSize = 11.sp,
+                    color = Muted
+                )
+            }
+        }
     }
 }
 

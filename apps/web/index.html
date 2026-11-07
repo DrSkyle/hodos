@@ -4,19 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#fbfbfd" />
-  <meta name="description" content="Hodos turns everyday journeys into a live, shared map of road conditions. Runs quietly in your pocket with privacy by design." />
+  <meta name="description" content="Hodos turns everyday journeys into a live, shared map of road conditions. Free for rideshare, delivery, and everyday drivers—sustained by fleet data licensing and local driver partner perks." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos 2.0 — The road maps itself." />
-  <meta property="og:description" content="A clearer view of the roads we share. Independent observations, community corroboration, and privacy by design." />
+  <meta property="og:description" content="A clearer view of the roads we share. Built for rideshare, delivery, and everyday commuters." />
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.2" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.3" />
   <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" href="/brandmark.svg?v=2.0.2" type="image/svg+xml" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.2" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.2" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.2" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.2" />
-  <link rel="manifest" href="/site.webmanifest?v=2.0.2" />
+  <link rel="icon" href="/brandmark.svg?v=2.0.3" type="image/svg+xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.3" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.3" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.3" />
+  <link rel="manifest" href="/site.webmanifest?v=2.0.3" />
   <title>Hodos — The road maps itself.</title>
 </head>
 <body>
@@ -25,13 +25,14 @@
   <header class="apple-nav">
     <div class="nav-inner">
       <a class="nav-brand" href="/" aria-label="Hodos home">
-        <img src="/hodos-icon.png?v=2.0.2" alt="" width="28" height="28" />
+        <img src="/hodos-icon.png?v=2.0.3" alt="" width="28" height="28" />
         <span>hodos<span class="dot">.</span></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="/map">Live Map</a>
         <a href="#how">How it Works</a>
-        <a href="#privacy">Privacy</a>
+        <a href="#drivers">For Drivers</a>
+        <a href="#pricing">Pricing &amp; Partners</a>
         <a href="#faq">FAQ</a>
       </nav>
       <div class="nav-actions">
@@ -41,32 +42,27 @@
   </header>
 
   <main id="content">
-    <!-- Hero with multi-depth scroll parallax -->
+    <!-- Hero with multi-depth scroll parallax (no badge/icon clutter) -->
     <section class="hero-stage" aria-labelledby="hero-title">
       <div class="hero-glow" data-parallax="-0.18" aria-hidden="true"></div>
 
       <div class="hero-container">
-        <div class="hero-badge" data-parallax="-0.04">
-          <span class="badge-dot"></span>
-          <span>Hodos 2.0 · Android</span>
-        </div>
-
         <h1 id="hero-title" class="hero-headline" data-parallax="-0.08">
           The road<br /><span>maps itself.</span>
         </h1>
 
         <p class="hero-subhead" data-parallax="-0.05">
-          Just drive, ride, or commute as usual. Hodos quietly senses potholes, speed bumps, and rough roads from your pocket—and builds a live public map for everyone.
+          Built for rideshare riders, delivery partners, and everyday drivers. Hodos quietly senses potholes, speed bumps, and rough roads from your pocket—protecting your suspension and mapping the city together.
         </p>
 
         <div class="hero-cta-row" data-parallax="-0.03">
-          <a class="btn-primary" href="/map">Explore Live Map</a>
-          <a class="btn-secondary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn-secondary" href="/map">Explore Live Map</a>
         </div>
 
-        <!-- Clean Apple-style floating showcase with parallax depth layers -->
-        <div class="parallax-showcase">
-          <div class="floating-pill pill-left" data-parallax="-0.16">
+        <!-- Clean Apple-style floating status cards with parallax depth -->
+        <div class="parallax-grid" data-parallax="-0.06">
+          <div class="floating-pill" data-parallax="-0.08">
             <span class="status-dot dot-pothole"></span>
             <div>
               <strong>Pothole corroborated</strong>
@@ -74,61 +70,134 @@
             </div>
           </div>
 
-          <div class="icon-monolith" data-parallax="0.06">
-            <img src="/hodos-icon.png?v=2.0.2" alt="Hodos 2.0 App Icon" width="220" height="220" />
-          </div>
-
-          <div class="floating-pill pill-right" data-parallax="-0.22">
+          <div class="floating-pill" data-parallax="-0.14">
             <span class="status-dot dot-fixed"></span>
             <div>
-              <strong>Zero manual reporting</strong>
-              <span>100% hands-free in your pocket</span>
+              <strong>Built for Rideshare &amp; Delivery</strong>
+              <span>Runs alongside Pathao, inDrive &amp; Maps</span>
             </div>
           </div>
 
-          <div class="floating-pill pill-bottom" data-parallax="-0.12">
+          <div class="floating-pill" data-parallax="-0.10">
             <span class="status-dot dot-bump"></span>
             <div>
-              <strong>Privacy by construction</strong>
-              <span>First &amp; last 250 m automatically trimmed</span>
+              <strong>Save suspension &amp; tires</strong>
+              <span>Know rough stretches before you ride</span>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Bento Grid Section: How it works -->
+    <!-- Bento Grid Section: How it works + Built for Rideshare Drivers -->
     <section class="section-bento" id="how" aria-labelledby="how-title">
       <div class="container">
         <div class="section-header" data-parallax="-0.04">
           <p class="eyebrow">Effortless by design</p>
           <h2 id="how-title">Complex under the hood.<br /><span>Simple on the road.</span></h2>
-          <p class="section-lead">No buttons to tap while driving. No accounts to create. Everything happens automatically on your phone.</p>
+          <p class="section-lead">Turn it on once before your shift. Keep your ride-hailing or navigation app on screen while Hodos works silently in the background.</p>
         </div>
 
-        <div class="bento-grid">
+        <div class="bento-grid" id="drivers">
           <article class="bento-card bento-large" data-parallax="-0.03">
-            <span class="bento-step">01</span>
-            <h3>Sense quietly in your pocket.</h3>
-            <p>On-device inertial sensors filter out normal vehicle vibration and isolate real road impacts—whether your phone is in your pocket, bag, or dashboard mount.</p>
+            <span class="bento-step">01 / HANDS-FREE</span>
+            <h3>Runs quietly alongside Pathao, inDrive &amp; Google Maps.</h3>
+            <p>You never have to switch apps or tap buttons while riding or driving. On-device motion sensors filter out normal engine vibration and detect real potholes, speed bumps, and rough pavement automatically.</p>
             <div class="bento-chips">
-              <span>Orientation-independent</span>
+              <span>Bike, Scooter &amp; Car ready</span>
               <span>Zero screen distraction</span>
-              <span>Low battery impact</span>
+              <span>Works in pocket or handlebar mount</span>
+              <span>Offline-ready</span>
             </div>
           </article>
 
           <article class="bento-card" data-parallax="-0.06">
-            <span class="bento-step">02</span>
-            <h3>Never trust a single bump.</h3>
-            <p>A single jolt could be a dropped phone or a curb. Hodos waits for independent passes from multiple devices before publishing a hazard on the public map.</p>
+            <span class="bento-step">02 / CORROBORATION</span>
+            <h3>Verified by multiple riders.</h3>
+            <p>A single jolt is never published alone. When multiple drivers pass the same spot, Hodos confirms the hazard and updates the live map for every rider on the road.</p>
           </article>
 
           <article class="bento-card" data-parallax="-0.09">
-            <span class="bento-step">03</span>
-            <h3>Know when roads heal.</h3>
-            <p>When subsequent journeys pass smoothly over a previously rough stretch—or commuters mark it fixed—the map updates automatically.</p>
+            <span class="bento-step">03 / DRIVER PERKS</span>
+            <h3>Unlock local service &amp; fuel perks.</h3>
+            <p>Active riders and drivers get curated local deals on tires, engine oil, brake service, and EV/fuel stops right inside the app—without annoying pop-ups.</p>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clear Monetization & Business Model Section: How Hodos Earns -->
+    <section class="section-pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <div class="section-header" data-parallax="-0.04">
+          <p class="eyebrow">How Hodos is sustained</p>
+          <h2 id="pricing-title">Free for every driver.<br /><span>Powered by fleets &amp; partners.</span></h2>
+          <p class="section-lead">Everyday riders and rideshare drivers never pay a cent. Here is exactly how Hodos earns revenue to keep the map free and independent.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Tier 1: Free for Drivers -->
+          <article class="price-card" data-parallax="-0.03">
+            <div class="price-top">
+              <span class="price-tag">Commuters &amp; Rideshare</span>
+              <div class="price-amount">Free <span>forever</span></div>
+              <p class="price-desc">For Pathao, inDrive, delivery riders, motorcyclists, and daily commuters.</p>
+            </div>
+            <ul class="price-features">
+              <li>Unlimited live hazard map &amp; search</li>
+              <li>20 km offline Wi-Fi map caching</li>
+              <li>Automatic background road sensing</li>
+              <li>GPX &amp; GeoJSON journey exports</li>
+              <li>Access to local Pit-Stop partner discounts</li>
+            </ul>
+            <a class="btn-secondary price-btn" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download Android App</a>
+          </article>
+
+          <!-- Tier 2: Sponsored Pit-Stop & Driver Partner Cards (Clever Ad Placement) -->
+          <article class="price-card price-card-featured" data-parallax="-0.05">
+            <div class="price-badge">Driver Partner Network</div>
+            <div class="price-top">
+              <span class="price-tag">Sponsored Pit-Stops &amp; Perks</span>
+              <div class="price-amount">Partner Ads <span>in-app &amp; map</span></div>
+              <p class="price-desc">Native, non-intrusive placements for garages, tire shops, lubricant brands, fuel stations, and rider gear.</p>
+            </div>
+            <ul class="price-features">
+              <li><strong>Pit-Stop Map Pins:</strong> Highlighted service &amp; tire centers along high-roughness corridors</li>
+              <li><strong>Driver Perk Cards:</strong> Native offer cards in the app's <em>Nearby</em> &amp; <em>You</em> tabs (oil change, tires, helmets)</li>
+              <li><strong>Zero Pop-ups:</strong> Never interrupts navigation or driving safety</li>
+              <li><strong>High-Intent Audience:</strong> Reaches active daily rideshare &amp; delivery drivers directly</li>
+            </ul>
+            <a class="btn-primary price-btn" href="mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Ad%20Placement">Sponsor a Pit-Stop or Perk</a>
+          </article>
+
+          <!-- Tier 3: Commercial Fleet & B2B Data API -->
+          <article class="price-card" data-parallax="-0.07">
+            <div class="price-top">
+              <span class="price-tag">Enterprise &amp; Municipalities</span>
+              <div class="price-amount">Data API <span>commercial license</span></div>
+              <p class="price-desc">Real-time road roughness (IRI), hazard feeds, and corridor health for logistics, ride-hailing platforms, and cities.</p>
+            </div>
+            <ul class="price-features">
+              <li>Live GeoJSON / H3 road quality &amp; pothole API</li>
+              <li>Smooth-route optimization for delivery &amp; ride fleets</li>
+              <li>Municipal repair verification &amp; degradation alerts</li>
+              <li>Commercial CC BY-NC-SA 4.0 data licensing waiver</li>
+              <li>Dedicated SLA &amp; custom city exports</li>
+            </ul>
+            <a class="btn-secondary price-btn" href="mailto:hodos@devilabs.dev?subject=Hodos%20Commercial%20Data%20API">License Road Data</a>
+          </article>
+        </div>
+
+        <!-- Clever Native Partner Ad Placement Preview on Web -->
+        <div class="sponsor-strip" data-parallax="-0.02">
+          <div class="sponsor-strip-left">
+            <span class="sponsor-pill">SPONSORED DRIVER PERK</span>
+            <div>
+              <strong>Riding for Pathao or inDrive? Reach thousands of daily riders on Hodos.</strong>
+              <p>Feature your garage, tire shop, engine oil brand, or fuel station directly inside the Hodos app and live map.</p>
+            </div>
+          </div>
+          <a class="sponsor-cta" href="mailto:hodos@devilabs.dev?subject=Advertise%20to%20Hodos%20Drivers">Become a Partner →</a>
         </div>
       </div>
     </section>
@@ -140,25 +209,25 @@
         <div class="section-header dark-header" data-parallax="-0.04">
           <p class="eyebrow eyebrow-amber">Privacy by construction</p>
           <h2 id="privacy-title">Maps the road.<br /><span>Never your life.</span></h2>
-          <p class="section-lead">We designed Hodos so you never have to trade your personal whereabouts for better roads.</p>
+          <p class="section-lead">We monetize through aggregated fleet road intelligence and clearly labeled driver partner perks—never by selling personal location tracking.</p>
         </div>
 
         <div class="privacy-grid">
           <div class="privacy-item" data-parallax="-0.03">
             <h4>No account required</h4>
-            <p>Explore the live map or opt into road sensing immediately. No sign-ups, emails, phone numbers, or ad trackers.</p>
+            <p>Explore the live map or opt into road sensing immediately. No sign-ups, emails, or phone numbers required.</p>
           </div>
           <div class="privacy-item" data-parallax="-0.05">
             <h4>250 m endpoint trimming</h4>
-            <p>Observations near the start and end of your journey are discarded on your device so home and work locations stay private.</p>
+            <p>Observations near the start and end of your journey are discarded on your device so home and pickup locations stay private.</p>
           </div>
           <div class="privacy-item" data-parallax="-0.07">
-            <h4>Raw motion stays local</h4>
-            <p>High-frequency accelerometer streams are analyzed in memory and never uploaded. Only compact hazard candidates leave your phone.</p>
+            <h4>Contextual perks, zero tracking</h4>
+            <p>Partner offers are matched to road conditions and vehicle care—never personal behavioral profiling or invasive ad SDKs.</p>
           </div>
           <div class="privacy-item" data-parallax="-0.09">
-            <h4>100% open source</h4>
-            <p>Every line of Android sensor code and aggregation logic is public on GitHub under the MIT License for anyone to inspect.</p>
+            <h4>Dual-licensed open source</h4>
+            <p>App code is MIT open source; the corroborated road dataset is CC BY-NC-SA 4.0 (free for civic use, licensed for commercial fleets).</p>
           </div>
         </div>
       </div>
@@ -174,12 +243,12 @@
 
         <div class="faq-list">
           <details>
-            <summary>Does Hodos track my entire route?</summary>
-            <p>No. Motion analysis happens on your phone. Hodos only submits compact road observations when mapping is enabled—never raw sensor streams or your full GPS history.</p>
+            <summary>Can I run Hodos while using Pathao or inDrive?</summary>
+            <p>Yes. Enable automatic mapping once and Hodos runs silently in the background while you accept rides and navigate in Pathao, inDrive, or Google Maps.</p>
           </details>
           <details>
-            <summary>Can I browse the map without turning on sensing?</summary>
-            <p>Yes. Anyone can explore the live map on the web or in the Android app without enabling background mapping.</p>
+            <summary>How does Hodos make money if the app is free?</summary>
+            <p>Hodos earns in two transparent ways: (1) commercial data licensing of aggregated road quality feeds to logistics fleets, insurers, and municipalities, and (2) clearly badged "Driver Partner" perks (tires, oil changes, garages, fuel) inside the app and map.</p>
           </details>
           <details>
             <summary>How are hazards color-coded on the live map?</summary>
@@ -196,9 +265,8 @@
     <!-- Clean Apple Closing Banner -->
     <section class="section-closing">
       <div class="container closing-box" data-parallax="-0.04">
-        <img src="/hodos-icon.png?v=2.0.2" alt="" width="72" height="72" class="closing-icon" />
         <h2>Ready for the road ahead.</h2>
-        <p>Explore the live map in your browser or download the Android app today.</p>
+        <p>Free for every rider and driver. Explore the live map or download the Android app today.</p>
         <div class="hero-cta-row">
           <a class="btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
           <a class="btn-secondary" href="/map">Open Live Map</a>
@@ -210,14 +278,14 @@
   <footer class="apple-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <img src="/hodos-icon.png?v=2.0.2" alt="" width="22" height="22" />
+        <img src="/hodos-icon.png?v=2.0.3" alt="" width="22" height="22" />
         <span>hodos.</span>
         <span class="footer-copy">An open road intelligence project by Devilabs.</span>
       </div>
       <div class="footer-links">
         <a href="/map">Live Map</a>
+        <a href="#pricing">Partner &amp; API</a>
         <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Releases</a>
         <a href="/privacy.html">Privacy</a>
       </div>
     </div>

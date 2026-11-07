@@ -210,6 +210,80 @@
     .dot-rough { background: #d97706; }
     .dot-bump { background: #7c3aed; }
     .dot-fixed { background: #10b981; }
+    .btn-sponsor {
+      background: rgba(217, 119, 6, 0.12);
+      border: 1px solid rgba(217, 119, 6, 0.28);
+      color: #b45309;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 980px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .btn-sponsor:hover {
+      background: #d97706;
+      color: #ffffff;
+    }
+    .map-ad-floating {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      max-width: 310px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: saturate(180%) blur(16px);
+      -webkit-backdrop-filter: saturate(180%) blur(16px);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      border-radius: 16px;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .map-ad-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .map-ad-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #b45309;
+      background: rgba(217, 119, 6, 0.12);
+      padding: 3px 8px;
+      border-radius: 980px;
+    }
+    .map-ad-cta {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .map-ad-cta:hover {
+      text-decoration: underline;
+    }
+    .map-ad-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .map-ad-sub {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    @media (max-width: 680px) {
+      .map-ad-floating {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -233,6 +307,7 @@
     </div>
 
     <div class="action-group">
+      <a href="/#pricing" class="btn-sponsor">Sponsor a Pit-Stop</a>
       <button id="btn-fit-all" class="btn-action">Fit route</button>
       <a href="/" class="btn-action">← Back</a>
     </div>
@@ -247,6 +322,14 @@
       <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed bump</span></div>
       <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Repaired</span></div>
     </div>
+    <aside class="map-ad-floating" aria-label="Sponsored Driver Perk">
+      <div class="map-ad-top">
+        <span class="map-ad-badge">Sponsored Pit-Stop</span>
+        <a href="mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Sponsorship" class="map-ad-cta">Place your shop →</a>
+      </div>
+      <div class="map-ad-title">15% off suspension, tire &amp; oil service for Pathao &amp; inDrive riders</div>
+      <div class="map-ad-sub">Show your active Hodos journey counter at partner garages. Ads keep the live map 100% free.</div>
+    </aside>
   </main>
 
   <script type="module" src="/src/map-page.ts"></script>
