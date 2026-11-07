@@ -1,9 +1,6 @@
 import "./cartographic.css";
 
-const year = document.querySelector("[data-year]");
-if (year) year.textContent = String(new Date().getFullYear());
-
-// Invalidate any retired web application service workers and caches
+// Purge any legacy PWA service workers and caches
 if ("serviceWorker" in navigator) {
   void navigator.serviceWorker
     .getRegistrations()
@@ -17,10 +14,48 @@ if ("caches" in window) {
     .catch(() => {});
 }
 
-// Anchor navigation should close the mobile menu after selection.
-document.querySelectorAll(".mobile-nav nav a").forEach((link) => {
+document.querySelectorAll<HTMLAnchorElement>(".mobile-nav nav a").forEach((link) => {
   link.addEventListener("click", () => {
-    const menu = link.closest("details");
-    if (menu instanceof HTMLDetailsElement) menu.open = false;
+    link.closest("details")?.removeAttribute("open");
   });
 });
+
+// Smooth 60fps Apple-style scroll parallax
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!prefersReducedMotion) {
+  const parallaxElements = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
+  let ticking = false;
+
+  const updateParallax = () => {
+    const viewportCenter = window.innerHeight / 2;
+    for (const el of parallaxElements) {
+      const speed = parseFloat(el.dataset.parallax || "0");
+      if (!speed || window.innerWidth <= 820) {
+        el.style.transform = "";
+        continue;
+      }
+      const rect = el.getBoundingClientRect();
+      const elementCenter = rect.top + rect.height / 2;
+      const offset = (elementCenter - viewportCenter) * speed;
+      if (el.classList.contains("pill-bottom")) {
+        el.style.transform = `translate3d(-50%, ${offset.toFixed(1)}px, 0)`;
+      } else {
+        el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
+      }
+    }
+    ticking = false;
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateParallax);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+  window.addEventListener("resize", updateParallax, { passive: true });
+  updateParallax();
+}

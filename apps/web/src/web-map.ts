@@ -222,22 +222,22 @@ export function initWebMap(
 
   function showPopupForHazard(h: WebHazard) {
     const badgeColor = h.fixed
-      ? "#367b62"
+      ? "#10b981"
       : h.kind === "pothole"
-      ? "#c95b3c"
+      ? "#e11d48"
       : h.kind === "speed_bump"
-      ? "#3b76a8"
-      : "#d68454";
+      ? "#7c3aed"
+      : "#d97706";
 
     const html = `
-      <div style="font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 190px; color: #172d29;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 190px; color: #1d1d1f;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-          <strong style="font-size: 14px;">${h.title}</strong>
-          <span style="background: ${badgeColor}; color: #fffdf7; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;">
+          <strong style="font-size: 14px; font-weight: 600;">${h.title}</strong>
+          <span style="background: ${badgeColor}; color: #ffffff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px;">
             ${h.fixed ? "Repaired" : `Level ${h.severity}`}
           </span>
         </div>
-        <div style="font-size: 11.5px; color: #586e63; font-family: ui-monospace, monospace;">
+        <div style="font-size: 11.5px; color: #86868b; font-family: ui-monospace, SFMono-Regular, monospace;">
           ${h.locationName}
         </div>
       </div>
@@ -270,12 +270,12 @@ export function initWebMap(
         ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#367b62",
-          ["==", ["get", "kind"], "pothole"], "#c95b3c",
-          ["==", ["get", "kind"], "speed_bump"], "#3b76a8",
-          "#d68454"
+          ["get", "fixed"], "#10b981",
+          ["==", ["get", "kind"], "pothole"], "#e11d48",
+          ["==", ["get", "kind"], "speed_bump"], "#7c3aed",
+          "#d97706"
         ],
-        "circle-opacity": 0.28
+        "circle-opacity": 0.25
       }
     });
 
@@ -292,13 +292,13 @@ export function initWebMap(
         ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#367b62",
-          ["==", ["get", "kind"], "pothole"], "#c95b3c",
-          ["==", ["get", "kind"], "speed_bump"], "#3b76a8",
-          "#d68454"
+          ["get", "fixed"], "#10b981",
+          ["==", ["get", "kind"], "pothole"], "#e11d48",
+          ["==", ["get", "kind"], "speed_bump"], "#7c3aed",
+          "#d97706"
         ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": "#fffdf7"
+        "circle-stroke-color": "#ffffff"
       }
     });
 

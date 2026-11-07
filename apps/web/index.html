@@ -3,168 +3,226 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#172d29" />
-  <meta name="description" content="Hodos helps communities understand their roads. Explore reported hazards for free, or opt in to mapping on Android." />
+  <meta name="theme-color" content="#fbfbfd" />
+  <meta name="description" content="Hodos turns everyday journeys into a live, shared map of road conditions. Runs quietly in your pocket with privacy by design." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Hodos — The road maps itself" />
-  <meta property="og:description" content="A clearer view of the roads we share. Independent observations, community reports, and privacy by design." />
+  <meta property="og:title" content="Hodos 2.0 — The road maps itself." />
+  <meta property="og:description" content="A clearer view of the roads we share. Independent observations, community corroboration, and privacy by design." />
   <meta property="og:url" content="https://hodos.devilabs.dev/" />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.1" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.2" />
   <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" href="/brandmark.svg?v=2.0.1" type="image/svg+xml" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.1" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.1" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.1" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.1" />
-  <link rel="manifest" href="/site.webmanifest?v=2.0.1" />
-  <title>Hodos — Roads worth knowing</title>
+  <link rel="icon" href="/brandmark.svg?v=2.0.2" type="image/svg+xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.2" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.2" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.2" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.2" />
+  <link rel="manifest" href="/site.webmanifest?v=2.0.2" />
+  <title>Hodos — The road maps itself.</title>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
-  <header class="site-header">
-    <div class="site-header-inner wrap">
-      <a class="brand" href="/" aria-label="Hodos home"><img src="/hodos-icon.png?v=2.0.1" alt="" width="42" height="42"/><span>hodos<span class="brand-stop">.</span></span></a>
-      <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="/map">Live map</a><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a>
+
+  <header class="apple-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=2.0.2" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="/map">Live Map</a>
+        <a href="#how">How it Works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#faq">FAQ</a>
       </nav>
-      <a class="header-cta" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download app <span class="button-trail" aria-hidden="true"></span></a>
-      <details class="mobile-nav"><summary aria-label="Toggle site navigation"><span></span><span></span></summary><nav aria-label="Mobile navigation"><a href="/map">Live map</a><a href="#how">How it works</a><a href="#road-notes">Your roads</a><a href="#values">Our approach</a><a href="#faq">Questions</a><a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download app</a></nav></details>
+      <div class="nav-actions">
+        <a class="nav-pill" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download</a>
+      </div>
     </div>
   </header>
+
   <main id="content">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="signal-dot"></span> HODOS 2.0 · THE ROAD MAPS ITSELF</p>
-          <h1 id="hero-title">Know the road.<br/><em>Keep moving.</em></h1>
-          <p class="hero-description">Everyday journeys can reveal the potholes and rough stretches we all encounter. Hodos brings independent observations together on a public map—one road at a time.</p>
-          <div class="hero-actions">
-            <a class="button button-dark" href="/map">Explore live map</a>
-            <a class="button button-outline" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
-          </div>
-          <p class="beta-note">Runs quietly in your pocket. Zero manual reporting, no screen distractions, and built-in privacy.</p>
-          <div class="hero-index"><span>01 / OBSERVE</span><span>02 / CORROBORATE</span><span>03 / UNDERSTAND</span></div>
+    <!-- Hero with multi-depth scroll parallax -->
+    <section class="hero-stage" aria-labelledby="hero-title">
+      <div class="hero-glow" data-parallax="-0.18" aria-hidden="true"></div>
+
+      <div class="hero-container">
+        <div class="hero-badge" data-parallax="-0.04">
+          <span class="badge-dot"></span>
+          <span>Hodos 2.0 · Android</span>
         </div>
-        <div class="hero-visual">
-          <div class="map-plate" aria-label="Hand-drawn illustration of a winding road and shared observations">
-            <div class="plate-heading"><span class="plate-kicker">HODOS / FIELD SKETCH</span><span class="plate-label"><span class="plate-indicator"></span> Quiet road notes</span></div>
-            <div class="map-canvas">
-              <svg class="cartographic-map" viewBox="0 0 610 495" role="img" aria-labelledby="map-title map-desc" preserveAspectRatio="xMidYMid slice">
-                <title id="map-title">Hand-drawn winding road</title><desc id="map-desc">A warm hand-drawn sketch of a winding country road leading toward home, with three observed road notes along the path.</desc>
-                <defs>
-                  <linearGradient id="warm-sky" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#f6e7ce"/>
-                    <stop offset="58%" stop-color="#f9f2e3"/>
-                    <stop offset="100%" stop-color="#eef2e8"/>
-                  </linearGradient>
-                </defs>
-                <rect width="610" height="495" fill="url(#warm-sky)"/>
-                <!-- Soft hand-sketched sun & clouds -->
-                <circle cx="430" cy="126" r="54" fill="#f3cfa0" opacity="0.55"/>
-                <path d="M78 104c18-10 42-9 58 2 14-8 35-7 48 4 19 1 34 11 36 22H58c3-13 10-22 20-28Z" fill="#fbf7ee" stroke="#d8cbb8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M446 76c14-8 33-7 46 2 11-6 27-5 37 3 15 1 26 9 28 17H430c2-10 8-17 16-22Z" fill="#fbf7ee" stroke="#d8cbb8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Distant rolling hills with hand-drawn ink contour -->
-                <path d="M-20 270 Q135 205 310 248 T630 232 L630 495 L-20 495 Z" fill="#dce5d5" stroke="#5b7565" stroke-width="2.4" stroke-linecap="round"/>
-                <path d="M-20 335 Q190 275 375 322 T630 300 L630 495 L-20 495 Z" fill="#cad9c5" stroke="#486454" stroke-width="2.4" stroke-linecap="round"/>
-                <!-- Little warm house on the ridge -->
-                <g transform="translate(392 170)">
-                  <rect x="44" y="-8" width="9" height="20" rx="2" fill="#8d5b3e" stroke="#2c4438" stroke-width="2.2"/>
-                  <path d="M8 22 L36 0 L64 22 L64 52 L8 52 Z" fill="#f7efe0" stroke="#2c4438" stroke-width="2.5" stroke-linejoin="round"/>
-                  <path d="M3 24 L36 -3 L69 24 Z" fill="#c97947" stroke="#2c4438" stroke-width="2.5" stroke-linejoin="round"/>
-                  <rect x="28" y="30" width="14" height="22" rx="3" fill="#f2c57c" stroke="#2c4438" stroke-width="2.2"/>
-                  <rect x="47" y="29" width="10" height="10" rx="1.5" fill="#f2c57c" stroke="#2c4438" stroke-width="2"/>
-                </g>
-                <!-- Hand-drawn winding road from foreground to the house -->
-                <path d="M165 510 C115 418 355 385 335 312 C318 256 410 242 426 222" fill="none" stroke="#486454" stroke-width="64" stroke-linecap="round"/>
-                <path d="M165 510 C115 418 355 385 335 312 C318 256 410 242 426 222" fill="none" stroke="#fffdf7" stroke-width="58" stroke-linecap="round"/>
-                <path class="route-line" d="M165 510 C115 418 355 385 335 312 C318 256 410 242 426 222" fill="none" stroke="#33735b" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Hand-sketched cypress/pine trees -->
-                <g transform="translate(108 242)" stroke="#2c4438" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M0 24 L0 36" />
-                  <path d="M-12 24 L0 2 L12 24 Z" fill="#89a88e"/>
-                </g>
-                <g transform="translate(498 265)" stroke="#2c4438" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M0 26 L0 38" />
-                  <path d="M-13 26 L0 2 L13 26 Z" fill="#89a88e"/>
-                </g>
-                <!-- Three clean hand-drawn observation pins along the road -->
-                <g transform="translate(216 414)">
-                  <circle r="19" fill="#fffdf7" stroke="#2c4438" stroke-width="2.4"/>
-                  <circle r="12" fill="#f6dec6" stroke="#c97947" stroke-width="2"/>
-                  <circle r="4.5" fill="#c97947"/>
-                </g>
-                <g transform="translate(334 316)">
-                  <circle r="19" fill="#fffdf7" stroke="#2c4438" stroke-width="2.4"/>
-                  <circle r="12" fill="#f6dec6" stroke="#c97947" stroke-width="2"/>
-                  <path d="M-5 1 Q0 -6 5 1" fill="none" stroke="#a6603c" stroke-width="2.4" stroke-linecap="round"/>
-                </g>
-                <g transform="translate(394 248)">
-                  <circle r="18" fill="#fffdf7" stroke="#2c4438" stroke-width="2.4"/>
-                  <circle r="11" fill="#d8ead9" stroke="#367b62" stroke-width="2"/>
-                  <path d="m-4.5 0 3.2 3.2 6-6.5" fill="none" stroke="#367b62" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </g>
-              </svg>
-              <div class="map-coordinates">HAND-DRAWN SKETCH <span>·</span> QUIET MAPPING</div>
+
+        <h1 id="hero-title" class="hero-headline" data-parallax="-0.08">
+          The road<br /><span>maps itself.</span>
+        </h1>
+
+        <p class="hero-subhead" data-parallax="-0.05">
+          Just drive, ride, or commute as usual. Hodos quietly senses potholes, speed bumps, and rough roads from your pocket—and builds a live public map for everyone.
+        </p>
+
+        <div class="hero-cta-row" data-parallax="-0.03">
+          <a class="btn-primary" href="/map">Explore Live Map</a>
+          <a class="btn-secondary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+        </div>
+
+        <!-- Clean Apple-style floating showcase with parallax depth layers -->
+        <div class="parallax-showcase">
+          <div class="floating-pill pill-left" data-parallax="-0.16">
+            <span class="status-dot dot-pothole"></span>
+            <div>
+              <strong>Pothole corroborated</strong>
+              <span>3 passes · 2 independent devices</span>
             </div>
-            <div class="map-legend" aria-hidden="true"><span><i class="key-route"></i> Everyday journey</span><span><i class="key-report"></i> Corroborated bump</span><span><i class="key-repaired"></i> Reported repaired</span></div>
-            <div class="plate-bottom"><span>THE ROAD MAPS ITSELF</span><span>OPEN SOURCE · PRIVACY BY DESIGN</span></div>
           </div>
-          <div class="hero-side-note" aria-hidden="true">The map starts with a road.<br/>The picture gets clearer together.</div>
+
+          <div class="icon-monolith" data-parallax="0.06">
+            <img src="/hodos-icon.png?v=2.0.2" alt="Hodos 2.0 App Icon" width="220" height="220" />
+          </div>
+
+          <div class="floating-pill pill-right" data-parallax="-0.22">
+            <span class="status-dot dot-fixed"></span>
+            <div>
+              <strong>Zero manual reporting</strong>
+              <span>100% hands-free in your pocket</span>
+            </div>
+          </div>
+
+          <div class="floating-pill pill-bottom" data-parallax="-0.12">
+            <span class="status-dot dot-bump"></span>
+            <div>
+              <strong>Privacy by construction</strong>
+              <span>First &amp; last 250 m automatically trimmed</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-    <div class="method-strip"><div class="wrap method-strip-inner"><span>OPT-IN MAPPING</span><span>NO ACCOUNT TO EXPLORE</span><span>LOCAL JOURNEY SUMMARIES</span><span>OPEN SOURCE</span></div></div>
-    <section class="section section-how wrap" id="how" aria-labelledby="how-title">
-      <div class="section-intro"><div><span class="overline">01 / THE IDEA</span><h2 id="how-title">Just go where<br/>you were <em>going.</em></h2></div><p>Road conditions change constantly. Hodos helps turn everyday phone observations into a clearer, shared picture—without asking you to file a report at every bump.</p></div>
-      <div class="process-grid">
-        <article class="process-card"><span class="process-index">01</span><div class="process-symbol process-symbol-one" aria-hidden="true"><span class="process-path"></span></div><h3>Choose to map</h3><p>Opt in to automatic road mapping from the Android app. You decide when participation is on.</p><span class="process-foot">YOU'RE IN CONTROL</span></article>
-        <article class="process-card"><span class="process-index">02</span><div class="process-symbol process-symbol-two" aria-hidden="true"><span class="process-impulse"></span></div><h3>Travel as usual</h3><p>On-device motion analysis flags possible road impacts. A single bump is not enough to establish a defect.</p><span class="process-foot">LOCAL ANALYSIS</span></article>
-        <article class="process-card"><span class="process-index">03</span><div class="process-symbol process-symbol-three" aria-hidden="true"><span class="process-points"><i></i><i></i><i></i></span></div><h3>Build confidence</h3><p>Independent observations help corroborate reports. Communities can also submit repair feedback.</p><span class="process-foot">SHARED EVIDENCE</span></article>
-      </div>
-    </section>
-    <section class="section section-roads" id="road-notes" aria-labelledby="roads-title"><div class="wrap roads-grid">
-      <div class="roads-copy"><span class="overline">02 / YOUR ROADS</span><h2 id="roads-title">The places you<br/>care about <em>matter.</em></h2><p>Keep track of the reports that are useful to you. Revisit the map to check a road's current public status, or look back at your own weekly journey summaries.</p>
-        <div class="road-features">
-          <div><span class="feature-label">SAVE / 01</span><div><h3>Keep a road close</h3><p>Save public hazard reports on your phone and return to check for changes.</p></div></div>
-          <div><span class="feature-label">REVISIT / 02</span><div><h3>See what's changed</h3><p>Open a saved report to see its most recently available community status.</p></div></div>
-          <div><span class="feature-label">REMEMBER / 03</span><div><h3>A quiet road diary</h3><p>Weekly summaries stay on your device—without saving your full route.</p></div></div>
+
+    <!-- Bento Grid Section: How it works -->
+    <section class="section-bento" id="how" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-header" data-parallax="-0.04">
+          <p class="eyebrow">Effortless by design</p>
+          <h2 id="how-title">Complex under the hood.<br /><span>Simple on the road.</span></h2>
+          <p class="section-lead">No buttons to tap while driving. No accounts to create. Everything happens automatically on your phone.</p>
+        </div>
+
+        <div class="bento-grid">
+          <article class="bento-card bento-large" data-parallax="-0.03">
+            <span class="bento-step">01</span>
+            <h3>Sense quietly in your pocket.</h3>
+            <p>On-device inertial sensors filter out normal vehicle vibration and isolate real road impacts—whether your phone is in your pocket, bag, or dashboard mount.</p>
+            <div class="bento-chips">
+              <span>Orientation-independent</span>
+              <span>Zero screen distraction</span>
+              <span>Low battery impact</span>
+            </div>
+          </article>
+
+          <article class="bento-card" data-parallax="-0.06">
+            <span class="bento-step">02</span>
+            <h3>Never trust a single bump.</h3>
+            <p>A single jolt could be a dropped phone or a curb. Hodos waits for independent passes from multiple devices before publishing a hazard on the public map.</p>
+          </article>
+
+          <article class="bento-card" data-parallax="-0.09">
+            <span class="bento-step">03</span>
+            <h3>Know when roads heal.</h3>
+            <p>When subsequent journeys pass smoothly over a previously rough stretch—or commuters mark it fixed—the map updates automatically.</p>
+          </article>
         </div>
       </div>
-      <div class="road-record" aria-label="Illustration of the saved road record format">
-        <div class="record-top"><span>H / ROAD RECORD</span><span>LOCAL NOTE</span></div>
-        <div class="record-map"><svg viewBox="0 0 520 300" preserveAspectRatio="none" role="img" aria-label="Simple diagram of a curving road and a saved map point">
-          <defs><pattern id="record-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#b6c8b7" stroke-width=".6"/></pattern></defs>
-          <rect width="520" height="300" fill="#dfe9df"/><rect width="520" height="300" fill="url(#record-grid)"/>
-          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#b3c7b4" stroke-width="80" fill="none" stroke-linecap="round"/>
-          <path d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#fffdf5" stroke-width="65" fill="none" stroke-linecap="round"/>
-          <path class="record-route" d="M-30 235Q80 70 167 178T365 168 548 42" stroke="#448168" stroke-width="3" stroke-dasharray="8 12" fill="none"/>
-          <circle cx="266" cy="204" r="30" fill="#f6d6b7" stroke="#b8734e" stroke-width="2"/>
-          <circle cx="266" cy="204" r="11" fill="#bc774d"/>
-          <text x="37" y="45" fill="#4b6857" font-size="12" font-family="monospace" letter-spacing="1">SAVED / PUBLIC REPORT</text>
-        </svg></div>
-        <div class="record-details"><span class="record-number">H—001</span><div><span class="record-subhead">ROAD CONDITION</span><strong>Check back later.</strong><p>Road reports can change as new observations and repair feedback arrive.</p></div><span class="record-status"><span></span> Example</span></div>
-        <div class="record-footer"><span>BUILT FOR REVISITING</span><span>NO FULL ROUTE STORED</span></div>
+    </section>
+
+    <!-- Dark Apple-style Contrast Section: Privacy & Architecture -->
+    <section class="section-dark" id="privacy" aria-labelledby="privacy-title">
+      <div class="dark-glow" data-parallax="0.12" aria-hidden="true"></div>
+      <div class="container">
+        <div class="section-header dark-header" data-parallax="-0.04">
+          <p class="eyebrow eyebrow-amber">Privacy by construction</p>
+          <h2 id="privacy-title">Maps the road.<br /><span>Never your life.</span></h2>
+          <p class="section-lead">We designed Hodos so you never have to trade your personal whereabouts for better roads.</p>
+        </div>
+
+        <div class="privacy-grid">
+          <div class="privacy-item" data-parallax="-0.03">
+            <h4>No account required</h4>
+            <p>Explore the live map or opt into road sensing immediately. No sign-ups, emails, phone numbers, or ad trackers.</p>
+          </div>
+          <div class="privacy-item" data-parallax="-0.05">
+            <h4>250 m endpoint trimming</h4>
+            <p>Observations near the start and end of your journey are discarded on your device so home and work locations stay private.</p>
+          </div>
+          <div class="privacy-item" data-parallax="-0.07">
+            <h4>Raw motion stays local</h4>
+            <p>High-frequency accelerometer streams are analyzed in memory and never uploaded. Only compact hazard candidates leave your phone.</p>
+          </div>
+          <div class="privacy-item" data-parallax="-0.09">
+            <h4>100% open source</h4>
+            <p>Every line of Android sensor code and aggregation logic is public on GitHub under the MIT License for anyone to inspect.</p>
+          </div>
+        </div>
       </div>
-    </div></section>
-    <section class="section section-values" id="values" aria-labelledby="values-title"><div class="wrap values-grid">
-      <div><span class="overline">03 / PRINCIPLES</span><h2 id="values-title">Useful in public.<br/><em>Careful in private.</em></h2></div>
-      <div class="value-list">
-        <article><span>01</span><div><h3>Explore without signing in.</h3><p>The public hazard map is available even when automatic mapping is turned off.</p></div></article>
-        <article><span>02</span><div><h3>Keep raw motion on your phone.</h3><p>Compact geolocated observations can be sent when you participate; raw sensor streams and complete routes are not uploaded.</p></div></article>
-        <article><span>03</span><div><h3>Don't trust a single bump.</h3><p>Multiple independent observations help corroborate possible hazards before they're shown on the shared map.</p></div></article>
-        <article><span>04</span><div><h3>See the code.</h3><p>Hodos is developed in the open under the MIT License. Read the implementation and help make it more dependable.</p></div></article>
+    </section>
+
+    <!-- Minimal FAQ -->
+    <section class="section-faq" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-container">
+        <div class="section-header">
+          <p class="eyebrow">Questions</p>
+          <h2 id="faq-title">Good to know.</h2>
+        </div>
+
+        <div class="faq-list">
+          <details>
+            <summary>Does Hodos track my entire route?</summary>
+            <p>No. Motion analysis happens on your phone. Hodos only submits compact road observations when mapping is enabled—never raw sensor streams or your full GPS history.</p>
+          </details>
+          <details>
+            <summary>Can I browse the map without turning on sensing?</summary>
+            <p>Yes. Anyone can explore the live map on the web or in the Android app without enabling background mapping.</p>
+          </details>
+          <details>
+            <summary>How are hazards color-coded on the live map?</summary>
+            <p>Potholes are shown in crimson, rough road stretches in warm amber, speed bumps in violet, and repaired spots in emerald—keeping your blue location dot unmistakably clear.</p>
+          </details>
+          <details>
+            <summary>Does it work offline?</summary>
+            <p>Yes. The Android app queues observations locally when you're offline and can automatically cache a 20 km nearby map area over Wi-Fi.</p>
+          </details>
+        </div>
       </div>
-    </div></section>
-    <section class="section section-faq wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><span class="overline">04 / QUESTIONS</span><h2 id="faq-title">Good to know.</h2></div><div class="faq-list">
-      <details><summary>Does Hodos track my entire journey?</summary><p>Motion analysis happens on your phone. Hodos submits compact geolocated road observations when mapping is enabled, not raw accelerometer data or your complete GPS route.</p></details>
-      <details><summary>Can I use the map without turning on detection?</summary><p>Yes. You can explore publicly confirmed road hazards without enabling automatic mapping.</p></details>
-      <details><summary>When does a hazard appear on the map?</summary><p>Hodos checks for repeated observations from different app installations before publishing a hazard. People can also report when a road has been repaired.</p></details>
-      <details><summary>Can I save maps for offline use?</summary><p>The Android app can save a nearby 20 km map area over Wi-Fi after you allow location. Saved tiles work offline; other regions and fresh hazard updates need internet.</p></details>
-      <details><summary>Is Hodos available for iPhone?</summary><p>Hodos is Android-first and in beta testing. iPhone support is not available yet.</p></details>
-    </div></section>
-    <section class="closing"><div class="wrap closing-inner"><div><span class="overline">EVERY ROAD COUNTS</span><h2>Better journeys start<br/>with better information.</h2></div><div><a class="button button-light" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a><p>Open-source road intelligence. Report issues on GitHub.</p></div></div></section>
+    </section>
+
+    <!-- Clean Apple Closing Banner -->
+    <section class="section-closing">
+      <div class="container closing-box" data-parallax="-0.04">
+        <img src="/hodos-icon.png?v=2.0.2" alt="" width="72" height="72" class="closing-icon" />
+        <h2>Ready for the road ahead.</h2>
+        <p>Explore the live map in your browser or download the Android app today.</p>
+        <div class="hero-cta-row">
+          <a class="btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn-secondary" href="/map">Open Live Map</a>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer class="site-footer"><div class="wrap footer-inner"><a class="footer-brand" href="/"><img src="/hodos-icon.png?v=2.0.1" alt="" width="28" height="28"/> hodos.</a><p>An open road project by Devilabs.</p><div><a href="/map">Live map</a><a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">Source code</a><a href="/privacy.html">Privacy</a></div></div></footer>
+
+  <footer class="apple-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="/hodos-icon.png?v=2.0.2" alt="" width="22" height="22" />
+        <span>hodos.</span>
+        <span class="footer-copy">An open road intelligence project by Devilabs.</span>
+      </div>
+      <div class="footer-links">
+        <a href="/map">Live Map</a>
+        <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="/privacy.html">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
   <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>

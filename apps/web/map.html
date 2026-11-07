@@ -3,35 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#172d29" />
+  <meta name="theme-color" content="#fbfbfd" />
   <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness. Real road observations verified by commuters." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos Live Map — The road maps itself" />
   <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness." />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.1" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.2" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map" />
-  <link rel="icon" href="/brandmark.svg?v=2.0.1" type="image/svg+xml" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.1" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.1" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.1" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.1" />
-  <link rel="manifest" href="/site.webmanifest?v=2.0.1" />
+  <link rel="icon" href="/brandmark.svg?v=2.0.2" type="image/svg+xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.2" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.2" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.2" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.2" />
+  <link rel="manifest" href="/site.webmanifest?v=2.0.2" />
   <title>Live Map · Hodos</title>
   <style>
     :root {
-      --paper: #f7f6ef;
-      --surface: #fffdf7;
-      --ink: #172d29;
-      --fern: #438168;
-      --muted: #586e63;
-      --line: #d9e0d7;
-      --accent: #d68454;
-      --shadow: 0 8px 24px rgba(23, 45, 41, 0.08);
+      --bg: #fbfbfd;
+      --surface: #ffffff;
+      --ink: #1d1d1f;
+      --muted: #86868b;
+      --line: rgba(0, 0, 0, 0.08);
+      --accent: #d97706;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+      background: var(--bg);
       color: var(--ink);
       height: 100vh;
       overflow: hidden;
@@ -40,10 +39,11 @@
       -webkit-font-smoothing: antialiased;
     }
     .map-header {
-      background: rgba(247, 246, 239, 0.94);
-      backdrop-filter: blur(12px);
+      background: rgba(251, 251, 253, 0.84);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
       border-bottom: 1px solid var(--line);
-      padding: 12px 22px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -59,13 +59,13 @@
       color: var(--ink);
     }
     .brand-group img {
-      border-radius: 10px;
+      border-radius: 9px;
       display: block;
     }
     .brand-title {
-      font-size: 21px;
-      font-weight: 800;
-      letter-spacing: -0.06em;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
     }
     .brand-stop {
       color: var(--accent);
@@ -76,11 +76,12 @@
       gap: 8px;
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 99px;
-      padding: 6px 14px;
+      border-radius: 980px;
+      padding: 7px 14px;
       min-width: 210px;
       max-width: 280px;
       flex: 1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
     .search-box svg {
       width: 14px;
@@ -93,7 +94,7 @@
       background: transparent;
       color: var(--ink);
       font: inherit;
-      font-size: 12.5px;
+      font-size: 13px;
       width: 100%;
       outline: none;
     }
@@ -112,15 +113,15 @@
       border: 1px solid var(--line);
       color: var(--ink);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
       padding: 7px 14px;
-      border-radius: 99px;
+      border-radius: 980px;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
     .filter-chip:hover {
-      border-color: #8aaa97;
+      border-color: rgba(0, 0, 0, 0.22);
     }
     .filter-chip.active {
       background: var(--ink);
@@ -137,15 +138,15 @@
       border: 1px solid var(--line);
       color: var(--ink);
       font-size: 12px;
-      font-weight: 700;
-      padding: 7px 13px;
-      border-radius: 9px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 980px;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
     .btn-action:hover {
-      background: #e9efe7;
+      background: #f5f5f7;
     }
     .map-wrapper {
       flex: 1;
@@ -161,13 +162,14 @@
     }
     .map-status-floating {
       position: absolute;
-      top: 14px;
-      left: 14px;
-      background: rgba(255, 253, 247, 0.95);
-      backdrop-filter: blur(8px);
+      top: 16px;
+      left: 16px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: saturate(180%) blur(16px);
+      -webkit-backdrop-filter: saturate(180%) blur(16px);
       border: 1px solid var(--line);
       padding: 8px 14px;
-      border-radius: 10px;
+      border-radius: 980px;
       font-size: 12px;
       font-weight: 600;
       color: var(--ink);
@@ -177,25 +179,26 @@
     .map-legend-floating {
       position: absolute;
       bottom: 24px;
-      left: 14px;
-      background: rgba(255, 253, 247, 0.95);
-      backdrop-filter: blur(8px);
+      left: 16px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: saturate(180%) blur(16px);
+      -webkit-backdrop-filter: saturate(180%) blur(16px);
       border: 1px solid var(--line);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 11.5px;
-      font-weight: 600;
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
       color: var(--ink);
       box-shadow: var(--shadow);
       z-index: 5;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 8px;
     }
     .legend-row {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
     }
     .legend-dot {
       width: 10px;
@@ -203,16 +206,16 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .dot-pothole { background: #c95b3c; }
-    .dot-rough { background: #d68454; }
-    .dot-bump { background: #3b76a8; }
-    .dot-fixed { background: #367b62; }
+    .dot-pothole { background: #e11d48; }
+    .dot-rough { background: #d97706; }
+    .dot-bump { background: #7c3aed; }
+    .dot-fixed { background: #10b981; }
   </style>
 </head>
 <body>
   <header class="map-header">
     <a href="/" class="brand-group" aria-label="Return to Hodos Home">
-      <img src="/hodos-icon.png?v=2.0.1" alt="Hodos" width="34" height="34" />
+      <img src="/hodos-icon.png?v=2.0.2" alt="Hodos" width="32" height="32" />
       <span class="brand-title">hodos<span class="brand-stop">.</span></span>
     </a>
 

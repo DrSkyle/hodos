@@ -196,11 +196,11 @@ fun RoadMap(
                     addStringProperty("id", hazard.id)
                     addStringProperty(
                         "color",
-                        if (hazard.fixed) "#398C6B"
+                        if (hazard.fixed) "#10B981"
                         else when (hazard.severity) {
-                            3 -> "#B84C3C"
-                            2 -> "#C47B29"
-                            else -> "#2F8B79"
+                            3 -> "#E11D48"
+                            2 -> "#D97706"
+                            else -> "#7C3AED"
                         }
                     )
                 }
