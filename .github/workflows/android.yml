@@ -8,6 +8,7 @@ on:
       - "apps/web/public/hodos-*.png"
       - "apps/web/public/favicon-32.png"
       - ".github/workflows/android.yml"
+      - ".github/workflows/release-android.yml"
   pull_request:
     paths:
       - "apps/web/android/**"
