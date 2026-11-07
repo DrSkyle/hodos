@@ -3,23 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#09090b" />
+  <meta name="theme-color" content="#193d32" />
   <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness. Real road observations verified by commuters." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos Live Map — The road maps itself" />
   <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness. Free GeoJSON and GPX export." />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png" />
+  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.0" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map" />
-  <link rel="icon" href="/brandmark.svg" type="image/svg+xml" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1.2.0" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1.2.0" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1.2.0" />
-  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="icon" href="/brandmark.svg?v=2.0.0" type="image/svg+xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.0" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.0" />
+  <link rel="manifest" href="/site.webmanifest?v=2.0.0" />
 
   <title>Live Road Defect Telemetry · Hodos</title>
 </head>
 <body class="h-screen w-screen overflow-hidden flex flex-col bg-background text-foreground antialiased select-none">
-  <!-- Shadcn Header -->
+  <!-- Cartographic Map Header -->
   <header class="h-14 border-b border-border bg-background/95 backdrop-blur px-4 flex items-center justify-between gap-4 z-20 shrink-0">
     <div class="flex items-center gap-3 shrink-0">
       <a href="/" class="btn btn-ghost btn-sm gap-1.5 px-2" aria-label="Back to home">
@@ -28,8 +29,8 @@
       </a>
       <div class="h-4 w-px bg-border"></div>
       <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Hodos home">
-        <img src="/brandmark.svg" alt="Hodos" class="w-7 h-7 object-contain" width="28" height="28" />
-        <span class="font-bold tracking-tight text-sm">hodos<span class="text-primary font-bold">.</span></span>
+        <img src="/hodos-icon.png?v=2.0.0" alt="Hodos" class="w-7 h-7 rounded-lg object-cover shadow-2xs" width="28" height="28" />
+        <span class="font-extrabold tracking-tight text-base">hodos<span class="text-[#d68454] font-black">.</span></span>
       </a>
       <span class="badge badge-secondary text-xs whitespace-nowrap hidden xl:inline-flex">Live Defect Map</span>
     </div>
@@ -124,8 +125,8 @@
     <aside id="defect-drawer" class="sheet w-80 sm:w-96 hidden">
       <div class="p-4 border-b border-border flex items-center justify-between bg-card">
         <div>
-          <h2 class="font-semibold text-sm">Verified Road Defects</h2>
-          <p class="text-xs text-muted-foreground">438 corroborated anomalies</p>
+          <h2 class="font-semibold text-sm">Road Defect Observations</h2>
+          <p class="text-xs text-muted-foreground">438 field pilot &amp; corroborated readings</p>
         </div>
         <button id="btn-close-drawer" class="btn btn-ghost btn-icon h-7 w-7" aria-label="Close sheet">
           <i data-lucide="x" class="w-4 h-4"></i>
