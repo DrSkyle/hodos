@@ -21,7 +21,7 @@ and communicate its impact. Do not silently change the signer.
 
 The production release workflow expects these repository/environment secrets:
 
-- `HODOS_KEYSTORE_BASE64`: Base64-encoded PKCS#12/JKS keystore bytes.
+- `HODOS_KEYSTORE_BASE64`: Base64-encoded JKS keystore bytes.
 - `HODOS_STORE_PASSWORD`: keystore password.
 - `HODOS_KEY_ALIAS`: release key alias.
 - `HODOS_KEY_PASSWORD`: private-key password.
@@ -38,15 +38,22 @@ files, issues, or chat messages.
 
 ## Local preparation and fingerprint
 
-Generate or import the new signing identity on a trusted machine, offline where
-possible. Keep at least two encrypted backups in separate secure locations.
+Generate or import the new JKS signing identity on a trusted machine, offline where
+possible. For a new identity, use a long validity period and a unique alias:
+
+```sh
+keytool -genkeypair -v -storetype JKS -keystore hodos-release.jks \\
+  -alias hodos -keyalg RSA -keysize 3072 -validity 10000
+```
+
+Keep at least two encrypted backups in separate secure locations.
 Do not upload the keystore to GitHub, cloud storage, issue trackers, or source
 control.
 
 Obtain the public certificate fingerprint locally:
 
 ```sh
-keytool -list -v -keystore hodos-release.p12 -alias hodos
+keytool -list -v -keystore hodos-release.jks -alias hodos
 ```
 
 Record the SHA-256 fingerprint only; the public certificate fingerprint is not
@@ -56,7 +63,7 @@ a secret. Compare it with the fingerprint printed by `apksigner verify
 Create the Base64 value without adding the keystore itself to the repository:
 
 ```sh
-base64 < hodos-release.p12 | tr -d '\n'
+base64 < hodos-release.jks | tr -d '\n'
 ```
 
 Copy that output directly into the protected `HODOS_KEYSTORE_BASE64` secret.
