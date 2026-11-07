@@ -27,10 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val DeepGreen = Color(0xFF155C49)
-private val QuietGreen = Color(0xFF678074)
-private val DeepInk = Color(0xFF1A352B)
-
 /**
  * The public map is refreshed on activity resume; returning to My Roads reveals
  * changed server-confirmed repair state without watching a person's movements.
@@ -53,17 +49,17 @@ internal fun SavedRoadsSection(
             verticalArrangement = Arrangement.spacedBy(11.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                DoodleIcon(DoodleSymbol.BOOKMARK, modifier = Modifier.size(30.dp), tint = DeepGreen)
+                DoodleIcon(DoodleSymbol.BOOKMARK, modifier = Modifier.size(30.dp), tint = Forest)
                 Spacer(Modifier.width(9.dp))
-                Text("My Roads", color = DeepInk, fontSize = 21.sp,
+                Text("My Roads", color = Ink, fontSize = 21.sp,
                     fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("${savedIds.size}/100", fontSize = 12.sp, color = QuietGreen)
+                Text("${savedIds.size}/100", fontSize = 12.sp, color = Muted)
             }
             Text(
                 if (savedIds.isEmpty())
                     "Found a road you care about? Open its map report and tap Save this road. Come back to see its latest verified status."
                 else "Saved here on your phone. Reopen Hodos to check for new community reports.",
-                fontSize = 13.sp, color = QuietGreen, lineHeight = 20.sp
+                fontSize = 13.sp, color = Muted, lineHeight = 20.sp
             )
             savedIds.toList().sorted().take(8).forEachIndexed { index, id ->
                 if (index > 0) HorizontalDivider(color = Color(0xFFEAF0EB))
@@ -73,10 +69,10 @@ internal fun SavedRoadsSection(
                 ) {
                     if (hazard == null) {
                         DoodleIcon(DoodleSymbol.WARNING,
-                            tint = QuietGreen, modifier = Modifier.size(27.dp))
+                            tint = Muted, modifier = Modifier.size(27.dp))
                     } else if (hazard.fixed) {
                         DoodleIcon(DoodleSymbol.CHECK,
-                            tint = DeepGreen, modifier = Modifier.size(27.dp))
+                            tint = Forest, modifier = Modifier.size(27.dp))
                     } else {
                         DoodleIcon(DoodleSymbol.WARNING,
                             tint = Color(0xFFC18A45), modifier = Modifier.size(27.dp))
@@ -92,25 +88,25 @@ internal fun SavedRoadsSection(
                     ) {
                         Text(hazard?.title ?: "Unavailable in current map",
                             fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                            color = DeepInk)
+                            color = Ink)
                         Text(
                             if (hazard == null) "Refresh the map to check this report"
                             else if (hazard.fixed) "Reported repaired · open for details"
                             else "${hazard.severityText} severity · open for details",
-                            fontSize = 12.sp, color = QuietGreen
+                            fontSize = 12.sp, color = Muted
                         )
                     }
                     TextButton(onClick = {
                         if (hazard == null) onRemove(id) else onSelect(hazard)
                     }) {
                         Text(if (hazard == null) "Remove" else "View",
-                            color = DeepGreen, fontSize = 12.sp)
+                            color = Forest, fontSize = 12.sp)
                     }
                 }
             }
             if (savedIds.size > 8) {
                 Text("Showing 8 of ${savedIds.size} saved roads.",
-                    color = QuietGreen, fontSize = 12.sp)
+                    color = Muted, fontSize = 12.sp)
             }
         }
     }

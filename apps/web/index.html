@@ -8,16 +8,29 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos 2.0 — The road maps itself." />
   <meta property="og:description" content="A clearer view of the roads we share. Built for rideshare, delivery, and everyday commuters." />
-  <meta property="og:url" content="https://hodos.devilabs.dev/" />
-  <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.3" />
-  <link rel="canonical" href="https://hodos.devilabs.dev/" />
-  <link rel="icon" href="/brandmark.svg?v=2.0.3" type="image/svg+xml" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2.0.3" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2.0.3" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.3" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.3" />
-  <link rel="manifest" href="/site.webmanifest?v=2.0.3" />
+  <meta property="og:url" content="__HODOS_SITE__/" />
+  <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
+  <link rel="canonical" href="__HODOS_SITE__/" />
+  <!--HODOS-ICONS-->
   <title>Hodos — The road maps itself.</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Hodos",
+    "operatingSystem": "Android",
+    "applicationCategory": "NavigationApplication",
+    "description": "Passive, crowdsourced road-hazard mapping. Potholes, speed bumps, and rough roads detected automatically during everyday rides.",
+    "url": "__HODOS_SITE__/",
+    "downloadUrl": "__HODOS_DOWNLOAD__",
+    "license": "__HODOS_REPO__/blob/main/LICENSE",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
@@ -25,7 +38,7 @@
   <header class="apple-nav">
     <div class="nav-inner">
       <a class="nav-brand" href="/" aria-label="Hodos home">
-        <img src="/hodos-icon.png?v=2.0.3" alt="" width="28" height="28" />
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
         <span>hodos<span class="dot">.</span></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
@@ -36,17 +49,22 @@
         <a href="#faq">FAQ</a>
       </nav>
       <div class="nav-actions">
-        <a class="nav-pill" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download</a>
+        <a class="nav-pill" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download</a>
       </div>
     </div>
   </header>
 
   <main id="content">
-    <!-- Hero with multi-depth scroll parallax (no badge/icon clutter) -->
+    <!-- Hero with multi-depth scroll parallax -->
     <section class="hero-stage" aria-labelledby="hero-title">
       <div class="hero-glow" data-parallax="-0.18" aria-hidden="true"></div>
 
       <div class="hero-container">
+        <div class="hero-badge" data-parallax="-0.04">
+          <span class="badge-dot"></span>
+          <span>Hodos 2.0 · Android</span>
+        </div>
+
         <h1 id="hero-title" class="hero-headline" data-parallax="-0.08">
           The road<br /><span>maps itself.</span>
         </h1>
@@ -56,13 +74,13 @@
         </p>
 
         <div class="hero-cta-row" data-parallax="-0.03">
-          <a class="btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
           <a class="btn-secondary" href="/map">Explore Live Map</a>
         </div>
 
-        <!-- Clean Apple-style floating status cards with parallax depth -->
-        <div class="parallax-grid" data-parallax="-0.06">
-          <div class="floating-pill" data-parallax="-0.08">
+        <!-- Clean Apple-style floating showcase with parallax depth layers -->
+        <div class="parallax-showcase">
+          <div class="floating-pill pill-left" data-parallax="-0.16">
             <span class="status-dot dot-pothole"></span>
             <div>
               <strong>Pothole corroborated</strong>
@@ -70,7 +88,11 @@
             </div>
           </div>
 
-          <div class="floating-pill" data-parallax="-0.14">
+          <div class="icon-monolith" data-parallax="0.06">
+            <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="Hodos 2.0 App Icon" width="220" height="220" />
+          </div>
+
+          <div class="floating-pill pill-right" data-parallax="-0.22">
             <span class="status-dot dot-fixed"></span>
             <div>
               <strong>Built for Rideshare &amp; Delivery</strong>
@@ -78,7 +100,7 @@
             </div>
           </div>
 
-          <div class="floating-pill" data-parallax="-0.10">
+          <div class="floating-pill pill-bottom" data-parallax="-0.12">
             <span class="status-dot dot-bump"></span>
             <div>
               <strong>Save suspension &amp; tires</strong>
@@ -132,28 +154,28 @@
         <div class="section-header" data-parallax="-0.04">
           <p class="eyebrow">How Hodos is sustained</p>
           <h2 id="pricing-title">Free for every driver.<br /><span>Powered by fleets &amp; partners.</span></h2>
-          <p class="section-lead">Everyday riders and rideshare drivers never pay a cent. Here is exactly how Hodos earns revenue to keep the map free and independent.</p>
+          <p class="section-lead">Drivers never pay — no subscription, no ads sold against you. Two funding streams keep it that way: Pit-Stop partner placements and fleet &amp; municipal data licensing. Here is who funds Hodos and exactly what they get.</p>
         </div>
 
         <div class="pricing-grid">
           <!-- Tier 1: Free for Drivers with Revenue Share -->
           <article class="price-card" data-parallax="-0.03">
             <div class="price-top">
-              <span class="price-tag">Commuters &amp; Rideshare</span>
-              <div class="price-amount">Free <span>+ Driver Rewards</span></div>
+              <span class="price-tag">For Drivers &amp; Riders</span>
+              <div class="price-amount">Free <span>forever · $0</span></div>
               <p class="price-desc">Built for Pathao, inDrive, delivery riders, motorcyclists, and daily commuters.</p>
             </div>
             <ul class="price-features">
               <li>Unlimited live hazard map &amp; search</li>
               <li>Hands-free Automatic Mapping (detects road defects silently)</li>
               <li>20 km offline Wi-Fi map caching</li>
-              <li><strong>Driver Rewards:</strong> Payouts &amp; Pit-Stop discounts funded by our ad &amp; fleet data revenue</li>
+              <li><strong>Driver Rewards:</strong> 15% off at partner Pit-Stops plus revenue-share payouts, funded by sponsorships &amp; fleet data</li>
               <li>Direct <strong>Quick Share APK</strong> transfer to nearby riders</li>
               <li>In-app GitHub OTA updates with one tap</li>
             </ul>
-            <div style="display: flex; gap: 8px; flex-direction: column; margin-top: 18px;">
-              <a class="btn-primary price-btn" href="https://github.com/DrSkyle/hodos/releases/latest" target="_blank" rel="noopener noreferrer">Download Android APK</a>
-              <a class="btn-secondary price-btn" href="mailto:hodos@devilabs.dev?subject=Join%20Hodos%20Driver%20Rewards%20Program">Join Driver Rewards (Email Us)</a>
+            <div class="price-actions">
+              <a class="btn-primary price-btn" href="__HODOS_DOWNLOAD__/latest" target="_blank" rel="noopener noreferrer">Download Android APK</a>
+              <a class="btn-secondary price-btn" href="mailto:__HODOS_CONTACT__?subject=Join%20Hodos%20Driver%20Rewards%20Program">Join Driver Rewards (Email Us)</a>
             </div>
           </article>
 
@@ -161,24 +183,25 @@
           <article class="price-card price-card-featured" data-parallax="-0.05">
             <div class="price-badge">Driver Partner Network</div>
             <div class="price-top">
-              <span class="price-tag">Sponsored Pit-Stops &amp; Perks</span>
-              <div class="price-amount">Partner Ads <span>in-app &amp; map</span></div>
+              <span class="price-tag">For Local Businesses</span>
+              <div class="price-amount">Sponsored <span>perks &amp; map pins</span></div>
               <p class="price-desc">Native, non-intrusive placements for garages, tire shops, lubricant brands, fuel stations, and rider gear.</p>
             </div>
             <ul class="price-features">
-              <li><strong>Pit-Stop Map Pins:</strong> Highlighted service &amp; tire centers along high-roughness corridors</li>
-              <li><strong>Driver Perk Cards:</strong> Native offer cards in the app's <em>Nearby</em> &amp; <em>You</em> tabs (oil change, tires, helmets)</li>
+              <li><strong>Pit-Stop Map Pins:</strong> Highlighted service &amp; tire centers on the live map and in the app</li>
+              <li><strong>Driver Perk Cards:</strong> Offer cards in the app's <em>Map</em> &amp; <em>You</em> tabs (oil change, tires, helmets)</li>
+              <li><strong>Redeemable rider perk:</strong> Active riders get 15% off service at sponsored Pit-Stops</li>
               <li><strong>Zero Pop-ups:</strong> Never interrupts navigation or driving safety</li>
               <li><strong>High-Intent Audience:</strong> Reaches active daily rideshare &amp; delivery drivers directly</li>
             </ul>
-            <a class="btn-primary price-btn" href="mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship">Sponsor a Pit-Stop or Perk</a>
+            <a class="btn-primary price-btn" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship">Sponsor a Pit-Stop or Perk</a>
           </article>
 
           <!-- Tier 3: Commercial Fleet & B2B Data API -->
           <article class="price-card" data-parallax="-0.07">
             <div class="price-top">
-              <span class="price-tag">Enterprise &amp; Municipalities</span>
-              <div class="price-amount">Data API <span>commercial license</span></div>
+              <span class="price-tag">For Fleets &amp; Cities</span>
+              <div class="price-amount">Commercial <span>data license</span></div>
               <p class="price-desc">Real-time road roughness (IRI), hazard feeds, and corridor health for logistics, ride-hailing platforms, and cities.</p>
             </div>
             <ul class="price-features">
@@ -188,7 +211,7 @@
               <li>Commercial CC BY-NC-SA 4.0 data licensing waiver</li>
               <li>Dedicated SLA &amp; custom city exports</li>
             </ul>
-            <a class="btn-secondary price-btn" href="mailto:hodos@devilabs.dev?subject=Hodos%20Commercial%20Data%20API">License Road Data</a>
+            <a class="btn-secondary price-btn" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Commercial%20Data%20API">License Road Data</a>
           </article>
         </div>
 
@@ -201,9 +224,9 @@
               <p>Keep Hodos running in the background to earn driver rewards and 15% off maintenance at partner garages. Local business? Sponsor a Pit-Stop.</p>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <a class="sponsor-cta" href="mailto:hodos@devilabs.dev?subject=Hodos%20Driver%20Rewards%20Program">Driver Rewards →</a>
-            <a class="sponsor-cta" href="mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship" style="background: rgba(217, 119, 6, 0.12); color: #d97706;">Sponsor Pit-Stop →</a>
+          <div class="sponsor-ctas">
+            <a class="sponsor-cta" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Driver%20Rewards%20Program">Driver Rewards →</a>
+            <a class="sponsor-cta sponsor-cta-amber" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship">Sponsor Pit-Stop →</a>
           </div>
         </div>
       </div>
@@ -275,7 +298,7 @@
         <h2>Ready for the road ahead.</h2>
         <p>Free for every rider and driver. Explore the live map or download the Android app today.</p>
         <div class="hero-cta-row">
-          <a class="btn-primary" href="https://github.com/DrSkyle/hodos/releases" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
           <a class="btn-secondary" href="/map">Open Live Map</a>
         </div>
       </div>
@@ -285,14 +308,14 @@
   <footer class="apple-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <img src="/hodos-icon.png?v=2.0.3" alt="" width="22" height="22" />
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="22" height="22" />
         <span>hodos.</span>
         <span class="footer-copy">An open road intelligence project by Devilabs.</span>
       </div>
       <div class="footer-links">
         <a href="/map">Live Map</a>
         <a href="#pricing">Partner &amp; API</a>
-        <a href="https://github.com/DrSkyle/hodos" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="/privacy.html">Privacy</a>
       </div>
     </div>

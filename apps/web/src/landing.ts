@@ -30,7 +30,7 @@ if (!prefersReducedMotion) {
     const viewportCenter = window.innerHeight / 2;
     for (const el of parallaxElements) {
       const speed = parseFloat(el.dataset.parallax || "0");
-      if (!speed || window.innerWidth <= 820) {
+      if (!speed || window.innerWidth <= 900) {
         el.style.transform = "";
         continue;
       }

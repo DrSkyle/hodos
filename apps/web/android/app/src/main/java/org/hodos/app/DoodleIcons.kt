@@ -37,7 +37,7 @@ internal enum class DoodleSymbol(val vector: ImageVector) {
 internal fun DoodleIcon(
     symbol: DoodleSymbol,
     modifier: Modifier = Modifier,
-    tint: Color = Color(0xFF145B46)
+    tint: Color = Forest
 ) {
     Icon(
         imageVector = symbol.vector,

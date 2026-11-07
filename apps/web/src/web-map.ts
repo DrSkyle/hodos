@@ -1,6 +1,7 @@
 import { setWorkerUrl, Map, NavigationControl, AttributionControl, GeolocateControl, Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection } from "geojson";
+import { CONTACT_EMAIL } from "./site-constants";
 
 // Explicitly point MapLibre to our self-hosted worker bundle so Vite's asset hashing
 // never triggers "Worker failed to load. Check that the worker URL is correct."
@@ -21,6 +22,17 @@ export interface WebHazard {
   confidence?: number;
   lastSeen?: string;
   firstSeen?: string;
+}
+
+export interface WebPartner {
+  id: string;
+  name: string;
+  category: string;
+  lat: number;
+  lng: number;
+  offer: string;
+  sponsorLabel: string;
+  sample: boolean;
 }
 
 export interface MapInstanceHandle {
@@ -104,6 +116,7 @@ export function initWebMap(
 
   const statusEl = statusId ? document.getElementById(statusId) : null;
   let hazards: WebHazard[] = [];
+  let partners: WebPartner[] = [];
 
   if (statusEl) {
     statusEl.textContent = "Loading road observations...";
@@ -114,7 +127,18 @@ export function initWebMap(
     style: OSM_CLEAN_STYLE,
     center: [0, 20],
     zoom: 2,
-    attributionControl: false
+    attributionControl: false,
+    // Encoding the camera in the URL hash keeps the rider's view across
+    // refreshes and makes any spot shareable.
+    hash: true
+  });
+
+  // Only pull the camera to the hazard spread when the visitor has no position
+  // of their own yet (no hash in the URL). A refresh must never yank the map
+  // back to the same overview after someone has moved around.
+  let shouldAutoFit = !/#\d/.test(window.location.hash);
+  map.on("moveend", () => {
+    shouldAutoFit = false;
   });
 
   map.addControl(new NavigationControl({ showCompass: true, visualizePitch: false }), "top-right");
@@ -150,8 +174,27 @@ export function initWebMap(
     }))
   });
 
-  const fitBoundsToData = (targetHazards: WebHazard[]) => {
-    if (targetHazards.length === 0) return;
+  const buildPartnerGeoJSON = (items: WebPartner[]): FeatureCollection => ({
+    type: "FeatureCollection",
+    features: items.map((p) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [p.lng, p.lat]
+      },
+      properties: {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        offer: p.offer,
+        sponsorLabel: p.sponsorLabel,
+        sample: p.sample
+      }
+    }))
+  });
+
+  const fitBoundsToData = (targetHazards: WebHazard[], force = false) => {
+    if ((!force && !shouldAutoFit) || targetHazards.length === 0) return;
     let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
     for (const h of targetHazards) {
       if (h.lng < minLng) minLng = h.lng;
@@ -210,7 +253,7 @@ export function initWebMap(
         statusEl.textContent = `${filtered.length} road observations`;
       }
     },
-    fitAllHazards: () => fitBoundsToData(hazards),
+    fitAllHazards: () => fitBoundsToData(hazards, true),
     flyToHazard: (id: string) => {
       const target = hazards.find((h) => h.id === id);
       if (target) {
@@ -249,8 +292,74 @@ export function initWebMap(
       .addTo(map);
   }
 
+  function showPopupForPartner(p: WebPartner) {
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 200px; color: #1d1d1f;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
+          <strong style="font-size: 14px; font-weight: 600;">${p.name}</strong>
+          <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap;">
+            ${p.sponsorLabel}
+          </span>
+        </div>
+        ${p.offer ? `<div style="font-size: 12.5px; color: #57534e; margin-bottom: 6px;">${p.offer}</div>` : ""}
+        ${
+          p.sample
+            ? `<div style="font-size: 11px; color: #86868b; margin-bottom: 6px;">Sample placement showing how partner slots render on the map.</div>`
+            : ""
+        }
+        <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Sponsor this spot →</a>
+      </div>
+    `;
+
+    new Popup({ offset: 12, closeButton: true })
+      .setLngLat([p.lng, p.lat])
+      .setHTML(html)
+      .addTo(map);
+  }
+
   const setupLayers = () => {
     if (map.getSource("hodos-hazards")) return;
+
+    // Sponsored pins first (so hazard layers render on top — safety data always
+    // wins), then the hazard layers.
+    map.addSource("hodos-partners", {
+      type: "geojson",
+      data: buildPartnerGeoJSON(partners)
+    });
+    map.addLayer({
+      id: "partner-halo",
+      type: "circle",
+      source: "hodos-partners",
+      paint: {
+        "circle-radius": 16,
+        "circle-color": "#d97706",
+        "circle-opacity": 0.14
+      }
+    });
+    map.addLayer({
+      id: "hodos-partner-dots",
+      type: "circle",
+      source: "hodos-partners",
+      paint: {
+        "circle-radius": 9,
+        "circle-color": "#fffdf7",
+        "circle-stroke-color": "#d97706",
+        "circle-stroke-width": 3,
+        "circle-stroke-dasharray": [2, 1.5]
+      }
+    });
+    map.on("click", "hodos-partner-dots", (e: MapLayerMouseEvent) => {
+      const feat = e.features?.[0];
+      if (!feat || !feat.properties) return;
+      const target = partners.find((p) => p.id === feat.properties?.id);
+      if (target) showPopupForPartner(target);
+    });
+    map.on("mouseenter", "hodos-partner-dots", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "hodos-partner-dots", () => {
+      map.getCanvas().style.cursor = "";
+    });
 
     map.addSource("hodos-hazards", {
       type: "geojson",
@@ -371,6 +480,33 @@ export function initWebMap(
           updateSourceData();
         }
       }
+    })
+    .catch(() => {});
+
+  fetch("/data/partners.json")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (!data || !Array.isArray(data.partners)) return;
+      const parsed: WebPartner[] = [];
+      (data.partners as any[]).forEach((raw, i) => {
+        const lat = Number(raw.lat);
+        const lng = Number(raw.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || !raw.name) return;
+        parsed.push({
+          id: String(raw.id ?? `partner-${i}`),
+          name: String(raw.name),
+          category: String(raw.category ?? "pit-stop"),
+          lat,
+          lng,
+          offer: String(raw.offer ?? ""),
+          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored"),
+          sample: Boolean(raw.sample)
+        });
+      });
+      if (parsed.length === 0) return;
+      partners = parsed;
+      const src = map.getSource("hodos-partners") as any;
+      if (src) src.setData(buildPartnerGeoJSON(parsed));
     })
     .catch(() => {});
 

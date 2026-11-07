@@ -159,6 +159,29 @@ a {
   margin: 0 auto;
 }
 
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 980px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: #424245;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  margin-bottom: 28px;
+  will-change: transform;
+}
+
+.badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 .hero-headline {
   font-size: clamp(54px, 8.4vw, 96px);
   line-height: 1.02;
@@ -231,17 +254,38 @@ a {
   background: #ffffff;
 }
 
-/* Parallax Floating Cards Row */
-.parallax-grid {
-  margin: 64px auto 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  max-width: 920px;
+/* Parallax Showcase Stage */
+.parallax-showcase {
+  position: relative;
+  margin: 76px auto 0;
+  max-width: 760px;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-monolith {
+  position: relative;
+  z-index: 2;
+  border-radius: 48px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 32px 72px rgba(29, 29, 31, 0.16), 0 4px 16px rgba(0, 0, 0, 0.05);
   will-change: transform;
 }
 
+.icon-monolith img {
+  display: block;
+  width: 210px;
+  height: 210px;
+  border-radius: 40px;
+}
+
 .floating-pill {
+  position: absolute;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -254,6 +298,22 @@ a {
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.06);
   will-change: transform;
+}
+
+.pill-left {
+  left: 0;
+  top: 22px;
+}
+
+.pill-right {
+  right: 0;
+  top: 48px;
+}
+
+.pill-bottom {
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .floating-pill strong {
@@ -503,6 +563,13 @@ a {
   width: 100%;
 }
 
+.price-actions {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  margin-top: 18px;
+}
+
 /* Native Sponsored Driver Perk Strip */
 .sponsor-strip {
   margin-top: 32px;
@@ -563,6 +630,18 @@ a {
 
 .sponsor-cta:hover {
   opacity: 0.88;
+}
+
+.sponsor-ctas {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sponsor-cta-amber {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--accent);
 }
 
 /* Dark Section */
@@ -754,7 +833,19 @@ a {
   .nav-links {
     display: none;
   }
-  .parallax-grid,
+  .parallax-showcase {
+    flex-direction: column;
+    gap: 14px;
+    min-height: unset;
+    margin-top: 48px;
+  }
+  .floating-pill,
+  .pill-bottom {
+    position: static;
+    transform: none !important;
+    width: 100%;
+    max-width: 360px;
+  }
   .pricing-grid,
   .bento-grid,
   .privacy-grid {

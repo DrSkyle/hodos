@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
@@ -61,14 +62,6 @@ import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
-
-private val Ink = Color(0xFF162522)
-private val Forest = Color(0xFF125B48)
-private val Paper = Color(0xFFF7FAF8)
-private val Muted = Color(0xFF687C74)
-private val Mist = Color(0xFFEAF3ED)
-private val Orange = Color(0xFFC47B29)
-private val Danger = Color(0xFFCB4E43)
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
 
@@ -140,11 +133,45 @@ fun HodosApp(
     var severity by remember { mutableStateOf("All") }
     var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
     var latestRelease by remember { mutableStateOf<AppReleaseInfo?>(null) }
+    // Non-null while an update APK streams in: 0 at start, 100 when verified.
+    var updateDownload by remember { mutableStateOf<Int?>(null) }
+
+    fun startInAppUpdate(release: AppReleaseInfo) {
+        if (updateDownload != null) return
+        scope.launch {
+            updateDownload = 0
+            val apk = AppUpdateAndShare.downloadUpdate(context, release) { percent ->
+                updateDownload = percent
+            }
+            updateDownload = null
+            if (apk != null) {
+                AppUpdateAndShare.installApk(context, apk)
+            } else {
+                val result = snackbar.showSnackbar(
+                    "Update download failed",
+                    actionLabel = "Open releases"
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    AppUpdateAndShare.openReleasesPage(context)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(internetConnected, refreshSignal) {
         if (internetConnected) {
-            val info = AppUpdateAndShare.checkLatestRelease(context)
-            if (info != null) latestRelease = info
+            when (val check = AppUpdateAndShare.checkLatestRelease(context)) {
+                is UpdateCheck.Available -> latestRelease = check.release
+                is UpdateCheck.UpToDate -> latestRelease = null
+                UpdateCheck.Failed -> Unit
+            }
+        }
+    }
+    var partners by remember { mutableStateOf<List<PartnerPoi>>(emptyList()) }
+    LaunchedEffect(internetConnected) {
+        if (internetConnected) {
+            val loaded = PartnerOffers.load()
+            if (loaded.isNotEmpty()) partners = loaded
         }
     }
     // After foreground location permission is granted, automatically locate
@@ -276,20 +303,7 @@ fun HodosApp(
         }
     }
 
-    val colors = lightColorScheme(
-        primary = Forest, onPrimary = Color.White,
-        secondary = Ink, background = Paper, onBackground = Ink,
-        surface = Color.White, onSurface = Ink,
-        surfaceVariant = Mist, onSurfaceVariant = Muted
-    )
-    MaterialTheme(
-        colorScheme = colors,
-        shapes = Shapes(
-            small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(18.dp),
-            large = RoundedCornerShape(26.dp)
-        )
-    ) {
+    HodosTheme {
         Scaffold(
             containerColor = Paper,
             snackbarHost = { SnackbarHost(snackbar) },
@@ -400,7 +414,7 @@ fun HodosApp(
                                     }
                                 }
                                 Spacer(Modifier.height(10.dp))
-                                DriverPerkBanner(context)
+                                DriverPerkBanner(context, partners)
                             }
                         },
                         containerColor = Color.Transparent
@@ -408,6 +422,7 @@ fun HodosApp(
                         Box(Modifier.fillMaxSize().padding(sheetInsets)) {
                             RoadMap(
                                 hazards = visibleHazards,
+                                partners = partners,
                                 locateRequest = locateRequest,
                                 onSelect = { selected = it },
                                 onLocated = {
@@ -435,16 +450,45 @@ fun HodosApp(
                                             shape = RoundedCornerShape(20.dp),
                                             shadowElevation = 2.dp,
                                             modifier = Modifier.clickable {
-                                                AppUpdateAndShare.openApkUpdate(context, latestRelease)
+                                                startInAppUpdate(latestRelease!!)
                                             }
                                         ) {
-                                            Text(
-                                                "Update ${latestRelease!!.tagName} ↓",
-                                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
-                                                color = Color.White,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp)
+                                            ) {
+                                                val progress = updateDownload
+                                                if (progress != null) {
+                                                    CircularProgressIndicator(
+                                                        progress = { progress / 100f },
+                                                        modifier = Modifier.size(13.dp),
+                                                        strokeWidth = 2.dp,
+                                                        color = Color.White
+                                                    )
+                                                    Spacer(Modifier.width(6.dp))
+                                                    Text(
+                                                        if (progress in 1..99) "Downloading $progress%"
+                                                        else "Preparing update…",
+                                                        color = Color.White,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        Icons.Outlined.Download,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(13.dp)
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(
+                                                        "Update ${latestRelease!!.tagName}",
+                                                        color = Color.White,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
                                         }
                                         Spacer(Modifier.width(6.dp))
                                     }
@@ -637,19 +681,26 @@ fun HodosApp(
                         trips = trips,
                         hazards = hazards,
                         savedRoadIds = savedRoadIds,
+                        partners = partners,
                         latestRelease = latestRelease,
                         onCheckUpdates = {
                             scope.launch {
-                                val info = AppUpdateAndShare.checkLatestRelease(context)
-                                if (info != null) {
-                                    latestRelease = info
-                                    if (info.isNewer) {
-                                        AppUpdateAndShare.openApkUpdate(context, info)
-                                    } else {
-                                        snackbar.showSnackbar("You are on the latest Hodos release (${info.tagName})")
+                                when (val check = AppUpdateAndShare.checkLatestRelease(context, force = true)) {
+                                    is UpdateCheck.Available -> {
+                                        latestRelease = check.release
+                                        startInAppUpdate(check.release)
                                     }
-                                } else {
-                                    AppUpdateAndShare.openApkUpdate(context, null)
+                                    is UpdateCheck.UpToDate ->
+                                        snackbar.showSnackbar("You are on the latest Hodos release (${check.tagName})")
+                                    UpdateCheck.Failed -> {
+                                        val result = snackbar.showSnackbar(
+                                            "Couldn't reach GitHub for updates",
+                                            actionLabel = "Open releases"
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            AppUpdateAndShare.openReleasesPage(context)
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -834,7 +885,7 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         Column(Modifier.weight(1f)) {
             Text(hazard.title, fontWeight = FontWeight.Medium)
             Text(
-                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} installation IDs"
+                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
                 else "${hazard.passes} passes · ${hazard.devices} devices",
                 color = Muted, fontSize = 12.sp
             )
@@ -1009,7 +1060,7 @@ private fun MappingScreen(
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Sponsor an Ad", fontSize = 12.sp)
+                            Text("Sponsor a Pit-Stop", fontSize = 12.sp)
                         }
                     }
                 }
@@ -1326,6 +1377,7 @@ private fun YouScreen(
     trips: List<RoadTrip>,
     hazards: List<RoadHazard>,
     savedRoadIds: Set<String>,
+    partners: List<PartnerPoi>,
     latestRelease: AppReleaseInfo?,
     onCheckUpdates: () -> Unit,
     onSelectSavedRoad: (RoadHazard) -> Unit,
@@ -1437,21 +1489,21 @@ private fun YouScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
                         Spacer(Modifier.width(10.dp))
-                        Text("How Hodos earns & pays drivers", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("Free for drivers. Funded by partners.", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "1. Driver Mapping Rewards: As Hodos grows its ad & fleet revenue, we share payouts and Pit-Stop service discounts with active Pathao, inDrive & daily riders who map the roads.",
+                        "1 · Drivers — Free forever: live hazard map, hands-free Automatic Mapping, 20 km offline maps, Quick Share, and in-app updates. No subscription, no ads sold against you.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "2. Sponsored Pit-Stops (Contextual Ads): Local tire shops, suspension mechanics, engine oil centers, and fuel stations sponsor perks for active riders.",
+                        "2 · Sponsored Pit-Stops — Local garages, tire shops, and fuel brands pay to place perks here, and active riders get 15% off service at partner Pit-Stops.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "3. Commercial Fleet & Municipal Data API: Ride-hailing platforms, logistics fleets, insurers, and city road engineers license live road roughness feeds.",
+                        "3 · Fleet & City Data API — Logistics fleets, ride-hailing platforms, and cities license live road-roughness feeds. That revenue is what keeps the driver app free.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
@@ -1468,7 +1520,7 @@ private fun YouScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Forest),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Driver Rewards", fontSize = 12.sp)
+                            Text("Join Driver Rewards", fontSize = 12.sp)
                         }
                         OutlinedButton(
                             onClick = {
@@ -1481,8 +1533,53 @@ private fun YouScreen(
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Email to Partner", fontSize = 12.sp)
+                            Text("Sponsor or License", fontSize = 12.sp)
                         }
+                    }
+                }
+            }
+        }
+        if (partners.isNotEmpty()) {
+            item {
+                Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+                    Column(
+                        Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
+                            Spacer(Modifier.width(10.dp))
+                            Text("Rider perks", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        }
+                        partners.take(2).forEach { partner ->
+                            Surface(
+                                color = Mist,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                    Text(
+                                        partner.offer,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink,
+                                        lineHeight = 18.sp
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        if (partner.sample) "${partner.name} · Sample placement"
+                                        else "${partner.name} · ${partner.sponsorLabel}",
+                                        fontSize = 11.sp,
+                                        color = Muted
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            "Perks are sponsored placements — they never change map data.",
+                            fontSize = 11.sp,
+                            color = Muted
+                        )
                     }
                 }
             }
@@ -1546,7 +1643,8 @@ private fun YouScreen(
 }
 
 @Composable
-private fun DriverPerkBanner(context: android.content.Context) {
+private fun DriverPerkBanner(context: android.content.Context, partners: List<PartnerPoi>) {
+    val partner = partners.firstOrNull()
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = Color(0xFFFFF8ED),
@@ -1565,7 +1663,7 @@ private fun DriverPerkBanner(context: android.content.Context) {
         ) {
             Surface(color = Color(0x26D97706), shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    "EARN",
+                    partner?.sponsorLabel?.uppercase() ?: "EARN",
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     color = Color(0xFFB45309),
                     fontSize = 10.sp,
@@ -1575,15 +1673,20 @@ private fun DriverPerkBanner(context: android.content.Context) {
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Pathao & inDrive riders · Earn rewards & 15% off service",
+                    partner?.offer ?: "Pathao & inDrive riders · Earn rewards & 15% off service",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Ink
+                    color = Ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "Sponsored Pit-Stop & Driver Revenue Share · Tap to email us",
+                    if (partner != null) "${partner.name} · Sponsored placement"
+                    else "Rewards are funded by partner sponsorships — tap to join or sponsor.",
                     fontSize = 11.sp,
-                    color = Muted
+                    color = Muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

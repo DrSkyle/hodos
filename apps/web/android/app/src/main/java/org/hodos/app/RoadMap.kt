@@ -1,6 +1,8 @@
 package org.hodos.app
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -9,16 +11,20 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -45,6 +51,7 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
+import kotlin.math.abs
 
 /**
  * A real native vector map, with MapLibre's Android lifecycle forwarded from
@@ -54,9 +61,43 @@ enum class LocationIssue {
     Permission, Disabled, Timeout
 }
 
+/**
+ * Remembers the last camera position across app restarts so reopening the map
+ * returns to where the rider left off instead of snapping to the same overview.
+ */
+private object MapCameraStore {
+    private const val FILE = "hodos_map_camera"
+    private const val KEY = "camera"
+
+    fun load(context: Context): CameraPosition? = runCatching {
+        val raw = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY, null)
+            ?: return null
+        val parts = raw.split(",")
+        if (parts.size != 3) return null
+        val lat = parts[0].toDoubleOrNull() ?: return null
+        val lng = parts[1].toDoubleOrNull() ?: return null
+        val zoom = parts[2].toDoubleOrNull() ?: return null
+        if (!lat.isFinite() || !lng.isFinite() || !zoom.isFinite()) return null
+        if (abs(lat) > 90.0 || abs(lng) > 180.0 || zoom < 1.0 || zoom > 20.0) return null
+        CameraPosition.Builder().target(LatLng(lat, lng)).zoom(zoom).build()
+    }.getOrNull()
+
+    fun save(context: Context, position: CameraPosition) {
+        runCatching {
+            val target = position.target ?: return
+            val value = "${target.latitude},${target.longitude},${position.zoom}"
+            context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY, value)
+                .apply()
+        }
+    }
+}
+
 @Composable
 fun RoadMap(
     hazards: List<RoadHazard>,
+    partners: List<PartnerPoi> = emptyList(),
     locateRequest: Int,
     onSelect: (RoadHazard) -> Unit,
     onLocated: (Location) -> Unit,
@@ -65,6 +106,7 @@ fun RoadMap(
     val context = LocalContext.current
     val lifecycle = (context as ComponentActivity).lifecycle
     val latestHazards by rememberUpdatedState(hazards)
+    val latestPartners by rememberUpdatedState(partners)
     val latestOnSelect by rememberUpdatedState(onSelect)
     val latestOnLocated by rememberUpdatedState(onLocated)
     val latestOnLocationError by rememberUpdatedState(onLocationError)
@@ -90,6 +132,8 @@ fun RoadMap(
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var ready by remember { mutableStateOf(false) }
     var userFix by remember { mutableStateOf<Location?>(null) }
+    var partnerSelected by remember { mutableStateOf<PartnerPoi?>(null) }
+    val savedCamera = remember(context) { MapCameraStore.load(context) }
 
     DisposableEffect(mapView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -121,8 +165,13 @@ fun RoadMap(
           mapView.getMapAsync { result ->
             try {
             map = result
-            result.cameraPosition = CameraPosition.Builder()
-                .target(LatLng(20.0, 0.0)).zoom(2.0).build()
+            // Restore the rider's last camera first; the world-view default is
+            // only for people who have never moved the map before.
+            result.cameraPosition = savedCamera
+                ?: CameraPosition.Builder().target(LatLng(20.0, 0.0)).zoom(2.0).build()
+            result.addOnCameraIdleListener {
+                MapCameraStore.save(context, result.cameraPosition)
+            }
             result.uiSettings.isRotateGesturesEnabled = false
             result.uiSettings.setAttributionMargins(12, 0, 12, 170)
             result.setStyle(
@@ -152,6 +201,27 @@ fun RoadMap(
                         circleStrokeWidth(2.5f)
                     )
                 )
+                // Sponsored pins sit under the hazard layer so safety data always wins.
+                style.addSource(GeoJsonSource(
+                    "hodos-partners", FeatureCollection.fromFeatures(emptyArray<Feature>())
+                ))
+                style.addLayer(
+                    CircleLayer("hodos-partner-halo", "hodos-partners").withProperties(
+                        circleColor(0x24D97706),
+                        circleRadius(16f),
+                        circleOpacity(0.14f)
+                    )
+                )
+                style.addLayer(
+                    CircleLayer("hodos-partner-dots", "hodos-partners").withProperties(
+                        // Inverted against hazard dots (white fill + amber ring vs
+                        // colored fill + white ring) so sponsorship reads at a glance.
+                        circleColor(0xFFFFFDF7.toInt()),
+                        circleRadius(9f),
+                        circleStrokeColor(0xFFD97706.toInt()),
+                        circleStrokeWidth(4f)
+                    )
+                )
                 style.addLayer(
                     CircleLayer("hodos-hazard-dots", "hodos-hazards").withProperties(
                         circleColor(Expression.get("color")),
@@ -163,15 +233,24 @@ fun RoadMap(
                 )
                 ready = true
                 result.addOnMapClickListener { point ->
-                    val hits = result.queryRenderedFeatures(
-                        result.projection.toScreenLocation(point), "hodos-hazard-dots"
-                    )
+                    val screen = result.projection.toScreenLocation(point)
+                    val hits = result.queryRenderedFeatures(screen, "hodos-hazard-dots")
                     val id = hits.firstOrNull()?.getStringProperty("id")
                     val hazard = latestHazards.firstOrNull { it.id == id }
                     if (hazard != null) {
                         latestOnSelect(hazard)
                         true
-                    } else false
+                    } else {
+                        val partnerHits = runCatching {
+                            result.queryRenderedFeatures(screen, "hodos-partner-dots")
+                        }.getOrDefault(emptyList())
+                        val partnerId = partnerHits.firstOrNull()?.getStringProperty("id")
+                        val partner = latestPartners.firstOrNull { it.id == partnerId }
+                        if (partner != null) {
+                            partnerSelected = partner
+                            true
+                        } else false
+                    }
                 }
                 } catch (error: Throwable) {
                     rendererFailed = true
@@ -210,7 +289,7 @@ fun RoadMap(
             map?.style?.getSourceAs<GeoJsonSource>("hodos-hazards")
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
 
-            if (!initialFitDone && userFix == null && hazards.isNotEmpty()) {
+            if (!initialFitDone && savedCamera == null && userFix == null && hazards.isNotEmpty()) {
                 initialFitDone = true
                 val avgLat = hazards.map { it.lat }.average()
                 val avgLng = hazards.map { it.lng }.average()
@@ -220,6 +299,18 @@ fun RoadMap(
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(partners, ready) {
+        if (ready) {
+            val features = partners.map { partner ->
+                Feature.fromGeometry(Point.fromLngLat(partner.lng, partner.lat)).apply {
+                    addStringProperty("id", partner.id)
+                }
+            }
+            map?.style?.getSourceAs<GeoJsonSource>("hodos-partners")
+                ?.setGeoJson(FeatureCollection.fromFeatures(features))
         }
     }
 
@@ -390,6 +481,44 @@ fun RoadMap(
                 try { locationManager.removeUpdates(it) } catch (_: Exception) { }
             }
         }
+    }
+
+    val activePartner = partnerSelected
+    if (activePartner != null) {
+        AlertDialog(
+            onDismissRequest = { partnerSelected = null },
+            title = { Text(activePartner.name, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    buildString {
+                        append(activePartner.sponsorLabel)
+                        append(" placement · ")
+                        append(activePartner.category.replaceFirstChar { it.uppercase() })
+                        append("\n\n")
+                        append(activePartner.offer)
+                        if (activePartner.sample) {
+                            append("\n\nSample placement — sponsor a Pit-Stop to claim this spot.")
+                        }
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { partnerSelected = null }) { Text("Close") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    partnerSelected = null
+                    runCatching {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Pit-Stop%20Ad%20Sponsorship")
+                            )
+                        )
+                    }
+                }) { Text("Sponsor") }
+            }
+        )
     }
 
     Box(Modifier.fillMaxSize()) {

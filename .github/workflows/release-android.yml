@@ -190,13 +190,15 @@ jobs:
           sha256sum "$RUNNER_TEMP/Hodos-$EXPECTED_VERSION.apk"
           echo "Verified production APK: org.hodos.app $EXPECTED_VERSION (versionCode $EXPECTED_VERSION_CODE)"
           echo "Verified signer SHA-256: $actual_cert"
-      - name: Create draft GitHub release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ github.ref_name }}
           name: Hodos ${{ steps.version.outputs.version }}
           generate_release_notes: true
-          draft: true
+          # Published immediately: the in-app OTA updater reads /releases/latest,
+          # which never lists drafts.
+          draft: false
           prerelease: false
           fail_on_unmatched_files: true
           files: ${{ runner.temp }}/Hodos-${{ steps.version.outputs.version }}.apk

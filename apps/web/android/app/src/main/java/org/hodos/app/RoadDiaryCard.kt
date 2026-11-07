@@ -31,10 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
-private val DiaryForest = Color(0xFF145B46)
-private val DiaryInk = Color(0xFF172923)
-private val DiaryMuted = Color(0xFF5D7268)
-
 /**
  * Clean, Apple-minimal weekly road summary card with zero schematic illustration
  * and direct APK file sharing via Quick Share / Bluetooth.
@@ -63,13 +59,13 @@ internal fun RoadDiaryCard(
                     DoodleIcon(
                         DoodleSymbol.DIARY,
                         modifier = Modifier.padding(8.dp).size(20.dp),
-                        tint = DiaryForest
+                        tint = Forest
                     )
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
                     "WEEKLY ROAD ACTIVITY",
-                    color = DiaryForest,
+                    color = Forest,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -82,7 +78,7 @@ internal fun RoadDiaryCard(
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.5).sp,
-                color = DiaryInk
+                color = Ink
             )
             Text(
                 if (summary.journeysThisWeek == 0)
@@ -90,7 +86,7 @@ internal fun RoadDiaryCard(
                 else "${summary.journeysThisWeek} ${if (summary.journeysThisWeek == 1) "journey" else "journeys"} · " +
                     String.format(Locale.US, "%.1f km", summary.distanceMetersThisWeek / 1000.0) +
                     " mapped this week.",
-                color = DiaryMuted,
+                color = Muted,
                 fontSize = 13.5.sp,
                 lineHeight = 19.sp
             )
@@ -108,7 +104,7 @@ internal fun RoadDiaryCard(
                             Box(
                                 Modifier.size(32.dp)
                                     .background(
-                                        if (summary.activeDays[index]) DiaryForest
+                                        if (summary.activeDays[index]) Forest
                                         else Color.White,
                                         CircleShape
                                     ),
@@ -116,13 +112,13 @@ internal fun RoadDiaryCard(
                             ) {
                                 Text(
                                     if (summary.activeDays[index]) "✓" else "·",
-                                    color = if (summary.activeDays[index]) Color.White else DiaryMuted,
+                                    color = if (summary.activeDays[index]) Color.White else Muted,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp
                                 )
                             }
                             Spacer(Modifier.height(4.dp))
-                            Text(label, color = DiaryMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            Text(label, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -131,7 +127,7 @@ internal fun RoadDiaryCard(
                 Button(
                     onClick = onOpenMapping,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = DiaryForest),
+                    colors = ButtonDefaults.buttonColors(containerColor = Forest),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Mapping status", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
@@ -141,9 +137,9 @@ internal fun RoadDiaryCard(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp), tint = DiaryForest)
+                    Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp), tint = Forest)
                     Spacer(Modifier.width(6.dp))
-                    Text("Send APK", color = DiaryInk, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Send APK", color = Ink, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
