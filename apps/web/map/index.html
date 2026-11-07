@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#193d32" />
+  <meta name="theme-color" content="#172d29" />
   <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness. Real road observations verified by commuters." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos Live Map — The road maps itself" />
-  <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness. Free GeoJSON and GPX export." />
+  <meta property="og:description" content="Explore real crowdsourced potholes, speed bumps, and road roughness." />
   <meta property="og:image" content="https://hodos.devilabs.dev/hodos-icon.png?v=2.0.0" />
   <link rel="canonical" href="https://hodos.devilabs.dev/map" />
   <link rel="icon" href="/brandmark.svg?v=2.0.0" type="image/svg+xml" />
@@ -16,134 +16,199 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2.0.0" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0.0" />
   <link rel="manifest" href="/site.webmanifest?v=2.0.0" />
-
-  <title>Live Road Defect Telemetry · Hodos</title>
+  <title>Live Map · Hodos</title>
+  <style>
+    :root {
+      --paper: #f7f6ef;
+      --surface: #fffdf7;
+      --ink: #172d29;
+      --fern: #438168;
+      --muted: #586e63;
+      --line: #d9e0d7;
+      --accent: #d68454;
+      --shadow: 0 8px 24px rgba(23, 45, 41, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    .map-header {
+      background: rgba(247, 246, 239, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .brand-group img {
+      border-radius: 10px;
+      display: block;
+    }
+    .brand-title {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+    }
+    .brand-stop {
+      color: var(--accent);
+    }
+    .nav-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0;
+    }
+    .filter-chip {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 99px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .filter-chip:hover {
+      border-color: #8aaa97;
+    }
+    .filter-chip.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-color: var(--ink);
+    }
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-action {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 13px;
+      border-radius: 9px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover {
+      background: #e9efe7;
+    }
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+    #full-map {
+      flex: 1;
+      height: 100%;
+      width: 100%;
+    }
+    .map-status-floating {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 253, 247, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      z-index: 5;
+    }
+    .map-legend-floating {
+      position: absolute;
+      bottom: 24px;
+      left: 14px;
+      background: rgba(255, 253, 247, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-pothole { background: #c95b3c; }
+    .dot-rough { background: #d68454; }
+    .dot-bump { background: #3b76a8; }
+    .dot-fixed { background: #367b62; }
+  </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col bg-background text-foreground antialiased select-none">
-  <!-- Cartographic Map Header -->
-  <header class="h-14 border-b border-border bg-background/95 backdrop-blur px-4 flex items-center justify-between gap-4 z-20 shrink-0">
-    <div class="flex items-center gap-3 shrink-0">
-      <a href="/" class="btn btn-ghost btn-sm gap-1.5 px-2" aria-label="Back to home">
-        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        <span class="hidden sm:inline font-medium">Home</span>
-      </a>
-      <div class="h-4 w-px bg-border"></div>
-      <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Hodos home">
-        <img src="/hodos-icon.png?v=2.0.0" alt="Hodos" class="w-7 h-7 rounded-lg object-cover shadow-2xs" width="28" height="28" />
-        <span class="font-extrabold tracking-tight text-base">hodos<span class="text-[#d68454] font-black">.</span></span>
-      </a>
-      <span class="badge badge-secondary text-xs whitespace-nowrap hidden xl:inline-flex">Live Defect Map</span>
+<body>
+  <header class="map-header">
+    <a href="/" class="brand-group" aria-label="Return to Hodos Home">
+      <img src="/hodos-icon.png?v=2.0.0" alt="Hodos" width="34" height="34" />
+      <span class="brand-title">hodos<span class="brand-stop">.</span></span>
+    </a>
+
+    <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
+      <button class="filter-chip active" data-kind="all">All</button>
+      <button class="filter-chip" data-kind="pothole">Potholes</button>
+      <button class="filter-chip" data-kind="rough_pavement">Rough road</button>
+      <button class="filter-chip" data-kind="speed_bump">Speed bumps</button>
+      <button class="filter-chip" data-kind="fixed">Repaired</button>
     </div>
 
-    <!-- Category filter buttons (shadcn tab style) -->
-    <div class="tabs-list hidden lg:inline-flex" role="toolbar" aria-label="Hazard category filters">
-      <button class="tabs-trigger active" data-kind="all">All (438)</button>
-      <button class="tabs-trigger" data-kind="pothole">Potholes (108)</button>
-      <button class="tabs-trigger" data-kind="rough_pavement">Rough Road (318)</button>
-      <button class="tabs-trigger" data-kind="speed_bump">Speed Bumps (12)</button>
-      <button class="tabs-trigger" data-kind="fixed">Repaired</button>
-    </div>
-
-    <!-- Right Actions -->
-    <div class="flex items-center gap-1.5">
-      <button id="btn-fit-all" class="btn btn-outline btn-sm gap-1.5" title="Fit all hazards on map">
-        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
-        <span class="hidden sm:inline">Fit Route</span>
-      </button>
-
-      <button id="btn-toggle-drawer" class="btn btn-outline btn-sm gap-1.5" title="Toggle defect explorer drawer">
-        <i data-lucide="list" class="w-3.5 h-3.5"></i>
-        <span>Defects</span>
-      </button>
-
-      <button id="btn-export-geojson" class="btn btn-outline btn-sm gap-1.5 hidden sm:inline-flex" title="Export GeoJSON">
-        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-        <span>GeoJSON</span>
-      </button>
-
-      <button id="btn-export-gpx" class="btn btn-outline btn-sm gap-1.5 hidden md:inline-flex" title="Export GPX">
-        <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
-        <span>GPX</span>
-      </button>
-
-      <div class="h-4 w-px bg-border mx-1"></div>
-
-      <!-- Theme Toggle -->
-      <button id="theme-toggle" class="btn btn-ghost btn-icon h-8 w-8" aria-label="Toggle theme">
-        <i data-lucide="sun" class="w-4 h-4 dark:hidden"></i>
-        <i data-lucide="moon" class="w-4 h-4 hidden dark:inline"></i>
-      </button>
+    <div class="action-group">
+      <button id="btn-fit-all" class="btn-action">Fit route</button>
+      <a href="/" class="btn-action">← Back</a>
     </div>
   </header>
 
-  <!-- Mobile filter bar -->
-  <div class="lg:hidden flex items-center gap-1 overflow-x-auto px-3 py-1.5 border-b border-border bg-muted/40 shrink-0">
-    <button class="tabs-trigger text-xs py-1 px-2.5 active" data-kind="all">All (438)</button>
-    <button class="tabs-trigger text-xs py-1 px-2.5" data-kind="pothole">Potholes (108)</button>
-    <button class="tabs-trigger text-xs py-1 px-2.5" data-kind="rough_pavement">Rough Road (318)</button>
-    <button class="tabs-trigger text-xs py-1 px-2.5" data-kind="speed_bump">Speed Bumps (12)</button>
-    <button class="tabs-trigger text-xs py-1 px-2.5" data-kind="fixed">Repaired</button>
-  </div>
-
-  <!-- Map Container -->
-  <main class="relative flex-1 w-full h-full overflow-hidden select-text">
-    <div id="full-map" class="w-full h-full"></div>
-
-    <!-- Floating status pill -->
-    <div id="full-map-status" class="absolute top-3 left-3 card px-3 py-1.5 text-xs font-mono text-muted-foreground flex items-center gap-2 shadow-md backdrop-blur bg-background/90 z-10">
-      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-      <span>Connecting to road observations...</span>
+  <main class="map-wrapper">
+    <div id="full-map" aria-label="Interactive road hazard map"></div>
+    <div id="full-map-status" class="map-status-floating">Loading road map...</div>
+    <div class="map-legend-floating">
+      <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole</span></div>
+      <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough road</span></div>
+      <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed bump</span></div>
+      <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Repaired</span></div>
     </div>
-
-    <!-- Floating Legend Card -->
-    <div class="absolute bottom-6 left-3 card p-3 shadow-lg backdrop-blur bg-card/95 z-10 max-w-[260px] text-xs">
-      <div class="font-semibold tracking-tight text-foreground mb-2 flex items-center justify-between">
-        <span>Defect Telemetry</span>
-        <span class="badge badge-outline text-[10px] py-0 px-1.5">v1.2.0</span>
-      </div>
-      <div class="space-y-1.5 text-muted-foreground">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/20 shrink-0"></span>
-          <span class="text-foreground">Pothole (Severe / Moderate)</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-500/20 shrink-0"></span>
-          <span>Rough Pavement Rutting</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-sky-500 ring-2 ring-sky-500/20 shrink-0"></span>
-          <span>Speed Bump / Hump</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0"></span>
-          <span>Verified Repaired</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Defect Explorer Drawer (Shadcn Sheet) -->
-    <aside id="defect-drawer" class="sheet w-80 sm:w-96 hidden">
-      <div class="p-4 border-b border-border flex items-center justify-between bg-card">
-        <div>
-          <h2 class="font-semibold text-sm">Road Defect Observations</h2>
-          <p class="text-xs text-muted-foreground">438 field pilot &amp; corroborated readings</p>
-        </div>
-        <button id="btn-close-drawer" class="btn btn-ghost btn-icon h-7 w-7" aria-label="Close sheet">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="p-3 border-b border-border bg-background">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground pointer-events-none"></i>
-          <input type="text" id="defect-search" class="input pl-9 text-xs" placeholder="Filter by coordinate or type..." />
-        </div>
-      </div>
-
-      <div id="drawer-list" class="flex-1 overflow-y-auto p-3 space-y-2">
-        <div class="p-6 text-center text-xs text-muted-foreground">Loading defect observations...</div>
-      </div>
-    </aside>
   </main>
 
   <script type="module" src="/src/map-page.ts"></script>

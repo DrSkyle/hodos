@@ -1,6 +1,10 @@
-import { Map, NavigationControl, AttributionControl, GeolocateControl, Popup, type MapLayerMouseEvent } from "maplibre-gl";
+import { setWorkerUrl, Map, NavigationControl, AttributionControl, GeolocateControl, Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection } from "geojson";
+
+// Explicitly point MapLibre to our self-hosted worker bundle so Vite's asset hashing
+// never triggers "Worker failed to load. Check that the worker URL is correct."
+setWorkerUrl("/maplibre-gl-worker.js");
 
 export interface WebHazard {
   id: string;
@@ -25,29 +29,24 @@ export interface MapInstanceHandle {
   filterByKind: (kind: string) => void;
   fitAllHazards: () => void;
   flyToHazard: (id: string) => void;
-  exportData: (format: "geojson" | "gpx") => void;
 }
 
-// Crisp, keyless raster basemap (CARTO + OpenStreetMap attribution, zero API key required)
-const HIGH_CONTRAST_STYLE: any = {
+// 100% free, keyless OpenStreetMap raster style — zero API key required, zero CARTO dependency
+const OSM_CLEAN_STYLE: any = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "osm-tiles": {
       type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-      ],
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     }
   },
   layers: [
     {
-      id: "carto-dark-layer",
+      id: "osm-tiles-layer",
       type: "raster",
-      source: "carto-dark",
+      source: "osm-tiles",
       minzoom: 0,
       maxzoom: 19
     }
@@ -71,9 +70,9 @@ function parseAppwriteRow(r: any): WebHazard | null {
   const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1) || (r.clearPasses && r.clearPasses >= 3));
   const title =
     kind === "speed_bump"
-      ? "Speed Bump"
+      ? "Speed bump"
       : kind === "rough_pavement"
-      ? "Rough Road Pavement"
+      ? "Rough road"
       : "Pothole";
 
   return {
@@ -87,7 +86,7 @@ function parseAppwriteRow(r: any): WebHazard | null {
     published,
     fixed,
     title,
-    locationName: `GPS ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    locationName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
     confidence: Number(r.confidence) || 0.8,
     firstSeen: r.firstSeen || r.$createdAt,
     lastSeen: r.lastSeen || r.$updatedAt
@@ -107,13 +106,12 @@ export function initWebMap(
   let hazards: WebHazard[] = [];
 
   if (statusEl) {
-    statusEl.textContent = `Connecting to road observations...`;
+    statusEl.textContent = "Loading road observations...";
   }
 
-  // 1. Initialize MapLibre with clean neutral basemap
   const map = new Map({
     container,
-    style: HIGH_CONTRAST_STYLE,
+    style: OSM_CLEAN_STYLE,
     center: [82.5, 28.1],
     zoom: 7,
     attributionControl: false
@@ -147,10 +145,7 @@ export function initWebMap(
         devices: h.devices,
         published: h.published,
         fixed: h.fixed,
-        locationName: h.locationName,
-        confidence: h.confidence ?? 0.8,
-        firstSeen: h.firstSeen,
-        lastSeen: h.lastSeen
+        locationName: h.locationName
       }
     }))
   });
@@ -182,11 +177,7 @@ export function initWebMap(
       src.setData(buildGeoJSON(hazards));
     }
     if (statusEl) {
-      const corroboratedCount = hazards.filter((h) => h.published).length;
-      statusEl.textContent =
-        corroboratedCount > 0
-          ? `${corroboratedCount} corroborated hazards · ${hazards.length} total observations`
-          : `${hazards.length} field pilot observations mapped`;
+      statusEl.textContent = `${hazards.length} road observations`;
     }
     onHazardsUpdated?.(hazards);
   };
@@ -207,99 +198,43 @@ export function initWebMap(
 
       src.setData(buildGeoJSON(filtered));
       if (statusEl) {
-        statusEl.textContent = `${filtered.length} observations shown (${kind === "all" ? "all categories" : kind})`;
+        statusEl.textContent = `${filtered.length} road observations`;
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards),
     flyToHazard: (id: string) => {
       const target = hazards.find((h) => h.id === id);
       if (target) {
-        map.flyTo({ center: [target.lng, target.lat], zoom: 15, duration: 1200 });
+        map.flyTo({ center: [target.lng, target.lat], zoom: 15, duration: 1000 });
         showPopupForHazard(target);
       }
-    },
-    exportData: (format: "geojson" | "gpx") => {
-      let content: string;
-      let filename: string;
-      let mime: string;
-      if (format === "geojson") {
-        content = JSON.stringify(buildGeoJSON(hazards), null, 2);
-        filename = "hodos-road-defects.geojson";
-        mime = "application/geo+json";
-      } else {
-        const wpt = hazards
-          .map(
-            (h) =>
-              `  <wpt lat="${h.lat}" lon="${h.lng}"><name>${h.title}</name><desc>Kind: ${h.kind}, Severity: ${h.severity}, Passes: ${h.passes}, Devices: ${h.devices}, Corroborated: ${h.published}, Recorded: ${h.firstSeen || "N/A"}</desc></wpt>`
-          )
-          .join("\n");
-        content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Hodos https://hodos.devilabs.dev">\n${wpt}\n</gpx>`;
-        filename = "hodos-road-defects.gpx";
-        mime = "application/gpx+xml";
-      }
-      const blob = new Blob([content], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
     }
   };
 
   function showPopupForHazard(h: WebHazard) {
-    const kindName =
-      h.kind === "speed_bump"
-        ? "Speed Bump"
-        : h.kind === "rough_pavement"
-        ? "Rough Pavement"
-        : "Pothole";
-
     const badgeColor = h.fixed
-      ? "#10B981"
+      ? "#367b62"
       : h.kind === "pothole"
-      ? "#FF4D36"
+      ? "#c95b3c"
       : h.kind === "speed_bump"
-      ? "#38BDF8"
-      : "#F59E0B";
-
-    const badgeLabel = h.fixed
-      ? "Repaired"
-      : h.kind === "pothole"
-      ? "Pothole"
-      : h.kind === "speed_bump"
-      ? "Speed Hump"
-      : "Rough Surface";
-
-    const dateStr = h.firstSeen ? new Date(h.firstSeen).toLocaleDateString() : "Recorded";
-    const statusText = h.published
-      ? `Multi-Device Corroborated (${h.passes} passes · ${h.devices} devices)`
-      : `Pilot Sensor Reading (${h.passes} ${h.passes === 1 ? "pass" : "passes"} · awaiting 2nd device)`;
-    const confPct = Math.round((h.confidence ?? 0.5) * 100);
+      ? "#3b76a8"
+      : "#d68454";
 
     const html = `
-      <div style="font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 230px; color: #E2E8F0;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
-          <strong style="font-family: 'Outfit', sans-serif; font-size: 14px; color: #F8FAFC;">${kindName}</strong>
-          <span style="background: ${badgeColor}; color: #0B0E14; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px;">
-            ${badgeLabel}
+      <div style="font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 190px; color: #172d29;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
+          <strong style="font-size: 14px;">${h.title}</strong>
+          <span style="background: ${badgeColor}; color: #fffdf7; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;">
+            ${h.fixed ? "Repaired" : `Level ${h.severity}`}
           </span>
         </div>
-        <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace;">
+        <div style="font-size: 11.5px; color: #586e63; font-family: ui-monospace, monospace;">
           ${h.locationName}
-        </div>
-        <div style="font-size: 12px; color: #CBD5E1; margin-bottom: 8px; background: #111622; border: 1px solid #1E293B; padding: 8px 10px; border-radius: 8px; line-height: 1.6;">
-          • Impact Severity: <strong style="color:#F8FAFC;">Tier ${h.severity}</strong><br/>
-          • Evidence: <strong style="color:#F8FAFC;">${statusText}</strong><br/>
-          • Confidence: <strong style="color:#F8FAFC;">${confPct}%</strong> · Logged <strong style="color:#F8FAFC;">${dateStr}</strong>
-        </div>
-        <div style="font-size: 10.5px; color: #94A3B8; line-height: 1.4;">
-          Corroboration &amp; repair verification are recorded on-device via the Hodos Android app.
         </div>
       </div>
     `;
 
-    new Popup({ offset: 12, closeButton: true })
+    new Popup({ offset: 10, closeButton: true })
       .setLngLat([h.lng, h.lat])
       .setHTML(html)
       .addTo(map);
@@ -313,7 +248,6 @@ export function initWebMap(
       data: buildGeoJSON(hazards)
     });
 
-    // High contrast glow halo for prominent visibility
     map.addLayer({
       id: "hazard-glow",
       type: "circle",
@@ -321,22 +255,21 @@ export function initWebMap(
       paint: {
         "circle-radius": [
           "match", ["get", "kind"],
-          "pothole", 16,
-          "rough_pavement", 12,
-          13
+          "pothole", 14,
+          "rough_pavement", 10,
+          11
         ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#10B981",
-          ["==", ["get", "kind"], "pothole"], "#FF4D36",
-          ["==", ["get", "kind"], "speed_bump"], "#38BDF8",
-          "#F59E0B"
+          ["get", "fixed"], "#367b62",
+          ["==", ["get", "kind"], "pothole"], "#c95b3c",
+          ["==", ["get", "kind"], "speed_bump"], "#3b76a8",
+          "#d68454"
         ],
-        "circle-opacity": 0.35
+        "circle-opacity": 0.28
       }
     });
 
-    // Distinct crisp marker circle with dark border
     map.addLayer({
       id: "hazard-point",
       type: "circle",
@@ -344,19 +277,19 @@ export function initWebMap(
       paint: {
         "circle-radius": [
           "match", ["get", "kind"],
-          "pothole", 7,
+          "pothole", 6.5,
           "rough_pavement", 5,
-          6
+          5.5
         ],
         "circle-color": [
           "case",
-          ["get", "fixed"], "#10B981",
-          ["==", ["get", "kind"], "pothole"], "#FF4D36",
-          ["==", ["get", "kind"], "speed_bump"], "#38BDF8",
-          "#F59E0B"
+          ["get", "fixed"], "#367b62",
+          ["==", ["get", "kind"], "pothole"], "#c95b3c",
+          ["==", ["get", "kind"], "speed_bump"], "#3b76a8",
+          "#d68454"
         ],
-        "circle-stroke-width": 1.5,
-        "circle-stroke-color": "#0B0E14"
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fffdf7"
       }
     });
 
@@ -390,7 +323,6 @@ export function initWebMap(
   setTimeout(() => map.resize(), 100);
   window.addEventListener("resize", () => map.resize());
 
-  // 2. Load the 438 pilot records immediately from local bundle
   fetch("/data/hazards.json")
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
@@ -406,11 +338,8 @@ export function initWebMap(
         }
       }
     })
-    .catch((err) => {
-      console.warn("Local static hazards load error:", err);
-    });
+    .catch(() => {});
 
-  // 3. Fetch latest live corroborated updates from Appwrite backend asynchronously
   fetch(
     "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/hazards/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B500%5D%7D",
     {
@@ -420,8 +349,6 @@ export function initWebMap(
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
       if (data && Array.isArray(data.rows) && data.rows.length > 0) {
-        // Only replace the map with live backend rows if they are published corroborated hazards,
-        // or merge published live hazards with the static pilot dataset
         const remoteCorroborated: WebHazard[] = data.rows
           .filter((r: any) => r && r.published === true)
           .map(parseAppwriteRow)
@@ -437,9 +364,7 @@ export function initWebMap(
         }
       }
     })
-    .catch((err) => {
-      console.warn("Background Appwrite fetch skipped:", err);
-    });
+    .catch(() => {});
 
   return handle;
 }
