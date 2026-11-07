@@ -42,8 +42,4 @@ jobs:
         run: echo "::warning::Website built successfully but Cloudflare deployment was skipped. Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository Actions secrets."
       - name: Publish to Cloudflare Pages
         if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
-        with:
-          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name=hodos --branch=${{ github.ref_name }}
+        run: npx --yes wrangler@3 pages deploy apps/web/dist --project-name=hodos --branch=${{ github.ref_name }}
