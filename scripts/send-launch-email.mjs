@@ -75,7 +75,7 @@ const TEMPLATES = {
 
         <p style="font-size: 12px; color: #9CA3AF; margin: 0;">
           Sent by Devilabs · Makers of Hodos<br/>
-          hodos@devilabs.dev · Kathmandu, Nepal
+          hodos@devilabs.dev
         </p>
       </div>
     `

@@ -34,21 +34,21 @@ Unlike manual crowdsourcing apps (e.g., Waze or civic complaint hotlines) that r
 - **Durable Constraints:**
   - ZERO EMOJIS: Never use green/yellow/red circle emojis or decorative emojis in UI code, maps, badges, or copy. Use SVG glyphs and neutral CSS tokens.
   - Zero Intrusive Haptics: The smartphone must NEVER vibrate or play sound when hitting road bumps.
-  - Data Integrity: Only real backend data (e.g. the 438 verified records from the Birendranagar to Kathmandu bus journey); zero mock corridors, artificial road lines, or fabricated defect points.
+  - Data Integrity: Only real backend data; zero mock corridors, artificial road lines, or fabricated defect points.
   - Dual Licensing: Software code is MIT; crowdsourced telemetry datasets are CC BY-NC-SA 4.0, requiring paid enterprise licensing for commercial fleet routing or logistics.
 
 ## Brand Commitments
 
 - **Name:** Hodos ("The road maps itself").
-- **Identity Assets:** The authentic v1.1.20 artwork (`brand/icon.svg`, `apps/web/public/hodos-icon.png`) is the sole master brandmark and favicon source.
+- **Identity Assets:** The master Hodos artwork (`brand/icon.svg`, `apps/web/public/hodos-icon.png`) is the sole master brandmark and favicon source.
 - **Voice:** Pragmatic, technical, civic, restrained. No marketing hype, no ads, no trackers.
 
 ## Evidence on Hand
 
-- 438 verified road hazard points logged during an actual 500+ km proving journey (108 potholes, 318 rough road sections, 12 speed humps), committed in [`apps/web/public/data/hazards.json`](file:///Users/sky/hodos/apps/web/public/data/hazards.json) and live-synced from Appwrite as the inaugural high-density global dataset.
+- 438 real road hazard observations committed in `apps/web/public/data/hazards.json` and live-synced from Appwrite.
 - Live web deployment serving global users at `https://hodos.devilabs.dev/map`.
-- Production Android APK release v1.2.0 at `https://github.com/DrSkyle/hodos/releases` ready for global device deployment.
-- Transactional outreach infrastructure configured via Resend (`hodos@devilabs.dev` in [`scripts/send-launch-email.mjs`](file:///Users/sky/hodos/scripts/send-launch-email.mjs)).
+- Production Android APK release at `https://github.com/DrSkyle/hodos/releases` ready for global device deployment.
+- Transactional outreach infrastructure configured via Resend (`hodos@devilabs.dev`).
 
 ## Product Principles
 
@@ -60,6 +60,5 @@ Unlike manual crowdsourcing apps (e.g., Waze or civic complaint hotlines) that r
 
 ## Accessibility & Inclusion
 
-- Neutral, high-contrast basemap (Carto Positron) ensuring defects remain distinguishable by geometric shape, icon, and label, not color alone.
-- Accessible keyboard navigation and drawer controls for the web map.
-- Multilingual feedback support accommodating both English and Nepali speaking contributors.
+- High-contrast basemap ensuring defects remain distinguishable by geometric shape, icon, and label, not color alone.
+- Accessible keyboard navigation and controls for the web map.

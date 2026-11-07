@@ -112,8 +112,8 @@ export function initWebMap(
   const map = new Map({
     container,
     style: OSM_CLEAN_STYLE,
-    center: [82.5, 28.1],
-    zoom: 7,
+    center: [0, 20],
+    zoom: 2,
     attributionControl: false
   });
 
