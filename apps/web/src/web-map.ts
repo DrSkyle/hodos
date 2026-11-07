@@ -28,8 +28,7 @@ export interface MapInstanceHandle {
   exportData: (format: "geojson" | "gpx") => void;
 }
 
-// Crisp, high-contrast dark cartography basemap (Carto Dark Matter)
-// Neutral dark roads so glowing hazard vectors radiate with 100% clarity
+// Crisp, keyless raster basemap (CARTO + OpenStreetMap attribution, zero API key required)
 const HIGH_CONTRAST_STYLE: any = {
   version: 8,
   sources: {

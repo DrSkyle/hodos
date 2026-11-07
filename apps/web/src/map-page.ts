@@ -13,6 +13,20 @@ import {
 } from "lucide";
 import { initWebMap, type MapInstanceHandle, type WebHazard } from "./web-map";
 
+// 0. Unregister any legacy PWA service workers & caches so visitors never see stale shells
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((items) => Promise.all(items.map((item) => item.unregister())))
+    .catch(() => {});
+}
+if ("caches" in window) {
+  void caches
+    .keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => {});
+}
+
 // 1. Initialize Lucide Icons
 function initLucide() {
   createIcons({
