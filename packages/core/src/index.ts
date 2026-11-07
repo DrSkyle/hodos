@@ -11,4 +11,4 @@ export * from "./export-gis";
 export * from "./h3";
 export * from "./map-match";
 export * from "./validation";
-
+export * from "./segments";

@@ -51,12 +51,16 @@ function haversine(a, b) {
 async function fetchEvents(sinceIso) {
   const events = [];
   let offset = 0;
+  let cursorId = null;
   while (events.length < MAX_EVENTS) {
+    const paginationQuery = cursorId
+      ? JSON.stringify({ method: "cursorAfter", values: [cursorId] })
+      : JSON.stringify({ method: "offset", values: [offset] });
     const queries = [
       JSON.stringify({ method: "greaterThan", attribute: "recordedAt", values: [sinceIso] }),
       JSON.stringify({ method: "orderDesc", attribute: "recordedAt" }),
       JSON.stringify({ method: "limit", values: [PAGE_SIZE] }),
-      JSON.stringify({ method: "offset", values: [offset] }),
+      paginationQuery,
     ];
     const url = `${rowsUrl("events")}?${queries.map((q) => `queries[]=${encodeURIComponent(q)}`).join("&")}`;
     const res = await fetch(url, { headers: headers() });
@@ -72,7 +76,13 @@ async function fetchEvents(sinceIso) {
     if (rows.length < PAGE_SIZE) {
       break;
     }
-    offset += PAGE_SIZE;
+    const lastRow = rows[rows.length - 1];
+    if (lastRow && typeof lastRow.$id === "string" && lastRow.$id.length > 0) {
+      cursorId = lastRow.$id;
+    } else {
+      cursorId = null;
+      offset += PAGE_SIZE;
+    }
   }
   return events;
 }
@@ -131,15 +141,33 @@ function isManualConfirmation(event) {
     event.accuracy === 100 && event.confidence <= 0.35;
 }
 
-/** Greedy spatial clustering with a cell index, so it stays linear in practice. */
+/**
+ * Deterministic spatial clustering with a cell index.
+ * Events are canonically sorted by timestamp, kind, latitude, longitude, and deviceId
+ * prior to clustering so cluster centroids and rowIds are 100% independent of DB fetch order.
+ */
 function clusterEvents(events) {
   const cell = 0.00015; // ~16 m
   const index = new Map();
   const clusters = [];
 
+  const ordered = [...events].sort((a, b) => {
+    const ta = Date.parse(a.recordedAt) || 0;
+    const tb = Date.parse(b.recordedAt) || 0;
+    if (ta !== tb) return ta - tb;
+    const ka = String(a.kind || "");
+    const kb = String(b.kind || "");
+    if (ka !== kb) return ka.localeCompare(kb);
+    const dLat = Number(a.lat) - Number(b.lat);
+    if (dLat !== 0) return dLat;
+    const dLng = Number(a.lng) - Number(b.lng);
+    if (dLng !== 0) return dLng;
+    return String(a.deviceId || "").localeCompare(String(b.deviceId || ""));
+  });
+
   const key = (lat, lng, kind) => `${kind}:${Math.round(lat / cell)}:${Math.round(lng / cell)}`;
 
-  for (const event of events) {
+  for (const event of ordered) {
     const lat = Number(event.lat);
     const lng = Number(event.lng);
     const gx = Math.round(lat / cell);
@@ -273,10 +301,15 @@ function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations
 
 async function listHazards() {
   const rows = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
+  let offset = 0;
+  let cursorId = null;
+  for (;;) {
+    const paginationQuery = cursorId
+      ? { method: "cursorAfter", values: [cursorId] }
+      : { method: "offset", values: [offset] };
     const queries = [
       { method: "limit", values: [PAGE_SIZE] },
-      { method: "offset", values: [offset] },
+      paginationQuery,
     ];
     const params = queries.map((q) =>
       `queries[]=${encodeURIComponent(JSON.stringify(q))}`).join("&");
@@ -291,7 +324,14 @@ async function listHazards() {
     const page = body.rows;
     rows.push(...page);
     if (page.length < PAGE_SIZE) return rows;
-    if (offset >= 19500) throw new Error("Too many hazards for full recomputation");
+    if (rows.length >= 20000) throw new Error("Too many hazards for full recomputation");
+    const lastRow = page[page.length - 1];
+    if (lastRow && typeof lastRow.$id === "string" && lastRow.$id.length > 0) {
+      cursorId = lastRow.$id;
+    } else {
+      cursorId = null;
+      offset += PAGE_SIZE;
+    }
   }
 }
 
@@ -317,9 +357,19 @@ async function unpublishStaleHazard(row) {
   if (!response.ok) throw new Error(`stale hazard update failed: ${response.status}`);
 }
 
+/**
+ * Privacy & corroboration invariant:
+ * Never create a NEW row in the public `hazards` table unless the cluster is
+ * corroborated (`published === true`, i.e., >=3 passes across >=2 devices).
+ * Uncorroborated single-device clusters stay solely in the private `events` table
+ * and are only written to `hazards` if they are updating an already-existing row.
+ */
 async function writeHazard(hazard, existingByRowId) {
   const existing = existingByRowId.get(hazard.rowId);
   if (existing === undefined) {
+    if (!hazard.data.published) {
+      return "skipped_uncorroborated";
+    }
     const res = await fetch(rowsUrl("hazards"), {
       method: "POST",
       headers: headers(),
@@ -392,6 +442,8 @@ module.exports = async ({ res, log }) => {
         created += 1;
       } else if (outcome === "updated") {
         updated += 1;
+      } else if (outcome === "skipped_uncorroborated") {
+        // Uncorroborated single-device observations must never create rows on the public hazards table
       } else {
         failed += 1;
         log(`${hazard.rowId}: ${outcome}`);
@@ -431,5 +483,5 @@ module.exports = async ({ res, log }) => {
 // Export deterministic domain helpers for the repository's regression tests.
 module.exports.testing = {
   validEvent, clusterEvents, buildHazard, rowIdFor, stalePublishedRows,
-  isMeasuredImpact, isManualConfirmation
+  isMeasuredImpact, isManualConfirmation, writeHazard
 };
