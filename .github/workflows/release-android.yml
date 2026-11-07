@@ -74,7 +74,7 @@ jobs:
       HODOS_STORE_PASSWORD: ${{ secrets.HODOS_STORE_PASSWORD }}
       HODOS_KEY_ALIAS: ${{ secrets.HODOS_KEY_ALIAS }}
       HODOS_KEY_PASSWORD: ${{ secrets.HODOS_KEY_PASSWORD }}
-      HODOS_SIGNING_CERT_SHA256: ${{ vars.HODOS_SIGNING_CERT_SHA256 }}
+      HODOS_SIGNING_CERT_SHA256: ${{ secrets.HODOS_SIGNING_CERT_SHA256 || vars.HODOS_SIGNING_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
