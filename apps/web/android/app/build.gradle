@@ -168,8 +168,8 @@ tasks.register('prepareHodosArtwork') {
         }
 
         // Android adaptive icons crop/mask the foreground to the phone's icon
-        // shape. Keep the *whole favicon artwork* inside the adaptive safe zone
-        // instead of letting the OS cut away the tree and road.
+        // shape. Draw full-bleed across the 432x432 adaptive canvas so the
+        // warm golden-hour sky and hills fill every launcher mask cleanly.
         def side = 432
         def foreground = new java.awt.image.BufferedImage(side, side,
             java.awt.image.BufferedImage.TYPE_INT_ARGB)
@@ -178,9 +178,7 @@ tasks.register('prepareHodosArtwork') {
             java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
         graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
             java.awt.RenderingHints.VALUE_RENDER_QUALITY)
-        def inset = (int)(side * 0.12)  // favicon image occupies 76% safe centre
-        graphics.drawImage(original, inset, inset, side - inset * 2,
-            side - inset * 2, null)
+        graphics.drawImage(original, 0, 0, side, side, null)
         graphics.dispose()
         javax.imageio.ImageIO.write(foreground, 'png',
             new File(drawable, 'hodos_launcher_foreground.png'))
