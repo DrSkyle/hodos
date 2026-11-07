@@ -1,0 +1,5 @@
+# Security-sensitive build, release, and backend changes require owner review.
+.github/ @DrSkyle
+apps/web/android/ @DrSkyle
+appwrite/ @DrSkyle
+docs/security/ @DrSkyle
