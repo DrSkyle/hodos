@@ -143,9 +143,18 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (impacts) {
       impacts.clear();
       for (SavedImpact imp : saved.getImpacts()) {
-        impacts.add(new MotionDetector.Impact(
-            imp.getT(), imp.getLat(), imp.getLng(), 10.0, 0.0,
-            imp.getSeverity() * 2.0, imp.getSeverity(), imp.getKind(), 0.8, "vehicle"));
+        MotionDetector.Impact restored = new MotionDetector.Impact();
+        restored.t = imp.getT();
+        restored.lat = imp.getLat();
+        restored.lng = imp.getLng();
+        restored.accuracy = 10.0;
+        restored.speedKph = 0.0;
+        restored.magnitude = imp.getSeverity() * 2.0;
+        restored.severity = imp.getSeverity();
+        restored.kind = imp.getKind();
+        restored.confidence = 0.8;
+        restored.mode = "vehicle";
+        impacts.add(restored);
       }
     }
   }
