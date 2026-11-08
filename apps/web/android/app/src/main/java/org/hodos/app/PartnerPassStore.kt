@@ -2,6 +2,11 @@ package org.hodos.app
 
 import android.content.Context
 import org.json.JSONObject
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -18,6 +23,11 @@ object PartnerPassStore {
     private const val PREFS_KEY = "partnerPasses"
     private const val PASS_RADIUS_M = 150.0
     private const val MIN_TRIP_M = 300.0
+    private const val ENDPOINT = "https://sgp.cloud.appwrite.io/v1"
+    private const val PROJECT_ID = "6ad7939a002ff135e419"
+    private const val DATABASE_ID = "hodos"
+    private const val UPLOAD_BACKOFF_KEY = "partnerStatsUnavailableUntil"
+    private const val UPLOAD_BACKOFF_MS = 7L * 24 * 60 * 60 * 1000
 
     fun recordTripPasses(
         context: Context,
@@ -73,6 +83,71 @@ object PartnerPassStore {
         return total
     }
 
+    /**
+     * Upload one blinded token per passed shop for the current month. The token
+     * is salted by shop and month, so rows cannot be linked across shops or
+     * months. Retries reuse the same row id, so a duplicate is harmless.
+     */
+    fun uploadMonthlyPasses(
+        context: Context,
+        distanceM: Double,
+        fixes: List<MotionDetector.Fix>,
+        partners: List<PartnerPoi>
+    ) {
+        if (fixes.size < 2 || partners.isEmpty() || distanceM < MIN_TRIP_M) return
+        val prefs = context.getSharedPreferences("hodos", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        if (now < prefs.getLong(UPLOAD_BACKOFF_KEY, 0L)) return
+        val deviceId = prefs.getString("deviceId", "").orEmpty()
+        if (deviceId.isEmpty()) return
+        val month = monthKey(now)
+        for (partner in partners) {
+            if (!travelledPast(partner.lat, partner.lng, fixes)) continue
+            val token = sha256("$deviceId|${partner.id}|$month").take(16)
+            val rowId = sha256("${partner.id}|$token").take(32)
+            val data = JSONObject()
+                .put("partnerId", partner.id)
+                .put("passToken", token)
+                .put("month", month)
+            val body = JSONObject().put("rowId", rowId).put("data", data).toString()
+            val status = postRow("partnerPasses", body)
+            if (status == 401 || status == 403 || status == 404) {
+                // Backend not deployed or not permitted yet; retry in a week.
+                prefs.edit().putLong(UPLOAD_BACKOFF_KEY, now + UPLOAD_BACKOFF_MS).apply()
+                return
+            }
+        }
+    }
+
+    private fun postRow(table: String, body: String): Int {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = (URL("$ENDPOINT/tablesdb/$DATABASE_ID/tables/$table/rows")
+                .openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("X-Appwrite-Project", PROJECT_ID)
+                setRequestProperty("Content-Type", "application/json")
+                connectTimeout = 8_000
+                readTimeout = 10_000
+                doOutput = true
+            }
+            connection.outputStream.use {
+                it.write(body.toByteArray(StandardCharsets.UTF_8))
+            }
+            connection.responseCode
+        } catch (_: Exception) {
+            -1
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    private fun sha256(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(StandardCharsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
     private fun travelledPast(lat: Double, lng: Double, fixes: List<MotionDetector.Fix>): Boolean {
         for (fix in fixes) {
             if (haversine(fix.lat, fix.lng, lat, lng) <= PASS_RADIUS_M) {
@@ -103,6 +178,7 @@ object PartnerPassRecorder {
             val partners = PartnerOffers.loadSync()
             if (partners.isNotEmpty()) {
                 PartnerPassStore.recordTripPasses(context, distanceM, fixes, partners)
+                PartnerPassStore.uploadMonthlyPasses(context, distanceM, fixes, partners)
             }
         }
     }

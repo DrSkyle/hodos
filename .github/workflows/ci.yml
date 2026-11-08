@@ -27,4 +27,5 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm -r test
       - run: node --test appwrite/functions/hodos-aggregate/src/main.test.js
+      - run: node --test appwrite/functions/hodos-partner-stats/src/main.test.js
       - run: pnpm --filter @hodos/web build
