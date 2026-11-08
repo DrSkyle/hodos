@@ -25,7 +25,6 @@ import androidx.core.content.ContextCompat
 class MainActivity : ComponentActivity() {
     private var armed by mutableStateOf(false)
     private var refreshSignal by mutableIntStateOf(0)
-    private var onboardingComplete by mutableStateOf(false)
     private var mapLocationGranted by mutableStateOf(false)
     private var backgroundLocationGrantedState by mutableStateOf(false)
     private var batteryUnrestrictedState by mutableStateOf(false)
@@ -77,38 +76,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("hodos", MODE_PRIVATE)
         armed = prefs.getBoolean("armed", false)
-        onboardingComplete = prefs.getBoolean("onboardingComplete", false)
         updatePermissionStates()
         HodosNudgeWorker.schedule(this)
         setContent {
-            if (!onboardingComplete) {
-                HodosOnboarding(
-                    locationGranted = mapLocationGranted,
-                    backgroundLocationGranted = backgroundLocationGrantedState,
-                    batteryUnrestricted = batteryUnrestrictedState,
-                    onRequestLocation = {
-                        val needed = mutableListOf(
-                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        )
-                        if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
-                        if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
-                        mapLocationPermission.launch(needed.toTypedArray())
-                    },
-                    onRequestBackgroundLocation = { requestBackgroundLocation() },
-                    onRequestBatteryOptimization = { requestBatteryOptimization() },
-                    onFinishAndEnableAutoMapping = {
-                        prefs.edit().putBoolean("onboardingComplete", true).apply()
-                        onboardingComplete = true
-                        if (hasForegroundPermissions()) {
-                            startMapping()
-                        } else {
-                            continueEnabling()
-                        }
-                        refreshSignal++
-                    }
-                )
-            } else HodosApp(
+            HodosApp(
                 armed = armed,
                 refreshSignal = refreshSignal,
                 onToggle = { if (it) continueEnabling() else stopMapping() },
@@ -154,8 +125,7 @@ class MainActivity : ComponentActivity() {
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun hasForegroundPermissions(): Boolean =
-        has(Manifest.permission.ACCESS_FINE_LOCATION) &&
-            (Build.VERSION.SDK_INT < 29 || has(Manifest.permission.ACTIVITY_RECOGNITION))
+        has(Manifest.permission.ACCESS_FINE_LOCATION)
 
     private fun continueEnabling() {
         if (!hasForegroundPermissions()) {

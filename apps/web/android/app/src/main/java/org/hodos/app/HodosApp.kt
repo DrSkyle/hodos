@@ -382,6 +382,45 @@ fun HodosApp(
                                         else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards")
                                     }
                                 }
+                                if (trips.isEmpty()) {
+                                    Spacer(Modifier.height(12.dp))
+                                    Surface(color = Mist, shape = RoundedCornerShape(16.dp)) {
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(14.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                "No setup needed",
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 14.sp,
+                                                color = Ink
+                                            )
+                                            Text(
+                                                "The map works right away. Start a journey and Hodos records the road in the background.",
+                                                color = Muted,
+                                                fontSize = 12.sp,
+                                                lineHeight = 17.sp
+                                            )
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = onStartJourney,
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                                                ) {
+                                                    Text("Start journey", fontSize = 12.sp)
+                                                }
+                                                if (!armed) {
+                                                    OutlinedButton(
+                                                        onClick = { onToggle(true) },
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Text("Auto-record", fontSize = 12.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 Spacer(Modifier.height(14.dp))
                                 if (visibleHazards.isEmpty()) {
                                     Row(verticalAlignment = Alignment.CenterVertically,
@@ -1128,7 +1167,7 @@ private fun MappingScreen(
                 }
             }
         }
-        if (!backgroundLocationGranted || !batteryOptimizationIgnored) {
+        if (trips.isNotEmpty() && (!backgroundLocationGranted || !batteryOptimizationIgnored)) {
             item {
                 Surface(shape = RoundedCornerShape(22.dp), color = Mist) {
                     Column(Modifier.padding(20.dp)) {
