@@ -571,7 +571,7 @@ fun HodosApp(
                                 }
                                 if (!internetConnected || syncError) {
                                     Spacer(Modifier.height(8.dp))
-                                    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF1DE)) {
+                                    Surface(shape = RoundedCornerShape(12.dp), color = Mist) {
                                         Row(
                                             Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -622,6 +622,32 @@ fun HodosApp(
                                         color = Forest, strokeWidth = 2.5.dp
                                     )
                                 } else Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
+                            }
+                            Surface(
+                                onClick = { if (tripActive) onFinishJourney() else onStartJourney() },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (tripActive) Forest else Color.White,
+                                shadowElevation = 3.dp,
+                                modifier = Modifier.align(Alignment.BottomStart)
+                                    .padding(start = 18.dp, bottom = 146.dp)
+                            ) {
+                                Row(
+                                    Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    DoodleIcon(
+                                        DoodleSymbol.CAR,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = if (tripActive) Color.White else Forest
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        if (tripActive) "Recording · Stop" else "Start journey",
+                                        color = if (tripActive) Color.White else Ink,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
                     }
@@ -988,7 +1014,7 @@ private fun MappingScreen(
                                 DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(20.dp), tint = Forest)
                                 Spacer(Modifier.width(10.dp))
                                 Text(
-                                    "Moving · ${formatDuration(tripElapsedS)} · " +
+                                    "Recording · ${formatDuration(tripElapsedS)} · " +
                                         (if (tripDistanceM >= 1000f) String.format(Locale.US, "%.1f km", tripDistanceM / 1000f) else "${tripDistanceM.roundToInt()} m") +
                                         " · $tripImpacts hazards",
                                     fontSize = 13.sp,
@@ -1001,53 +1027,57 @@ private fun MappingScreen(
                                 }
                             }
                         }
+                    } else {
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = onStartJourney,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                        ) {
+                            DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(18.dp), tint = Color.White)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Start a journey", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Starts recording immediately. Automatic detection also begins a journey once you are moving.",
+                            color = Muted,
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(22.dp), color = Color(0xFFFFF8ED)) {
+            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = Color(0x26D97706), shape = RoundedCornerShape(980.dp)) {
-                            Text(
-                                "NEARBY SERVICE · PARTNER OFFERS",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                color = Color(0xFFB45309),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
                     Text(
-                        "A little care for the car that maps the roads.",
-                        fontSize = 17.sp,
+                        "Nearby service",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Optional, clearly labeled offers from nearby garages, tire shops, and fuel stops. Nothing pops up over your route, and nothing is personalised from your location history.",
+                        "Clearly labeled offers from local garages, tire shops, and fuel stops. Never over your route.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
-                                    )
+                    OutlinedButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
                                 )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Become a partner", fontSize = 12.sp)
-                        }
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Become a partner", fontSize = 12.sp)
                     }
                 }
             }
@@ -1391,7 +1421,7 @@ private fun YouScreen(
         item {
             // App Updates & Direct APK Sharing (Quick Share / Bluetooth)
             Surface(
-                color = if (latestRelease?.isNewer == true) Color(0xFFFFF8ED) else Color.White,
+                color = if (latestRelease?.isNewer == true) Mist else Color.White,
                 shape = RoundedCornerShape(22.dp),
                 shadowElevation = 2.dp
             ) {
@@ -1479,17 +1509,7 @@ private fun YouScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "1 · Everyone — Free always: live hazard map, hands-free Automatic Mapping, 20 km offline maps, Quick Share, and in-app updates. No subscription, no ads sold against you.",
-                        color = Muted, fontSize = 13.sp, lineHeight = 18.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "2 · Partner shops — Local garages, tire shops, and fuel stops can place a clearly labeled offer on the map.",
-                        color = Muted, fontSize = 13.sp, lineHeight = 18.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "3 · Fleet & City Data — Fleets, platforms, and cities license aggregated road-quality feeds. That revenue is what keeps the app free.",
+                        "The map is free. Partner shops can add a labeled offer, and fleets or cities can license aggregated road-quality feeds. Neither ever changes the map itself.",
                         color = Muted, fontSize = 13.sp, lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
@@ -1633,7 +1653,7 @@ private fun PartnerOfferBanner(context: android.content.Context, partners: List<
     val partner = partners.firstOrNull()
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFFFF8ED),
+        color = Mist,
         modifier = Modifier.fillMaxWidth().clickable {
             context.startActivity(
                 Intent(
@@ -1647,15 +1667,11 @@ private fun PartnerOfferBanner(context: android.content.Context, partners: List<
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(color = Color(0x26D97706), shape = RoundedCornerShape(8.dp)) {
-                Text(
-                    partner?.sponsorLabel?.uppercase() ?: "PARTNER",
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-                    color = Color(0xFFB45309),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            DoodleIcon(
+                DoodleSymbol.CAR,
+                modifier = Modifier.size(18.dp),
+                tint = Forest
+            )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -1667,7 +1683,7 @@ private fun PartnerOfferBanner(context: android.content.Context, partners: List<
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (partner != null) "${partner.name} · Partner placement"
+                    if (partner != null) "${partner.name} · Sponsored"
                     else "Labeled placements keep the map free — tap to become a partner.",
                     fontSize = 11.sp,
                     color = Muted,

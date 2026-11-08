@@ -100,6 +100,8 @@ public class HodosService extends Service implements SensorEventListener {
   private volatile long sensorBaseNs = 0;
   private volatile long sensorBaseEpochMs = 0;
   private LocationCallback idleLocationCallback = null;
+  private Location lastIdleFix = null;
+  private int idleMovingFixes = 0;
 
   @Override
   public void onCreate() {
@@ -287,6 +289,26 @@ public class HodosService extends Service implements SensorEventListener {
     return String.format(Locale.US, "%d m", Math.round(meters));
   }
 
+  /**
+   * The ongoing notification must always describe what the service is actually
+   * doing. Re-foregrounding on every activity resume used to overwrite an
+   * active journey with "Waiting for a journey", which made a working trip look
+   * dead.
+   */
+  private String currentStatusText() {
+    if (sampling) {
+      long elapsedS = tripStartedAt > 0
+          ? Math.max(0L, (System.currentTimeMillis() - tripStartedAt) / 1000L)
+          : 0L;
+      int impactCount;
+      synchronized (impacts) { impactCount = impacts.size(); }
+      return "Recording · " + formatDuration(elapsedS) + " · "
+          + formatDistance(cumulativeDistanceM) + " · " + impactCount + " hazards";
+    }
+    boolean armed = getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false);
+    return armed ? "Ready · waiting for movement" : "Mapping paused";
+  }
+
   private Notification buildNotification(String text) {
     Intent open = new Intent(this, MainActivity.class);
     int pendingFlags =
@@ -294,18 +316,23 @@ public class HodosService extends Service implements SensorEventListener {
             ? PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
             : PendingIntent.FLAG_UPDATE_CURRENT;
     PendingIntent content = PendingIntent.getActivity(this, 0, open, pendingFlags);
-    return new NotificationCompat.Builder(this, CHANNEL_ID)
+    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("Hodos")
         .setContentText(text)
         .setSmallIcon(R.drawable.hodos_notification)
         .setOngoing(true)
         .setOnlyAlertOnce(true)
-        .setContentIntent(content)
-        .build();
+        .setContentIntent(content);
+    if (sampling) {
+      Intent stop = new Intent(this, HodosService.class).setAction(ACTION_END_TRIP);
+      PendingIntent stopPending = PendingIntent.getService(this, 2, stop, pendingFlags);
+      builder.addAction(0, "Stop", stopPending);
+    }
+    return builder.build();
   }
 
   private void startForegroundCompat() {
-    Notification notification = buildNotification("Waiting for a journey");
+    Notification notification = buildNotification(currentStatusText());
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       startForeground(NOTIFICATION_ID, notification, 0x8 /* FOREGROUND_SERVICE_TYPE_LOCATION */);
     } else {
@@ -428,7 +455,9 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (impacts) { impacts.clear(); }
     sensorBaseNs = 0;
     sensorBaseEpochMs = 0;
-    updateNotification("Mapping: 00:00 · 0 m (0 hazards)");
+    idleMovingFixes = 0;
+    lastIdleFix = null;
+    updateNotification(currentStatusText());
     beginSensorsAndScheduler();
   }
 
@@ -452,12 +481,7 @@ public class HodosService extends Service implements SensorEventListener {
     lastNotificationUpdateAt = now;
     sensorBaseNs = 0;
     sensorBaseEpochMs = 0;
-    long elapsedS = Math.max(0L, (now - tripStartedAt) / 1000L);
-    int impactCount;
-    synchronized (impacts) { impactCount = impacts.size(); }
-    updateNotification(
-        "Mapping: " + formatDuration(elapsedS) + " · " + formatDistance(cumulativeDistanceM)
-            + " (" + impactCount + " hazards)");
+    updateNotification(currentStatusText());
     beginSensorsAndScheduler();
   }
 
@@ -579,9 +603,7 @@ public class HodosService extends Service implements SensorEventListener {
     // Periodic notification update with live timer and metrics
     if (now - lastNotificationUpdateAt >= 5000L) {
       lastNotificationUpdateAt = now;
-      String timeStr = formatDuration(elapsedS);
-      String distStr = formatDistance(cumulativeDistanceM);
-      updateNotification("Mapping: " + timeStr + " · " + distStr + " (" + currentImpacts + " hazards)");
+      updateNotification(currentStatusText());
     }
 
     // Allow longer stillness on manual journeys (25 mins) or bus stops (8 mins)
@@ -666,7 +688,7 @@ public class HodosService extends Service implements SensorEventListener {
     final String trip = activeTripId;
     final long startedAt = tripStartedAt;
     if (device == null || trip == null) {
-      updateNotification("Waiting for a journey");
+      updateNotification(currentStatusText());
       if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
         startIdleMotionWatcher();
       }
@@ -704,7 +726,7 @@ public class HodosService extends Service implements SensorEventListener {
         .remove("activeTripId")
         .apply();
 
-    updateNotification("Waiting for a journey");
+    updateNotification(currentStatusText());
     if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
       startIdleMotionWatcher();
     }
@@ -748,21 +770,46 @@ public class HodosService extends Service implements SensorEventListener {
     if (sampling || idleLocationCallback != null || !hasLocationPermission()) {
       return;
     }
+    idleMovingFixes = 0;
+    lastIdleFix = null;
+    // A car or scooter at 8 km/h moves ~2.2 m/s. Balanced-power updates arrive
+    // too lazily to catch the start of a ride, so detection uses high accuracy
+    // only while waiting for movement.
     LocationRequest idleReq = new LocationRequest.Builder(
-        Priority.PRIORITY_BALANCED_POWER_ACCURACY, 25_000L)
-        .setMinUpdateIntervalMillis(15_000L)
+        Priority.PRIORITY_HIGH_ACCURACY, 10_000L)
+        .setMinUpdateIntervalMillis(5_000L)
+        .setMinUpdateDistanceMeters(5f)
         .build();
     idleLocationCallback = new LocationCallback() {
       @Override
       public void onLocationResult(LocationResult result) {
         if (sampling) return;
         Location loc = result.getLastLocation();
-        if (loc != null && LocationFixPolicy.validCoordinates(loc.getLatitude(), loc.getLongitude())) {
-          // If vehicle speed >= 3.5 m/s (~13 km/h), auto-start mapping!
-          if (loc.hasSpeed() && loc.getSpeed() >= 3.5f) {
-            isManualTrip = false;
-            startTrip();
+        if (loc == null ||
+            !LocationFixPolicy.validCoordinates(loc.getLatitude(), loc.getLongitude())) {
+          return;
+        }
+        boolean moving = loc.hasSpeed() && loc.getSpeed() >= 2.2f;
+        Location previous = lastIdleFix;
+        if (!moving && previous != null) {
+          long elapsedMs = loc.getTime() - previous.getTime();
+          if (elapsedMs > 0 && elapsedMs <= 60_000L) {
+            float[] distance = new float[1];
+            Location.distanceBetween(previous.getLatitude(), previous.getLongitude(),
+                loc.getLatitude(), loc.getLongitude(), distance);
+            double speed = distance[0] / (elapsedMs / 1000.0);
+            // Distance-based fallback: some devices report no speed at all, and
+            // scooters are often slow enough to look "still" in coarse updates.
+            moving = distance[0] >= 40 && speed >= 2.0 && speed <= 45.0;
           }
+        }
+        lastIdleFix = loc;
+        idleMovingFixes = moving ? idleMovingFixes + 1 : 0;
+        // Require two consecutive moving fixes so a single GPS jump cannot
+        // start a background journey.
+        if (idleMovingFixes >= 2) {
+          isManualTrip = false;
+          startTrip();
         }
       }
     };
@@ -779,6 +826,8 @@ public class HodosService extends Service implements SensorEventListener {
       } catch (Exception ignored) {}
       idleLocationCallback = null;
     }
+    idleMovingFixes = 0;
+    lastIdleFix = null;
   }
 
   static long resolveSensorTimestampMs(
@@ -845,7 +894,7 @@ public class HodosService extends Service implements SensorEventListener {
     // Observed impacts and the local trip summary are already durable.
     // This worker only computes optional clear-road evidence.
     if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
-      updateNotification("Waiting for a journey");
+      updateNotification(currentStatusText());
     }
 
     // No negative road evidence without measured motion at BOTH positions
