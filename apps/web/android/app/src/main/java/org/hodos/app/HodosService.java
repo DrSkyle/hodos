@@ -14,6 +14,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.TriggerEvent;
+import android.hardware.TriggerEventListener;
 import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
@@ -100,8 +102,16 @@ public class HodosService extends Service implements SensorEventListener {
   private volatile long sensorBaseNs = 0;
   private volatile long sensorBaseEpochMs = 0;
   private LocationCallback idleLocationCallback = null;
-  private Location lastIdleFix = null;
-  private int idleMovingFixes = 0;
+  private ScheduledExecutorService idleScheduler = null;
+  private volatile SensorEventListener idleSensorListener = null;
+  private volatile TriggerEventListener significantMotionListener = null;
+  private final List<MovementDetector.Fix> idleFixes = new ArrayList<>();
+  private final List<MovementDetector.Accel> idleAccel = new ArrayList<>();
+  private volatile long lastStepAt = 0;
+  private volatile boolean confirmingMotion = false;
+  private boolean continuousIdleSensing = false;
+  private long idleSensorBaseNs = 0;
+  private long idleSensorBaseEpochMs = 0;
 
   @Override
   public void onCreate() {
@@ -455,8 +465,6 @@ public class HodosService extends Service implements SensorEventListener {
     synchronized (impacts) { impacts.clear(); }
     sensorBaseNs = 0;
     sensorBaseEpochMs = 0;
-    idleMovingFixes = 0;
-    lastIdleFix = null;
     updateNotification(currentStatusText());
     beginSensorsAndScheduler();
   }
@@ -770,46 +778,49 @@ public class HodosService extends Service implements SensorEventListener {
     if (sampling || idleLocationCallback != null || !hasLocationPermission()) {
       return;
     }
-    idleMovingFixes = 0;
-    lastIdleFix = null;
-    // A car or scooter at 8 km/h moves ~2.2 m/s. Balanced-power updates arrive
-    // too lazily to catch the start of a ride, so detection uses high accuracy
-    // only while waiting for movement.
+    synchronized (idleFixes) { idleFixes.clear(); }
+    synchronized (idleAccel) { idleAccel.clear(); }
+    idleSensorBaseNs = 0;
+    idleSensorBaseEpochMs = 0;
+    // Coarse fixes are cheap and only seed the sensor confirmation window; the
+    // journey decision is made by MovementDetector, never by one speed value.
     LocationRequest idleReq = new LocationRequest.Builder(
-        Priority.PRIORITY_HIGH_ACCURACY, 10_000L)
-        .setMinUpdateIntervalMillis(5_000L)
-        .setMinUpdateDistanceMeters(5f)
+        Priority.PRIORITY_BALANCED_POWER_ACCURACY, 20_000L)
+        .setMinUpdateIntervalMillis(10_000L)
         .build();
     idleLocationCallback = new LocationCallback() {
       @Override
       public void onLocationResult(LocationResult result) {
         if (sampling) return;
-        Location loc = result.getLastLocation();
-        if (loc == null ||
-            !LocationFixPolicy.validCoordinates(loc.getLatitude(), loc.getLongitude())) {
-          return;
-        }
-        boolean moving = loc.hasSpeed() && loc.getSpeed() >= 2.2f;
-        Location previous = lastIdleFix;
-        if (!moving && previous != null) {
-          long elapsedMs = loc.getTime() - previous.getTime();
-          if (elapsedMs > 0 && elapsedMs <= 60_000L) {
-            float[] distance = new float[1];
-            Location.distanceBetween(previous.getLatitude(), previous.getLongitude(),
-                loc.getLatitude(), loc.getLongitude(), distance);
-            double speed = distance[0] / (elapsedMs / 1000.0);
-            // Distance-based fallback: some devices report no speed at all, and
-            // scooters are often slow enough to look "still" in coarse updates.
-            moving = distance[0] >= 40 && speed >= 2.0 && speed <= 45.0;
+        boolean seed = false;
+        synchronized (idleFixes) {
+          for (Location loc : result.getLocations()) {
+            if (!LocationFixPolicy.validCoordinates(loc.getLatitude(), loc.getLongitude())) {
+              continue;
+            }
+            idleFixes.add(new MovementDetector.Fix(
+                loc.getTime(), loc.getLatitude(), loc.getLongitude(),
+                loc.getSpeed(), loc.hasSpeed(), loc.getAccuracy()));
+            while (idleFixes.size() > 40) {
+              idleFixes.remove(0);
+            }
+          }
+          if (idleFixes.size() >= 2) {
+            MovementDetector.Fix last = idleFixes.get(idleFixes.size() - 1);
+            MovementDetector.Fix previous = idleFixes.get(idleFixes.size() - 2);
+            if (last.hasSpeed && last.speed >= 0.7) {
+              seed = true;
+            } else if (last.t > previous.t) {
+              double moved = MovementDetector.haversineMeters(
+                  previous.lat, previous.lng, last.lat, last.lng);
+              seed = moved >= 8;
+            }
           }
         }
-        lastIdleFix = loc;
-        idleMovingFixes = moving ? idleMovingFixes + 1 : 0;
-        // Require two consecutive moving fixes so a single GPS jump cannot
-        // start a background journey.
-        if (idleMovingFixes >= 2) {
-          isManualTrip = false;
-          startTrip();
+        // A hint only: start a short high-rate confirmation window, which
+        // requires sustained vibration or consistent GPS movement.
+        if (seed && !confirmingMotion) {
+          beginIdleConfirmation(false);
         }
       }
     };
@@ -817,17 +828,166 @@ public class HodosService extends Service implements SensorEventListener {
       locationClient.requestLocationUpdates(idleReq, idleLocationCallback, Looper.getMainLooper());
     } catch (SecurityException ignored) {
     }
+    armSignificantMotion();
+  }
+
+  private void armSignificantMotion() {
+    if (sampling || idleLocationCallback == null || confirmingMotion
+        || significantMotionListener != null || sensors == null) {
+      return;
+    }
+    Sensor trigger = sensors.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION);
+    if (trigger == null) {
+      // Hardware trigger unavailable: fall back to a low-rate accelerometer
+      // window that runs until a journey starts.
+      beginIdleConfirmation(true);
+      return;
+    }
+    significantMotionListener = new TriggerEventListener() {
+      @Override
+      public void onTrigger(TriggerEvent event) {
+        significantMotionListener = null;
+        if (sampling) return;
+        beginIdleConfirmation(false);
+      }
+    };
+    sensors.requestTriggerSensor(significantMotionListener, trigger);
+  }
+
+  private void disarmSignificantMotion() {
+    if (significantMotionListener == null || sensors == null) {
+      return;
+    }
+    Sensor trigger = sensors.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION);
+    if (trigger != null) {
+      try {
+        sensors.cancelTriggerSensor(significantMotionListener, trigger);
+      } catch (RuntimeException ignored) {
+        /* already delivered */
+      }
+    }
+    significantMotionListener = null;
+  }
+
+  private synchronized void beginIdleConfirmation(boolean continuous) {
+    if (sampling || confirmingMotion) {
+      return;
+    }
+    confirmingMotion = true;
+    continuousIdleSensing = continuous;
+    disarmSignificantMotion();
+    synchronized (idleAccel) { idleAccel.clear(); }
+    idleSensorBaseNs = 0;
+    idleSensorBaseEpochMs = 0;
+
+    Sensor accelerometer =
+        sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    Sensor stepDetector =
+        sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+    idleSensorListener = new SensorEventListener() {
+      @Override
+      public void onSensorChanged(SensorEvent event) {
+        if (sampling) return;
+        if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+          lastStepAt = System.currentTimeMillis();
+          return;
+        }
+        long wallNow = System.currentTimeMillis();
+        long eventNs = event.timestamp;
+        if (eventNs > 0 && (idleSensorBaseNs <= 0 || eventNs < idleSensorBaseNs)) {
+          idleSensorBaseNs = eventNs;
+          idleSensorBaseEpochMs = wallNow;
+        }
+        long t = resolveSensorTimestampMs(
+            eventNs, wallNow, idleSensorBaseNs, idleSensorBaseEpochMs);
+        synchronized (idleAccel) {
+          idleAccel.add(new MovementDetector.Accel(
+              t, event.values[0], event.values[1], event.values[2]));
+          if (idleAccel.size() > 1200) {
+            idleAccel.subList(0, 600).clear();
+          }
+        }
+      }
+
+      @Override
+      public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        /* not used */
+      }
+    };
+    if (accelerometer != null) {
+      sensors.registerListener(
+          idleSensorListener, accelerometer,
+          continuous ? SensorManager.SENSOR_DELAY_UI : SensorManager.SENSOR_DELAY_GAME);
+    }
+    if (stepDetector != null) {
+      // The step detector is the walking veto. It needs ACTIVITY_RECOGNITION;
+      // when unavailable the fused GPS/vibration decision still works.
+      sensors.registerListener(idleSensorListener, stepDetector, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    idleScheduler = Executors.newSingleThreadScheduledExecutor();
+    final long startedAt = System.currentTimeMillis();
+    idleScheduler.scheduleWithFixedDelay(
+        () -> evaluateIdleMotion(startedAt), 1000, 1000, TimeUnit.MILLISECONDS);
+  }
+
+  private void evaluateIdleMotion(long startedAt) {
+    if (!confirmingMotion || sampling) {
+      return;
+    }
+    long now = System.currentTimeMillis();
+    List<MovementDetector.Accel> accelSnapshot;
+    List<MovementDetector.Fix> fixSnapshot;
+    synchronized (idleAccel) { accelSnapshot = new ArrayList<>(idleAccel); }
+    synchronized (idleFixes) { fixSnapshot = new ArrayList<>(idleFixes); }
+
+    MovementDetector.Decision decision =
+        MovementDetector.evaluate(accelSnapshot, fixSnapshot, lastStepAt, now);
+    if (decision.moving) {
+      isManualTrip = false;
+      stopIdleConfirmation();
+      startTrip();
+      return;
+    }
+    if (continuousIdleSensing) {
+      return;
+    }
+    if (now - startedAt > 25_000L) {
+      stopIdleConfirmation();
+      armSignificantMotion();
+    }
+  }
+
+  private synchronized void stopIdleConfirmation() {
+    confirmingMotion = false;
+    continuousIdleSensing = false;
+    if (idleScheduler != null) {
+      // Do not interrupt ourselves: evaluateIdleMotion may call this from the
+      // scheduler thread right before starting a trip.
+      idleScheduler.shutdown();
+      idleScheduler = null;
+    }
+    if (idleSensorListener != null && sensors != null) {
+      try {
+        sensors.unregisterListener(idleSensorListener);
+      } catch (RuntimeException ignored) {
+        /* already unregistered */
+      }
+    }
+    idleSensorListener = null;
+    synchronized (idleAccel) { idleAccel.clear(); }
   }
 
   private synchronized void removeIdleLocationWatcher() {
+    disarmSignificantMotion();
+    stopIdleConfirmation();
     if (idleLocationCallback != null) {
       try {
         locationClient.removeLocationUpdates(idleLocationCallback);
       } catch (Exception ignored) {}
       idleLocationCallback = null;
     }
-    idleMovingFixes = 0;
-    lastIdleFix = null;
+    synchronized (idleFixes) { idleFixes.clear(); }
   }
 
   static long resolveSensorTimestampMs(
