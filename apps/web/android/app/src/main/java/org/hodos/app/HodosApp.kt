@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.Image
@@ -61,6 +62,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
@@ -844,6 +846,31 @@ fun HodosApp(
                             else "Save this road"
                         )
                     }
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = {
+                            val receipt = buildString {
+                                append("Hodos road report: ").append(hazard.title)
+                                append(" · ").append(hazard.passes).append(" passes")
+                                append(", ").append(hazard.devices).append(" devices")
+                                append(", ").append(hazard.clearPasses).append(" clear passes")
+                                append(" · ").append((hazard.confidence * 100).roundToInt())
+                                append("/100 evidence score")
+                                append("\nhttps://hodos.devilabs.dev/map")
+                            }
+                            val send = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, receipt)
+                            }
+                            context.startActivity(Intent.createChooser(send, "Share road report"))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Outlined.Share, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (hazard.fixed) "Share repair receipt" else "Share road report")
+                    }
                     Spacer(Modifier.height(17.dp))
                     Text("Your feedback is a manual report, not a measured sensor reading. Hodos keeps it on this phone until it can upload.", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.height(20.dp))
@@ -911,14 +938,27 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         Column(Modifier.weight(1f)) {
             Text(hazard.title, fontWeight = FontWeight.Medium)
             Text(
-                if (distanceMeters != null) "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
-                else "${hazard.passes} passes · ${hazard.devices} devices",
-                color = Muted, fontSize = 12.sp
+                when {
+                    hazard.fixed ->
+                        "Healed · ${hazard.clearPasses} clear passes · ${hazard.devices} devices"
+                    distanceMeters != null ->
+                        "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
+                    else -> "${hazard.passes} passes · ${hazard.devices} devices"
+                },
+                color = if (hazard.fixed) Forest else Muted, fontSize = 12.sp
             )
         }
         Text(if (hazard.fixed) "Repaired" else hazard.severityText, color = Muted, fontSize = 12.sp)
     }
     HorizontalDivider(color = Mist)
+}
+
+private fun impactLabel(kind: String): String = when (kind) {
+    "speed_bump" -> "speed bump"
+    "rough_pavement" -> "rough patch"
+    "harsh_brake" -> "hard braking zone"
+    "sharp_turn" -> "sharp corner"
+    else -> "pothole"
 }
 
 private fun formatDuration(seconds: Long): String {
@@ -1048,6 +1088,12 @@ private fun MappingScreen(
                     }
                 }
             }
+        }
+        item {
+            RoadkeeperCard(trips)
+        }
+        item {
+            PerksCard(trips)
         }
         item {
             Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
@@ -1327,6 +1373,15 @@ private fun MappingScreen(
             TripDetailStore.getTrail(context, trip.tripId ?: trip.at.toString())
                 ?: TripTrail(trip.tripId ?: trip.at.toString(), trip.at, trip.durationS ?: 0L, trip.distanceM, emptyList(), emptyList())
         }
+        val score = remember(trail) { RideInsights.roadScore(trail.impacts, trail.distanceM) }
+        val events = remember(trail) {
+            RideInsights.harshBraking(trail.fixes) + RideInsights.sharpTurns(trail.fixes)
+        }
+        val worst = remember(trail) {
+            trail.impacts.maxByOrNull { it.severity }?.let { impact ->
+                impact to RideInsights.distanceAlongMeters(trail.fixes, impact.lat, impact.lng)
+            }
+        }
         AlertDialog(
             onDismissRequest = { selectedTrip = null },
             title = {
@@ -1348,6 +1403,34 @@ private fun MappingScreen(
                         (trip.gpsFixes?.let { " · $it GPS fixes" } ?: ""),
                         color = Muted, fontSize = 13.sp
                     )
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DetailStat("${score.score}", "Road score", Modifier.weight(1f))
+                        DetailStat(
+                            "${events.count { it.kind == "harsh_brake" }}",
+                            "Hard brakes",
+                            Modifier.weight(1f)
+                        )
+                        DetailStat(
+                            "${events.count { it.kind == "sharp_turn" }}",
+                            "Sharp turns",
+                            Modifier.weight(1f)
+                        )
+                    }
+                    Text(
+                        "Grade: ${score.grade} · " +
+                            String.format(Locale.US, "%.1f defects/km", score.defectsPerKm),
+                        color = Muted, fontSize = 12.sp
+                    )
+                    worst?.let { (impact, distance) ->
+                        Text(
+                            "Roughest spot: ${impactLabel(impact.kind)} " +
+                                String.format(Locale.US, "%.1f km", distance / 1000f) + " in",
+                            color = Muted, fontSize = 12.sp
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text("Export this journey to standard GIS / GPS formats for Google Earth, QGIS, or Strava:", color = Muted, fontSize = 12.sp)
                     Spacer(Modifier.height(8.dp))
@@ -1495,9 +1578,12 @@ private fun YouScreen(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 DetailStat("${trips.size}", "Journeys", Modifier.weight(1f))
-                DetailStat("$total", "Impacts", Modifier.weight(1f))
-                DetailStat("${hazards.size}", "Public hazards", Modifier.weight(1f))
+                DetailStat("$total", "Defects", Modifier.weight(1f))
+                DetailStat("${hazards.count { it.fixed }}", "Healed", Modifier.weight(1f))
             }
+        }
+        item {
+            TravelProfileCard()
         }
         item {
             Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
@@ -1603,6 +1689,15 @@ private fun YouScreen(
                     Spacer(Modifier.height(12.dp))
                     Text("Saved journeys contain counts and distance—not your full route. Deleting local history does not retract observations already submitted.", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Your road score, streak and perk progress live only on this phone. " +
+                            "Uninstalling Hodos or clearing app data erases them permanently. " +
+                            "Export a journey first if you want a copy.",
+                        color = Danger,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
                     TextButton(onClick = {
                         context.startActivity(
                             Intent(Intent.ACTION_VIEW, Uri.parse("https://hodos.devilabs.dev/privacy.html"))
@@ -1630,6 +1725,8 @@ private fun YouScreen(
             title = { Text("Delete local journey history?") },
             text = {
                 Text("This clears saved journey dates, distances and impact counts on this phone. " +
+                    "It also resets your road score, streak and monthly perk progress. " +
+                    "Uninstalling Hodos or clearing app data does the same thing permanently. " +
                     "It cannot delete reports already uploaded to the public map, " +
                     "and it does not delete observations still queued for upload.")
             },
@@ -1692,6 +1789,247 @@ private fun PartnerOfferBanner(context: android.content.Context, partners: List<
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RoadkeeperCard(trips: List<RoadTrip>) {
+    val summary = remember(trips) { summarizeRoadDiary(trips, System.currentTimeMillis()) }
+    val score = remember(summary) {
+        RideInsights.roadScore(summary.impactsThisWeek, summary.distanceMetersThisWeek)
+    }
+    val streak = remember(trips) { RideInsights.dayStreak(trips, System.currentTimeMillis()) }
+    val animatedScore by animateIntAsState(
+        targetValue = score.score,
+        animationSpec = tween(900),
+        label = "roadScore"
+    )
+    Surface(shape = RoundedCornerShape(22.dp), color = Forest) {
+        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Roadkeeper",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (trips.isNotEmpty()) {
+                    Surface(
+                        color = Color.White.copy(alpha = 0.16f),
+                        shape = RoundedCornerShape(980.dp)
+                    ) {
+                        Text(
+                            "FOUNDING",
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    "$animatedScore",
+                    color = Color.White,
+                    fontSize = 46.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-1.5).sp
+                )
+                Text(
+                    "/100",
+                    color = Color.White.copy(alpha = 0.65f),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        score.grade,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        "Road score",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                StatOnDark("${summary.journeysThisWeek}", "journeys")
+                StatOnDark(
+                    String.format(Locale.US, "%.1f km", summary.distanceMetersThisWeek / 1000.0),
+                    "this week"
+                )
+                StatOnDark("$streak", "day streak")
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when {
+                    trips.isEmpty() -> "No rides yet. Your first journey sets your road score."
+                    summary.impactsThisWeek == 0 -> "Clean week: no road defects recorded."
+                    else -> "${summary.impactsThisWeek} road defects recorded this week."
+                },
+                color = Color.White.copy(alpha = 0.72f),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun PerksCard(trips: List<RoadTrip>) {
+    val context = LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE)
+    }
+    val seed = remember { prefs.getString("deviceId", "").orEmpty() }
+    val summary = remember(trips) {
+        Perks.summarize(trips, System.currentTimeMillis(), TimeZone.getDefault(), seed)
+    }
+    val progress by animateFloatAsState(
+        targetValue = summary.progress,
+        animationSpec = tween(800),
+        label = "perkProgress"
+    )
+    Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Your perks",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    String.format(Locale.US, "%.1f km this month", summary.monthlyKm),
+                    color = Muted,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Every ride or drive counts. Redeem at labeled partner shops.",
+                color = Muted,
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(14.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = Forest,
+                trackColor = Mist
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                summary.next?.let {
+                    val remaining = (it.atKm - summary.monthlyKm).coerceAtLeast(0.0)
+                    String.format(Locale.US, "%.1f km to: %s", remaining, it.label)
+                } ?: "All monthly perks unlocked",
+                color = Ink,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (summary.unlocked.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Surface(color = Mist, shape = RoundedCornerShape(14.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "Unlocked now",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Forest,
+                            letterSpacing = 0.5.sp
+                        )
+                        summary.unlocked.forEach { perk ->
+                            Text(
+                                "• ${perk.label} · ${perk.detail}",
+                                fontSize = 12.sp,
+                                color = Ink
+                            )
+                        }
+                        summary.code?.let { code ->
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Show code at the shop: $code",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Forest
+                            )
+                        }
+                    }
+                }
+            }
+            if (trips.isEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Your first commute starts the count — no extra effort needed.",
+                    color = Muted,
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TravelProfileCard() {
+    val context = LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE)
+    }
+    var profile by remember {
+        mutableStateOf(prefs.getString("travelProfile", "mixed") ?: "mixed")
+    }
+    val options = listOf(
+        "car" to "Car",
+        "scooter" to "Scooter",
+        "bike" to "Bike",
+        "mixed" to "Mixed"
+    )
+    Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp)) {
+            Text("How do you travel?", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Used to tune perks and detection. Anyone commuting the same road qualifies.",
+                color = Muted,
+                fontSize = 12.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                options.forEach { (value, label) ->
+                    FilterChip(
+                        selected = profile == value,
+                        onClick = {
+                            profile = value
+                            prefs.edit().putString("travelProfile", value).apply()
+                        },
+                        label = { Text(label) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatOnDark(value: String, label: String) {
+    Column {
+        Text(value, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
     }
 }
 

@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
         armed = prefs.getBoolean("armed", false)
         onboardingComplete = prefs.getBoolean("onboardingComplete", false)
         updatePermissionStates()
+        HodosNudgeWorker.schedule(this)
         setContent {
             if (!onboardingComplete) {
                 HodosOnboarding(

@@ -11,7 +11,8 @@ internal data class RoadDiarySummary(
     val journeysThisWeek: Int,
     val activeDaysThisWeek: Int,
     val distanceMetersThisWeek: Double,
-    val activeDays: List<Boolean>
+    val activeDays: List<Boolean>,
+    val impactsThisWeek: Int = 0
 )
 
 internal fun summarizeRoadDiary(
@@ -39,6 +40,7 @@ internal fun summarizeRoadDiary(
     val active = BooleanArray(7)
     var count = 0
     var distance = 0.0
+    var impacts = 0
     for (trip in trips) {
         if (trip.at <= 0L || trip.at > nowMillis ||
             trip.at < boundaries[0] || trip.at >= boundaries[7]
@@ -51,6 +53,9 @@ internal fun summarizeRoadDiary(
         if (trip.distanceM.isFinite() && trip.distanceM >= 0.0) {
             distance += trip.distanceM
         }
+        if (trip.impacts > 0) {
+            impacts += trip.impacts
+        }
     }
-    return RoadDiarySummary(count, active.count { it }, distance, active.toList())
+    return RoadDiarySummary(count, active.count { it }, distance, active.toList(), impacts)
 }
