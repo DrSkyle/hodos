@@ -25,7 +25,6 @@ object PartnerPassStore {
     private const val MIN_TRIP_M = 300.0
     private const val ENDPOINT = "https://sgp.cloud.appwrite.io/v1"
     private const val PROJECT_ID = "6ad7939a002ff135e419"
-    private const val DATABASE_ID = "hodos"
     private const val UPLOAD_BACKOFF_KEY = "partnerStatsUnavailableUntil"
     private const val UPLOAD_BACKOFF_MS = 7L * 24 * 60 * 60 * 1000
 
@@ -85,8 +84,9 @@ object PartnerPassStore {
 
     /**
      * Upload one blinded token per passed shop for the current month. The token
-     * is salted by shop and month, so rows cannot be linked across shops or
-     * months. Retries reuse the same row id, so a duplicate is harmless.
+     * is salted by shop and month, and every submission carries a small
+     * proof-of-work bound to both. Writes are validated by the ingest function;
+     * the client has no direct write permission on the table.
      */
     fun uploadMonthlyPasses(
         context: Context,
@@ -104,31 +104,48 @@ object PartnerPassStore {
         for (partner in partners) {
             if (!travelledPast(partner.lat, partner.lng, fixes)) continue
             val token = sha256("$deviceId|${partner.id}|$month").take(16)
-            val rowId = sha256("${partner.id}|$token").take(32)
-            val data = JSONObject()
+            val nonce = findProof(partner.id, token) ?: continue
+            // Appwrite's execution API carries the function payload in `body`.
+            val payload = JSONObject()
                 .put("partnerId", partner.id)
                 .put("passToken", token)
-                .put("month", month)
-            val body = JSONObject().put("rowId", rowId).put("data", data).toString()
-            val status = postRow("partnerPasses", body)
+                .put("nonce", nonce)
+                .toString()
+            val body = JSONObject()
+                .put("body", payload)
+                .put("method", "POST")
+                .put("path", "/")
+                .put("headers", JSONObject().put("content-type", "application/json"))
+                .toString()
+            val status = postExecution(body)
             if (status == 401 || status == 403 || status == 404) {
-                // Backend not deployed or not permitted yet; retry in a week.
+                // Ingest function not deployed or not permitted yet; retry later.
                 prefs.edit().putLong(UPLOAD_BACKOFF_KEY, now + UPLOAD_BACKOFF_MS).apply()
                 return
             }
         }
     }
 
-    private fun postRow(table: String, body: String): Int {
+    /** SHA-256 proof with four leading zero hex digits, bound to shop + token. */
+    private fun findProof(partnerId: String, token: String): String? {
+        for (nonce in 0L until 2_000_000L) {
+            if (sha256("$partnerId|$token|$nonce").startsWith("0000")) {
+                return nonce.toString()
+            }
+        }
+        return null
+    }
+
+    private fun postExecution(body: String): Int {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL("$ENDPOINT/tablesdb/$DATABASE_ID/tables/$table/rows")
+            connection = (URL("$ENDPOINT/functions/hodos-partner-pass/executions")
                 .openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("X-Appwrite-Project", PROJECT_ID)
                 setRequestProperty("Content-Type", "application/json")
                 connectTimeout = 8_000
-                readTimeout = 10_000
+                readTimeout = 15_000
                 doOutput = true
             }
             connection.outputStream.use {

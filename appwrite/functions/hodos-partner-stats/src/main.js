@@ -81,6 +81,22 @@ function countByPartner(passes, month) {
   return result;
 }
 
+/**
+ * A partner counted in an earlier month but with no passes yet this month gets
+ * an explicit zero, so the app cannot present old footfall as current. History
+ * rows for earlier months are left untouched.
+ */
+function withZeroedPartners(counts, existingRows) {
+  const merged = new Map(counts);
+  for (const row of existingRows) {
+    const partnerId = row && typeof row.partnerId === "string" ? row.partnerId : "";
+    if (partnerId && !merged.has(partnerId)) {
+      merged.set(partnerId, 0);
+    }
+  }
+  return merged;
+}
+
 async function listTable(table) {
   const rows = [];
   let offset = 0;
@@ -192,8 +208,8 @@ module.exports = async ({ res, log }) => {
     const now = Date.now();
     const month = currentMonth(now);
     const passes = await fetchMonthPasses(month);
-    const counts = countByPartner(passes, month);
     const existingRows = await listTable("partnerStats");
+    const counts = withZeroedPartners(countByPartner(passes, month), existingRows);
     const existing = new Set(existingRows.map((row) => row.$id));
     let created = 0;
     let updated = 0;
@@ -223,6 +239,7 @@ module.exports.testing = {
   validMonth,
   validRow,
   countByPartner,
+  withZeroedPartners,
   currentMonth,
   statRowId,
 };

@@ -51,3 +51,15 @@ test("current month is UTC and zero padded", () => {
   assert.equal(testing.currentMonth(Date.parse("2026-01-31T23:59:59Z")), "2026-01");
   assert.equal(testing.currentMonth(Date.parse("2026-11-08T00:00:00Z")), "2026-11");
 });
+
+test("known partners with no current-month passes are zeroed, not stale", () => {
+  const counts = new Map([["shop-a", 4]]);
+  const merged = testing.withZeroedPartners(counts, [
+    { partnerId: "shop-a" },
+    { partnerId: "shop-b" },
+    { partnerId: "" }
+  ]);
+  assert.equal(merged.get("shop-a"), 4);
+  assert.equal(merged.get("shop-b"), 0);
+  assert.equal(merged.size, 2);
+});
