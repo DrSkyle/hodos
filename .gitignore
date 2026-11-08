@@ -38,3 +38,6 @@ internal/
 # Screenshot scratch
 brand/preview/
 brand/launch/hodos-launch-raw.mp4
+
+# Appwrite CLI local project config
+/appwrite.config.json
