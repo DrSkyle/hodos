@@ -485,6 +485,8 @@ fun RoadMap(
 
     val activePartner = partnerSelected
     if (activePartner != null) {
+        val localPasses = PartnerPassStore.monthCount(context, activePartner.id)
+        val nearby = PartnerStats.nearby(hazards, activePartner.lat, activePartner.lng)
         AlertDialog(
             onDismissRequest = { partnerSelected = null },
             title = { Text(activePartner.name, fontWeight = FontWeight.Bold) },
@@ -496,6 +498,18 @@ fun RoadMap(
                         append(activePartner.category.replaceFirstChar { it.uppercase() })
                         append("\n\n")
                         append(activePartner.offer)
+                        val stats = activePartner.passesThisMonth
+                            ?.let { "$it drivers passed this shop this month" }
+                            ?: if (localPasses > 0) {
+                                "You passed this shop $localPasses times this month"
+                            } else if (nearby.hasSignal) {
+                                "${nearby.maxDevices} devices report road conditions within 400 m"
+                            } else null
+                        if (stats != null) {
+                            append("\n\n")
+                            append(stats)
+                            append("\nAggregated anonymously from trip data. Drivers are never identified.")
+                        }
                         if (activePartner.sample) {
                             append("\n\nSample placement — become a partner to claim this spot.")
                         }

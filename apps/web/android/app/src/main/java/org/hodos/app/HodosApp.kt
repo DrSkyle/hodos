@@ -455,7 +455,7 @@ fun HodosApp(
                                     }
                                 }
                                 Spacer(Modifier.height(10.dp))
-                                PartnerOfferBanner(context, partners)
+                                PartnerOfferBanner(context, partners, visibleHazards)
                             }
                         },
                         containerColor = Color.Transparent
@@ -1785,8 +1785,18 @@ private fun YouScreen(
 }
 
 @Composable
-private fun PartnerOfferBanner(context: android.content.Context, partners: List<PartnerPoi>) {
+private fun PartnerOfferBanner(
+    context: android.content.Context,
+    partners: List<PartnerPoi>,
+    hazards: List<RoadHazard>
+) {
     val partner = partners.firstOrNull()
+    val localPasses = remember(partner?.id) {
+        partner?.let { PartnerPassStore.monthCount(context, it.id) } ?: 0
+    }
+    val nearby = remember(partner?.id, hazards) {
+        partner?.let { PartnerStats.nearby(hazards, it.lat, it.lng) }
+    }
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = Mist,
@@ -1819,8 +1829,17 @@ private fun PartnerOfferBanner(context: android.content.Context, partners: List<
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (partner != null) "${partner.name} · Sponsored"
-                    else "Labeled placements keep the map free — tap to become a partner.",
+                    if (partner != null) {
+                        val stat = partner.passesThisMonth?.let { "$it drivers passed this month" }
+                            ?: localPasses.takeIf { it > 0 }?.let { "You passed this shop $it× this month" }
+                            ?: nearby?.takeIf { it.hasSignal }?.let {
+                                "${it.maxDevices} devices reporting within 400 m"
+                            }
+                            ?: "Sponsored"
+                        "${partner.name} · $stat"
+                    } else {
+                        "Labeled placements keep the map free — tap to become a partner."
+                    },
                     fontSize = 11.sp,
                     color = Muted,
                     maxLines = 1,

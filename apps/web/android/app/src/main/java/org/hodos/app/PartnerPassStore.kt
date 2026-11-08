@@ -1,0 +1,109 @@
+package org.hodos.app
+
+import android.content.Context
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/**
+ * Counts how often this phone travels past a labeled partner shop, per month.
+ *
+ * Nothing is uploaded: the count is computed from fixes already on the device
+ * and stored locally, so a garage can be shown real footfall without anyone
+ * being identified. Aggregate "N drivers" figures come from operator-published
+ * partner stats, never from personal location.
+ */
+object PartnerPassStore {
+    private const val PREFS_KEY = "partnerPasses"
+    private const val PASS_RADIUS_M = 150.0
+    private const val MIN_TRIP_M = 300.0
+
+    fun recordTripPasses(
+        context: Context,
+        distanceM: Double,
+        fixes: List<MotionDetector.Fix>,
+        partners: List<PartnerPoi>
+    ) {
+        if (fixes.size < 2 || partners.isEmpty() || distanceM < MIN_TRIP_M) return
+        val prefs = context.getSharedPreferences("hodos", Context.MODE_PRIVATE)
+        val root = runCatching {
+            JSONObject(prefs.getString(PREFS_KEY, "{}") ?: "{}")
+        }.getOrElse { JSONObject() }
+        val month = monthKey(System.currentTimeMillis())
+        var changed = false
+        for (partner in partners) {
+            if (!travelledPast(partner.lat, partner.lng, fixes)) continue
+            val entry = root.optJSONObject(partner.id) ?: JSONObject()
+            val count = if (entry.optString("month") == month) entry.optInt("count", 0) else 0
+            entry.put("month", month)
+            entry.put("count", count + 1)
+            entry.put("last", System.currentTimeMillis())
+            root.put(partner.id, entry)
+            changed = true
+        }
+        if (changed) {
+            prefs.edit().putString(PREFS_KEY, root.toString()).apply()
+        }
+    }
+
+    fun monthCount(context: Context, partnerId: String): Int {
+        val prefs = context.getSharedPreferences("hodos", Context.MODE_PRIVATE)
+        val root = runCatching {
+            JSONObject(prefs.getString(PREFS_KEY, "{}") ?: "{}")
+        }.getOrElse { JSONObject() }
+        val entry = root.optJSONObject(partnerId) ?: return 0
+        if (entry.optString("month") != monthKey(System.currentTimeMillis())) return 0
+        return entry.optInt("count", 0).coerceAtLeast(0)
+    }
+
+    fun totalThisMonth(context: Context): Int {
+        val prefs = context.getSharedPreferences("hodos", Context.MODE_PRIVATE)
+        val root = runCatching {
+            JSONObject(prefs.getString(PREFS_KEY, "{}") ?: "{}")
+        }.getOrElse { JSONObject() }
+        val month = monthKey(System.currentTimeMillis())
+        var total = 0
+        for (id in root.keys()) {
+            val entry = root.optJSONObject(id) ?: continue
+            if (entry.optString("month") == month) {
+                total += entry.optInt("count", 0)
+            }
+        }
+        return total
+    }
+
+    private fun travelledPast(lat: Double, lng: Double, fixes: List<MotionDetector.Fix>): Boolean {
+        for (fix in fixes) {
+            if (haversine(fix.lat, fix.lng, lat, lng) <= PASS_RADIUS_M) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun monthKey(now: Long): String =
+        SimpleDateFormat("yyyy-MM", Locale.US).format(Date(now))
+
+    private fun haversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLng = Math.toRadians(lng2 - lng1)
+        val s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2)
+        return 2 * 6_371_008.8 * Math.asin(minOf(1.0, Math.sqrt(s)))
+    }
+}
+
+/** End-of-journey hook: fetch the current partner feed and count passes. */
+object PartnerPassRecorder {
+    @JvmStatic
+    fun record(context: Context, distanceM: Double, fixes: List<MotionDetector.Fix>) {
+        runCatching {
+            val partners = PartnerOffers.loadSync()
+            if (partners.isNotEmpty()) {
+                PartnerPassStore.recordTripPasses(context, distanceM, fixes, partners)
+            }
+        }
+    }
+}

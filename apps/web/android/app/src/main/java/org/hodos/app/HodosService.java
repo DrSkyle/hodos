@@ -1051,6 +1051,13 @@ public class HodosService extends Service implements SensorEventListener {
 
   private void upload(List<MotionDetector.Impact> finished, List<MotionDetector.Fix> route,
                       String device, String trip, List<Long> coverage, long startedAt) {
+    // Anonymously count this trip's passes by labeled partner shops. Local
+    // only; nothing about the driver is uploaded.
+    try {
+      PartnerPassRecorder.record(this, distanceMetres(route), route);
+    } catch (RuntimeException ignored) {
+      /* pass counting is best effort */
+    }
     // Observed impacts and the local trip summary are already durable.
     // This worker only computes optional clear-road evidence.
     if (getSharedPreferences("hodos", MODE_PRIVATE).getBoolean("armed", false)) {
