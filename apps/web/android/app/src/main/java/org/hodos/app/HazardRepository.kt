@@ -27,7 +27,8 @@ data class RoadHazard(
     val confidence: Double,
     val clearPasses: Int,
     val fixed: Boolean,
-    val lastSeen: String
+    val lastSeen: String,
+    val firstSeen: String = ""
 ) {
     val title: String get() = when (kind) {
         "speed_bump" -> "Speed bump"
@@ -176,7 +177,8 @@ class HazardRepository(context: Context) {
                     clearPasses = row.optInt("clearPasses"),
                     fixed = row.optBoolean("fixed") || row.optInt("fixedVotes") >= 2 ||
                         row.optInt("clearPasses") >= 3,
-                    lastSeen = row.optString("lastSeen")
+                    lastSeen = row.optString("lastSeen"),
+                    firstSeen = row.optString("firstSeen")
                 ))
             }
         }

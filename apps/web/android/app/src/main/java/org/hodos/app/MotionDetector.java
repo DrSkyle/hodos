@@ -34,6 +34,8 @@ public final class MotionDetector {
     public double accuracy;
     public double speed;
     public boolean hasSpeed;
+    /** Sustained vibration energy (g RMS) captured at fix time. -1 = unknown. */
+    public double roughness = -1.0;
 
     public Fix(long t, double lat, double lng, double accuracy, double speed, boolean hasSpeed) {
       this.t = t;

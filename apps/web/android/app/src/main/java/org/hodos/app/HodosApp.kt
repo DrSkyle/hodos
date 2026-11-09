@@ -84,7 +84,13 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.roundToInt
 
-private enum class Screen(val label: String) { MAP("Map"), MAPPING("Record"), YOU("You") }
+private enum class Screen(val label: String) {
+    MAP("Map"),
+    MAPPING("Drive"),
+    ROADS("Roads"),
+    INSIGHTS("Insights"),
+    YOU("You")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -277,6 +283,24 @@ fun HodosApp(
         }
     }
 
+    // Journey trails for the Roads / Insights analyses. Loaded off the main
+    // thread and capped so analysis stays instant on long histories.
+    var trails by remember { mutableStateOf<List<TripTrail>>(emptyList()) }
+    LaunchedEffect(trips) {
+        if (trips.isEmpty()) {
+            trails = emptyList()
+            return@LaunchedEffect
+        }
+        trails = withContext(Dispatchers.IO) {
+            trips.take(60).mapNotNull { trip ->
+                TripDetailStore.getTrail(context, trip.tripId ?: trip.at.toString())
+            }
+        }
+    }
+    var travelProfile by remember {
+        mutableStateOf(prefs.getString("travelProfile", "mixed") ?: "mixed")
+    }
+
     val visibleHazards = remember(hazards, query, severity, lastKnownLocation) {
         hazards.filter { hazard ->
             val matchSeverity = when (severity) {
@@ -334,6 +358,9 @@ fun HodosApp(
                     onSelect = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         screen = it
+                        if (it == Screen.ROADS || it == Screen.INSIGHTS) {
+                            travelProfile = prefs.getString("travelProfile", "mixed") ?: "mixed"
+                        }
                     },
                     tripActive = tripActive
                 )
@@ -798,6 +825,16 @@ fun HodosApp(
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
+                    Screen.ROADS -> RoadsScreen(
+                        trails = trails,
+                        travelProfile = travelProfile,
+                        onBack = { screen = Screen.MAP }
+                    )
+                    Screen.INSIGHTS -> InsightsScreen(
+                        trails = trails,
+                        hazards = hazards,
+                        onBack = { screen = Screen.MAP }
+                    )
                     Screen.YOU -> YouScreen(
                         trips = trips,
                         hazards = hazards,
@@ -1066,6 +1103,8 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                     symbol = when (tab) {
                                         Screen.MAP -> DoodleSymbol.MAP
                                         Screen.MAPPING -> DoodleSymbol.CAR
+                                        Screen.ROADS -> DoodleSymbol.ROAD
+                                        Screen.INSIGHTS -> DoodleSymbol.INSIGHT
                                         Screen.YOU -> DoodleSymbol.PERSON
                                     },
                                     tint = if (active) Paper else Muted,

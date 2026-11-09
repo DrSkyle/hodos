@@ -186,6 +186,11 @@ fun RoadMap(
                 style.addSource(GeoJsonSource(
                     "hodos-hazards", FeatureCollection.fromFeatures(emptyArray<Feature>())
                 ))
+                // Road-quality cells share the hazard grid so the heat band
+                // matches the website's layer exactly.
+                style.addSource(GeoJsonSource(
+                    "hodos-quality", FeatureCollection.fromFeatures(emptyArray<Feature>())
+                ))
                 style.addSource(GeoJsonSource(
                     "hodos-user-location", FeatureCollection.fromFeatures(emptyArray<Feature>())
                 ))
@@ -296,6 +301,46 @@ fun RoadMap(
             }
             map?.style?.getSourceAs<GeoJsonSource>("hodos-hazards")
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
+
+            // Quality cells from the same hazard set, bucketed on the grid in
+            // the shared layer spec.
+            val qualityFeatures = buildList {
+                val buckets = HashMap<String, Triple<Double, Double, DoubleArray>>()
+                for (hazard in hazards) {
+                    if (hazard.fixed) continue
+                    val latBucket = kotlin.math.floor(hazard.lat / 0.0015).toInt()
+                    val scale = kotlin.math.cos(Math.toRadians(hazard.lat)).coerceAtLeast(0.2)
+                    val lngBucket = kotlin.math.floor(hazard.lng / (0.0015 / scale)).toInt()
+                    val key = "$latBucket:$lngBucket"
+                    val existing = buckets[key]
+                    val stress = when (hazard.severity) {
+                        3 -> 5.0
+                        2 -> 2.5
+                        else -> 1.0
+                    }
+                    if (existing == null) {
+                        buckets[key] = Triple(
+                            (latBucket + 0.5) * 0.0015,
+                            (lngBucket + 0.5) * (0.0015 / scale),
+                            doubleArrayOf(1.0, stress)
+                        )
+                    } else {
+                        existing.third[0] += 1.0
+                        existing.third[1] += stress
+                    }
+                }
+                for ((_, cell) in buckets) {
+                    val quality = (100.0 - cell.third[1] * 8.0).coerceIn(0.0, 100.0)
+                    add(
+                        Feature.fromGeometry(Point.fromLngLat(cell.second, cell.first)).apply {
+                            addNumberProperty("quality", quality)
+                            addNumberProperty("hazards", cell.third[0])
+                        }
+                    )
+                }
+            }
+            map?.style?.getSourceAs<GeoJsonSource>("hodos-quality")
+                ?.setGeoJson(FeatureCollection.fromFeatures(qualityFeatures))
 
             if (!initialFitDone && savedCamera == null && userFix == null && hazards.isNotEmpty()) {
                 initialFitDone = true

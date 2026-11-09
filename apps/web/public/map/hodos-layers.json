@@ -1,6 +1,17 @@
 {
-  "version": 1,
+  "version": 2,
+  "qualityCellDegrees": 0.0015,
   "layers": [
+    {
+      "id": "hodos-quality-heat",
+      "source": "hodos-quality",
+      "type": "circle",
+      "paint": {
+        "circle-radius": 22,
+        "circle-color": ["interpolate", ["linear"], ["coalesce", ["get", "quality"], 60], 30, "#E11D48", 55, "#D97706", 80, "#10B981"],
+        "circle-opacity": 0.14
+      }
+    },
     {
       "id": "hodos-hazard-glow",
       "source": "hodos-hazards",

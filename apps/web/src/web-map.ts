@@ -152,6 +152,47 @@ export function initWebMap(
   );
   map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
+  // Road-quality cells derived from public hazards, bucketed on the grid
+  // declared by the shared layer spec so the website and app agree.
+  const CELL_DEG = 0.0015;
+  const buildQualityGeoJSON = (items: WebHazard[]): FeatureCollection => {
+    const buckets = new globalThis.Map<
+      string,
+      { lat: number; lng: number; hazards: number; stress: number }
+    >();
+    for (const h of items) {
+      if (h.fixed) continue;
+      const latBucket = Math.floor(h.lat / CELL_DEG);
+      const scale = Math.max(0.2, Math.cos((h.lat * Math.PI) / 180));
+      const lngBucket = Math.floor(h.lng / (CELL_DEG / scale));
+      const key = `${latBucket}:${lngBucket}`;
+      const existing = buckets.get(key);
+      const stress = h.severity === 3 ? 5 : h.severity === 2 ? 2.5 : 1;
+      if (existing) {
+        existing.hazards += 1;
+        existing.stress += stress;
+      } else {
+        buckets.set(key, {
+          lat: (latBucket + 0.5) * CELL_DEG,
+          lng: (lngBucket + 0.5) * (CELL_DEG / scale),
+          hazards: 1,
+          stress
+        });
+      }
+    }
+    return {
+      type: "FeatureCollection",
+      features: Array.from(buckets.values()).map((cell) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [cell.lng, cell.lat] },
+        properties: {
+          hazards: cell.hazards,
+          quality: Math.max(0, Math.min(100, Math.round(100 - cell.stress * 8)))
+        }
+      }))
+    };
+  };
+
   const buildGeoJSON = (items: WebHazard[]): FeatureCollection => ({
     type: "FeatureCollection",
     features: items.map((h) => ({
@@ -218,6 +259,10 @@ export function initWebMap(
     const src = map.getSource("hodos-hazards") as any;
     if (src) {
       src.setData(buildGeoJSON(hazards));
+    }
+    const qualitySrc = map.getSource("hodos-quality") as any;
+    if (qualitySrc) {
+      qualitySrc.setData(buildQualityGeoJSON(hazards));
     }
     if (statusEl) {
       statusEl.textContent = `${hazards.length} road observations`;
@@ -367,6 +412,10 @@ export function initWebMap(
     map.addSource("hodos-hazards", {
       type: "geojson",
       data: buildGeoJSON(hazards)
+    });
+    map.addSource("hodos-quality", {
+      type: "geojson",
+      data: buildQualityGeoJSON(hazards)
     });
 
     // The hazard marker rendering is defined once in

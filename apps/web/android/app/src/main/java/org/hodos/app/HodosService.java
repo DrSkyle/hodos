@@ -534,9 +534,11 @@ public class HodosService extends Service implements SensorEventListener {
                 lastMovementAt = System.currentTimeMillis();
               }
               synchronized (fixes) {
-                fixes.add(new MotionDetector.Fix(
+                MotionDetector.Fix fix = new MotionDetector.Fix(
                     last.getTime(), last.getLatitude(), last.getLongitude(),
-                    last.getAccuracy(), last.getSpeed(), last.hasSpeed()));
+                    last.getAccuracy(), last.getSpeed(), last.hasSpeed());
+                fix.roughness = currentRoughness();
+                fixes.add(fix);
                 if (fixes.size() > 2400) {
                   fixes.subList(0, 800).clear();
                 }
@@ -553,6 +555,37 @@ public class HodosService extends Service implements SensorEventListener {
     scheduler = Executors.newSingleThreadScheduledExecutor();
     scheduler.scheduleWithFixedDelay(
         this::analyse, ANALYSIS_INTERVAL_MS, ANALYSIS_INTERVAL_MS, TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * Sustained vibration energy (g RMS) over the last ~1.6 s, measured as the
+   * deviation from the window mean. This is the signal surface inference and
+   * the roughness score are built on; discrete impacts are handled separately
+   * by MotionDetector.
+   */
+  private double currentRoughness() {
+    long cutoff = System.currentTimeMillis() - 1600L;
+    int count = 0;
+    double sx = 0, sy = 0, sz = 0;
+    synchronized (samples) {
+      for (int i = samples.size() - 1; i >= 0; i--) {
+        MotionDetector.Sample s = samples.get(i);
+        if (s.t < cutoff) break;
+        sx += s.ax; sy += s.ay; sz += s.az; count++;
+      }
+      if (count < 8) return -1.0;
+      double mx = sx / count, my = sy / count, mz = sz / count;
+      double energy = 0;
+      for (int i = samples.size() - 1; i >= 0; i--) {
+        MotionDetector.Sample s = samples.get(i);
+        if (s.t < cutoff) break;
+        double dx = s.ax - mx, dy = s.ay - my, dz = s.az - mz;
+        energy += dx * dx + dy * dy + dz * dz;
+      }
+      // Accelerometer readings arrive in m/s² on Android (gravity ≈ 9.81);
+      // convert to g so thresholds stay device-independent.
+      return Math.sqrt(energy / count) / 9.80665;
+    }
   }
 
   private void analyse() {

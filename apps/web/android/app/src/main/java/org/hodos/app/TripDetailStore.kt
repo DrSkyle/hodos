@@ -15,7 +15,10 @@ data class SavedFix(
     val t: Long,
     val lat: Double,
     val lng: Double,
-    val speed: Double
+    val speed: Double,
+    // Sustained vibration energy captured at fix time, used for surface and
+    // roughness inference. Older trails default to -1 (unknown).
+    val roughness: Double = -1.0
 )
 
 data class SavedImpact(
@@ -75,6 +78,7 @@ object TripDetailStore {
                     obj.put("lat", f.lat)
                     obj.put("lng", f.lng)
                     obj.put("speed", f.speed)
+                    obj.put("rough", f.roughness.toDouble())
                     fixesJson.put(obj)
                 }
             }
@@ -126,7 +130,8 @@ object TripDetailStore {
                             o.optLong("t"),
                             o.optDouble("lat"),
                             o.optDouble("lng"),
-                            o.optDouble("speed", 0.0)
+                            o.optDouble("speed", 0.0),
+                            o.optDouble("rough", -1.0)
                         )
                     )
                 }

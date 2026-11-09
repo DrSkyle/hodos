@@ -2,6 +2,7 @@ package org.hodos.app
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
@@ -30,7 +31,9 @@ internal enum class DoodleSymbol(val vector: ImageVector) {
     SHIELD(Icons.Outlined.VerifiedUser),
     DIARY(Icons.Outlined.Route),
     SUN(Icons.Outlined.WbSunny),
-    TREE(Icons.Outlined.Explore)
+    TREE(Icons.Outlined.Explore),
+    ROAD(Icons.Outlined.Route),
+    INSIGHT(Icons.Outlined.BarChart)
 }
 
 @Composable
