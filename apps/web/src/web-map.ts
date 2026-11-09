@@ -480,23 +480,8 @@ export function initWebMap(
   setTimeout(() => map.resize(), 100);
   window.addEventListener("resize", () => map.resize());
 
-  fetch("/data/hazards.json")
-    .then((res) => (res.ok ? res.json() : null))
-    .then((data) => {
-      if (data && Array.isArray(data.rows) && data.rows.length > 0) {
-        const parsed: WebHazard[] = data.rows
-          .map(parseAppwriteRow)
-          .filter((h: WebHazard | null): h is WebHazard => h !== null);
-        if (parsed.length > 0) {
-          hazards = parsed;
-          handle.hazards = parsed;
-          updateSourceData();
-          fitBoundsToData(hazards);
-        }
-      }
-    })
-    .catch(() => {});
-
+  // Live backend only. There is no static snapshot: the map must never show
+  // a hazard that the corroboration pipeline has not actually published.
   fetch(
     "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/hazards/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B500%5D%7D",
     {
@@ -522,12 +507,19 @@ export function initWebMap(
     })
     .catch(() => {});
 
-  fetch("/data/partners.json")
+  // Partner placements are served from the backend only; sample placements are
+  // never shipped to production.
+  fetch(
+    "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/partners/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B100%5D%7D",
+    {
+      headers: { "X-Appwrite-Project": "6ad7939a002ff135e419" }
+    }
+  )
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
-      if (!data || !Array.isArray(data.partners)) return;
+      if (!data || !Array.isArray(data.rows)) return;
       const parsed: WebPartner[] = [];
-      (data.partners as any[]).forEach((raw, i) => {
+      (data.rows as any[]).forEach((raw, i) => {
         const lat = Number(raw.lat);
         const lng = Number(raw.lng);
         if (!Number.isFinite(lat) || !Number.isFinite(lng) || !raw.name) return;

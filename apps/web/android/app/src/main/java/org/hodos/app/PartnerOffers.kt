@@ -26,13 +26,11 @@ data class PartnerPoi(
 )
 
 /**
- * Partner shop placements ship as a static JSON file on the website, so
- * sponsor changes deploy like web content and never cost database reads.
- * Monthly pass counts are merged from the anonymous partnerStats table when the
- * backend is deployed; if it is not there yet the static feed still works.
+ * Partner placements are read from the backend `partners` table only. There is
+ * no shipped sample feed: an empty table means no pins, never invented ones.
+ * Monthly pass counts are merged from the anonymous partnerStats table.
  */
 object PartnerOffers {
-    private const val FEED_URL = "https://hodos.devilabs.dev/data/partners.json"
     private const val ENDPOINT = "https://sgp.cloud.appwrite.io/v1"
     private const val PROJECT_ID = "6ad7939a002ff135e419"
     private const val DATABASE_ID = "hodos"
@@ -54,8 +52,10 @@ object PartnerOffers {
     }
 
     private fun fetchFeed(): List<PartnerPoi> {
+        val limit = URLEncoder.encode("""{"method":"limit","values":[100]}""", "UTF-8")
         val request = Request.Builder()
-            .url(FEED_URL)
+            .url("$ENDPOINT/tablesdb/$DATABASE_ID/tables/partners/rows?queries[]=$limit")
+            .header("X-Appwrite-Project", PROJECT_ID)
             .header("User-Agent", "Hodos-Android")
             .build()
         val body = client.newCall(request).execute().use { res ->
@@ -67,7 +67,7 @@ object PartnerOffers {
 
     private fun parseFeed(body: String): List<PartnerPoi> {
         val json = JSONObject(body)
-        val array = json.optJSONArray("partners") ?: return emptyList()
+        val array = json.optJSONArray("rows") ?: return emptyList()
         return buildList {
             for (i in 0 until array.length()) {
                 val entry = array.optJSONObject(i) ?: continue

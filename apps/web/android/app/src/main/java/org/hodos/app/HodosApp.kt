@@ -721,7 +721,7 @@ fun HodosApp(
                                     containerColor = PaperRaised, contentColor = Ink
                                 ),
                                 modifier = Modifier.align(Alignment.BottomEnd)
-                                    .padding(end = 18.dp, bottom = 146.dp).size(52.dp)
+                                    .padding(end = 18.dp, bottom = 18.dp).size(52.dp)
                                     .border(1.dp, Ink, CircleShape)
                             ) {
                                 if (locating) {
@@ -737,7 +737,7 @@ fun HodosApp(
                                     shape = RoundedCornerShape(14.dp),
                                     color = Ink,
                                     modifier = Modifier.align(Alignment.BottomStart)
-                                        .padding(start = 18.dp, bottom = 146.dp)
+                                        .padding(start = 18.dp, bottom = 18.dp)
                                 ) {
                                     Row(
                                         Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -767,10 +767,6 @@ fun HodosApp(
                                     }
                                 }
                             }
-                            HodosMapLegend(
-                                Modifier.align(Alignment.BottomStart)
-                                    .padding(start = 18.dp, bottom = if (tripActive) 216.dp else 146.dp)
-                            )
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
@@ -1151,108 +1147,6 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun HodosMapLegend(modifier: Modifier = Modifier) {
-    // The map's key, matching the website's legend panel. Starts as a small
-    // pill so the map stays clear; tap to open the full key.
-    var expanded by remember { mutableStateOf(false) }
-    Surface(
-        color = PaperRaised,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Ink),
-        modifier = modifier.clickable { expanded = !expanded }
-    ) {
-        if (!expanded) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "KEY",
-                    color = Ink,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = OverpassMono,
-                    letterSpacing = 1.4.sp
-                )
-                Spacer(Modifier.width(9.dp))
-                Box(Modifier.size(8.dp).background(Pothole, CircleShape))
-                Spacer(Modifier.width(5.dp))
-                Box(Modifier.size(8.dp).background(Rough, CircleShape))
-                Spacer(Modifier.width(5.dp))
-                Box(Modifier.size(8.dp).background(Bump, CircleShape))
-                Spacer(Modifier.width(5.dp))
-                Box(
-                    Modifier.size(9.dp)
-                        .background(PaperRaised, CircleShape)
-                        .border(2.dp, Healed, CircleShape)
-                )
-            }
-        } else {
-            Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-                Text(
-                    "KEY",
-                    color = Muted,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = OverpassMono,
-                    letterSpacing = 1.6.sp
-                )
-                Spacer(Modifier.height(7.dp))
-                LegendRow(Pothole, filled = true, "Pothole")
-                Spacer(Modifier.height(6.dp))
-                LegendRow(Rough, filled = true, "Rough stretch")
-                Spacer(Modifier.height(6.dp))
-                LegendRow(Bump, filled = true, "Speed bump")
-                Spacer(Modifier.height(6.dp))
-                LegendRow(Healed, filled = false, "Repaired")
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(color = Line)
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(11.dp)
-                            .border(1.2.dp, Muted, CircleShape)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "RING = ≥2 PASSES",
-                        color = Muted,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = OverpassMono,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LegendRow(color: Color, filled: Boolean, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (filled) {
-            Box(Modifier.size(9.dp).background(color, CircleShape))
-        } else {
-            Box(
-                Modifier.size(11.dp)
-                    .background(PaperRaised, CircleShape)
-                    .border(2.5.dp, color, CircleShape)
-            )
-        }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            label.uppercase(),
-            color = Ink,
-            fontSize = 8.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = OverpassMono,
-            letterSpacing = 1.sp
-        )
     }
 }
 
