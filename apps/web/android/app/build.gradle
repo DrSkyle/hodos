@@ -126,14 +126,21 @@ dependencies {
 // Hodos has exactly ONE full-colour brand image: web/public/hodos-icon.png.
 // The website favicon is a pixel-exact 32px resize of this same source.
 // Both Android legacy icons and both adaptive icons are generated from it.
+// The shared map layer spec is bundled from the website's public folder so
+// app and site render hazards from ONE definition.
 def hodosArtworkDir = file('../../public')
 def hodosGeneratedRes = layout.buildDirectory.dir('generated/hodos/res')
+def hodosGeneratedAssets = layout.buildDirectory.dir('generated/hodos/assets')
 android.sourceSets.main.res.srcDir(hodosGeneratedRes.get().asFile)
+android.sourceSets.main.assets.srcDir(hodosGeneratedAssets.get().asFile)
 
 tasks.register('prepareHodosArtwork') {
     def master = new File(hodosArtworkDir, 'hodos-icon.png')
+    def mapLayers = new File(hodosArtworkDir, 'map/hodos-layers.json')
     inputs.file(master)
+    inputs.file(mapLayers)
     outputs.dir(hodosGeneratedRes)
+    outputs.dir(hodosGeneratedAssets)
     doLast {
         if (!master.isFile() || master.length() < 5000) {
             throw new GradleException('Missing full-resolution Hodos icon: apps/web/public/hodos-icon.png')
@@ -183,6 +190,12 @@ tasks.register('prepareHodosArtwork') {
         graphics.dispose()
         javax.imageio.ImageIO.write(foreground, 'png',
             new File(drawable, 'hodos_launcher_foreground.png'))
+
+        // Bundle the shared hazard layer spec so the app map always matches
+        // the website map without a network round trip.
+        def assetsMapDir = new File(hodosGeneratedAssets.get().asFile, 'map')
+        assetsMapDir.mkdirs()
+        new File(assetsMapDir, 'hodos-layers.json').bytes = mapLayers.bytes
     }
 }
 tasks.named('preBuild').configure {

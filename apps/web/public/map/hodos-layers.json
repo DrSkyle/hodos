@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "layers": [
+    {
+      "id": "hodos-hazard-glow",
+      "source": "hodos-hazards",
+      "type": "circle",
+      "paint": {
+        "circle-radius": ["case", ["get", "fixed"], 12, ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 11, 2, 13.5, 3, 16]],
+        "circle-color": ["case", ["get", "fixed"], "#10B981", ["==", ["get", "kind"], "pothole"], "#E11D48", ["==", ["get", "kind"], "speed_bump"], "#7C3AED", "#D97706"],
+        "circle-opacity": 0.16
+      }
+    },
+    {
+      "id": "hodos-hazard-point",
+      "source": "hodos-hazards",
+      "type": "circle",
+      "paint": {
+        "circle-radius": ["case", ["get", "fixed"], 5.5, ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 5, 2, 6.5, 3, 8]],
+        "circle-color": ["case", ["get", "fixed"], "#10B981", ["==", ["get", "kind"], "pothole"], "#E11D48", ["==", ["get", "kind"], "speed_bump"], "#7C3AED", "#D97706"],
+        "circle-stroke-color": "#FFFFFF",
+        "circle-stroke-width": ["interpolate", ["linear"], ["coalesce", ["get", "passes"], 1], 1, 1.8, 3, 2.6, 6, 3.4],
+        "circle-opacity": 0.97
+      }
+    },
+    {
+      "id": "hodos-hazard-confirm",
+      "source": "hodos-hazards",
+      "type": "circle",
+      "paint": {
+        "circle-radius": ["case", ["get", "fixed"], 10.5, ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 10, 2, 11.5, 3, 13]],
+        "circle-color": "#000000",
+        "circle-opacity": 0,
+        "circle-stroke-color": ["case", ["get", "fixed"], "#10B981", ["==", ["get", "kind"], "pothole"], "#E11D48", ["==", ["get", "kind"], "speed_bump"], "#7C3AED", "#D97706"],
+        "circle-stroke-width": 1.4,
+        "circle-stroke-opacity": ["interpolate", ["linear"], ["coalesce", ["get", "passes"], 1], 1, 0, 2, 0.45, 3, 0.7, 6, 0.9]
+      }
+    }
+  ]
+}

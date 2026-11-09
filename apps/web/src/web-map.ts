@@ -369,69 +369,58 @@ export function initWebMap(
       data: buildGeoJSON(hazards)
     });
 
-    map.addLayer({
-      id: "hazard-glow",
-      type: "circle",
-      source: "hodos-hazards",
-      paint: {
-        "circle-radius": [
-          "case",
-          ["get", "fixed"], 12,
-          ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 11, 2, 13, 3, 15]
-        ],
-        "circle-color": [
-          "case",
-          ["get", "fixed"], "#10b981",
-          ["==", ["get", "kind"], "pothole"], "#e11d48",
-          ["==", ["get", "kind"], "speed_bump"], "#7c3aed",
-          "#d97706"
-        ],
-        "circle-opacity": 0.18
-      }
-    });
+    // The hazard marker rendering is defined once in
+    // /map/hodos-layers.json and consumed by both the website and the
+    // Android app, so the map reads identically everywhere.
+    fetch("/map/hodos-layers.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((spec) => {
+        if (!spec || !Array.isArray(spec.layers)) return;
+        for (const layer of spec.layers) {
+          if (map.getLayer(layer.id)) continue;
+          map.addLayer({
+            id: layer.id,
+            type: layer.type,
+            source: layer.source,
+            paint: layer.paint
+          });
+        }
+        map.on("click", "hodos-hazard-point", (e: MapLayerMouseEvent) => {
+          const feat = e.features?.[0];
+          if (!feat || !feat.properties) return;
+          const target = hazards.find((h) => h.id === feat.properties?.id);
+          if (target) showPopupForHazard(target);
+        });
+        map.on("mouseenter", "hodos-hazard-point", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "hodos-hazard-point", () => {
+          map.getCanvas().style.cursor = "";
+        });
+        if (hazards.length > 0) {
+          fitBoundsToData(hazards);
+          updateSourceData();
+        }
+        onLoaded?.(handle);
+      })
+      .catch(() => {});
 
-    map.addLayer({
-      id: "hazard-point",
-      type: "circle",
-      source: "hodos-hazards",
-      paint: {
-        "circle-radius": [
-          "case",
-          ["get", "fixed"], 5.5,
-          ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 5, 2, 6.5, 3, 8]
-        ],
-        "circle-color": [
-          "case",
-          ["get", "fixed"], "#10b981",
-          ["==", ["get", "kind"], "pothole"], "#e11d48",
-          ["==", ["get", "kind"], "speed_bump"], "#7c3aed",
-          "#d97706"
-        ],
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff"
-      }
-    });
-
-    map.on("click", "hazard-point", (e: MapLayerMouseEvent) => {
-      const feat = e.features?.[0];
-      if (!feat || !feat.properties) return;
-      const target = hazards.find((h) => h.id === feat.properties?.id);
-      if (target) showPopupForHazard(target);
-    });
-
-    map.on("mouseenter", "hazard-point", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "hazard-point", () => {
-      map.getCanvas().style.cursor = "";
-    });
-
-    if (hazards.length > 0) {
-      fitBoundsToData(hazards);
-      updateSourceData();
+    // A slow breathing pulse on the hazard halos — the map is alive even
+    // when nobody is touching it.
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const startedAt = performance.now();
+      const breathe = (now: number) => {
+        if (!map.getLayer("hodos-hazard-glow")) return;
+        const wave = Math.sin((now - startedAt) / 1900);
+        map.setPaintProperty(
+          "hodos-hazard-glow",
+          "circle-opacity",
+          0.11 + (wave * 0.5 + 0.5) * 0.09
+        );
+        requestAnimationFrame(breathe);
+      };
+      requestAnimationFrame(breathe);
     }
-
-    onLoaded?.(handle);
   };
 
   map.on("load", setupLayers);

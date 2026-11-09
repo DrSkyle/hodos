@@ -43,9 +43,9 @@ internal fun RoadDiaryCard(
         summarizeRoadDiary(trips, System.currentTimeMillis())
     }
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = PaperRaised,
-        border = BorderStroke(1.dp, Line),
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -88,8 +88,7 @@ internal fun RoadDiaryCard(
             )
             Surface(
                 color = Sand,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Line),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(

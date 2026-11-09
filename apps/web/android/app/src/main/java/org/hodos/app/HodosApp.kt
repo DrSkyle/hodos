@@ -12,12 +12,19 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,6 +40,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -326,12 +334,24 @@ fun HodosApp(
                     onSelect = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         screen = it
-                    }
+                    },
+                    tripActive = tripActive
                 )
             }
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets)) {
-                when (screen) {
+                AnimatedContent(
+                    targetState = screen,
+                    transitionSpec = {
+                        (fadeIn(tween(230, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))) +
+                            slideInVertically(
+                                tween(300, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))
+                            ) { it / 16 })
+                            .togetherWith(fadeOut(tween(110)))
+                    },
+                    label = "hodos screen"
+                ) { current ->
+                    when (current) {
                     Screen.MAP -> BottomSheetScaffold(
                         scaffoldState = sheetState,
                         sheetPeekHeight = 126.dp,
@@ -413,8 +433,7 @@ fun HodosApp(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp)) {
                                         Surface(
                                             color = Sand,
-                                            shape = RoundedCornerShape(14.dp),
-                                            border = BorderStroke(1.dp, Line)
+                                            shape = RoundedCornerShape(14.dp)
                                         ) {
                                             DoodleIcon(
                                                 if (hazards.isEmpty()) DoodleSymbol.SUN else DoodleSymbol.MAP,
@@ -685,20 +704,18 @@ fun HodosApp(
                                     )
                                 } else Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
                             }
-                            Surface(
-                                onClick = { if (tripActive) onFinishJourney() else onStartJourney() },
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (tripActive) Ink else PaperRaised,
-                                border = if (tripActive) null else BorderStroke(1.dp, Ink),
-                                shadowElevation = 0.dp,
-                                modifier = Modifier.align(Alignment.BottomStart)
-                                    .padding(start = 18.dp, bottom = 146.dp)
-                            ) {
-                                Row(
-                                    Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            if (tripActive) {
+                                Surface(
+                                    onClick = onFinishJourney,
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Ink,
+                                    modifier = Modifier.align(Alignment.BottomStart)
+                                        .padding(start = 18.dp, bottom = 146.dp)
                                 ) {
-                                    if (tripActive) {
+                                    Row(
+                                        Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         val pulse = rememberInfiniteTransition(label = "recording pulse")
                                         val dotAlpha by pulse.animateFloat(
                                             initialValue = 1f,
@@ -714,22 +731,19 @@ fun HodosApp(
                                                 .background(Amber, CircleShape)
                                         )
                                         Spacer(Modifier.width(9.dp))
-                                    } else {
-                                        DoodleIcon(
-                                            DoodleSymbol.CAR,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = Ink
+                                        Text(
+                                            "Recording · Stop",
+                                            color = Paper,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
-                                        Spacer(Modifier.width(8.dp))
                                     }
-                                    Text(
-                                        if (tripActive) "Recording · Stop" else "Start journey",
-                                        color = if (tripActive) Paper else Ink,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
                                 }
                             }
+                            HodosMapLegend(
+                                Modifier.align(Alignment.BottomStart)
+                                    .padding(start = 18.dp, bottom = if (tripActive) 216.dp else 146.dp)
+                            )
                         }
                     }
                     Screen.MAPPING -> MappingScreen(
@@ -832,7 +846,8 @@ fun HodosApp(
                         }
                     })
                 }
-            }
+               }
+           }
         }
 
         locationIssue?.let { issue ->
@@ -1010,9 +1025,20 @@ fun HodosApp(
 }
 
 @Composable
-private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit) {
+private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActive: Boolean = false) {
     // Navigation drawn as a route: a dashed lane line with three stops.
-    // The active stop is an ink-filled node with an amber "you are here" tick.
+    // The dashes march slowly, the active stop is an ink-filled node with an
+    // amber "you are here" tick, and the Record stop carries a pulsing badge
+    // while a journey is being recorded.
+    val lanePhase = rememberInfiniteTransition(label = "lane")
+        .animateFloat(
+            initialValue = 0f,
+            targetValue = 40f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1500, easing = androidx.compose.animation.core.LinearEasing)
+            ),
+            label = "lane dashes"
+        )
     Surface(color = PaperRaised) {
         Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
             HorizontalDivider(color = Line, thickness = 1.dp)
@@ -1031,12 +1057,17 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit) {
                         start = Offset(0f, 0f),
                         end = Offset(size.width, 0f),
                         strokeWidth = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(11f, 9f))
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(11f, 9f), lanePhase.value)
                     )
                 }
                 Row(Modifier.fillMaxSize()) {
                     Screen.entries.forEach { tab ->
                         val active = current == tab
+                        val nodeScale by animateFloatAsState(
+                            targetValue = if (active) 1.07f else 0.94f,
+                            animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
+                            label = "route node"
+                        )
                         Column(
                             Modifier
                                 .weight(1f)
@@ -1045,25 +1076,50 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit) {
                                 .padding(top = 14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Box(
-                                Modifier.size(44.dp)
-                                    .background(if (active) Ink else PaperRaised, CircleShape)
-                                    .border(
-                                        1.5.dp,
-                                        if (active) Ink else Line,
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                DoodleIcon(
-                                    symbol = when (tab) {
-                                        Screen.MAP -> DoodleSymbol.MAP
-                                        Screen.MAPPING -> DoodleSymbol.CAR
-                                        Screen.YOU -> DoodleSymbol.PERSON
-                                    },
-                                    tint = if (active) Paper else Muted,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Box {
+                                Box(
+                                    Modifier.size(44.dp)
+                                        .graphicsLayer {
+                                            scaleX = nodeScale
+                                            scaleY = nodeScale
+                                        }
+                                        .background(if (active) Ink else PaperRaised, CircleShape)
+                                        .border(
+                                            1.5.dp,
+                                            if (active) Ink else Line,
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    DoodleIcon(
+                                        symbol = when (tab) {
+                                            Screen.MAP -> DoodleSymbol.MAP
+                                            Screen.MAPPING -> DoodleSymbol.CAR
+                                            Screen.YOU -> DoodleSymbol.PERSON
+                                        },
+                                        tint = if (active) Paper else Muted,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                if (tab == Screen.MAPPING && tripActive) {
+                                    val pulse = rememberInfiniteTransition(label = "record badge")
+                                    val badgeAlpha by pulse.animateFloat(
+                                        initialValue = 1f,
+                                        targetValue = 0.3f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(650),
+                                            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                                        ),
+                                        label = "record badge alpha"
+                                    )
+                                    Box(
+                                        Modifier.align(Alignment.TopEnd)
+                                            .graphicsLayer { alpha = badgeAlpha }
+                                            .size(11.dp)
+                                            .background(Amber, CircleShape)
+                                            .border(1.5.dp, PaperRaised, CircleShape)
+                                    )
+                                }
                             }
                             Spacer(Modifier.height(5.dp))
                             if (active) {
@@ -1090,11 +1146,82 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit) {
 }
 
 @Composable
+private fun HodosMapLegend(modifier: Modifier = Modifier) {
+    // The map's key, matching the website's legend panel.
+    Surface(
+        color = PaperRaised,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Ink),
+        modifier = modifier
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(
+                "KEY",
+                color = Muted,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = OverpassMono,
+                letterSpacing = 1.6.sp
+            )
+            Spacer(Modifier.height(7.dp))
+            LegendRow(Pothole, filled = true, "Pothole")
+            Spacer(Modifier.height(6.dp))
+            LegendRow(Rough, filled = true, "Rough stretch")
+            Spacer(Modifier.height(6.dp))
+            LegendRow(Bump, filled = true, "Speed bump")
+            Spacer(Modifier.height(6.dp))
+            LegendRow(Healed, filled = false, "Repaired")
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = Line)
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(11.dp)
+                        .border(1.2.dp, Muted, CircleShape)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "RING = ≥2 PASSES",
+                    color = Muted,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = OverpassMono,
+                    letterSpacing = 0.8.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendRow(color: Color, filled: Boolean, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (filled) {
+            Box(Modifier.size(9.dp).background(color, CircleShape))
+        } else {
+            Box(
+                Modifier.size(11.dp)
+                    .background(PaperRaised, CircleShape)
+                    .border(2.5.dp, color, CircleShape)
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            label.uppercase(),
+            color = Ink,
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = OverpassMono,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
 private fun DetailStat(value: String, title: String, modifier: Modifier = Modifier) {
     Column(
-        modifier.clip(RoundedCornerShape(12.dp))
+        modifier.clip(RoundedCornerShape(16.dp))
             .background(Sand)
-            .border(1.dp, Line, RoundedCornerShape(12.dp))
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 23.sp, color = Ink)
@@ -1127,8 +1254,7 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
                 hazard.fixed -> Color(0xFFE7F6EF)
                 hazard.severity >= 3 -> Color(0xFFFBE9EC)
                 else -> Color(0xFFF9EEDD)
-            },
-            border = BorderStroke(1.dp, Line)
+            }
         ) {
             DoodleIcon(
                 if (hazard.fixed) DoodleSymbol.CHECK else DoodleSymbol.WARNING,
@@ -1233,23 +1359,34 @@ private fun MappingScreen(
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
     var selectedTrip by remember { mutableStateOf<RoadTrip?>(null) }
+    val listState = rememberLazyListState()
     LazyColumn(
-        Modifier.fillMaxSize().background(Paper),
+        state = listState,
+        modifier = Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(horizontal = 22.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(17.dp)
     ) {
         item {
-            HodosBrand()
-            Spacer(Modifier.height(17.dp))
-            Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
-            Spacer(Modifier.height(7.dp))
-            Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
+            // The header drifts at a fraction of scroll speed, giving the
+            // screen a soft depth as the road data slides over it.
+            Column(
+                Modifier.graphicsLayer {
+                    translationY = if (listState.firstVisibleItemIndex == 0)
+                        listState.firstVisibleItemScrollOffset * 0.42f else 0f
+                }
+            ) {
+                HodosBrand()
+                Spacer(Modifier.height(17.dp))
+                Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
+                Spacer(Modifier.height(7.dp))
+                Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
+            }
         }
         item {
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = PaperRaised,
-                border = BorderStroke(1.dp, Line)
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1341,9 +1478,9 @@ private fun MappingScreen(
         }
         item {
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = PaperRaised,
-                border = BorderStroke(1.dp, Line)
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Text(
@@ -1381,9 +1518,9 @@ private fun MappingScreen(
         if (trips.isNotEmpty() && (!backgroundLocationGranted || !batteryOptimizationIgnored)) {
             item {
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = Sand,
-                    border = BorderStroke(1.dp, Line)
+                    shadowElevation = 0.dp
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1432,9 +1569,9 @@ private fun MappingScreen(
         item {
             val saved = offlineMaps.state
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = PaperRaised,
-                border = BorderStroke(1.dp, Line)
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1494,9 +1631,9 @@ private fun MappingScreen(
         // Observation Sync
         item {
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = PaperRaised,
-                border = BorderStroke(1.dp, Line)
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1552,8 +1689,8 @@ private fun MappingScreen(
             item {
                 Surface(
                     color = PaperRaised,
-                    shape = RoundedCornerShape(18.dp),
-                    border = BorderStroke(1.dp, Line)
+                    shape = RoundedCornerShape(20.dp),
+                    shadowElevation = 2.dp
                 ) {
                     Column(Modifier.fillMaxWidth().padding(24.dp)) {
                         Icon(Icons.Outlined.History, null, tint = Muted, modifier = Modifier.size(26.dp))
@@ -1569,8 +1706,8 @@ private fun MappingScreen(
                 val durationText = trip.durationS?.let { formatDurationFriendly(it) }
                 Surface(
                     color = PaperRaised,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Line),
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 2.dp,
                     modifier = Modifier
                         .animateItem()
                         .clickable { selectedTrip = trip }
@@ -1606,9 +1743,8 @@ private fun MappingScreen(
         }
         item {
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = Sand,
-                border = BorderStroke(1.dp, Line)
+                shape = RoundedCornerShape(18.dp),
+                color = Sand
             ) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.Top) {
                     Icon(Icons.Outlined.Shield, null, tint = Ink)
@@ -1781,24 +1917,34 @@ private fun YouScreen(
     val context = LocalContext.current
     val currentVer = remember(context) { AppUpdateAndShare.currentVersionName(context) }
     var confirmClearHistory by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
     LazyColumn(
-        Modifier.fillMaxSize().background(Paper),
+        state = listState,
+        modifier = Modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(22.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         item {
-            Spacer(Modifier.height(12.dp))
-            HodosBrand()
-            Spacer(Modifier.height(16.dp))
-            Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
-            Text("Every journey makes the roads better understood.", color = Muted)
+            // Slow header parallax: the identity block lags behind the scroll.
+            Column(
+                Modifier.graphicsLayer {
+                    translationY = if (listState.firstVisibleItemIndex == 0)
+                        listState.firstVisibleItemScrollOffset * 0.42f else 0f
+                }
+            ) {
+                Spacer(Modifier.height(12.dp))
+                HodosBrand()
+                Spacer(Modifier.height(16.dp))
+                Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
+                Text("Every journey makes the roads better understood.", color = Muted)
+            }
         }
         item {
             // App Updates & Direct APK Sharing (Quick Share / Bluetooth)
             Surface(
                 color = if (latestRelease?.isNewer == true) Sand else PaperRaised,
-                shape = RoundedCornerShape(18.dp),
-                border = BorderStroke(1.dp, Line)
+                shape = RoundedCornerShape(20.dp),
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1882,8 +2028,8 @@ private fun YouScreen(
         item {
             Surface(
                 color = PaperRaised,
-                shape = RoundedCornerShape(18.dp),
-                border = BorderStroke(1.dp, Line)
+                shape = RoundedCornerShape(20.dp),
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1936,8 +2082,8 @@ private fun YouScreen(
             item {
                 Surface(
                     color = PaperRaised,
-                    shape = RoundedCornerShape(18.dp),
-                    border = BorderStroke(1.dp, Line)
+                    shape = RoundedCornerShape(20.dp),
+                    shadowElevation = 2.dp
                 ) {
                     Column(
                         Modifier.padding(18.dp),
@@ -1952,7 +2098,6 @@ private fun YouScreen(
                             Surface(
                                 color = Sand,
                                 shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Line),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -1986,8 +2131,8 @@ private fun YouScreen(
         item {
             Surface(
                 color = PaperRaised,
-                shape = RoundedCornerShape(18.dp),
-                border = BorderStroke(1.dp, Line)
+                shape = RoundedCornerShape(20.dp),
+                shadowElevation = 2.dp
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2075,9 +2220,8 @@ private fun PartnerOfferBanner(
         partner?.let { PartnerStats.nearby(hazards, it.lat, it.lng) }
     }
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Sand,
-        border = BorderStroke(1.dp, Line),
         modifier = Modifier.fillMaxWidth().clickable {
             context.startActivity(
                 Intent(
@@ -2248,9 +2392,9 @@ private fun PerksCard(trips: List<RoadTrip>) {
         label = "perkProgress"
     )
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = PaperRaised,
-        border = BorderStroke(1.dp, Line)
+        shadowElevation = 2.dp
     ) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2357,8 +2501,8 @@ private fun TravelProfileCard() {
     )
     Surface(
         color = PaperRaised,
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, Line)
+        shape = RoundedCornerShape(20.dp),
+        shadowElevation = 2.dp
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Text("How do you travel?", fontWeight = FontWeight.Bold, fontSize = 16.sp)

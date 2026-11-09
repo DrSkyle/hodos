@@ -45,12 +45,17 @@ import org.maplibre.android.style.layers.PropertyFactory.circleColor
 import org.maplibre.android.style.layers.PropertyFactory.circleOpacity
 import org.maplibre.android.style.layers.PropertyFactory.circleRadius
 import org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeOpacity
 import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
+import org.maplibre.android.style.layers.PropertyValue
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.sources.GeoJsonSource
+import org.json.JSONArray
+import org.json.JSONObject
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 
 /**
@@ -222,22 +227,20 @@ fun RoadMap(
                         circleStrokeWidth(4f)
                     )
                 )
-                style.addLayer(
-                    CircleLayer("hodos-hazard-dots", "hodos-hazards").withProperties(
-                        circleColor(Expression.get("color")),
-                        // Severity scales the dot so the worst roads read first,
-                        // mirroring the website's live map. The radius ships with
-                        // each feature, so no style expressions are needed here.
-                        circleRadius(Expression.get("radius")),
-                        circleStrokeWidth(2.5f),
-                        circleStrokeColor(android.graphics.Color.WHITE),
-                        circleOpacity(0.97f)
-                    )
-                )
+                // The hazard rendering is defined once in the website's
+                // public/map/hodos-layers.json, bundled into assets at build
+                // time, so both platforms draw hazards from a single spec.
+                val spec = runCatching {
+                    context.assets.open("map/hodos-layers.json")
+                        .bufferedReader().use { it.readText() }
+                }.getOrNull()
+                if (spec != null) {
+                    addHazardLayersFromSpec(style, spec)
+                }
                 ready = true
                 result.addOnMapClickListener { point ->
                     val screen = result.projection.toScreenLocation(point)
-                    val hits = result.queryRenderedFeatures(screen, "hodos-hazard-dots")
+                    val hits = result.queryRenderedFeatures(screen, "hodos-hazard-point")
                     val id = hits.firstOrNull()?.getStringProperty("id")
                     val hazard = latestHazards.firstOrNull { it.id == id }
                     if (hazard != null) {
@@ -278,15 +281,8 @@ fun RoadMap(
             val features = hazards.map { hazard ->
                 Feature.fromGeometry(Point.fromLngLat(hazard.lng, hazard.lat)).apply {
                     addStringProperty("id", hazard.id)
-                    addNumberProperty(
-                        "radius",
-                        if (hazard.fixed) 5.5f
-                        else when (hazard.severity) {
-                            1 -> 5.0f
-                            2 -> 6.5f
-                            else -> 8.0f
-                        }
-                    )
+                    addNumberProperty("severity", hazard.severity)
+                    addNumberProperty("passes", hazard.passes)
                     addStringProperty(
                         "color",
                         if (hazard.fixed) "#10B981"
@@ -323,6 +319,20 @@ fun RoadMap(
             }
             map?.style?.getSourceAs<GeoJsonSource>("hodos-partners")
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
+        }
+    }
+
+    // The hazard halos breathe on a slow sine so the map feels alive even
+    // when nobody is touching it.
+    LaunchedEffect(ready) {
+        if (!ready) return@LaunchedEffect
+        while (true) {
+            delay(250)
+            val currentStyle = map?.style ?: continue
+            val glow = currentStyle.getLayer("hodos-hazard-glow") as? CircleLayer ?: continue
+            val phase = (System.currentTimeMillis() % 3800L) / 3800.0
+            val wave = 0.5 - 0.5 * kotlin.math.cos(phase * 2.0 * Math.PI)
+            glow.withProperties(circleOpacity((0.11 + wave * 0.09).toFloat()))
         }
     }
 
@@ -555,6 +565,50 @@ fun RoadMap(
                 "Map renderer failed to start. The rest of Hodos remains available.",
                 modifier = Modifier.align(Alignment.Center).padding(28.dp)
             )
+        }
+    }
+}
+
+/**
+ * Builds the hazard layers from the shared spec bundled from the website
+ * (public/map/hodos-layers.json). Paint values are MapLibre expressions
+ * passed through raw; scalars become literals. A malformed spec must never
+ * break the map, so every layer is applied defensively.
+ */
+private fun addHazardLayersFromSpec(style: Style, specJson: String) {
+    runCatching {
+        val root = JSONObject(specJson)
+        val layers = root.optJSONArray("layers") ?: return
+        for (i in 0 until layers.length()) {
+            val layer = layers.optJSONObject(i) ?: continue
+            val id = layer.optString("id")
+            val source = layer.optString("source")
+            if (id.isEmpty() || source.isEmpty()) continue
+            val paint = layer.optJSONObject("paint") ?: JSONObject()
+            val properties = mutableListOf<PropertyValue<*>>()
+            val keys = paint.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val value = paint.get(key)
+                val expression = when (value) {
+                    is JSONArray -> runCatching { Expression.raw(value.toString()) }.getOrNull() ?: continue
+                    is Boolean -> Expression.literal(value)
+                    is Number -> Expression.literal(value)
+                    is String -> Expression.literal(value)
+                    else -> continue
+                }
+                when (key) {
+                    "circle-radius" -> properties.add(circleRadius(expression))
+                    "circle-color" -> properties.add(circleColor(expression))
+                    "circle-opacity" -> properties.add(circleOpacity(expression))
+                    "circle-stroke-color" -> properties.add(circleStrokeColor(expression))
+                    "circle-stroke-width" -> properties.add(circleStrokeWidth(expression))
+                    "circle-stroke-opacity" -> properties.add(circleStrokeOpacity(expression))
+                }
+            }
+            if (properties.isNotEmpty()) {
+                style.addLayer(CircleLayer(id, source).withProperties(*properties.toTypedArray()))
+            }
         }
     }
 }

@@ -41,8 +41,8 @@ internal fun SavedRoadsSection(
     val byId = hazards.associateBy { it.id }
     Surface(
         color = PaperRaised,
-        shape = RoundedCornerShape(18.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Line),
+        shape = RoundedCornerShape(20.dp),
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
