@@ -273,14 +273,17 @@ export function initWebMap(
       : "#d97706";
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 190px; color: #1d1d1f;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-          <strong style="font-size: 14px; font-weight: 600;">${h.title}</strong>
-          <span style="background: ${badgeColor}; color: #ffffff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px;">
+      <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 200px; color: #1c1a17;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
+          <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${h.title}</strong>
+          <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
             ${h.fixed ? "Repaired" : `Level ${h.severity}`}
           </span>
         </div>
-        <div style="font-size: 11.5px; color: #86868b; font-family: ui-monospace, SFMono-Regular, monospace;">
+        <div style="font-size: 11px; color: #736d61; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px;">
+          ${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"}
+        </div>
+        <div style="font-size: 11px; color: #a39b8b; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;">
           ${h.locationName}
         </div>
       </div>
@@ -294,17 +297,17 @@ export function initWebMap(
 
   function showPopupForPartner(p: WebPartner) {
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 200px; color: #1d1d1f;">
+      <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 200px; color: #1c1a17;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-          <strong style="font-size: 14px; font-weight: 600;">${p.name}</strong>
-          <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap;">
+          <strong style="font-size: 14px; font-weight: 700;">${p.name}</strong>
+          <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">
             ${p.sponsorLabel}
           </span>
         </div>
         ${p.offer ? `<div style="font-size: 12.5px; color: #57534e; margin-bottom: 6px;">${p.offer}</div>` : ""}
         ${
           p.sample
-            ? `<div style="font-size: 11px; color: #86868b; margin-bottom: 6px;">Sample placement showing how partner slots render on the map.</div>`
+            ? `<div style="font-size: 11px; color: #736d61; margin-bottom: 6px;">Sample placement showing how partner slots render on the map.</div>`
             : ""
         }
         <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Partner%20Placement" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Become a partner →</a>
@@ -372,10 +375,9 @@ export function initWebMap(
       source: "hodos-hazards",
       paint: {
         "circle-radius": [
-          "match", ["get", "kind"],
-          "pothole", 14,
-          "rough_pavement", 10,
-          11
+          "case",
+          ["get", "fixed"], 12,
+          ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 11, 2, 13, 3, 15]
         ],
         "circle-color": [
           "case",
@@ -384,7 +386,7 @@ export function initWebMap(
           ["==", ["get", "kind"], "speed_bump"], "#7c3aed",
           "#d97706"
         ],
-        "circle-opacity": 0.25
+        "circle-opacity": 0.18
       }
     });
 
@@ -394,10 +396,9 @@ export function initWebMap(
       source: "hodos-hazards",
       paint: {
         "circle-radius": [
-          "match", ["get", "kind"],
-          "pothole", 6.5,
-          "rough_pavement", 5,
-          5.5
+          "case",
+          ["get", "fixed"], 5.5,
+          ["interpolate", ["linear"], ["coalesce", ["get", "severity"], 1], 1, 5, 2, 6.5, 3, 8]
         ],
         "circle-color": [
           "case",

@@ -14,13 +14,12 @@ if ("caches" in window) {
     .catch(() => {});
 }
 
-document.querySelectorAll<HTMLAnchorElement>(".mobile-nav nav a").forEach((link) => {
+document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
   link.addEventListener("click", () => {
     link.closest("details")?.removeAttribute("open");
   });
 });
 
-// Smooth 60fps Apple-style scroll parallax
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!prefersReducedMotion) {
   const parallaxElements = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
@@ -37,11 +36,7 @@ if (!prefersReducedMotion) {
       const rect = el.getBoundingClientRect();
       const elementCenter = rect.top + rect.height / 2;
       const offset = (elementCenter - viewportCenter) * speed;
-      if (el.classList.contains("pill-bottom")) {
-        el.style.transform = `translate3d(-50%, ${offset.toFixed(1)}px, 0)`;
-      } else {
-        el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
-      }
+      el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
     }
     ticking = false;
   };

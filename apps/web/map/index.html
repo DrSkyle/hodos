@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#fbfbfd" />
+  <meta name="theme-color" content="#faf8f2" />
   <meta name="description" content="Explore live crowdsourced road hazards, potholes, and roughness. Real road observations verified by commuters." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos Live Map — The road maps itself" />
@@ -14,17 +14,18 @@
   <title>Live Map · Hodos</title>
   <style>
     :root {
-      --bg: #fbfbfd;
-      --surface: #ffffff;
-      --ink: #1d1d1f;
-      --muted: #86868b;
-      --line: rgba(0, 0, 0, 0.08);
+      --bg: #faf8f2;
+      --surface: #fffdf8;
+      --ink: #1c1a17;
+      --muted: #736d61;
+      --line: #e4dfd1;
       --accent: #d97706;
-      --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+      --accent-deep: #b45309;
+      --shadow: none;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+      font-family: "Overpass Variable", "Overpass", -apple-system, "Segoe UI", system-ui, sans-serif;
       background: var(--bg);
       color: var(--ink);
       height: 100vh;
@@ -34,9 +35,7 @@
       -webkit-font-smoothing: antialiased;
     }
     .map-header {
-      background: rgba(251, 251, 253, 0.84);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: var(--bg);
       border-bottom: 1px solid var(--line);
       padding: 12px 24px;
       display: flex;
@@ -54,13 +53,13 @@
       color: var(--ink);
     }
     .brand-group img {
-      border-radius: 9px;
+      border-radius: 7px;
       display: block;
     }
     .brand-title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.04em;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
     .brand-stop {
       color: var(--accent);
@@ -71,12 +70,11 @@
       gap: 8px;
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 980px;
+      border-radius: 10px;
       padding: 7px 14px;
       min-width: 210px;
       max-width: 280px;
       flex: 1;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
     .search-box svg {
       width: 14px;
@@ -107,16 +105,17 @@
       background: var(--surface);
       border: 1px solid var(--line);
       color: var(--ink);
+      font-family: inherit;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       padding: 7px 14px;
-      border-radius: 980px;
+      border-radius: 10px;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
     .filter-chip:hover {
-      border-color: rgba(0, 0, 0, 0.22);
+      border-color: var(--ink);
     }
     .filter-chip.active {
       background: var(--ink);
@@ -132,16 +131,17 @@
       background: var(--surface);
       border: 1px solid var(--line);
       color: var(--ink);
+      font-family: inherit;
       font-size: 12px;
       font-weight: 600;
       padding: 7px 14px;
-      border-radius: 980px;
+      border-radius: 10px;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s ease;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
     .btn-action:hover {
-      background: #f5f5f7;
+      border-color: var(--ink);
     }
     .map-wrapper {
       flex: 1;
@@ -159,41 +159,50 @@
       position: absolute;
       top: 16px;
       left: 16px;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: saturate(180%) blur(16px);
-      -webkit-backdrop-filter: saturate(180%) blur(16px);
-      border: 1px solid var(--line);
+      background: var(--surface);
+      border: 1px solid var(--ink);
       padding: 8px 14px;
-      border-radius: 980px;
-      font-size: 12px;
+      border-radius: 10px;
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+      font-size: 10.5px;
       font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: var(--ink);
-      box-shadow: var(--shadow);
       z-index: 5;
     }
     .map-legend-floating {
       position: absolute;
       bottom: 24px;
       left: 16px;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: saturate(180%) blur(16px);
-      -webkit-backdrop-filter: saturate(180%) blur(16px);
-      border: 1px solid var(--line);
-      padding: 14px 18px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 500;
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px 16px 14px;
+      border-radius: 10px;
       color: var(--ink);
-      box-shadow: var(--shadow);
       z-index: 5;
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
+    .legend-title {
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
     .legend-row {
       display: flex;
       align-items: center;
       gap: 10px;
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .legend-dot {
       width: 10px;
@@ -204,36 +213,34 @@
     .dot-pothole { background: #e11d48; }
     .dot-rough { background: #d97706; }
     .dot-bump { background: #7c3aed; }
-    .dot-fixed { background: #10b981; }
+    .dot-fixed { background: #faf8f2; border: 3px solid #10b981; width: 12px; height: 12px; }
     .btn-sponsor {
-      background: rgba(217, 119, 6, 0.12);
-      border: 1px solid rgba(217, 119, 6, 0.28);
-      color: #b45309;
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #ffffff;
+      font-family: inherit;
       font-size: 12px;
       font-weight: 700;
       padding: 7px 14px;
-      border-radius: 980px;
+      border-radius: 10px;
       text-decoration: none;
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
     .btn-sponsor:hover {
-      background: #d97706;
-      color: #ffffff;
+      background: var(--accent-deep);
+      border-color: var(--accent-deep);
     }
     .map-ad-floating {
       position: absolute;
       bottom: 24px;
       right: 16px;
       max-width: 310px;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: saturate(180%) blur(16px);
-      -webkit-backdrop-filter: saturate(180%) blur(16px);
-      border: 1px solid var(--line);
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      border-radius: 10px;
       padding: 14px 16px;
-      border-radius: 16px;
       color: var(--ink);
-      box-shadow: var(--shadow);
       z-index: 5;
       display: flex;
       flex-direction: column;
@@ -246,19 +253,20 @@
       gap: 8px;
     }
     .map-ad-badge {
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #b45309;
-      background: rgba(217, 119, 6, 0.12);
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      background: var(--accent);
       padding: 3px 8px;
-      border-radius: 980px;
+      border-radius: 4px;
     }
     .map-ad-cta {
       font-size: 11px;
       font-weight: 600;
-      color: var(--accent);
+      color: var(--accent-deep);
       text-decoration: none;
     }
     .map-ad-cta:hover {
@@ -278,6 +286,52 @@
       .map-ad-floating {
         display: none;
       }
+    }
+
+    .maplibregl-ctrl-group {
+      background: var(--surface) !important;
+      border: 1px solid var(--ink) !important;
+      border-radius: 10px !important;
+      box-shadow: none !important;
+      overflow: hidden;
+    }
+    .maplibregl-ctrl-group button {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 0 !important;
+    }
+    .maplibregl-ctrl-group button:hover {
+      background-color: var(--line) !important;
+    }
+    .maplibregl-ctrl-group button + button {
+      border-top: 1px solid var(--line) !important;
+    }
+    .maplibregl-ctrl-attrib {
+      background: var(--surface) !important;
+      border: 1px solid var(--line);
+      border-radius: 8px 0 0 0 !important;
+      font-size: 10.5px;
+    }
+    .maplibregl-ctrl-attrib a {
+      color: var(--muted);
+    }
+    .maplibregl-popup {
+      z-index: 6;
+    }
+    .maplibregl-popup-content {
+      background: var(--surface) !important;
+      border: 1px solid var(--ink);
+      border-radius: 10px !important;
+      box-shadow: none !important;
+      padding: 12px 14px !important;
+    }
+    .maplibregl-popup-close-button {
+      color: var(--muted);
+      font-size: 16px;
+      padding: 4px 8px !important;
+    }
+    .maplibregl-popup-tip {
+      display: none;
     }
   </style>
 </head>
@@ -312,6 +366,7 @@
     <div id="full-map" aria-label="Interactive road hazard map"></div>
     <div id="full-map-status" class="map-status-floating">Loading road map...</div>
     <div class="map-legend-floating">
+      <span class="legend-title">Key</span>
       <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole</span></div>
       <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough road</span></div>
       <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed bump</span></div>

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#fbfbfd" />
+  <meta name="theme-color" content="#faf8f2" />
   <meta name="description" content="Hodos turns the drives you already make into a live, shared map of road conditions. Free to use, quietly funded by partner shops and aggregated road data." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Hodos 2.0 — The road maps itself." />
+  <meta property="og:title" content="Hodos — The road maps itself." />
   <meta property="og:description" content="A clearer view of the roads we share. Hodos maps potholes, rough patches, and speed bumps as you drive." />
   <meta property="og:url" content="__HODOS_SITE__/" />
   <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
@@ -35,225 +35,410 @@
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
 
-  <header class="apple-nav">
+  <header class="site-nav">
     <div class="nav-inner">
       <a class="nav-brand" href="/" aria-label="Hodos home">
-        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="26" height="26" />
         <span>hodos<span class="dot">.</span></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="/map">Live Map</a>
         <a href="#how">How it works</a>
-        <a href="#drivers">Built for the road</a>
+        <a href="#drivers">The app</a>
         <a href="#pricing">Partners</a>
         <a href="#faq">FAQ</a>
       </nav>
-      <div class="nav-actions">
-        <a class="nav-pill" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download</a>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a class="nav-cta" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download</a>
+        <details class="nav-menu">
+          <summary aria-label="Open menu">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14"/></svg>
+          </summary>
+          <nav class="nav-menu-panel" aria-label="Mobile navigation">
+            <a href="/map">Live Map</a>
+            <a href="#how">How it works</a>
+            <a href="#drivers">The app</a>
+            <a href="#pricing">Partners</a>
+            <a href="#faq">FAQ</a>
+            <a href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download</a>
+          </nav>
+        </details>
       </div>
     </div>
   </header>
 
   <main id="content">
-    <!-- Hero with multi-depth scroll parallax -->
-    <section class="hero-stage" aria-labelledby="hero-title">
-        <h1 id="hero-title" class="hero-headline" data-parallax="-0.08">
-          The road<br /><span>maps itself.</span>
-        </h1>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <h1 id="hero-title" class="hero-headline" data-parallax="-0.06">
+              The road<br />maps itself<span class="dot">.</span>
+            </h1>
+            <p class="hero-subhead" data-parallax="-0.04">
+              No setup rituals, no reporting. Hodos reads the road through the phone in your
+              pocket and turns every ordinary drive into a sharper map of potholes, rough
+              stretches, and speed bumps. For you, and for whoever drives the same streets next.
+            </p>
+            <div class="hero-cta-row" data-parallax="-0.025">
+              <a class="btn btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
+              <a class="btn btn-ghost" href="/map">Explore the live map</a>
+            </div>
+          </div>
 
-        <p class="hero-subhead" data-parallax="-0.05">
-          No setup rituals, no reporting. Hodos reads the road through the phone in your pocket and turns every ordinary drive into a sharper map of potholes, rough stretches, and speed bumps — for you, and for whoever drives the same streets next.
-        </p>
+          <div class="hero-art" data-parallax="0.05">
+            <svg viewBox="0 0 620 540" role="img" aria-label="Illustrated map fragment: a driving route crossing a city grid with a corroborated pothole, a rough stretch, a speed bump, and a repaired spot" fill="none">
+              <rect x="0.5" y="0.5" width="619" height="539" fill="var(--paper-raised)" stroke="var(--ink)" />
+              <path d="M62 0V8 M124 0V8 M186 0V8 M248 0V8 M310 0V8 M372 0V8 M434 0V8 M496 0V8 M558 0V8 M62 540V532 M124 540V532 M186 540V532 M248 540V532 M310 540V532 M372 540V532 M434 540V532 M496 540V532 M558 540V532 M0 67.5H8 M0 135H8 M0 202.5H8 M0 270H8 M0 337.5H8 M0 405H8 M0 472.5H8 M620 67.5H612 M620 135H612 M620 202.5H612 M620 270H612 M620 337.5H612 M620 405H612 M620 472.5H612" stroke="#b5ac96" stroke-width="1" class="mk-fade" style="animation-delay:1.7s" />
 
-        <div class="hero-cta-row" data-parallax="-0.03">
-          <a class="btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
-          <a class="btn-secondary" href="/map">Explore Live Map</a>
+              <path d="M0 210H620 M452 0V540" stroke="var(--road)" stroke-width="12" class="mk-draw" pathLength="1" />
+              <path d="M0 330H620 M0 452H620 M180 210V540 M560 0V540" stroke="var(--road)" stroke-width="6" class="mk-draw" pathLength="1" style="animation-delay:0.12s" />
+              <path d="M96 0V210 M330 210V540 M96 96H560 M260 96V210" stroke="var(--road)" stroke-width="4" class="mk-draw" pathLength="1" style="animation-delay:0.24s" />
+              <path d="M60 540L220 452" stroke="var(--road)" stroke-width="2.5" class="mk-draw" pathLength="1" style="animation-delay:0.34s" />
+
+              <g fill="#efe9d9" class="mk-fade" style="animation-delay:0.5s">
+                <rect x="24" y="110" width="120" height="84" />
+                <rect x="300" y="24" width="120" height="56" />
+                <rect x="480" y="24" width="110" height="56" />
+                <rect x="24" y="240" width="120" height="60" />
+                <rect x="380" y="240" width="48" height="60" />
+                <rect x="480" y="240" width="110" height="68" />
+                <rect x="24" y="360" width="120" height="60" />
+                <rect x="214" y="352" width="80" height="70" />
+                <rect x="480" y="480" width="110" height="40" />
+                <rect x="24" y="480" width="120" height="44" />
+              </g>
+
+              <path d="M180 528V210H452V102" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="mk-draw" pathLength="1" style="animation-delay:0.7s" />
+              <circle cx="180" cy="528" r="6" fill="var(--ink)" class="mk-pop" style="animation-delay:1.55s" />
+              <rect x="445" y="89" width="13" height="13" fill="var(--ink)" class="mk-pop" style="animation-delay:1.6s" />
+
+              <line x1="100" y1="330" x2="172" y2="330" stroke="var(--rough)" stroke-width="8" stroke-linecap="round" class="mk-pop" style="animation-delay:1.35s" />
+              <circle cx="180" cy="300" r="6.5" fill="var(--pothole)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.2s" />
+              <circle cx="452" cy="150" r="6.5" fill="var(--bump)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.3s" />
+              <circle cx="300" cy="452" r="6.5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="3" class="mk-pop" style="animation-delay:1.45s" />
+
+              <g font-family="var(--font-mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)" font-weight="600">
+                <text x="196" y="304" class="mk-fade" style="animation-delay:1.5s">POTHOLE · 3 PASSES</text>
+                <text x="438" y="154" text-anchor="end" class="mk-fade" style="animation-delay:1.55s">SPEED BUMP</text>
+                <text x="100" y="358" class="mk-fade" style="animation-delay:1.6s">ROUGH STRETCH</text>
+                <text x="272" y="482" class="mk-fade" style="animation-delay:1.65s">REPAIRED</text>
+              </g>
+
+              <g class="mk-fade" style="animation-delay:1.8s">
+                <rect x="20" y="20" width="176" height="124" fill="var(--paper-raised)" stroke="var(--ink)" />
+                <text x="34" y="44" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5" fill="var(--muted)" font-weight="700">KEY</text>
+                <circle cx="42" cy="62" r="5" fill="var(--pothole)" />
+                <text x="56" y="66" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">POTHOLE</text>
+                <line x1="34" y1="86" x2="50" y2="86" stroke="var(--rough)" stroke-width="7" stroke-linecap="round" />
+                <text x="56" y="90" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">ROUGH STRETCH</text>
+                <circle cx="42" cy="110" r="5" fill="var(--bump)" />
+                <text x="56" y="114" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">SPEED BUMP</text>
+                <circle cx="42" cy="132" r="5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="2.5" />
+                <text x="56" y="136" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">REPAIRED</text>
+              </g>
+            </svg>
+
+            <aside class="float-card card-a mk-fade" style="animation-delay:1.9s" data-parallax="-0.1">
+              <span class="status-dot dot-pothole" aria-hidden="true"></span>
+              <div>
+                <strong>Pothole corroborated</strong>
+                <span>3 passes · 2 independent devices</span>
+              </div>
+            </aside>
+
+            <aside class="float-card card-b mk-fade" style="animation-delay:2.05s" data-parallax="-0.13">
+              <span class="status-dot dot-fixed" aria-hidden="true"></span>
+              <div>
+                <strong>Maps alongside any app</strong>
+                <span>Navigation, rides, deliveries</span>
+              </div>
+            </aside>
+
+            <aside class="float-card card-c mk-fade" style="animation-delay:2.2s" data-parallax="-0.08">
+              <span class="status-dot dot-rough" aria-hidden="true"></span>
+              <div>
+                <strong>Save suspension &amp; tires</strong>
+                <span>Know rough stretches before you ride</span>
+              </div>
+            </aside>
+          </div>
         </div>
 
-        <!-- Clean Apple-style floating showcase with parallax depth layers -->
-        <div class="parallax-showcase">
-          <div class="floating-pill pill-left" data-parallax="-0.16">
-            <span class="status-dot dot-pothole"></span>
+        <div class="spec-strip">
+          <div class="spec-cell"><span>Base map</span><strong>OpenStreetMap tiles</strong></div>
+          <div class="spec-cell"><span>Sensing</span><strong>On-device motion analysis</strong></div>
+          <div class="spec-cell"><span>Published</span><strong>Only after independent passes</strong></div>
+          <div class="spec-cell"><span>Offline</span><strong>20 km region over Wi-Fi</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="lane" />
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="how-title">Complex under the hood. Simple on the road.</h2>
+          <p class="lead">Turn it on once, then keep doing what you were doing. Hodos works silently behind whatever is already on your screen.</p>
+        </div>
+
+        <div class="pipeline">
+          <div class="pipeline-intro">
+            <h3>Three things happen between your wheels and the map.</h3>
+            <p>Nothing here needs your attention while driving. The phone senses, the network corroborates, and the map keeps working when the signal does not.</p>
+          </div>
+
+          <div class="route-steps">
+            <article class="step">
+              <span class="step-num">01 · SENSE</span>
+              <h4>It listens for the road, not for you.</h4>
+              <p>On-device motion sensors separate real impacts from engine vibration and everyday movement, then tag potholes, speed bumps, and rough pavement automatically.</p>
+              <p class="spec-inline"><b>Accelerometer</b> · <b>GPS</b> · <b>Step detector</b> · Pocket or mount · Zero screen time</p>
+            </article>
+
+            <article class="step">
+              <span class="step-num">02 · CORROBORATE</span>
+              <h4>One jolt is never published alone.</h4>
+              <p>When independent trips hit the same spot, Hodos confirms the hazard and updates the live map for the next person through.</p>
+              <div class="step-diagram" aria-hidden="true">
+                <svg viewBox="0 0 280 88" fill="none">
+                  <circle cx="20" cy="14" r="5" fill="var(--pothole)" />
+                  <circle cx="20" cy="44" r="5" fill="var(--rough)" />
+                  <circle cx="20" cy="74" r="5" fill="var(--bump)" />
+                  <path d="M27 15L104 38 M27 44H104 M27 73L104 50" stroke="var(--ink)" stroke-width="1.25" />
+                  <path d="M118 28L136 44L118 60L100 44Z" fill="var(--ink)" />
+                  <path d="M146 44H188" stroke="var(--ink)" stroke-width="1.5" />
+                  <path d="M182 38L190 44L182 50" stroke="var(--ink)" stroke-width="1.5" />
+                  <rect x="204" y="16" width="56" height="52" stroke="var(--ink)" stroke-width="1.5" />
+                  <path d="M222 16V68 M240 16V68 M204 34H260 M204 52H260" stroke="var(--ink)" stroke-width="0.75" opacity="0.4" />
+                  <circle cx="231" cy="43" r="4" fill="var(--fixed)" />
+                  <g font-family="var(--font-mono)" font-size="8" letter-spacing="1" fill="var(--muted)" font-weight="600">
+                    <text x="30" y="10">PASS A</text>
+                    <text x="30" y="38">PASS B</text>
+                    <text x="30" y="86">PASS C</text>
+                    <text x="86" y="76">CONFIRMED</text>
+                  </g>
+                </svg>
+              </div>
+            </article>
+
+            <article class="step">
+              <span class="step-num">03 · OUTLAST</span>
+              <h4>Maps that outlast the signal.</h4>
+              <p>Cache a nearby region over Wi-Fi once and the map keeps working through dead zones, tunnels, and back roads, hazards included.</p>
+              <p class="spec-inline"><b>20 km radius</b> · Auto-cached · Hazards included</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hazard-section" aria-label="The hazard key">
+      <div class="container">
+        <div class="hazard-key">
+          <div class="hazard-cell">
+            <span class="hk-marker hk-pothole" aria-hidden="true"></span>
             <div>
-              <strong>Pothole corroborated</strong>
-              <span>3 passes · 2 independent devices</span>
+              <strong>Pothole</strong>
+              <p>Confirmed impacts, ranked by severity.</p>
             </div>
           </div>
-
-          <div class="icon-monolith" data-parallax="0.06">
-            <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="Hodos 2.0 App Icon" width="220" height="220" />
-          </div>
-
-          <div class="floating-pill pill-right" data-parallax="-0.22">
-            <span class="status-dot dot-fixed"></span>
+          <div class="hazard-cell">
+            <span class="hk-marker hk-rough" aria-hidden="true"></span>
             <div>
-              <strong>Works with any navigation app</strong>
-              <span>Runs quietly in the background</span>
+              <strong>Rough stretch</strong>
+              <p>Sustained bad pavement along a corridor.</p>
             </div>
           </div>
-
-          <div class="floating-pill pill-bottom" data-parallax="-0.12">
-            <span class="status-dot dot-bump"></span>
+          <div class="hazard-cell">
+            <span class="hk-marker hk-bump" aria-hidden="true"></span>
             <div>
-              <strong>Save suspension &amp; tires</strong>
-              <span>Know rough stretches before you ride</span>
+              <strong>Speed bump</strong>
+              <p>Flagged where traffic calming sits.</p>
+            </div>
+          </div>
+          <div class="hazard-cell">
+            <span class="hk-marker hk-fixed" aria-hidden="true"></span>
+            <div>
+              <strong>Repaired</strong>
+              <p>Cleared once fixes are verified on the ground.</p>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Bento Grid Section: How it works -->
-    <section class="section-bento" id="how" aria-labelledby="how-title">
+    <section class="section" id="drivers" aria-labelledby="drivers-title">
       <div class="container">
-        <div class="section-header" data-parallax="-0.04">
-          <p class="eyebrow">Effortless by design</p>
-          <h2 id="how-title">Complex under the hood.<br /><span>Simple on the road.</span></h2>
-          <p class="section-lead">Turn it on once, then keep doing what you were doing. Hodos works silently behind whatever is already on your screen.</p>
+        <div class="section-head">
+          <h2 id="drivers-title">Made for the drive you already make.</h2>
+          <p class="lead">Hodos sits in your pocket, senses the road, and quietly turns every trip into map. This is what it looks like when you do look.</p>
         </div>
 
-        <div class="bento-grid" id="drivers">
-          <article class="bento-card bento-large" data-parallax="-0.03">
-            <span class="bento-step">01 / HANDS-FREE</span>
-            <h3>Runs quietly alongside the apps you already use.</h3>
-            <p>You never switch screens or tap buttons while driving. On-device motion sensors filter out normal engine vibration and pick up real potholes, speed bumps, and rough pavement automatically.</p>
-            <div class="bento-chips">
-              <span>Car, bike &amp; scooter ready</span>
-              <span>Zero screen distraction</span>
-              <span>Works in pocket or mount</span>
-              <span>Offline-ready</span>
+        <ul class="app-features">
+          <li>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 15.5a5 5 0 0 1 0-7"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M5.6 18.4a9 9 0 0 1 0-12.8"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg>
+            <div>
+              <h4>Hands-free by default</h4>
+              <p>Start mapping once. Journeys begin and end on their own while you navigate, ride, or deliver in any other app.</p>
             </div>
-          </article>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7 14.5l3-3.5 2.5 2 4-4.5"/></svg>
+            <div>
+              <h4>Ride insights</h4>
+              <p>Every drive gets a smoothness read, so you learn which roads treat your suspension well.</p>
+            </div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1 1 13 0C18.5 15.7 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/></svg>
+            <div>
+              <h4>Saved roads</h4>
+              <p>Pin the routes you repeat and watch them heal as verified repairs land on the map.</p>
+            </div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v9"/><path d="M8.5 9.5L12 13l3.5-3.5"/><path d="M4.5 16.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+            <div>
+              <h4>Offline first</h4>
+              <p>Queue observations without signal and cache a 20 km region over Wi-Fi.</p>
+            </div>
+          </li>
+        </ul>
 
-          <article class="bento-card" data-parallax="-0.06">
-            <span class="bento-step">02 / CORROBORATION</span>
-            <h3>Verified by everyone who passes.</h3>
-            <p>A single jolt is never published alone. When independent trips hit the same spot, Hodos confirms the hazard and updates the live map for the next person through.</p>
-          </article>
+        <figure class="journey">
+          <svg viewBox="0 0 1040 250" role="img" aria-label="One recorded journey: a route trace annotated with a pothole, a rough stretch, a speed bump, and a repaired spot. Both ends of the trace are trimmed for privacy." fill="none">
+            <text x="0" y="16" font-family="var(--font-mono)" font-size="10" letter-spacing="1.5" fill="var(--muted)" font-weight="700">JOURNEY RECORD</text>
+            <text x="1040" y="16" text-anchor="end" font-family="var(--font-mono)" font-size="10" letter-spacing="1.5" fill="var(--muted)" font-weight="700">250 M ENDPOINT TRIM</text>
 
-          <article class="bento-card" data-parallax="-0.09">
-            <span class="bento-step">03 / OFFLINE FIRST</span>
-            <h3>Maps that outlast the signal.</h3>
-            <p>Download a nearby region over Wi-Fi once and the map keeps working through dead zones, tunnels, and back roads — hazards included.</p>
-          </article>
-        </div>
+            <path d="M16 150C40 135 62 131 90 136" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="2 5" opacity="0.5" />
+            <path d="M90 136C150 145 220 180 300 150C380 120 440 185 520 155C600 128 660 100 720 140C780 178 850 172 910 146C925 140 938 137 950 137" stroke="var(--muted)" stroke-width="1.75" />
+            <path d="M950 137C975 134 1000 138 1024 146" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="2 5" opacity="0.5" />
+
+            <path d="M90 66V214" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5" />
+            <path d="M950 66V214" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5" />
+            <text x="90" y="232" text-anchor="middle" font-family="var(--font-mono)" font-size="9" letter-spacing="1" fill="var(--muted)" font-weight="600">DEPART</text>
+            <text x="950" y="232" text-anchor="middle" font-family="var(--font-mono)" font-size="9" letter-spacing="1" fill="var(--muted)" font-weight="600">ARRIVE</text>
+
+            <circle cx="300" cy="150" r="6" fill="var(--pothole)" stroke="var(--paper)" stroke-width="2.5" />
+            <path d="M300 142V120" stroke="var(--ink)" stroke-width="1" />
+            <text x="300" y="112" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">POTHOLE · LEVEL 2</text>
+
+            <line x1="425" y1="168" x2="457" y2="168" stroke="var(--rough)" stroke-width="7" stroke-linecap="round" />
+            <text x="441" y="198" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">ROUGH STRETCH</text>
+
+            <circle cx="660" cy="104" r="6" fill="var(--bump)" stroke="var(--paper)" stroke-width="2.5" />
+            <text x="660" y="88" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">SPEED BUMP</text>
+
+            <circle cx="860" cy="162" r="6" fill="var(--paper)" stroke="var(--fixed)" stroke-width="3" />
+            <text x="860" y="192" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">REPAIRED</text>
+          </svg>
+        </figure>
       </div>
     </section>
 
-    <!-- Clear Monetization & Business Model Section -->
-    <section class="section-pricing" id="pricing" aria-labelledby="pricing-title">
+    <section class="section" id="pricing" aria-labelledby="pricing-title">
       <div class="container">
-        <div class="section-header" data-parallax="-0.04">
-          <p class="eyebrow">Partners</p>
+        <div class="section-head">
           <h2 id="pricing-title">Free for everyone.</h2>
-          <p class="section-lead">Two quiet funding streams keep the map open: clearly labeled partner offers, and licensing of aggregated road-quality data. Your location is never the product.</p>
+          <p class="lead">Two quiet funding streams keep the map open: clearly labeled partner offers, and licensing of aggregated road-quality data. Your location is never the product.</p>
         </div>
 
-        <div class="pricing-grid">
-          <!-- Tier 1: Free for everyone -->
-          <article class="price-card" data-parallax="-0.03">
-            <div class="price-top">
-              <span class="price-tag">For everyone</span>
-              <div class="price-amount">Free <span>always · $0</span></div>
-              <p class="price-desc">Anyone with a phone and a road.</p>
+        <div class="ledger">
+          <div class="ledger-head mono-label" aria-hidden="true">
+            <span>Who</span>
+            <span>What you get</span>
+            <span></span>
+          </div>
+
+          <div class="ledger-row">
+            <div class="ledger-who">
+              <h3>Riders &amp; commuters</h3>
+              <p>Anyone with a phone and a road.</p>
             </div>
-            <ul class="price-features">
+            <ul class="ledger-features">
               <li>Live hazard map &amp; search</li>
               <li>Hands-free automatic mapping</li>
               <li>20 km offline map caching</li>
-              <li>No subscription, no ad tracking</li>
+              <li>No subscription, no tracking</li>
             </ul>
-            <div class="price-actions">
-              <a class="btn-primary price-btn" href="__HODOS_DOWNLOAD__/latest" target="_blank" rel="noopener noreferrer">Download Android APK</a>
+            <div class="ledger-actions">
+              <a class="btn btn-primary" href="__HODOS_DOWNLOAD__/latest" target="_blank" rel="noopener noreferrer">Get the app</a>
             </div>
-          </article>
+          </div>
 
-          <!-- Tier 2: Partner shop placements -->
-          <article class="price-card price-card-featured" data-parallax="-0.05">
-            <div class="price-badge">Partner</div>
-            <div class="price-top">
-              <span class="price-tag">For local businesses</span>
-              <div class="price-amount">Placement <span>map pin &amp; offer</span></div>
-              <p class="price-desc">A labeled pin for garages, tire shops, fuel stops, and gear shops.</p>
+          <div class="ledger-row ledger-row-inverted">
+            <div class="ledger-who">
+              <span class="tag tag-amber">Partner</span>
+              <h3>Local shops</h3>
+              <p>Garages, tire shops, fuel stops, and gear shops.</p>
             </div>
-            <ul class="price-features">
+            <ul class="ledger-features">
               <li>Highlighted pin on the live map</li>
               <li>One offer card in the app</li>
               <li>Never blocks navigation</li>
               <li>Reaches people caring for their vehicle</li>
             </ul>
-            <a class="btn-primary price-btn" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Partner%20Placement">Become a partner</a>
-          </article>
-
-          <!-- Tier 3: Commercial Fleet & B2B Data API -->
-          <article class="price-card" data-parallax="-0.07">
-            <div class="price-top">
-              <span class="price-tag">For fleets &amp; cities</span>
-              <div class="price-amount">Data <span>license</span></div>
-              <p class="price-desc">Road roughness, hazard feeds, and corridor health.</p>
+            <div class="ledger-actions">
+              <a class="btn btn-invert" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Partner%20Placement">Become a partner</a>
             </div>
-            <ul class="price-features">
+          </div>
+
+          <div class="ledger-row">
+            <div class="ledger-who">
+              <h3>Fleets &amp; cities</h3>
+              <p>Road roughness, hazard feeds, corridor health.</p>
+            </div>
+            <ul class="ledger-features">
               <li>GeoJSON / H3 road-quality API</li>
               <li>Smooth-route optimization</li>
               <li>Repair verification &amp; alerts</li>
               <li>Commercial licensing waiver</li>
             </ul>
-            <a class="btn-secondary price-btn" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Commercial%20Data%20API">License road data</a>
-          </article>
-        </div>
-
-        <!-- Native partner placement preview on web -->
-        <div class="sponsor-strip" data-parallax="-0.02">
-          <div class="sponsor-strip-left">
-            <div>
-              <strong>Own a garage, tire shop, or fuel station?</strong>
-              <p>Claim a labeled pin on the map. Clearly marked, never blocking the route ahead.</p>
+            <div class="ledger-actions">
+              <a class="btn btn-ghost" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Commercial%20Data%20API">License road data</a>
             </div>
           </div>
-          <div class="sponsor-ctas">
-            <a class="sponsor-cta" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Partner%20Placement">Become a partner</a>
-            <a class="sponsor-cta sponsor-cta-quiet" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Commercial%20Data%20API">License road data</a>
-          </div>
         </div>
+
+        <p class="ledger-note">Partner pins are always labeled. The road ahead is never for sale.</p>
       </div>
     </section>
 
-    <!-- Dark Apple-style Contrast Section: Privacy & Architecture -->
-    <section class="section-dark" id="privacy" aria-labelledby="privacy-title">
+    <section class="section section-dark" id="privacy" aria-labelledby="privacy-title">
       <div class="container">
-        <div class="section-header dark-header" data-parallax="-0.04">
-          <p class="eyebrow eyebrow-amber">Privacy by construction</p>
-          <h2 id="privacy-title">Maps the road.<br /><span>Never your life.</span></h2>
-          <p class="section-lead">Aggregated road intelligence and clearly labeled partner offers fund the map. Personal location tracking is never the product.</p>
+        <div class="section-head">
+          <h2 id="privacy-title">Maps the road. Never your life.</h2>
+          <p class="lead">Aggregated road intelligence and clearly labeled partner offers fund the map. Personal location tracking is never the product.</p>
         </div>
 
         <div class="privacy-grid">
-          <div class="privacy-item" data-parallax="-0.03">
+          <div class="privacy-cell">
             <h4>No account required</h4>
             <p>Explore the live map or opt into road sensing immediately. No sign-ups, emails, or phone numbers required.</p>
           </div>
-          <div class="privacy-item" data-parallax="-0.05">
+          <div class="privacy-cell">
             <h4>250 m endpoint trimming</h4>
             <p>Observations near the start and end of your journey are discarded on your device so home and pickup locations stay private.</p>
           </div>
-          <div class="privacy-item" data-parallax="-0.07">
+          <div class="privacy-cell">
             <h4>Contextual offers, zero tracking</h4>
-            <p>Partner offers are matched to road conditions and vehicle care — never personal behavioral profiling or invasive ad SDKs.</p>
+            <p>Partner offers are matched to road conditions and vehicle care, never personal behavioral profiling or invasive ad SDKs.</p>
           </div>
-          <div class="privacy-item" data-parallax="-0.09">
+          <div class="privacy-cell">
             <h4>Dual-licensed open source</h4>
-            <p>App code is MIT open source; the corroborated road dataset is CC BY-NC-SA 4.0 (free for civic use, licensed for commercial fleets).</p>
+            <p>App code is MIT open source; the corroborated road dataset is CC BY-NC-SA 4.0, free for civic use and licensed for commercial fleets.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Minimal FAQ -->
-    <section class="section-faq" id="faq" aria-labelledby="faq-title">
-      <div class="container faq-container">
-        <div class="section-header">
-          <p class="eyebrow">Questions</p>
+    <section class="section" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-grid">
+        <div class="faq-aside">
           <h2 id="faq-title">Good to know.</h2>
+          <p>Short answers about how Hodos rides along, what it costs, and what it never collects.</p>
         </div>
 
         <div class="faq-list">
@@ -267,7 +452,7 @@
           </details>
           <details>
             <summary>How are hazards color-coded on the live map?</summary>
-            <p>Potholes are shown in crimson, rough road stretches in warm amber, speed bumps in violet, and repaired spots in emerald—keeping your blue location dot unmistakably clear.</p>
+            <p>Potholes are shown in crimson, rough road stretches in warm amber, speed bumps in violet, and repaired spots in emerald, keeping your blue location dot unmistakably clear.</p>
           </details>
           <details>
             <summary>Does it work offline?</summary>
@@ -277,25 +462,24 @@
       </div>
     </section>
 
-    <!-- Clean Apple Closing Banner -->
-    <section class="section-closing">
-      <div class="container closing-box" data-parallax="-0.04">
-        <h2>Ready for the road ahead.</h2>
-        <p>Free for everyone. Explore the live map or download the Android app today.</p>
+    <section class="site-closing">
+      <div class="container">
+        <h2 class="closing-head">Ready for the road ahead<span class="dot">.</span></h2>
+        <p>Free for everyone. Open the live map, or install the Android app and just drive.</p>
         <div class="hero-cta-row">
-          <a class="btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
-          <a class="btn-secondary" href="/map">Open Live Map</a>
+          <a class="btn btn-invert" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
+          <a class="btn btn-ghost-invert" href="/map">Open Live Map</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="apple-footer">
+  <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="22" height="22" />
-        <span>hodos.</span>
-        <span class="footer-copy">An open road intelligence project by Devilabs.</span>
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="20" height="20" />
+        <span>hodos<span class="dot">.</span></span>
+        <span class="footer-meta">Open source · MIT app · CC BY-NC-SA data</span>
       </div>
       <div class="footer-links">
         <a href="/map">Live Map</a>
