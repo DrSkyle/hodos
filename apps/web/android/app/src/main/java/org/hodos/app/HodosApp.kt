@@ -1026,118 +1026,88 @@ fun HodosApp(
 
 @Composable
 private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActive: Boolean = false) {
-    // Navigation drawn as a route: a dashed lane line with three stops.
-    // The dashes march slowly, the active stop is an ink-filled node with an
-    // amber "you are here" tick, and the Record stop carries a pulsing badge
-    // while a journey is being recorded.
-    val lanePhase = rememberInfiniteTransition(label = "lane")
-        .animateFloat(
-            initialValue = 0f,
-            targetValue = 40f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1500, easing = androidx.compose.animation.core.LinearEasing)
-            ),
-            label = "lane dashes"
-        )
+    // Simple bottom navigation: three circular stops with labels. The active
+    // stop fills ink and gets an amber tick; Record pulses while recording.
     Surface(color = PaperRaised) {
         Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
             HorizontalDivider(color = Line, thickness = 1.dp)
-            BoxWithConstraints(
-                Modifier.fillMaxWidth().height(88.dp)
-            ) {
-                Canvas(
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .fillMaxWidth()
-                        .padding(horizontal = 42.dp)
-                        .offset(y = 30.dp)
-                ) {
-                    drawLine(
-                        color = Line,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(11f, 9f), lanePhase.value)
+            Row(Modifier.fillMaxWidth().height(84.dp)) {
+                Screen.entries.forEach { tab ->
+                    val active = current == tab
+                    val nodeScale by animateFloatAsState(
+                        targetValue = if (active) 1.07f else 0.94f,
+                        animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
+                        label = "route node"
                     )
-                }
-                Row(Modifier.fillMaxSize()) {
-                    Screen.entries.forEach { tab ->
-                        val active = current == tab
-                        val nodeScale by animateFloatAsState(
-                            targetValue = if (active) 1.07f else 0.94f,
-                            animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
-                            label = "route node"
-                        )
-                        Column(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clickable { onSelect(tab) }
-                                .padding(top = 14.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box {
-                                Box(
-                                    Modifier.size(44.dp)
-                                        .graphicsLayer {
-                                            scaleX = nodeScale
-                                            scaleY = nodeScale
-                                        }
-                                        .background(if (active) Ink else PaperRaised, CircleShape)
-                                        .border(
-                                            1.5.dp,
-                                            if (active) Ink else Line,
-                                            CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    DoodleIcon(
-                                        symbol = when (tab) {
-                                            Screen.MAP -> DoodleSymbol.MAP
-                                            Screen.MAPPING -> DoodleSymbol.CAR
-                                            Screen.YOU -> DoodleSymbol.PERSON
-                                        },
-                                        tint = if (active) Paper else Muted,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                if (tab == Screen.MAPPING && tripActive) {
-                                    val pulse = rememberInfiniteTransition(label = "record badge")
-                                    val badgeAlpha by pulse.animateFloat(
-                                        initialValue = 1f,
-                                        targetValue = 0.3f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(650),
-                                            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-                                        ),
-                                        label = "record badge alpha"
-                                    )
-                                    Box(
-                                        Modifier.align(Alignment.TopEnd)
-                                            .graphicsLayer { alpha = badgeAlpha }
-                                            .size(11.dp)
-                                            .background(Amber, CircleShape)
-                                            .border(1.5.dp, PaperRaised, CircleShape)
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.height(5.dp))
-                            if (active) {
-                                Box(
-                                    Modifier.size(width = 18.dp, height = 3.dp)
-                                        .background(Amber, RoundedCornerShape(1.5.dp))
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onSelect(tab) }
+                            .padding(top = 14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box {
+                            Box(
+                                Modifier.size(44.dp)
+                                    .graphicsLayer {
+                                        scaleX = nodeScale
+                                        scaleY = nodeScale
+                                    }
+                                    .background(if (active) Ink else PaperRaised, CircleShape)
+                                    .border(
+                                        1.5.dp,
+                                        if (active) Ink else Line,
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DoodleIcon(
+                                    symbol = when (tab) {
+                                        Screen.MAP -> DoodleSymbol.MAP
+                                        Screen.MAPPING -> DoodleSymbol.CAR
+                                        Screen.YOU -> DoodleSymbol.PERSON
+                                    },
+                                    tint = if (active) Paper else Muted,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(Modifier.height(3.dp))
                             }
-                            Text(
-                                tab.label.uppercase(),
-                                fontSize = 9.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                fontFamily = OverpassMono,
-                                letterSpacing = 1.1.sp,
-                                color = if (active) Ink else Muted
-                            )
+                            if (tab == Screen.MAPPING && tripActive) {
+                                val pulse = rememberInfiniteTransition(label = "record badge")
+                                val badgeAlpha by pulse.animateFloat(
+                                    initialValue = 1f,
+                                    targetValue = 0.3f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(650),
+                                        repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                                    ),
+                                    label = "record badge alpha"
+                                )
+                                Box(
+                                    Modifier.align(Alignment.TopEnd)
+                                        .graphicsLayer { alpha = badgeAlpha }
+                                        .size(11.dp)
+                                        .background(Amber, CircleShape)
+                                        .border(1.5.dp, PaperRaised, CircleShape)
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(5.dp))
+                        if (active) {
+                            Box(
+                                Modifier.size(width = 18.dp, height = 3.dp)
+                                    .background(Amber, RoundedCornerShape(1.5.dp))
+                            )
+                            Spacer(Modifier.height(3.dp))
+                        }
+                        Text(
+                            tab.label.uppercase(),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = OverpassMono,
+                            letterSpacing = 1.1.sp,
+                            color = if (active) Ink else Muted
+                        )
                     }
                 }
             }
@@ -1147,47 +1117,77 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
 
 @Composable
 private fun HodosMapLegend(modifier: Modifier = Modifier) {
-    // The map's key, matching the website's legend panel.
+    // The map's key, matching the website's legend panel. Starts as a small
+    // pill so the map stays clear; tap to open the full key.
+    var expanded by remember { mutableStateOf(false) }
     Surface(
         color = PaperRaised,
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, Ink),
-        modifier = modifier
+        modifier = modifier.clickable { expanded = !expanded }
     ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text(
-                "KEY",
-                color = Muted,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = OverpassMono,
-                letterSpacing = 1.6.sp
-            )
-            Spacer(Modifier.height(7.dp))
-            LegendRow(Pothole, filled = true, "Pothole")
-            Spacer(Modifier.height(6.dp))
-            LegendRow(Rough, filled = true, "Rough stretch")
-            Spacer(Modifier.height(6.dp))
-            LegendRow(Bump, filled = true, "Speed bump")
-            Spacer(Modifier.height(6.dp))
-            LegendRow(Healed, filled = false, "Repaired")
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = Line)
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.size(11.dp)
-                        .border(1.2.dp, Muted, CircleShape)
-                )
-                Spacer(Modifier.width(8.dp))
+        if (!expanded) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)
+            ) {
                 Text(
-                    "RING = ≥2 PASSES",
+                    "KEY",
+                    color = Ink,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = OverpassMono,
+                    letterSpacing = 1.4.sp
+                )
+                Spacer(Modifier.width(9.dp))
+                Box(Modifier.size(8.dp).background(Pothole, CircleShape))
+                Spacer(Modifier.width(5.dp))
+                Box(Modifier.size(8.dp).background(Rough, CircleShape))
+                Spacer(Modifier.width(5.dp))
+                Box(Modifier.size(8.dp).background(Bump, CircleShape))
+                Spacer(Modifier.width(5.dp))
+                Box(
+                    Modifier.size(9.dp)
+                        .background(PaperRaised, CircleShape)
+                        .border(2.dp, Healed, CircleShape)
+                )
+            }
+        } else {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                Text(
+                    "KEY",
                     color = Muted,
                     fontSize = 8.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = OverpassMono,
-                    letterSpacing = 0.8.sp
+                    letterSpacing = 1.6.sp
                 )
+                Spacer(Modifier.height(7.dp))
+                LegendRow(Pothole, filled = true, "Pothole")
+                Spacer(Modifier.height(6.dp))
+                LegendRow(Rough, filled = true, "Rough stretch")
+                Spacer(Modifier.height(6.dp))
+                LegendRow(Bump, filled = true, "Speed bump")
+                Spacer(Modifier.height(6.dp))
+                LegendRow(Healed, filled = false, "Repaired")
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = Line)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(11.dp)
+                            .border(1.2.dp, Muted, CircleShape)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "RING = ≥2 PASSES",
+                        color = Muted,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = OverpassMono,
+                        letterSpacing = 0.8.sp
+                    )
+                }
             }
         }
     }
