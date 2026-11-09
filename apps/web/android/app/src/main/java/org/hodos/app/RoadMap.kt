@@ -225,7 +225,10 @@ fun RoadMap(
                 style.addLayer(
                     CircleLayer("hodos-hazard-dots", "hodos-hazards").withProperties(
                         circleColor(Expression.get("color")),
-                        circleRadius(8f),
+                        // Severity scales the dot so the worst roads read first,
+                        // mirroring the website's live map. The radius ships with
+                        // each feature, so no style expressions are needed here.
+                        circleRadius(Expression.get("radius")),
                         circleStrokeWidth(2.5f),
                         circleStrokeColor(android.graphics.Color.WHITE),
                         circleOpacity(0.97f)
@@ -275,6 +278,15 @@ fun RoadMap(
             val features = hazards.map { hazard ->
                 Feature.fromGeometry(Point.fromLngLat(hazard.lng, hazard.lat)).apply {
                     addStringProperty("id", hazard.id)
+                    addNumberProperty(
+                        "radius",
+                        if (hazard.fixed) 5.5f
+                        else when (hazard.severity) {
+                            1 -> 5.0f
+                            2 -> 6.5f
+                            else -> 8.0f
+                        }
+                    )
                     addStringProperty(
                         "color",
                         if (hazard.fixed) "#10B981"

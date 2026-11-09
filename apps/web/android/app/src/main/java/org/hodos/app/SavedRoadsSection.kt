@@ -40,8 +40,9 @@ internal fun SavedRoadsSection(
 ) {
     val byId = hazards.associateBy { it.id }
     Surface(
-        color = Color.White,
-        shape = RoundedCornerShape(24.dp),
+        color = PaperRaised,
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Line),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -49,11 +50,12 @@ internal fun SavedRoadsSection(
             verticalArrangement = Arrangement.spacedBy(11.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                DoodleIcon(DoodleSymbol.BOOKMARK, modifier = Modifier.size(30.dp), tint = Forest)
+                DoodleIcon(DoodleSymbol.BOOKMARK, modifier = Modifier.size(26.dp), tint = Ink)
                 Spacer(Modifier.width(9.dp))
-                Text("My Roads", color = Ink, fontSize = 21.sp,
-                    fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("${savedIds.size}/100", fontSize = 12.sp, color = Muted)
+                Text("My Roads", color = Ink, fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp, modifier = Modifier.weight(1f))
+                Text("${savedIds.size}/100", fontSize = 10.5.sp, color = Muted,
+                    fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp)
             }
             Text(
                 if (savedIds.isEmpty())
@@ -62,20 +64,20 @@ internal fun SavedRoadsSection(
                 fontSize = 13.sp, color = Muted, lineHeight = 20.sp
             )
             savedIds.toList().sorted().take(8).forEachIndexed { index, id ->
-                if (index > 0) HorizontalDivider(color = Color(0xFFEAF0EB))
+                if (index > 0) HorizontalDivider(color = Line)
                 val hazard = byId[id]
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (hazard == null) {
                         DoodleIcon(DoodleSymbol.WARNING,
-                            tint = Muted, modifier = Modifier.size(27.dp))
+                            tint = Muted, modifier = Modifier.size(24.dp))
                     } else if (hazard.fixed) {
                         DoodleIcon(DoodleSymbol.CHECK,
-                            tint = Forest, modifier = Modifier.size(27.dp))
+                            tint = Healed, modifier = Modifier.size(24.dp))
                     } else {
                         DoodleIcon(DoodleSymbol.WARNING,
-                            tint = Color(0xFFC18A45), modifier = Modifier.size(27.dp))
+                            tint = AmberDeep, modifier = Modifier.size(24.dp))
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(
@@ -100,7 +102,7 @@ internal fun SavedRoadsSection(
                         if (hazard == null) onRemove(id) else onSelect(hazard)
                     }) {
                         Text(if (hazard == null) "Remove" else "View",
-                            color = Forest, fontSize = 12.sp)
+                            color = Ink, fontSize = 12.sp)
                     }
                 }
             }

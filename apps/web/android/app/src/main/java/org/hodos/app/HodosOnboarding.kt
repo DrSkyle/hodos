@@ -36,10 +36,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private val Cream = Color(0xFFF6F3EA)
-private val CreamMuted = Color(0xFFA9BDB4)
-private val CreamAccent = Color(0xFFE9C179)
-private val Sand = Color(0xFFF5F0E7)
-private val SandMuted = Color(0xFF6B756F)
+private val CreamMuted = Color(0xFFB5AFA2)
+private val CreamAccent = Color(0xFFD97706)
+private val SandMuted = Color(0xFF736D61)
 private val SandAccent = Color(0xFFB45309)
 
 private data class IntroStep(
@@ -74,7 +73,7 @@ private val steps = listOf(
         title = "Turn it on.\nKeep going.",
         description = "Hodos runs in the background and pauses when you stop. No buttons to press, no reporting, no new habit to learn.",
         footnote = "Motion is filtered on-device; only compact hazard records sync.",
-        background = Sand,
+        background = Paper,
         foreground = Ink,
         muted = SandMuted,
         accent = SandAccent,
@@ -195,9 +194,10 @@ fun HodosOnboarding(
                                     Spacer(Modifier.width(10.dp))
                                     Text(
                                         step.eyebrow,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.4.sp,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontFamily = OverpassMono,
+                                        letterSpacing = 1.6.sp,
                                         color = step.accent
                                     )
                                 }
@@ -208,8 +208,8 @@ fun HodosOnboarding(
                                     step.title,
                                     fontSize = 40.sp,
                                     lineHeight = 44.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = (-1.4).sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-1.2).sp,
                                     color = step.foreground
                                 )
 
@@ -221,6 +221,33 @@ fun HodosOnboarding(
                                     lineHeight = 26.sp,
                                     color = step.muted
                                 )
+
+                                if (pageIndex == 0) {
+                                    Spacer(Modifier.height(22.dp))
+                                    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                        listOf(
+                                            Color(0xFFE11D48) to "POTHOLE",
+                                            Color(0xFFD97706) to "ROUGH STRETCH",
+                                            Color(0xFF7C3AED) to "SPEED BUMP",
+                                            Color(0xFF10B981) to "REPAIRED"
+                                        ).forEach { (color, label) ->
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box(
+                                                    Modifier.size(9.dp).background(color, CircleShape)
+                                                )
+                                                Spacer(Modifier.width(10.dp))
+                                                Text(
+                                                    label,
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontFamily = OverpassMono,
+                                                    letterSpacing = 1.2.sp,
+                                                    color = step.muted
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
 
                                 if (pageIndex == steps.lastIndex) {
                                     Spacer(Modifier.height(30.dp))
@@ -291,7 +318,7 @@ fun HodosOnboarding(
                             else scope.launch { pagerState.animateScrollToPage(page + 1) }
                         },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = buttonBackground,
                             contentColor = buttonForeground

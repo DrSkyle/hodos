@@ -12,12 +12,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -46,7 +55,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -65,7 +76,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.roundToInt
 
-private enum class Screen(val label: String) { MAP("Map"), MAPPING("Mapping"), YOU("You") }
+private enum class Screen(val label: String) { MAP("Map"), MAPPING("Record"), YOU("You") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -310,42 +321,13 @@ fun HodosApp(
             containerColor = Paper,
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                    Screen.entries.forEach { tab ->
-                        NavigationBarItem(
-                            selected = screen == tab,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                screen = tab
-                            },
-                            icon = {
-                                val scale by animateFloatAsState(
-                                    targetValue = if (screen == tab) 1.10f else 0.94f,
-                                    animationSpec = tween(durationMillis = 240),
-                                    label = "selected road tab"
-                                )
-                                DoodleIcon(
-                                    symbol = when (tab) {
-                                        Screen.MAP -> DoodleSymbol.MAP
-                                        Screen.MAPPING -> DoodleSymbol.CAR
-                                        Screen.YOU -> DoodleSymbol.PERSON
-                                    },
-                                    tint = if (screen == tab) Forest else Muted,
-                                    modifier = Modifier.size(29.dp).graphicsLayer {
-                                        scaleX = scale
-                                        scaleY = scale
-                                    }
-                                )
-                            },
-                            label = { Text(tab.label, fontWeight = if (screen == tab) FontWeight.SemiBold else FontWeight.Normal) },
-                            alwaysShowLabel = true,
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Forest, selectedTextColor = Forest,
-                                indicatorColor = Mist, unselectedIconColor = Muted, unselectedTextColor = Muted
-                            )
-                        )
+                HodosRouteBar(
+                    current = screen,
+                    onSelect = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        screen = it
                     }
-                }
+                )
             }
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets)) {
@@ -353,11 +335,11 @@ fun HodosApp(
                     Screen.MAP -> BottomSheetScaffold(
                         scaffoldState = sheetState,
                         sheetPeekHeight = 126.dp,
-                        sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                        sheetContainerColor = Color.White,
-                        sheetShadowElevation = 11.dp,
+                        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        sheetContainerColor = PaperRaised,
+                        sheetShadowElevation = 8.dp,
                         sheetDragHandle = {
-                            BottomSheetDefaults.DragHandle(color = Color(0xFFCBD7CF))
+                            BottomSheetDefaults.DragHandle(color = Line)
                         },
                         sheetContent = {
                             Column(
@@ -367,31 +349,34 @@ fun HodosApp(
                                     .padding(bottom = 16.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    DoodleIcon(DoodleSymbol.MAP, Modifier.size(27.dp), Forest)
+                                    DoodleIcon(DoodleSymbol.MAP, Modifier.size(24.dp), Ink)
                                     Spacer(Modifier.width(10.dp))
                                     Column(Modifier.weight(1f)) {
-                                        Text("Nearby hazards", fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
+                                        Text("Nearby hazards", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp)
                                         Text(
-                                            if (visibleHazards.isEmpty()) "No matching road hazards"
-                                            else "${visibleHazards.size} on the shared map",
-                                            color = Muted, fontSize = 12.sp
+                                            (if (visibleHazards.isEmpty()) "No matching road hazards"
+                                            else "${visibleHazards.size} on the shared map").uppercase(),
+                                            color = Muted, fontSize = 10.sp,
+                                            fontFamily = OverpassMono,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.8.sp
                                         )
                                     }
                                     IconButton(onClick = onRefresh, enabled = !loading) {
-                                        if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                                        else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards")
+                                        if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = AmberDeep)
+                                        else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards", tint = Ink)
                                     }
                                 }
                                 if (trips.isEmpty()) {
                                     Spacer(Modifier.height(12.dp))
-                                    Surface(color = Mist, shape = RoundedCornerShape(16.dp)) {
+                                    Surface(color = Sand, shape = RoundedCornerShape(14.dp)) {
                                         Column(
                                             Modifier.fillMaxWidth().padding(14.dp),
                                             verticalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Text(
                                                 "No setup needed",
-                                                fontWeight = FontWeight.SemiBold,
+                                                fontWeight = FontWeight.Bold,
                                                 fontSize = 14.sp,
                                                 color = Ink
                                             )
@@ -404,15 +389,16 @@ fun HodosApp(
                                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 Button(
                                                     onClick = onStartJourney,
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper)
                                                 ) {
                                                     Text("Start journey", fontSize = 12.sp)
                                                 }
                                                 if (!armed) {
                                                     OutlinedButton(
                                                         onClick = { onToggle(true) },
-                                                        shape = RoundedCornerShape(12.dp)
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                                                     ) {
                                                         Text("Auto-record", fontSize = 12.sp)
                                                     }
@@ -425,11 +411,15 @@ fun HodosApp(
                                 if (visibleHazards.isEmpty()) {
                                     Row(verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp)) {
-                                        Surface(color = Mist, shape = RoundedCornerShape(17.dp)) {
+                                        Surface(
+                                            color = Sand,
+                                            shape = RoundedCornerShape(14.dp),
+                                            border = BorderStroke(1.dp, Line)
+                                        ) {
                                             DoodleIcon(
                                                 if (hazards.isEmpty()) DoodleSymbol.SUN else DoodleSymbol.MAP,
-                                                modifier = Modifier.padding(12.dp).size(35.dp),
-                                                tint = Forest
+                                                modifier = Modifier.padding(12.dp).size(32.dp),
+                                                tint = Ink
                                             )
                                         }
                                         Spacer(Modifier.width(13.dp))
@@ -437,7 +427,7 @@ fun HodosApp(
                                             Text(
                                                 if (hazards.isEmpty()) "A blank map is a beginning."
                                                 else "Nothing matched just yet.",
-                                                fontWeight = FontWeight.SemiBold, color = Ink,
+                                                fontWeight = FontWeight.Bold, color = Ink,
                                                 fontSize = 15.sp
                                             )
                                             Text(
@@ -450,7 +440,9 @@ fun HodosApp(
                                 } else {
                                     LazyColumn(Modifier.heightIn(max = 260.dp)) {
                                         items(visibleHazards, key = { it.id }) { hazard ->
-                                            HazardRow(hazard, lastKnownLocation?.let { distanceTo(hazard, it) }) { selected = hazard }
+                                            Box(Modifier.animateItem()) {
+                                                HazardRow(hazard, lastKnownLocation?.let { distanceTo(hazard, it) }) { selected = hazard }
+                                            }
                                         }
                                     }
                                 }
@@ -487,16 +479,16 @@ fun HodosApp(
                                     Spacer(Modifier.weight(1f))
                                     if (latestRelease?.isNewer == true) {
                                         Surface(
-                                            color = Color(0xFFD97706),
-                                            shape = RoundedCornerShape(20.dp),
-                                            shadowElevation = 2.dp,
+                                            color = Amber,
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = BorderStroke(1.dp, Ink),
                                             modifier = Modifier.clickable {
                                                 startInAppUpdate(latestRelease!!)
                                             }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp)
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
                                             ) {
                                                 val progress = updateDownload
                                                 if (progress != null) {
@@ -511,8 +503,9 @@ fun HodosApp(
                                                         if (progress in 1..99) "Downloading $progress%"
                                                         else "Preparing update…",
                                                         color = Color.White,
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontFamily = OverpassMono
                                                     )
                                                 } else {
                                                     Icon(
@@ -525,8 +518,9 @@ fun HodosApp(
                                                     Text(
                                                         "Update ${latestRelease!!.tagName}",
                                                         color = Color.White,
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontFamily = OverpassMono
                                                     )
                                                 }
                                             }
@@ -534,39 +528,49 @@ fun HodosApp(
                                         Spacer(Modifier.width(6.dp))
                                     }
                                     Surface(
-                                        color = Color(0xF9FFFFFF),
-                                        shape = RoundedCornerShape(20.dp),
-                                        shadowElevation = 2.dp
+                                        color = PaperRaised,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, Ink)
                                     ) {
-                                        Text(
-                                            if (loading) "Updating map…"
-                                            else if (!internetConnected || syncError) "Saved map"
-                                            else "${hazards.count { !it.fixed }} road reports",
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-                                            color = Forest, fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp)
+                                        ) {
+                                            Box(
+                                                Modifier.size(6.dp).background(Healed, CircleShape)
+                                            )
+                                            Spacer(Modifier.width(7.dp))
+                                            Text(
+                                                (if (loading) "Updating map…"
+                                                else if (!internetConnected || syncError) "Saved map"
+                                                else "${hazards.count { !it.fixed }} live reports"),
+                                                color = Ink, fontSize = 10.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontFamily = OverpassMono,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
                                     }
                                 }
                                 Spacer(Modifier.height(9.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
                                         modifier = Modifier.weight(1f).height(50.dp),
-                                        shape = RoundedCornerShape(18.dp),
-                                        color = Color.White,
-                                        shadowElevation = 3.dp
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = PaperRaised,
+                                        border = BorderStroke(1.dp, Line)
                                     ) {
                                         TextField(
                                             value = query,
                                             onValueChange = { query = it },
                                             singleLine = true,
                                             placeholder = { Text("Search road hazards", fontSize = 14.sp, color = Muted) },
-                                            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Forest) },
+                                            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Ink) },
                                             modifier = Modifier.fillMaxSize(),
                                             colors = TextFieldDefaults.colors(
                                                 focusedTextColor = Ink,
                                                 unfocusedTextColor = Ink,
-                                                cursorColor = Forest,
+                                                cursorColor = AmberDeep,
                                                 focusedContainerColor = Color.Transparent,
                                                 unfocusedContainerColor = Color.Transparent,
                                                 focusedIndicatorColor = Color.Transparent,
@@ -576,9 +580,9 @@ fun HodosApp(
                                         )
                                     }
                                     Surface(
-                                        shape = RoundedCornerShape(18.dp),
-                                        color = if (filterVisible) Forest else Color.White,
-                                        shadowElevation = 3.dp,
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (filterVisible) Ink else PaperRaised,
+                                        border = BorderStroke(1.dp, if (filterVisible) Ink else Line),
                                         modifier = Modifier.size(50.dp)
                                     ) {
                                         IconButton(
@@ -588,14 +592,18 @@ fun HodosApp(
                                             Icon(
                                                 Icons.Outlined.FilterList,
                                                 contentDescription = "Filter hazards",
-                                                tint = if (filterVisible) Color.White else Ink
+                                                tint = if (filterVisible) Paper else Ink
                                             )
                                         }
                                     }
                                 }
                                 if (filterVisible) {
                                     Spacer(Modifier.height(8.dp))
-                                    Surface(shape = RoundedCornerShape(20.dp), color = Color.White, shadowElevation = 4.dp) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = PaperRaised,
+                                        border = BorderStroke(1.dp, Line)
+                                    ) {
                                         Row(
                                             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(8.dp),
                                             horizontalArrangement = Arrangement.spacedBy(7.dp)
@@ -604,7 +612,19 @@ fun HodosApp(
                                                 FilterChip(
                                                     selected = severity == option,
                                                     onClick = { severity = option },
-                                                    label = { Text(option) }
+                                                    label = { Text(option) },
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    colors = FilterChipDefaults.filterChipColors(
+                                                        containerColor = PaperRaised,
+                                                        labelColor = Ink,
+                                                        selectedContainerColor = Ink,
+                                                        selectedLabelColor = Paper
+                                                    ),
+                                                    border = FilterChipDefaults.filterChipBorder(
+                                                        enabled = true,
+                                                        selected = severity == option,
+                                                        borderColor = if (severity == option) Ink else Line
+                                                    )
                                                 )
                                             }
                                         }
@@ -652,23 +672,25 @@ fun HodosApp(
                                     }
                                 },
                                 colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = Color.White, contentColor = Forest
+                                    containerColor = PaperRaised, contentColor = Ink
                                 ),
                                 modifier = Modifier.align(Alignment.BottomEnd)
                                     .padding(end = 18.dp, bottom = 146.dp).size(52.dp)
+                                    .border(1.dp, Ink, CircleShape)
                             ) {
                                 if (locating) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(22.dp),
-                                        color = Forest, strokeWidth = 2.5.dp
+                                        color = AmberDeep, strokeWidth = 2.5.dp
                                     )
                                 } else Icon(Icons.Outlined.MyLocation, contentDescription = "Go to my location")
                             }
                             Surface(
                                 onClick = { if (tripActive) onFinishJourney() else onStartJourney() },
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (tripActive) Forest else Color.White,
-                                shadowElevation = 3.dp,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (tripActive) Ink else PaperRaised,
+                                border = if (tripActive) null else BorderStroke(1.dp, Ink),
+                                shadowElevation = 0.dp,
                                 modifier = Modifier.align(Alignment.BottomStart)
                                     .padding(start = 18.dp, bottom = 146.dp)
                             ) {
@@ -676,15 +698,33 @@ fun HodosApp(
                                     Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    DoodleIcon(
-                                        DoodleSymbol.CAR,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = if (tripActive) Color.White else Forest
-                                    )
-                                    Spacer(Modifier.width(8.dp))
+                                    if (tripActive) {
+                                        val pulse = rememberInfiniteTransition(label = "recording pulse")
+                                        val dotAlpha by pulse.animateFloat(
+                                            initialValue = 1f,
+                                            targetValue = 0.25f,
+                                            animationSpec = infiniteRepeatable(
+                                                animation = tween(650),
+                                                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                                            ),
+                                            label = "recording dot"
+                                        )
+                                        Box(
+                                            Modifier.size(9.dp).graphicsLayer { alpha = dotAlpha }
+                                                .background(Amber, CircleShape)
+                                        )
+                                        Spacer(Modifier.width(9.dp))
+                                    } else {
+                                        DoodleIcon(
+                                            DoodleSymbol.CAR,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = Ink
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    }
                                     Text(
                                         if (tripActive) "Recording · Stop" else "Start journey",
-                                        color = if (tripActive) Color.White else Ink,
+                                        color = if (tripActive) Paper else Ink,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -844,17 +884,40 @@ fun HodosApp(
         }
 
         selected?.let { hazard ->
-            ModalBottomSheet(onDismissRequest = { selected = null }) {
+            ModalBottomSheet(
+                onDismissRequest = { selected = null },
+                containerColor = PaperRaised
+            ) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 34.dp)) {
-                    Text(hazard.title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(hazard.title, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.weight(1f))
+                        Surface(
+                            color = if (hazard.fixed) Healed else Amber,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                (if (hazard.fixed) "Repaired" else "Level ${hazard.severity}").uppercase(),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = OverpassMono,
+                                letterSpacing = 0.8.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(5.dp))
                     Text(
-                        (if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity") +
-                            " · ${(hazard.confidence * 100).roundToInt()}/100 evidence score",
-                        color = if (hazard.fixed) Forest else Orange
+                        ((if (hazard.fixed) "Reported repaired" else hazard.severityText + " severity") +
+                            " · ${(hazard.confidence * 100).roundToInt()}/100 evidence score").uppercase(),
+                        color = Muted,
+                        fontSize = 10.sp,
+                        fontFamily = OverpassMono,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.7.sp
                     )
-                    Spacer(Modifier.height(19.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(Modifier.height(18.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                         DetailStat("${hazard.passes}", "Passes", Modifier.weight(1f))
                         DetailStat("${hazard.devices}", "Devices", Modifier.weight(1f))
                         DetailStat("${hazard.clearPasses}", "Clear passes", Modifier.weight(1f))
@@ -872,7 +935,8 @@ fun HodosApp(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                     ) {
                         Icon(
                             if (selected!!.id in savedRoadIds)
@@ -885,7 +949,7 @@ fun HodosApp(
                             else "Save this road"
                         )
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
                     OutlinedButton(
                         onClick = {
                             val receipt = buildString {
@@ -904,15 +968,16 @@ fun HodosApp(
                             context.startActivity(Intent.createChooser(send, "Share road report"))
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                     ) {
                         Icon(Icons.Outlined.Share, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(if (hazard.fixed) "Share repair receipt" else "Share road report")
                     }
-                    Spacer(Modifier.height(17.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text("Your feedback is a manual report, not a measured sensor reading. Hodos keeps it on this phone until it can upload.", color = Muted, fontSize = 13.sp)
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(18.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedButton(
                             onClick = {
@@ -921,7 +986,9 @@ fun HodosApp(
                                     snackbar.showSnackbar(if (result.isSuccess) "Saved on this phone · will sync online" else "Could not save report on this phone")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
-                            }, modifier = Modifier.weight(1f)
+                            }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                         ) { Text("Still there") }
                         Button(
                             enabled = !hazard.fixed,
@@ -931,7 +998,9 @@ fun HodosApp(
                                     snackbar.showSnackbar(if (result.isSuccess) "Repair report saved · will sync online" else "Could not save report on this phone")
                                     if (result.isSuccess) { selected = null; onRefresh() }
                                 }
-                            }, modifier = Modifier.weight(1f)
+                            }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper)
                         ) { Text("Mark fixed") }
                     }
                 }
@@ -941,10 +1010,102 @@ fun HodosApp(
 }
 
 @Composable
+private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit) {
+    // Navigation drawn as a route: a dashed lane line with three stops.
+    // The active stop is an ink-filled node with an amber "you are here" tick.
+    Surface(color = PaperRaised) {
+        Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
+            HorizontalDivider(color = Line, thickness = 1.dp)
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().height(88.dp)
+            ) {
+                Canvas(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .padding(horizontal = 42.dp)
+                        .offset(y = 30.dp)
+                ) {
+                    drawLine(
+                        color = Line,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(11f, 9f))
+                    )
+                }
+                Row(Modifier.fillMaxSize()) {
+                    Screen.entries.forEach { tab ->
+                        val active = current == tab
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onSelect(tab) }
+                                .padding(top = 14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                Modifier.size(44.dp)
+                                    .background(if (active) Ink else PaperRaised, CircleShape)
+                                    .border(
+                                        1.5.dp,
+                                        if (active) Ink else Line,
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DoodleIcon(
+                                    symbol = when (tab) {
+                                        Screen.MAP -> DoodleSymbol.MAP
+                                        Screen.MAPPING -> DoodleSymbol.CAR
+                                        Screen.YOU -> DoodleSymbol.PERSON
+                                    },
+                                    tint = if (active) Paper else Muted,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(5.dp))
+                            if (active) {
+                                Box(
+                                    Modifier.size(width = 18.dp, height = 3.dp)
+                                        .background(Amber, RoundedCornerShape(1.5.dp))
+                                )
+                                Spacer(Modifier.height(3.dp))
+                            }
+                            Text(
+                                tab.label.uppercase(),
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = OverpassMono,
+                                letterSpacing = 1.1.sp,
+                                color = if (active) Ink else Muted
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DetailStat(value: String, title: String, modifier: Modifier = Modifier) {
-    Column(modifier.clip(RoundedCornerShape(15.dp)).background(Mist).padding(14.dp)) {
-        Text(value, fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Text(title, color = Muted, fontSize = 11.sp)
+    Column(
+        modifier.clip(RoundedCornerShape(12.dp))
+            .background(Sand)
+            .border(1.dp, Line, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 23.sp, color = Ink)
+        Text(
+            title.uppercase(),
+            color = Muted,
+            fontSize = 9.5.sp,
+            fontFamily = OverpassMono,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.9.sp
+        )
     }
 }
 
@@ -961,35 +1122,56 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = if (hazard.fixed) Color(0xFFE7F5EB)
-                else if (hazard.severity >= 3) Color(0xFFFFECE7)
-                else Color(0xFFFFF3DE)
+            shape = RoundedCornerShape(10.dp),
+            color = when {
+                hazard.fixed -> Color(0xFFE7F6EF)
+                hazard.severity >= 3 -> Color(0xFFFBE9EC)
+                else -> Color(0xFFF9EEDD)
+            },
+            border = BorderStroke(1.dp, Line)
         ) {
             DoodleIcon(
                 if (hazard.fixed) DoodleSymbol.CHECK else DoodleSymbol.WARNING,
-                tint = if (hazard.fixed) Forest
-                    else if (hazard.severity >= 3) Danger else Orange,
-                modifier = Modifier.padding(9.dp).size(27.dp)
+                tint = when {
+                    hazard.fixed -> Healed
+                    hazard.severity >= 3 -> Pothole
+                    else -> Rough
+                },
+                modifier = Modifier.padding(8.dp).size(24.dp)
             )
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
-            Text(hazard.title, fontWeight = FontWeight.Medium)
+            Text(hazard.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Ink)
             Text(
                 when {
                     hazard.fixed ->
-                        "Healed · ${hazard.clearPasses} clear passes · ${hazard.devices} devices"
+                        "REPAIRED · ${hazard.clearPasses} CLEAR · ${hazard.devices} DEVICES"
                     distanceMeters != null ->
-                        "${String.format(Locale.US, "%.1f km", distanceMeters / 1000f)} away · ${hazard.devices} devices"
-                    else -> "${hazard.passes} passes · ${hazard.devices} devices"
+                        String.format(Locale.US, "%.1f KM", distanceMeters / 1000f) +
+                            " AWAY · ${hazard.devices} DEVICE${if (hazard.devices == 1) "" else "S"}"
+                    else -> "${hazard.passes} PASSES · ${hazard.devices} DEVICES"
                 },
-                color = if (hazard.fixed) Forest else Muted, fontSize = 12.sp
+                color = Muted, fontSize = 10.sp,
+                fontFamily = OverpassMono,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp
             )
         }
-        Text(if (hazard.fixed) "Repaired" else hazard.severityText, color = Muted, fontSize = 12.sp)
+        Text(
+            (if (hazard.fixed) "Repaired" else hazard.severityText).uppercase(),
+            color = when {
+                hazard.fixed -> Healed
+                hazard.severity >= 3 -> Pothole
+                else -> AmberDeep
+            },
+            fontSize = 10.sp,
+            fontFamily = OverpassMono,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.6.sp
+        )
     }
-    HorizontalDivider(color = Mist)
+    HorizontalDivider(color = Line)
 }
 
 private fun impactLabel(kind: String): String = when (kind) {
@@ -1059,16 +1241,20 @@ private fun MappingScreen(
         item {
             HodosBrand()
             Spacer(Modifier.height(17.dp))
-            Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
+            Text("Automatic mapping", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
             Spacer(Modifier.height(7.dp))
             Text("Go about your day. Hodos quietly learns from the roads you travel.", color = Muted, fontSize = 15.sp)
         }
         item {
-            Surface(shape = RoundedCornerShape(22.dp), color = Mist) {
-                Column(Modifier.fillMaxWidth().padding(22.dp)) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = PaperRaised,
+                border = BorderStroke(1.dp, Line)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Automatic mapping (Recommended)", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text("Automatic mapping", fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 if (armed) "Active · Automatically records when you ride or drive"
@@ -1080,17 +1266,36 @@ private fun MappingScreen(
                         Switch(
                             checked = armed,
                             onCheckedChange = onToggle,
-                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = Ink,
+                                checkedThumbColor = Paper,
+                                uncheckedTrackColor = Sand,
+                                uncheckedThumbColor = PaperRaised,
+                                uncheckedBorderColor = Line
+                            )
                         )
                     }
                     if (tripActive) {
                         Spacer(Modifier.height(12.dp))
-                        Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
+                        Surface(color = Ink, shape = RoundedCornerShape(12.dp)) {
                             Row(
                                 Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(20.dp), tint = Forest)
+                                val pulse = rememberInfiniteTransition(label = "trip pulse")
+                                val dotAlpha by pulse.animateFloat(
+                                    initialValue = 1f,
+                                    targetValue = 0.25f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(650),
+                                        repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                                    ),
+                                    label = "trip dot"
+                                )
+                                Box(
+                                    Modifier.size(9.dp).graphicsLayer { alpha = dotAlpha }
+                                        .background(Amber, CircleShape)
+                                )
                                 Spacer(Modifier.width(10.dp))
                                 Text(
                                     "Recording · ${formatDuration(tripElapsedS)} · " +
@@ -1098,11 +1303,11 @@ private fun MappingScreen(
                                         " · $tripImpacts hazards",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Ink,
+                                    color = Paper,
                                     modifier = Modifier.weight(1f)
                                 )
                                 TextButton(onClick = onFinishJourney) {
-                                    Text("Stop", fontSize = 12.sp, color = Forest, fontWeight = FontWeight.Bold)
+                                    Text("Stop", fontSize = 12.sp, color = Amber, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -1111,10 +1316,10 @@ private fun MappingScreen(
                         Button(
                             onClick = onStartJourney,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper)
                         ) {
-                            DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(18.dp), tint = Color.White)
+                            DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(18.dp), tint = Paper)
                             Spacer(Modifier.width(8.dp))
                             Text("Start a journey", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         }
@@ -1135,7 +1340,11 @@ private fun MappingScreen(
             PerksCard(trips)
         }
         item {
-            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = PaperRaised,
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Text(
                         "Nearby service",
@@ -1160,7 +1369,9 @@ private fun MappingScreen(
                                 )
                             )
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                     ) {
                         Text("Become a partner", fontSize = 12.sp)
                     }
@@ -1169,7 +1380,11 @@ private fun MappingScreen(
         }
         if (trips.isNotEmpty() && (!backgroundLocationGranted || !batteryOptimizationIgnored)) {
             item {
-                Surface(shape = RoundedCornerShape(22.dp), color = Mist) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Sand,
+                    border = BorderStroke(1.dp, Line)
+                ) {
                     Column(Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.Shield, contentDescription = null, tint = Forest)
@@ -1216,17 +1431,27 @@ private fun MappingScreen(
         // Offline nearby maps
         item {
             val saved = offlineMaps.state
-            Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = PaperRaised,
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(26.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.MAP, modifier = Modifier.size(24.dp), tint = Ink)
                         Spacer(Modifier.width(10.dp))
-                        Text("Offline nearby maps", fontSize = 18.sp,
+                        Text("Offline nearby maps", fontSize = 17.sp,
                             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         Switch(
                             checked = saved.autoEnabled,
                             onCheckedChange = { offlineMaps.setAuto(it) },
-                            colors = SwitchDefaults.colors(checkedTrackColor = Forest)
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = Ink,
+                                checkedThumbColor = Paper,
+                                uncheckedTrackColor = Sand,
+                                uncheckedThumbColor = PaperRaised,
+                                uncheckedBorderColor = Line
+                            )
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -1239,20 +1464,27 @@ private fun MappingScreen(
                         Spacer(Modifier.height(8.dp))
                         LinearProgressIndicator(
                             progress = { (saved.completed.toFloat() / saved.required).coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Forest
+                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            color = Amber,
+                            trackColor = Sand,
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                         )
                     }
-                    Text("${saved.savedRegions} saved areas · ${saved.downloadedBytes / (1024 * 1024)} MB current area · zoom 8–13",
-                        fontSize = 12.sp, color = Muted)
+                    Text(
+                        "${saved.savedRegions} saved areas · ${saved.downloadedBytes / (1024 * 1024)} MB current area · zoom 8–13",
+                        fontSize = 11.sp, color = Muted,
+                        fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp
+                    )
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = { offlineMaps.saveNearbyNow() },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                         ) { Text("Save nearby", fontSize = 12.sp) }
                         TextButton(onClick = { offlineMaps.clear() }) {
-                            Text("Remove maps", fontSize = 12.sp)
+                            Text("Remove maps", fontSize = 12.sp, color = Muted)
                         }
                     }
                 }
@@ -1261,13 +1493,17 @@ private fun MappingScreen(
 
         // Observation Sync
         item {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = PaperRaised,
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = Forest)
+                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = Ink)
                         Spacer(Modifier.width(10.dp))
-                        Text("Observation sync", fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold)
+                        Text("Observation sync", fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -1304,17 +1540,25 @@ private fun MappingScreen(
         }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Your journeys", fontSize = 21.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                TextButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, null); Text("Update") }
+                Text("Your journeys", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+                TextButton(onClick = onRefresh) {
+                    Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(15.dp), tint = Ink)
+                    Spacer(Modifier.width(5.dp))
+                    Text("Update", color = Ink, fontSize = 12.sp)
+                }
             }
         }
         if (trips.isEmpty()) {
             item {
-                Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
+                Surface(
+                    color = PaperRaised,
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(1.dp, Line)
+                ) {
                     Column(Modifier.fillMaxWidth().padding(24.dp)) {
-                        Icon(Icons.Outlined.History, null, tint = Forest, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Outlined.History, null, tint = Muted, modifier = Modifier.size(26.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text("Your first journey starts here", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                        Text("Your first journey starts here", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                         Spacer(Modifier.height(5.dp))
                         Text("Keep Automatic Mapping enabled and ride or drive normally. Completed trips appear here automatically.", color = Muted, fontSize = 13.sp)
                     }
@@ -1324,20 +1568,24 @@ private fun MappingScreen(
             items(trips, key = { it.at }) { trip ->
                 val durationText = trip.durationS?.let { formatDurationFriendly(it) }
                 Surface(
-                    color = Color.White,
-                    shape = RoundedCornerShape(17.dp),
-                    modifier = Modifier.clickable { selectedTrip = trip }
+                    color = PaperRaised,
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, Line),
+                    modifier = Modifier
+                        .animateItem()
+                        .clickable { selectedTrip = trip }
                 ) {
-                    Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.DirectionsCar, null, tint = Forest)
-                        Spacer(Modifier.width(15.dp))
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        DoodleIcon(DoodleSymbol.DIARY, modifier = Modifier.size(22.dp), tint = Ink)
+                        Spacer(Modifier.width(13.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(DateFormat.format("d MMM · h:mm a", Date(trip.at)).toString(), fontWeight = FontWeight.SemiBold)
+                            Text(DateFormat.format("d MMM · h:mm a", Date(trip.at)).toString(), fontWeight = FontWeight.SemiBold, fontSize = 14.5.sp)
                             Text(
                                 "${trip.impacts} hazards · " +
                                     (if (!durationText.isNullOrEmpty()) "$durationText · " else "") +
                                     (trip.gpsFixes?.let { "$it GPS fixes" } ?: "${trip.locations} spots"),
-                                color = Muted, fontSize = 12.sp
+                                color = Muted, fontSize = 10.sp,
+                                fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
@@ -1345,20 +1593,25 @@ private fun MappingScreen(
                                 if (trip.distanceM >= 1000.0)
                                     String.format(Locale.US, "%.1f km", trip.distanceM / 1000.0)
                                 else "${trip.distanceM.roundToInt()} m",
-                                color = Forest, fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
+                                color = Ink, fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold
                             )
                             Spacer(Modifier.height(2.dp))
-                            Text("Details & Export", color = Muted, fontSize = 11.sp)
+                            Text("Details & Export", color = AmberDeep, fontSize = 10.sp,
+                                fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp)
                         }
                     }
                 }
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(17.dp), color = Mist) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Sand,
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Outlined.Shield, null, tint = Forest)
+                    Icon(Icons.Outlined.Shield, null, tint = Ink)
                     Spacer(Modifier.width(12.dp))
                     Text("Your phone processes movement locally. Only small road observations are submitted, not full sensor recordings.", fontSize = 13.sp, color = Ink)
                 }
@@ -1537,19 +1790,19 @@ private fun YouScreen(
             Spacer(Modifier.height(12.dp))
             HodosBrand()
             Spacer(Modifier.height(16.dp))
-            Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold)
+            Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
             Text("Every journey makes the roads better understood.", color = Muted)
         }
         item {
             // App Updates & Direct APK Sharing (Quick Share / Bluetooth)
             Surface(
-                color = if (latestRelease?.isNewer == true) Mist else Color.White,
-                shape = RoundedCornerShape(22.dp),
-                shadowElevation = 2.dp
+                color = if (latestRelease?.isNewer == true) Sand else PaperRaised,
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, Line)
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Share, contentDescription = null, tint = Forest)
+                        Icon(Icons.Outlined.Share, contentDescription = null, tint = Ink)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -1557,14 +1810,15 @@ private fun YouScreen(
                                     "Update available · ${latestRelease.tagName}"
                                 else "Share APK & In-App Updates",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp,
+                                fontSize = 16.sp,
                                 color = Ink
                             )
                             Text(
                                 "Installed v$currentVer" +
                                     (latestRelease?.let { " · Latest GitHub release ${it.tagName}" } ?: ""),
-                                fontSize = 12.sp,
-                                color = Muted
+                                fontSize = 11.sp,
+                                color = Muted,
+                                fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp
                             )
                         }
                     }
@@ -1579,9 +1833,9 @@ private fun YouScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
                             onClick = onShare,
-                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
+                            colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper),
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
@@ -1590,7 +1844,8 @@ private fun YouScreen(
                         OutlinedButton(
                             onClick = onCheckUpdates,
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                         ) {
                             Text(
                                 if (latestRelease?.isNewer == true) "Install ${latestRelease.tagName}"
@@ -1625,12 +1880,16 @@ private fun YouScreen(
             TravelProfileCard()
         }
         item {
-            Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+            Surface(
+                color = PaperRaised,
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(24.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(22.dp), tint = Ink)
                         Spacer(Modifier.width(10.dp))
-                        Text("Free to use. Funded by partners.", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("Free to use. Funded by partners.", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
@@ -1648,8 +1907,9 @@ private fun YouScreen(
                                     )
                                 )
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Forest),
-                            modifier = Modifier.weight(1f)
+                            colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Text("Become a partner", fontSize = 12.sp)
                         }
@@ -1662,7 +1922,9 @@ private fun YouScreen(
                                     )
                                 )
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
                         ) {
                             Text("License data", fontSize = 12.sp)
                         }
@@ -1672,20 +1934,25 @@ private fun YouScreen(
         }
         if (partners.isNotEmpty()) {
             item {
-                Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+                Surface(
+                    color = PaperRaised,
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(1.dp, Line)
+                ) {
                     Column(
                         Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.DirectionsCar, contentDescription = null, tint = Forest)
+                            DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(20.dp), tint = Ink)
                             Spacer(Modifier.width(10.dp))
-                            Text("Partner offers", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                            Text("Partner offers", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                         partners.take(2).forEach { partner ->
                             Surface(
-                                color = Mist,
-                                shape = RoundedCornerShape(14.dp),
+                                color = Sand,
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Line),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -1700,8 +1967,9 @@ private fun YouScreen(
                                     Text(
                                         if (partner.sample) "${partner.name} · Sample placement"
                                         else "${partner.name} · ${partner.sponsorLabel}",
-                                        fontSize = 11.sp,
-                                        color = Muted
+                                        fontSize = 10.sp,
+                                        color = Muted,
+                                        fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp
                                     )
                                 }
                             }
@@ -1716,12 +1984,16 @@ private fun YouScreen(
             }
         }
         item {
-            Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+            Surface(
+                color = PaperRaised,
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, Line)
+            ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(24.dp), tint = Forest)
+                        DoodleIcon(DoodleSymbol.SHIELD, modifier = Modifier.size(22.dp), tint = Ink)
                         Spacer(Modifier.width(10.dp))
-                        Text("Privacy comes first", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                        Text("Privacy comes first", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                     Text("The detector runs locally. The app submits road observations so multiple installations can corroborate hazards. Location permission is needed for hands-free mapping.", color = Muted, fontSize = 13.sp)
@@ -1751,11 +2023,16 @@ private fun YouScreen(
             }
         }
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Info, null, tint = Forest)
-                Spacer(Modifier.width(10.dp))
-                Text("Hodos v$currentVer · hodos@devilabs.dev", color = Muted, fontSize = 13.sp)
-            }
+            Text(
+                "Hodos v$currentVer · hodos@devilabs.dev",
+                color = Muted,
+                fontSize = 10.5.sp,
+                fontFamily = OverpassMono,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
     if (confirmClearHistory) {
@@ -1798,8 +2075,9 @@ private fun PartnerOfferBanner(
         partner?.let { PartnerStats.nearby(hazards, it.lat, it.lng) }
     }
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Mist,
+        shape = RoundedCornerShape(14.dp),
+        color = Sand,
+        border = BorderStroke(1.dp, Line),
         modifier = Modifier.fillMaxWidth().clickable {
             context.startActivity(
                 Intent(
@@ -1813,11 +2091,17 @@ private fun PartnerOfferBanner(
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DoodleIcon(
-                DoodleSymbol.CAR,
-                modifier = Modifier.size(18.dp),
-                tint = Forest
-            )
+            Surface(color = Amber, shape = RoundedCornerShape(5.dp)) {
+                Text(
+                    "PARTNER",
+                    color = Color.White,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = OverpassMono,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                )
+            }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -1862,27 +2146,29 @@ private fun RoadkeeperCard(trips: List<RoadTrip>) {
         animationSpec = tween(900),
         label = "roadScore"
     )
-    Surface(shape = RoundedCornerShape(22.dp), color = Forest) {
+    Surface(shape = RoundedCornerShape(18.dp), color = Ink) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Roadkeeper",
-                    color = Color.White,
+                    color = Paper,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
                 if (trips.isNotEmpty()) {
                     Surface(
-                        color = Color.White.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(980.dp)
+                        color = Color.Transparent,
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, Paper.copy(alpha = 0.35f))
                     ) {
                         Text(
                             "FOUNDING",
-                            color = Color.White,
+                            color = Paper,
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.6.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = OverpassMono,
+                            letterSpacing = 1.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
@@ -1892,32 +2178,37 @@ private fun RoadkeeperCard(trips: List<RoadTrip>) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "$animatedScore",
-                    color = Color.White,
+                    color = Paper,
                     fontSize = 46.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-1.5).sp
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-1.2).sp
                 )
                 Text(
                     "/100",
-                    color = Color.White.copy(alpha = 0.65f),
+                    color = Paper.copy(alpha = 0.6f),
                     fontSize = 14.sp,
+                    fontFamily = OverpassMono,
                     modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
                 )
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         score.grade,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
+                        color = Amber,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
                     Text(
                         "Road score",
-                        color = Color.White.copy(alpha = 0.65f),
-                        fontSize = 11.sp
+                        color = Paper.copy(alpha = 0.6f),
+                        fontSize = 10.sp,
+                        fontFamily = OverpassMono,
+                        letterSpacing = 0.8.sp
                     )
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            HorizontalDivider(color = Paper.copy(alpha = 0.14f), thickness = 1.dp)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 StatOnDark("${summary.journeysThisWeek}", "journeys")
@@ -1934,7 +2225,7 @@ private fun RoadkeeperCard(trips: List<RoadTrip>) {
                     summary.impactsThisWeek == 0 -> "Clean week: no road defects recorded."
                     else -> "${summary.impactsThisWeek} road defects recorded this week."
                 },
-                color = Color.White.copy(alpha = 0.72f),
+                color = Paper.copy(alpha = 0.66f),
                 fontSize = 12.sp
             )
         }
@@ -1956,7 +2247,11 @@ private fun PerksCard(trips: List<RoadTrip>) {
         animationSpec = tween(800),
         label = "perkProgress"
     )
-    Surface(shape = RoundedCornerShape(22.dp), color = Color.White) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = PaperRaised,
+        border = BorderStroke(1.dp, Line)
+    ) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1980,9 +2275,10 @@ private fun PerksCard(trips: List<RoadTrip>) {
             Spacer(Modifier.height(14.dp))
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = Forest,
-                trackColor = Mist
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                color = Amber,
+                trackColor = Sand,
+                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
             Spacer(Modifier.height(10.dp))
             Text(
@@ -1996,17 +2292,22 @@ private fun PerksCard(trips: List<RoadTrip>) {
             )
             if (summary.unlocked.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Surface(color = Mist, shape = RoundedCornerShape(14.dp)) {
+                Surface(
+                    color = Sand,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Line)
+                ) {
                     Column(
                         Modifier.fillMaxWidth().padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
                             "Unlocked now",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Forest,
-                            letterSpacing = 0.5.sp
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AmberDeep,
+                            fontFamily = OverpassMono,
+                            letterSpacing = 1.sp
                         )
                         summary.unlocked.forEach { perk ->
                             Text(
@@ -2021,7 +2322,7 @@ private fun PerksCard(trips: List<RoadTrip>) {
                                 "Show code at the shop: $code",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Forest
+                                color = AmberDeep
                             )
                         }
                     }
@@ -2054,7 +2355,11 @@ private fun TravelProfileCard() {
         "bike" to "Bike",
         "mixed" to "Mixed"
     )
-    Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+    Surface(
+        color = PaperRaised,
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, Line)
+    ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Text("How do you travel?", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Spacer(Modifier.height(4.dp))
@@ -2075,7 +2380,19 @@ private fun TravelProfileCard() {
                             profile = value
                             prefs.edit().putString("travelProfile", value).apply()
                         },
-                        label = { Text(label) }
+                        label = { Text(label) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = PaperRaised,
+                            labelColor = Ink,
+                            selectedContainerColor = Ink,
+                            selectedLabelColor = Paper
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = profile == value,
+                            borderColor = if (profile == value) Ink else Line
+                        )
                     )
                 }
             }
@@ -2086,8 +2403,15 @@ private fun TravelProfileCard() {
 @Composable
 private fun StatOnDark(value: String, label: String) {
     Column {
-        Text(value, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+        Text(value, color = Paper, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(
+            label.uppercase(),
+            color = Paper.copy(alpha = 0.55f),
+            fontSize = 9.sp,
+            fontFamily = OverpassMono,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.9.sp
+        )
     }
 }
 
@@ -2101,7 +2425,15 @@ private fun HodosBrand() {
             modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp))
         )
         Spacer(Modifier.width(10.dp))
-        Text("hodos", fontSize = 29.sp, fontWeight = FontWeight.Bold,
-            letterSpacing = (-1.2).sp, color = Ink)
+        Text(
+            buildAnnotatedString {
+                append("hodos")
+                withStyle(SpanStyle(color = Amber)) { append(".") }
+            },
+            fontSize = 29.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = (-0.8).sp,
+            color = Ink
+        )
     }
 }
