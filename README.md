@@ -13,6 +13,8 @@
   <a href="https://hodos.devilabs.dev">Website</a> •
   <a href="https://github.com/DrSkyle/hodos/releases">Android Releases</a> •
   <a href="docs/PRIVACY.md">Privacy Policy</a> •
+  <a href="docs/MAP.md">The Map</a> •
+  <a href="docs/ROAD-INTELLIGENCE.md">Road Intelligence</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#development">Development</a>
 </p>
@@ -35,10 +37,20 @@ Turn on automatic mapping, keep your phone with you, and drive as you normally w
 ## Features
 
 - **Automatic Motion Detection:** Uses Android Activity Recognition to arm sensor sampling only during vehicular transit.
+- **Five destinations:** *Map* (live hazards), *Drive* (mapping status and trips), *Roads* (surface mix, corridor quality, vehicle wear), *Insights* (deterioration, repair value, smooth-route ceiling) and *You* (saved roads, perks, privacy).
 - **Interactive Vector Map:** MapLibre-powered Android map with nearby hazards, severity classifications, and pass corroboration counts.
+- **Road Quality Analysis:** On-device cells (~150 m) infer surface type, score corridor quality 0–100, and estimate vehicle wear from roughness × distance.
 - **Community Verifications:** Confirm active hazards or mark repaired road segments.
 - **Offline Maps:** Wi-Fi-only automated tile pack caching (20 km radius, zoom levels 8–13) with quota caps (45 MiB / 2,400 tiles) to respect open basemap infrastructure.
 - **Privacy First:** Pseudonymous installation identifiers, quantized location coordinates, and no third-party tracking or advertising SDKs.
+
+## Documentation
+
+- [The public map](docs/MAP.md) — what the markers mean and why nothing is seeded.
+- [Road intelligence](docs/ROAD-INTELLIGENCE.md) — quality, surface, wear, deterioration and repair value, with their limits.
+- [Privacy policy](docs/PRIVACY.md) — what leaves your phone and what never does.
+- [Security policy](SECURITY.md) — reporting and release integrity.
+
 
 ---
 
@@ -46,10 +58,17 @@ Turn on automatic mapping, keep your phone with you, and drive as you normally w
 
 The project is organized as a monorepo:
 
-- **`apps/web/android`**: Native Android app written in Kotlin and Jetpack Compose, featuring MapLibre Android SDK, background service lifecycle (`HodosService`), and SQLite outbox.
-- **`apps/web`**: Lightweight product showcase with an interactive on-device sensor simulator (oscilloscope) and live hazard map inspector built with Vite and TypeScript.
+- **`apps/web/android`**: Native Android app written in Kotlin and Jetpack Compose, featuring MapLibre Android SDK, background service lifecycle (`HodosService`), SQLite outbox, and on-device road-quality analysis (`RoadQuality`).
+- **`apps/web`**: The website and live hazard map, built with Vite and TypeScript. The map consumes live published hazards from the backend; there is no static snapshot.
+- **`apps/web/public/map/hodos-layers.json`**: The single shared marker and heat-layer specification. Both the website and the Android app render hazards from this one file, so the map reads identically on both.
 - **`packages/core`**: Shared detection library for sensor signal processing, Butterworth filtering, jerk thresholding, and DBSCAN spatial clustering.
-- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and generate the public hazard map layer.
+- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and produce the public hazard map layer, plus anonymous partner footfall counting.
+
+---
+
+## Data you will actually see
+
+The public map renders **live corroborated hazards only**. Nothing is seeded, sampled, or mocked: an empty backend renders an empty map. Individual devices never write hazard rows — the aggregation function promotes an observation only after independent trips corroborate it, so the map cannot be padded by one phone.
 
 ---
 
