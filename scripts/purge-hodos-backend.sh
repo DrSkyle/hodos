@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Purge Hodos road data from Appwrite, with a full backup first.
 #
-# Requires a server API key with tables/documents read+delete scopes:
+# Authenticate with either a server API key or the CLI login token:
 #   export APPWRITE_API_KEY="standard_..."
+#   # or, borrowing the session the Appwrite CLI already stored:
+#   export APPWRITE_SESSION_TOKEN="$(jq -r '.current as $c | .[$c].accessToken' ~/.appwrite/prefs.json)"
 #
 # Run from anywhere:
 #   ./scripts/purge-hodos-backend.sh            # backup + delete every table's rows
@@ -18,17 +20,28 @@ BACKUP_DIR="$(cd "$(dirname "$0")/.." && pwd)/backups"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 MODE="${1:-purge}"
 
-if [[ -z "${APPWRITE_API_KEY:-}" ]]; then
-  echo "error: set APPWRITE_API_KEY (server key with tables read + delete scopes)" >&2
+if [[ -z "${APPWRITE_API_KEY:-}" && -z "${APPWRITE_SESSION_TOKEN:-}" ]]; then
+  echo "error: set APPWRITE_API_KEY (server key) or APPWRITE_SESSION_TOKEN (CLI login token)" >&2
   exit 1
 fi
 
 api() {
   local method="$1" path="$2"
   curl -sS -X "$method" "$ENDPOINT$path" \
+    ${APPWRITE_API_KEY:+-H "X-Appwrite-Key: $APPWRITE_API_KEY"} \
+    ${APPWRITE_SESSION_TOKEN:+-H "Authorization: Bearer $APPWRITE_SESSION_TOKEN"} \
     -H "X-Appwrite-Project: $PROJECT_ID" \
-    -H "X-Appwrite-Key: $APPWRITE_API_KEY" \
     -H "Content-Type: application/json"
+}
+
+# Paginate with the modern queries[] form: plain limit/offset query params are
+# ignored by the tables API, which silently returns the first page forever.
+rows_page() {
+  local table="$1" offset="$2"
+  local q_limit q_offset
+  q_limit='{"method":"limit","values":[100]}'
+  q_offset="{\"method\":\"offset\",\"values\":[$offset]}"
+  api GET "/tablesdb/$DATABASE_ID/tables/$table/rows?queries[]=$(printf %s "$q_limit" | jq -sRr @uri)&queries[]=$(printf %s "$q_offset" | jq -sRr @uri)"
 }
 
 mkdir -p "$BACKUP_DIR"
@@ -58,7 +71,7 @@ for TABLE in $TABLE_IDS; do
   COUNT=0
   : > "$BACKUP_DIR/.$TABLE.part"
   while :; do
-    PAGE=$(api GET "/tablesdb/$DATABASE_ID/tables/$TABLE/rows?limit=100&offset=$OFFSET")
+    PAGE=$(rows_page "$TABLE" "$OFFSET")
     N=$(echo "$PAGE" | jq '.rows | length' 2>/dev/null || echo 0)
     [[ "$N" -eq 0 ]] && break
     echo "$PAGE" | jq -c '.rows[]' >> "$BACKUP_DIR/.$TABLE.part"
@@ -75,7 +88,7 @@ for TABLE in $TABLE_IDS; do
   echo "  backed up $COUNT row(s)"
 
   if [[ "$MODE" != "--backup" ]]; then
-    IDS=$(jq -r '.[]?.$id' "$BACKUP_DIR/.$TABLE.part" 2>/dev/null || true)
+    IDS=$(jq -r '.["$id"]?' "$BACKUP_DIR/.$TABLE.part" 2>/dev/null || true)
     DELETED=0
     while IFS= read -r ROW_ID; do
       [[ -z "$ROW_ID" ]] && continue
@@ -93,7 +106,7 @@ if [[ "$MODE" == "--backup" ]]; then
 else
   echo "Verifying counts..."
   for TABLE in $TABLE_IDS; do
-    REMAIN=$(api GET "/tablesdb/$DATABASE_ID/tables/$TABLE/rows?limit=1" | jq '.total // (.rows | length)')
+    REMAIN=$(rows_page "$TABLE" 0 | jq '.total // (.rows | length)')
     echo "  $TABLE: $REMAIN remaining"
   done
 fi
