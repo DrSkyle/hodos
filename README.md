@@ -23,12 +23,14 @@
 
 ## What is Hodos?
 
-**Hodos** is an open-source Android app that detects road hazards—such as potholes, speed bumps, and rough pavement—using on-device motion readings collected during everyday journeys.
+**Hodos** is an open-source Android app that reads the road through your phone as you drive, then turns what it learns into a shared, live map of road conditions.
 
 Turn on automatic mapping, keep your phone with you, and drive as you normally would. Hodos detects road surface impacts using your phone's accelerometer and gyroscope, and queues compact observations for a shared community map. Repeated observations from independent trips corroborate hazards and distinguish real defects from one-off bumps.
 
+Beyond the shared map, Hodos turns your own journeys into road knowledge: which roads are asphalt, gravel or cobbles, how smooth each corridor is, how much wear they put into your vehicle, which hazards are getting worse, and which few repairs would improve the most rides.
+
 - **Zero Manual Effort:** Runs quietly in the background; no tapping or reporting while driving.
-- **Privacy by Design:** Raw motion traces stay in device RAM. No continuous GPS routes or breadcrumbs are logged.
+- **Privacy by Design:** Raw motion traces stay in device RAM. No continuous GPS routes or breadcrumbs are logged. Everything derived from your journeys stays on your phone.
 - **Multi-Device Corroboration:** Hazards are only published when multiple independent trips corroborate the defect.
 - **Offline Resilience:** Downloads 20 km Wi-Fi cached vector basemaps (OpenFreeMap) and maintains a local SQLite hazard cache.
 
