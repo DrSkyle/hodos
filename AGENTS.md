@@ -81,7 +81,8 @@ country — no regional locks.
 ## Local shops
 
 `partners` returns the live shop pins for an area: name, category, one line of
-text and position. A shop pays a daily fee set by its country — $0.19 for much
+text and position. A new pin goes live for one day before any payment, then has to be paid for to
+stay up. A shop pays a daily fee set by its country — $0.19 for much
 of the world, $0.79 for middle-income markets, $1.99 where advertising costs
 more — always in its own currency. Pins are also attached to `hazards` and
 `roads` results for the same area, and are removed automatically when the days

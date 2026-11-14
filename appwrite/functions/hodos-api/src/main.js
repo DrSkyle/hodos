@@ -53,6 +53,10 @@ const PARTNER_TIERS = {
 };
 
 const PARTNER_MAX_DAYS = 90;
+/** Every shop gets one day live before it has to pay, so the flow never dead-ends. */
+const PARTNER_TRIAL_HOURS = 24;
+const PARTNER_TRIAL_PER_MONTH = 2;
+const DAY_MS = 86_400_000;
 const FX_TTL_MS = 12 * 60 * 60 * 1000;
 const FX_URL = "https://open.er-api.com/v6/latest/USD";
 
@@ -260,10 +264,11 @@ async function liveShops(bbox, cap = 12) {
     shops.push({
       id: row.$id,
       name: String(row.name || "").slice(0, 80),
-      category: row.category || "pit-stop",
+      category: row.category || "business",
       lat,
       lng,
-      offer: String(row.offer || "").slice(0, 160)
+      offer: String(row.offer || "").slice(0, 160),
+      link: typeof row.link === "string" && row.link ? row.link : null
     });
     if (shops.length >= cap) break;
   }
@@ -589,24 +594,61 @@ function validPartner(body) {
   if (offer.length < 2 || offer.length > 160) return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  let link = "";
+  if (typeof body.link === "string" && body.link.trim()) {
+    try {
+      const parsed = new URL(body.link.trim());
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") link = parsed.toString().slice(0, 200);
+    } catch (_) {
+      // A malformed link is dropped rather than stored half-valid.
+    }
+  }
   return {
     name,
     offer,
     lat,
     lng,
-    category: String(body.category || "pit-stop").slice(0, 32),
-    contact: String(body.contact || "").slice(0, 120)
+    category: String(body.category || "business").slice(0, 32),
+    contact: String(body.contact || "").slice(0, 120),
+    link
   };
 }
 
-async function partnerPlace(body) {
+/**
+ * Counts this address's recent trials. A free day is a real pin on a public map,
+ * so it is limited per address rather than left open to a script.
+ */
+async function recentTrials(bucket) {
+  if (!bucket) return 0;
+  const since = new Date(Date.now() - 30 * DAY_MS).toISOString();
+  try {
+    const rows = await readRows("partnerPlacements", [
+      { method: "equal", attribute: "ipBucket", values: [bucket] },
+      { method: "greaterThan", attribute: "at", values: [since] },
+      { method: "limit", values: [50] }
+    ]);
+    return rows.filter((row) => row.status === "trial").length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function partnerPlace(req, body) {
   const shop = validPartner(body);
   if (!shop) {
     return { ok: false, error: "include name, offer, lat and lng" };
   }
   const quote = await partnerQuote(body);
   const reference = String(body.reference || "").trim();
+  const bucket = await ipBucket(req, body).catch(() => "");
   const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+  // Free day first: create the live pin, then ask for money to keep it.
+  const wantsTrial = !reference && body.trial !== false;
+  const trialsUsed = wantsTrial ? await recentTrials(bucket) : PARTNER_TRIAL_PER_MONTH;
+  const trial = wantsTrial && trialsUsed < PARTNER_TRIAL_PER_MONTH;
+  const activeUntil = trial ? new Date(Date.now() + PARTNER_TRIAL_HOURS * 3600_000).toISOString() : null;
+
   await writeRow("partnerPlacements", id, {
     name: shop.name,
     offer: shop.offer,
@@ -614,6 +656,7 @@ async function partnerPlace(body) {
     lng: shop.lng,
     category: shop.category,
     contact: shop.contact,
+    link: shop.link,
     days: quote.days,
     amountMicro: Math.round(quote.usdPerDay * 1_000_000) * quote.days,
     currency: quote.currency,
@@ -621,17 +664,42 @@ async function partnerPlace(body) {
     tier: quote.tier,
     country: quote.country || "",
     reference,
-    status: reference ? "pending" : "awaiting-payment",
+    status: trial ? "trial" : reference ? "pending" : "awaiting-payment",
+    ipBucket: bucket,
     at: nowIso()
   });
+
+  if (trial && activeUntil) {
+    // The pin itself lives in `partners`, which is what the map and the API read.
+    try {
+      await writeRow("partners", id, {
+        name: shop.name,
+        category: shop.category,
+        lat: shop.lat,
+        lng: shop.lng,
+        offer: shop.offer,
+        sponsorLabel: "Local shop",
+        activeUntil
+      });
+    } catch (error) {
+      log(`trial pin failed: ${error}`);
+      return { ok: false, error: "could not publish the pin", placement: id };
+    }
+  }
+
   return {
     ok: true,
     placement: id,
-    status: reference ? "pending" : "awaiting-payment",
+    status: trial ? "trial" : reference ? "pending" : "awaiting-payment",
+    live: Boolean(trial),
+    activeUntil,
+    trialsUsed: trial ? trialsUsed + 1 : trialsUsed,
     ...quote,
-    next: reference
+    next: trial
+      ? `Your pin is live until ${activeUntil}. Keep it by paying for the days you want.`
+      : reference
       ? "Payment reference recorded. The pin goes live once it clears."
-      : "Send a Payoneer, card or PayPal reference to activate this placement."
+      : "Free day already used from this address — pay to publish this one."
   };
 }
 
@@ -737,7 +805,7 @@ module.exports = async function main(context) {
 
   if (action === "partnerPlace") {
     try {
-      const result = await partnerPlace(body);
+      const result = await partnerPlace(req, body);
       return res.json(result, result.ok ? 202 : 400, CORS);
     } catch (error) {
       log(`partnerPlace: ${error}`);

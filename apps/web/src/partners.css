@@ -2,58 +2,6 @@
  * Shop placement page. One calm column of content, soft fields, a real map.
  */
 
-.page-shell {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 28px;
-}
-
-.garage-header-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.garage-brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.garage-brand img {
-  border-radius: 8px;
-  display: block;
-}
-
-.garage-brand span {
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.garage-brand .dot {
-  color: var(--accent);
-}
-
-.garage-header-spacer {
-  flex: 1;
-}
-
-.ig-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  border-radius: var(--r-ctl);
-  background: var(--soft);
-  font-size: 13px;
-  font-weight: 650;
-  white-space: nowrap;
-}
-
 .partners-hero {
   padding: 56px 0 8px;
 }
@@ -295,6 +243,50 @@
 
 .form-status[data-tone="error"] {
   color: var(--pothole);
+}
+
+.result-card {
+  margin-top: 18px;
+  padding: 22px 22px 18px;
+  border-radius: 20px;
+  background: var(--soft);
+}
+
+.result-card.is-live {
+  background: var(--paper-raised);
+  box-shadow: 0 12px 34px rgba(28, 26, 23, 0.1);
+}
+
+.result-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.result-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.result-card p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.result-ref {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .fine-print {

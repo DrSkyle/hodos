@@ -109,28 +109,42 @@
         <form id="placement-form" class="placement-form" novalidate>
           <label class="field">
             <span class="field-label">Shop name</span>
-            <input name="name" type="text" maxlength="80" placeholder="Kalimati Tyre House" required />
+            <input name="name" type="text" maxlength="80" placeholder="Your shop name" required />
           </label>
 
           <label class="field">
             <span class="field-label">One line on the pin</span>
-            <input name="offer" type="text" maxlength="160" placeholder="Puncture repair · open till 9pm" required />
+            <input name="offer" type="text" maxlength="160" placeholder="One line about what you do" required />
           </label>
 
           <label class="field">
             <span class="field-label">Category</span>
-            <select name="category">
-              <option value="pit-stop">Garage / pit stop</option>
-              <option value="tires">Tires</option>
-              <option value="fuel">Fuel</option>
-              <option value="parts">Parts</option>
-              <option value="wash">Wash</option>
-            </select>
+            <input name="category" type="text" maxlength="32" list="category-options"
+                   placeholder="Anything: tyre shop, cafe, chemist, hotel…" />
+            <datalist id="category-options">
+              <option value="Garage"></option>
+              <option value="Tyres"></option>
+              <option value="Fuel"></option>
+              <option value="Parts"></option>
+              <option value="Wash"></option>
+              <option value="Cafe"></option>
+              <option value="Restaurant"></option>
+              <option value="Hotel"></option>
+              <option value="Pharmacy"></option>
+              <option value="Store"></option>
+              <option value="EV charging"></option>
+              <option value="Parking"></option>
+            </datalist>
           </label>
 
           <label class="field">
             <span class="field-label">Phone or email for us to reach you</span>
-            <input name="contact" type="text" maxlength="120" placeholder="98xxxxxxxx" />
+            <input name="contact" type="text" maxlength="120" placeholder="Phone or email" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Link on your pin (optional)</span>
+            <input name="link" type="url" maxlength="200" inputmode="url" placeholder="https://" />
           </label>
 
           <div class="pin-row">
@@ -139,8 +153,9 @@
             <button type="button" class="pin-locate" id="use-my-location">Use my location</button>
           </div>
 
-          <button type="submit" class="submit-btn">Reserve this pin</button>
+          <button type="submit" class="submit-btn">Put it on the map</button>
           <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+          <div id="placement-result" hidden></div>
         </form>
 
         <p class="fine-print">

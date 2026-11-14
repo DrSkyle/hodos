@@ -32,6 +32,7 @@ export interface WebPartner {
   lng: number;
   offer: string;
   sponsorLabel: string;
+  link?: string | null;
 }
 
 export interface MapInstanceHandle {
@@ -353,6 +354,7 @@ export function initWebMap(
           </span>
         </div>
         ${p.offer ? `<div style="font-size: 12.5px; color: #57534e; margin-bottom: 6px;">${p.offer}</div>` : ""}
+        ${p.link ? `<a href="${p.link}" target="_blank" rel="noopener noreferrer nofollow" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none; display:block; margin-bottom:6px;">Visit →</a>` : ""}
         <a href="/partners" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Put your shop here →</a>
       </div>
     `;
@@ -546,7 +548,8 @@ export function initWebMap(
           lat,
           lng,
           offer: String(raw.offer ?? ""),
-          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored")
+          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored"),
+          link: typeof raw.link === "string" && raw.link ? raw.link : null
         });
       });
       if (parsed.length === 0) return;

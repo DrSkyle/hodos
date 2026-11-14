@@ -21,6 +21,26 @@ export const INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/";
 export const AD_TAG_HTML = "";
 
 /**
+ * Your AliExpress WW affiliate link from Admitad.
+ *
+ * Ad space "devilabs" → Programs → AliExpress WW → Banners and Links → the
+ * main affiliate link. It looks like:
+ *   https://ad.admitad.com/g/<your-id>/
+ *
+ * With it, every shelf link below becomes a tracked deeplink to an AliExpress
+ * category page — no fake product data, no invented links. Until it is set, the
+ * deals shelf simply does not render.
+ */
+export const ADMITAD_AFFILIATE_LINK = "https://ad.admitad.com/g/1e8d114494b7e165239416525dc3e8/";
+
+/**
+ * Where a shop pays to keep its pin. A Stripe Payment Link, a PayPal.me link or
+ * a Revolut link all work — anything you can create from a dashboard without an
+ * API key. Leave it empty and the page offers to arrange payment by email.
+ */
+export const PAYMENT_LINK = "";
+
+/**
  * Authorised-seller lines for /ads.txt, one per line, e.g.
  * `mitgo.com, <publisher-id>, DIRECT`. The file is only published once there is
  * something true to declare.

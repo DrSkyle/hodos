@@ -3,6 +3,7 @@ import "./garage.css";
 import "./pwa";
 import { mountAdSlots } from "./ads";
 import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
+import { renderDealShelf } from "./aliexpress";
 import {
   DEFAULT_GARAGE_SLOT_ID,
   GARAGE_SLOTS,
@@ -182,6 +183,12 @@ function wireListForm() {
       if (button) button.disabled = false;
     }
   });
+}
+
+const dealsHost = document.getElementById("deal-list");
+const dealsBlock = document.getElementById("deals-block");
+if (dealsHost && dealsBlock && renderDealShelf(dealsHost)) {
+  dealsBlock.hidden = false;
 }
 
 buildChips();

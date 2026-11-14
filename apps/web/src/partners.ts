@@ -1,9 +1,12 @@
 import "./cartographic.css";
+import "./garage.css";
 import "./partners.css";
 import "./pwa";
 import {
   APPWRITE_ENDPOINT,
-  APPWRITE_PROJECT_ID
+  APPWRITE_PROJECT_ID,
+  CONTACT_EMAIL,
+  PAYMENT_LINK
 } from "./site-constants";
 import { setWorkerUrl, Map, Marker, NavigationControl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -164,8 +167,8 @@ function buildMap() {
       },
       layers: [{ id: "osm", type: "raster", source: "osm" }]
     },
-    center: [85.3, 27.7],
-    zoom: 3,
+    center: [10, 24],
+    zoom: 1.8,
     attributionControl: { compact: true }
   });
   map.addControl(new NavigationControl({ showCompass: false }), "top-right");
@@ -211,6 +214,48 @@ function buildMap() {
   });
 }
 
+/**
+ * The result is a state, not a sentence: the pin is either live (with an
+ * expiry) or waiting on money, and either way there is a next step to tap.
+ */
+function showResult(order: {
+  live: boolean;
+  activeUntil: string | null;
+  placement: string;
+  amount: string;
+  days: number;
+  next: string;
+}) {
+  const host = document.getElementById("placement-result");
+  if (!host) return;
+  const until = order.activeUntil ? new Date(order.activeUntil) : null;
+  const untilText = until
+    ? until.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "";
+  host.innerHTML = `
+    <div class="result-card${order.live ? " is-live" : ""}">
+      <span class="result-tag">${order.live ? "Live now" : "Reserved"}</span>
+      <strong>${order.live ? "Your pin is on the map" : "Your pin is reserved"}</strong>
+      <p>${
+        order.live
+          ? `Visible to riders and to AI assistants until ${untilText}. Keep it by paying for the days you want — ${order.amount} for ${order.days}.`
+          : `${order.amount} for ${order.days}. ${order.next}`
+      }</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="/map/">See it on the map</a>
+        ${
+          PAYMENT_LINK
+            ? `<a class="btn btn-ghost" href="${PAYMENT_LINK}" target="_blank" rel="noopener noreferrer">Pay ${order.amount} to keep it</a>`
+            : `<a class="btn btn-ghost" href="mailto:${CONTACT_EMAIL}?subject=Shop%20pin%20${encodeURIComponent(order.placement)}">Arrange payment</a>`
+        }
+      </div>
+      <p class="result-ref">Reference: ${order.placement}</p>
+    </div>
+  `;
+  host.hidden = false;
+  host.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function wireForm() {
   if (!form) return;
   form.addEventListener("submit", async (event) => {
@@ -234,18 +279,23 @@ function wireForm() {
         name,
         offer,
         contact,
-        category: data.get("category") || "pit-stop",
+        category: String(data.get("category") || "").trim() || "business",
+        link: String(data.get("link") || "").trim(),
         lat: point.lat,
         lng: point.lng,
         days,
         locale: browserLocale()
       });
       if (!result.ok) throw new Error(result.error || "failed");
-      setStatus(
-        `Placement ${result.placement} reserved · ${money(result.totalLocal, result.currency)} for ${result.days} day${result.days === 1 ? "" : "s"}. Send the payment reference to go live.`,
-        "ok"
-      );
       form.reset();
+      showResult({
+        live: Boolean(result.live),
+        activeUntil: result.activeUntil as string | null,
+        placement: String(result.placement || ""),
+        amount: money(result.totalLocal, result.currency),
+        days: Number(result.days) || days,
+        next: String(result.next || "")
+      });
     } catch (error) {
       setStatus(`Couldn't record that — ${String(error).replace("Error: ", "")}`, "error");
     } finally {
