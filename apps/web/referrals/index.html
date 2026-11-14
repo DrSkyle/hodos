@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="Bring a shop to Hodos and earn 60% of what they pay. Nepal only, paid to eSewa, Khalti or IME Pay." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Refer a shop, earn from it · Hodos" />
+  <meta property="og:description" content="60% of every shop placement you bring. Nepal only, paid to a Nepali wallet." />
+  <meta property="og:url" content="__HODOS_SITE__/referrals" />
+  <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
+  <link rel="canonical" href="__HODOS_SITE__/referrals" />
+  <meta name="robots" content="noindex" />
+  <!--HODOS-ICONS-->
+  <title>Refer a shop, earn from it · Hodos</title>
+</head>
+<body>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <a class="garage-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span></span>
+      </a>
+      <div class="garage-header-spacer"></div>
+      <a class="ig-pill" href="/partners">List a shop</a>
+      <a class="ig-pill ig-pill-secondary" href="/map">Live map</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+
+    <!-- Nothing about the programme renders until the server confirms Nepal. -->
+    <section id="gate" class="referral-gate">
+      <h1>Refer a shop. Earn from it.</h1>
+      <p class="gate-lede">
+        Bring a shop to Hodos and you keep <strong>60%</strong> of everything they pay for their
+        pin. We keep 40%. No cap, no expiry on what you earn.
+      </p>
+
+      <div id="gate-check" class="gate-check">
+        <p id="gate-status" role="status" aria-live="polite">
+          Checking whether this programme is available where you are…
+        </p>
+        <button type="button" id="gate-locate" class="btn-primary">Use my location</button>
+        <p class="gate-fine">
+          Right now this is open in Nepal only, and it pays to a Nepali wallet. We'll open more
+          countries later, one at a time, when the payout rails are ready.
+        </p>
+      </div>
+
+      <div id="gate-denied" class="gate-denied" hidden>
+        <h2>Not available here yet</h2>
+        <p id="gate-denied-text"></p>
+        <p class="gate-fine">
+          The programme is live in Nepal only for now. When we open your country, this page will
+          say so.
+        </p>
+      </div>
+    </section>
+
+    <section id="app" hidden>
+      <div id="profile-card" class="profile-card">
+        <div class="profile-head">
+          <span class="profile-eyebrow">Your referral</span>
+          <h2 id="profile-name">—</h2>
+        </div>
+        <div class="profile-code-row">
+          <code id="profile-code">—</code>
+          <button type="button" id="copy-code" class="btn-ghost">Copy</button>
+        </div>
+        <p class="profile-code-help">
+          Give this code to a shop. When they pay for their pin, your cut lands here automatically.
+        </p>
+
+        <dl class="stat-grid">
+          <div class="stat">
+            <dt>Earned</dt>
+            <dd id="stat-earned">$0.00</dd>
+          </div>
+          <div class="stat">
+            <dt>Paid out</dt>
+            <dd id="stat-paid">$0.00</dd>
+          </div>
+          <div class="stat">
+            <dt>Available</dt>
+            <dd id="stat-owed">$0.00</dd>
+          </div>
+          <div class="stat">
+            <dt>Shops referred</dt>
+            <dd id="stat-count">0</dd>
+          </div>
+        </dl>
+
+        <div class="payout-row">
+          <div>
+            <span class="payout-label">Paying to</span>
+            <span id="payout-target">—</span>
+          </div>
+          <button type="button" id="request-payout" class="btn-primary" disabled>
+            Request payout
+          </button>
+        </div>
+        <p id="payout-note" class="gate-fine"></p>
+      </div>
+
+      <div id="create-card" class="profile-card" hidden>
+        <div class="profile-head">
+          <span class="profile-eyebrow">Get your code</span>
+          <h2>Start earning</h2>
+        </div>
+        <form id="create-form" class="referral-form" novalidate>
+          <label class="field">
+            <span class="field-label">Your name</span>
+            <input name="ownerName" type="text" maxlength="80" placeholder="Who should we pay" required />
+          </label>
+          <label class="field">
+            <span class="field-label">Payout wallet</span>
+            <select name="payoutMethod" required>
+              <option value="esewa">eSewa</option>
+              <option value="khalti">Khalti</option>
+              <option value="imepay">IME Pay</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Wallet number</span>
+            <input name="payoutAccount" type="text" maxlength="120" inputmode="numeric"
+                   placeholder="The number we send money to" required />
+          </label>
+          <button type="submit" class="btn-primary">Create my code</button>
+          <p id="create-status" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div id="lookup-card" class="profile-card">
+        <div class="profile-head">
+          <span class="profile-eyebrow">Already have a code?</span>
+          <h2>Open your earnings</h2>
+        </div>
+        <form id="lookup-form" class="referral-form" novalidate>
+          <label class="field">
+            <span class="field-label">Your code</span>
+            <input name="code" type="text" maxlength="24" placeholder="e.g. sita4k2m9x" required />
+          </label>
+          <button type="submit" class="btn-ghost">Open</button>
+          <p id="lookup-status" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="garage-footer">
+    <span>Hodos · Devilabs · </span>
+    <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">@minerva__corporation</a>
+  </footer>
+
+  <script type="module" src="/src/referrals.ts"></script>
+</body>
+</html>

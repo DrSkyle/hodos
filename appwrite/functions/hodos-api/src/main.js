@@ -99,8 +99,11 @@ const ACTIONS = {
   provision: "Create a key with trial credit after the user approves setup.",
   topup: "Register a payment reference for manual credit settlement.",
   partnerQuote: "Price a shop placement in the caller's own currency. Free.",
-  partnerPlace: "Order a shop placement for N days. It goes live immediately. Free.",
-  partnerExtend: "Add days to a live placement. It stays live and we invoice afterwards. Free."
+  partnerPlace: "Order a shop placement for N days. It goes live when a payment reference is recorded. Free.",
+  partnerExtend: "Add paid days to a placement. Free.",
+  referralCreate: "Create a referral code to earn 60% of shop placement payments you bring. Nepal only.",
+  referralProfile: "Read a referral's earnings, balance and payout readiness. Nepal only.",
+  referralRequestPayout: "Ask for the earnable balance to be paid to a Nepali wallet. Nepal only."
 };
 
 const CORS = {
@@ -227,10 +230,307 @@ function validBbox(value) {
   const numbers = [value.west, value.south, value.east, value.north];
   if (!numbers.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
   const [west, south, east, north] = numbers;
-  if (west < -180 || east > 180 || south < -90 || north > 90) return null;
+  if (west < -180 || east > 180 || south < -90 || south > 90) return null;
   if (west >= east || south >= north) return null;
   return { west, south, east, north };
 }
+
+/* ------------------------------------------------------------------ *
+ * Referrals
+ * ------------------------------------------------------------------ *
+ *
+ * A referrer earns 60% of every placement payment a shop they introduced
+ * makes. The split, the amount and the rate are all computed here from the
+ * placement row itself — a client can never submit an amount, and an earning
+ * row can only be created by this function after a payment reference lands.
+ *
+ * Territory gate: this is Nepal-only for now. The client is never trusted to
+ * decide. A claim is accepted only when the server resolves the reported
+ * coordinates inside Nepal AND the payout account is a Nepali wallet
+ * (eSewa / Khalti / IME Pay). The wallet is the real gate — a spoofed GPS
+ * cannot collect money without a Nepali account, which needs Nepali KYC.
+ */
+
+const REFERRAL_SHARE = 0.6;
+const REFERRAL_MIN_PAYOUT_MICRO = 100_000; // $0.10
+const REFERRAL_TERRITORIES = ["NP"];
+
+// Coarse but honest: Nepal's bounding box, then a set of exclusions for the
+// neighbouring corners of India and China that fall inside that box.
+const NEPAL_BOX = { west: 80.05, south: 26.35, east: 88.2, north: 30.45 };
+
+const NEPAL_EXCLUSIONS = [
+  // Far-west/east corners of the box that belong to India.
+  { west: 80.05, south: 26.35, east: 80.9, north: 28.1 },
+  { west: 87.4, south: 26.35, east: 88.2, north: 26.9 },
+  // The Tibetan plateau corner north of the Himalaya.
+  { west: 80.05, south: 30.0, east: 88.2, north: 30.45 }
+];
+
+function insideBox(lat, lng, box) {
+  return lat >= box.south && lat <= box.north && lng >= box.west && lng <= box.east;
+}
+
+/** Server-side territory decision. Coordinates outside Nepal are refused. */
+function isNepalCoordinate(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (!insideBox(lat, lng, NEPAL_BOX)) return false;
+  return !NEPAL_EXCLUSIONS.some((box) => insideBox(lat, lng, box));
+}
+
+const PAYOUT_METHODS = {
+  esewa: { country: "NP", label: "eSewa" },
+  khalti: { country: "NP", label: "Khalti" },
+  imepay: { country: "NP", label: "IME Pay" }
+};
+
+function normalizePayout(body) {
+  const method = String(body.payoutMethod || "").toLowerCase().trim();
+  const account = String(body.payoutAccount || "").trim();
+  const rule = PAYOUT_METHODS[method];
+  if (!rule) return null;
+  if (account.length < 6 || account.length > 120) return null;
+  return { method, account, country: rule.country, label: rule.label };
+}
+
+function validReferralCode(value) {
+  return typeof value === "string" && /^[a-z0-9]{6,24}$/.test(value);
+}
+
+function makeReferralCode(seed) {
+  // Unambiguous alphabet: no 0/O or 1/I, so a code can be read off a card.
+  const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = new Uint8Array(10);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (const byte of bytes) out += alphabet[byte % alphabet.length];
+  return (String(seed || "").replace(/[^a-z0-9]/gi, "").toLowerCase().slice(0, 4) + out).slice(0, 12);
+}
+
+/**
+ * The public shape of a referral. The payout account is deliberately partial:
+ * enough for the owner to recognise their own wallet, never enough to leak it.
+ */
+function shapeReferral(row, totals) {
+  const account = String(row.payoutAccount || "");
+  const masked = account.length > 4
+    ? `${"•".repeat(Math.max(0, account.length - 4))}${account.slice(-4)}`
+    : "•".repeat(account.length);
+  return {
+    code: row.code,
+    ownerName: row.ownerName,
+    country: row.country,
+    payoutMethod: row.payoutMethod,
+    payoutAccount: masked,
+    share: REFERRAL_SHARE,
+    disabled: Boolean(row.disabled),
+    earnedMicro: totals?.earnedMicro || 0,
+    earnedUsd: Number(((totals?.earnedMicro || 0) / 1_000_000).toFixed(4)),
+    paidMicro: totals?.paidMicro || 0,
+    owedMicro: totals?.owedMicro || 0,
+    owedUsd: Number(((totals?.owedMicro || 0) / 1_000_000).toFixed(4)),
+    available: (totals?.owedMicro || 0) >= REFERRAL_MIN_PAYOUT_MICRO,
+    minPayoutUsd: REFERRAL_MIN_PAYOUT_MICRO / 1_000_000,
+    referrals: totals?.placements || 0
+  };
+}
+
+async function referralTotals(code) {
+  const earnings = await readRows("referralEarnings", [
+    { method: "equal", attribute: "code", values: [code] },
+    { method: "limit", values: [5000] }
+  ]);
+  const payouts = await readRows("referralPayouts", [
+    { method: "equal", attribute: "code", values: [code] },
+    { method: "limit", values: [500] }
+  ]);
+  const earnedMicro = earnings.reduce((sum, row) => sum + (Number(row.microEarned) || 0), 0);
+  // Only a settled payout reduces the balance. A requested one is still owed.
+  const paidMicro = payouts
+    .filter((row) => row.status === "settled")
+    .reduce((sum, row) => sum + (Number(row.microAmount) || 0), 0);
+  const placements = new Set(earnings.map((row) => row.placementId)).size;
+  return {
+    earnedMicro,
+    paidMicro,
+    owedMicro: Math.max(0, earnedMicro - paidMicro),
+    placements
+  };
+}
+
+/**
+ * Writes one earning row per (code, placement, reason). The deterministic row
+ * id is what makes a retry safe: a second call cannot double-credit a payment,
+ * because the row already exists and the write is skipped.
+ */
+async function creditReferral(placement, code, microTotal, reason) {
+  if (!validReferralCode(code)) return null;
+  if (!Number.isFinite(microTotal) || microTotal <= 0) return null;
+
+  let referral;
+  try {
+    referral = (await readRows("referrals", [
+      { method: "equal", attribute: "code", values: [code] },
+      { method: "limit", values: [1] }
+    ]))[0];
+  } catch (_) {
+    return null;
+  }
+  if (!referral || referral.disabled === true) return null;
+
+  const rowId = `${code.slice(0, 8)}_${String(placement).slice(0, 20)}_${reason}`.slice(0, 36);
+  const earned = Math.round(microTotal * REFERRAL_SHARE);
+  const platform = microTotal - earned;
+
+  try {
+    await writeRow("referralEarnings", rowId, {
+      code,
+      placementId: String(placement),
+      microEarned: earned,
+      microPlatform: platform,
+      currency: "USD",
+      reason,
+      createdAt: nowIso()
+    });
+  } catch (error) {
+    // A duplicate row id means this payment was already credited.
+    log(`referral credit skipped for ${rowId}: ${error}`);
+    return null;
+  }
+  return { code, earnedMicro: earned, platformMicro: platform };
+}
+
+/** Nepal-only, and the caller must prove it with coordinates and a wallet. */
+function referralGate(body) {
+  const lat = Number(body.lat);
+  const lng = Number(body.lng);
+  if (!isNepalCoordinate(lat, lng)) {
+    return { ok: false, error: "referrals are available in Nepal only" };
+  }
+  const payout = normalizePayout(body);
+  if (!payout) {
+    return {
+      ok: false,
+      error: "a Nepali payout wallet is required (eSewa, Khalti or IME Pay)",
+      methods: Object.keys(PAYOUT_METHODS)
+    };
+  }
+  if (!REFERRAL_TERRITORIES.includes(payout.country)) {
+    return { ok: false, error: "referrals are available in Nepal only" };
+  }
+  return { ok: true, payout };
+}
+
+async function referralCreate(body) {
+  const gate = referralGate(body);
+  if (!gate.ok) return gate;
+
+  const ownerName = String(body.ownerName || "").trim();
+  if (ownerName.length < 2 || ownerName.length > 80) {
+    return { ok: false, error: "include the name to show on the referral" };
+  }
+
+  let code = makeReferralCode(ownerName);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const taken = await readRows("referrals", [
+      { method: "equal", attribute: "code", values: [code] },
+      { method: "limit", values: [1] }
+    ]).catch(() => []);
+    if (taken.length === 0) break;
+    code = makeReferralCode(ownerName);
+  }
+
+  await writeRow("referrals", code, {
+    code,
+    ownerName,
+    payoutMethod: gate.payout.method,
+    payoutAccount: gate.payout.account,
+    country: gate.payout.country,
+    createdAt: nowIso(),
+    disabled: false
+  });
+
+  return {
+    ok: true,
+    ...shapeReferral({
+      code, ownerName,
+      payoutMethod: gate.payout.method,
+      payoutAccount: gate.payout.account,
+      country: gate.payout.country,
+      disabled: false
+    }, { earnedMicro: 0, paidMicro: 0, owedMicro: 0, placements: 0 })
+  };
+}
+
+async function referralProfile(body) {
+  const code = String(body.code || "").trim().toLowerCase();
+  if (!validReferralCode(code)) return { ok: false, error: "unknown referral" };
+  const gate = referralGate(body);
+  if (!gate.ok) return gate;
+
+  let row;
+  try {
+    row = await readRow("referrals", code);
+  } catch (_) {
+    row = null;
+  }
+  if (!row) return { ok: false, error: "unknown referral" };
+
+  const totals = await referralTotals(code);
+  return { ok: true, ...shapeReferral(row, totals) };
+}
+
+async function referralRequestPayout(body) {
+  const code = String(body.code || "").trim().toLowerCase();
+  if (!validReferralCode(code)) return { ok: false, error: "unknown referral" };
+  const gate = referralGate(body);
+  if (!gate.ok) return gate;
+
+  let row;
+  try {
+    row = await readRow("referrals", code);
+  } catch (_) {
+    row = null;
+  }
+  if (!row) return { ok: false, error: "unknown referral" };
+
+  const totals = await referralTotals(code);
+  if (totals.owedMicro < REFERRAL_MIN_PAYOUT_MICRO) {
+    return {
+      ok: false,
+      error: `the minimum payout is $${(REFERRAL_MIN_PAYOUT_MICRO / 1_000_000).toFixed(2)}`,
+      owedUsd: Number((totals.owedMicro / 1_000_000).toFixed(4))
+    };
+  }
+
+  const pending = await readRows("referralPayouts", [
+    { method: "equal", attribute: "code", values: [code] },
+    { method: "equal", attribute: "status", values: ["requested"] },
+    { method: "limit", values: [1] }
+  ]);
+  if (pending.length > 0) {
+    return { ok: false, error: "a payout is already being processed" };
+  }
+
+  const id = `rq${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  await writeRow("referralPayouts", id, {
+    code,
+    microAmount: totals.owedMicro,
+    payoutMethod: row.payoutMethod,
+    payoutAccount: row.payoutAccount,
+    status: "requested",
+    requestedAt: nowIso()
+  });
+
+  return {
+    ok: true,
+    requestId: id,
+    amountUsd: Number((totals.owedMicro / 1_000_000).toFixed(4)),
+    payoutMethod: row.payoutMethod,
+    next: "We pay Nepali wallets manually once a day. You will see this marked settled here."
+  };
+}
+
 
 /* ------------------------------------------------------------------ *
  * Data
@@ -613,8 +913,18 @@ async function partnerExtend(req, body) {
       days: totalDays,
       amountMicro: owedMicro,
       reference,
-      status: "pending"
+      status: "pending",
+      paidAt: nowIso()
     });
+
+    // Each paid extension is its own earning, keyed by its amount so a retry
+    // of the same extension cannot credit twice.
+    let referral = null;
+    const referrer = String(order.referredBy || "").trim().toLowerCase();
+    if (referrer) {
+      referral = await creditReferral(id, referrer, addMicro, `extend${addMicro}`)
+        .catch((error) => { log(`referral credit failed: ${error}`); return null; });
+    }
 
     return {
       ok: true,
@@ -627,6 +937,7 @@ async function partnerExtend(req, body) {
       owedMicro: 0,
       owedUsd: 0,
       currency: quote.currency,
+      referral: referral ? { code: referral.code, earnedUsd: Number((referral.earnedMicro / 1_000_000).toFixed(4)) } : null,
       next: `Payment reference recorded. The pin is live until ${activeUntil}.`
     };
   }
@@ -668,6 +979,10 @@ async function partnerPlace(req, body) {
   // unpaid "reserved" pin on the public map: a shop that has not paid has no
   // placement to extend either.
   const paid = reference.length > 0;
+  const referredBy = validReferralCode(String(body.referralCode || "").toLowerCase())
+    ? String(body.referralCode).toLowerCase()
+    : "";
+  const amountMicro = Math.round(quote.usdPerDay * 1_000_000) * quote.days;
 
   await writeRow("partnerPlacements", id, {
     name: shop.name,
@@ -678,13 +993,15 @@ async function partnerPlace(req, body) {
     contact: shop.contact,
     link: shop.link,
     days: quote.days,
-    amountMicro: Math.round(quote.usdPerDay * 1_000_000) * quote.days,
+    amountMicro,
     currency: quote.currency,
     localTotal: Number(quote.totalLocal) || 0,
     tier: quote.tier,
     country: quote.country || "",
     reference,
     status: paid ? "pending" : "awaiting-payment",
+    referredBy,
+    paidAt: paid ? nowIso() : "",
     at: nowIso()
   });
 
@@ -704,6 +1021,15 @@ async function partnerPlace(req, body) {
       log(`paid pin failed: ${error}`);
       return { ok: false, error: "could not publish the pin", placement: id };
     }
+
+    // Credit the referrer from the amount we actually recorded, never from
+    // anything the client sent. The deterministic row id makes a retry safe.
+    let referral = null;
+    if (referredBy) {
+      referral = await creditReferral(id, referredBy, amountMicro, "placement")
+        .catch((error) => { log(`referral credit failed: ${error}`); return null; });
+    }
+
     return {
       ok: true,
       placement: id,
@@ -711,6 +1037,7 @@ async function partnerPlace(req, body) {
       live: true,
       activeUntil,
       ...quote,
+      referral: referral ? { code: referral.code, earnedUsd: Number((referral.earnedMicro / 1_000_000).toFixed(4)) } : null,
       next: `Payment reference recorded. Your pin is live until ${activeUntil}.`
     };
   }
@@ -850,6 +1177,19 @@ module.exports = async function main(context) {
     } catch (error) {
       log(`partnerPlace: ${error}`);
       return res.json({ ok: false, error: "could not record placement" }, 502, CORS);
+    }
+  }
+
+  // Referrals: free, Nepal-only, and every amount is computed server-side.
+  if (action === "referralCreate" || action === "referralProfile" || action === "referralRequestPayout") {
+    try {
+      const result = action === "referralCreate" ? await referralCreate(body)
+        : action === "referralProfile" ? await referralProfile(body)
+        : await referralRequestPayout(body);
+      return res.json(result, result.ok ? 200 : 400, CORS);
+    } catch (error) {
+      log(`${action}: ${error}`);
+      return res.json({ ok: false, error: "referrals are unavailable right now" }, 502, CORS);
     }
   }
 
@@ -1013,6 +1353,17 @@ module.exports.testing = {
   manifest,
   parseBody,
   headersOf,
+  REFERRAL_SHARE,
+  REFERRAL_MIN_PAYOUT_MICRO,
+  REFERRAL_TERRITORIES,
+  PAYOUT_METHODS,
+  isNepalCoordinate,
+  normalizePayout,
+  validReferralCode,
+  makeReferralCode,
+  referralGate,
+  shapeReferral,
+  creditReferral,
   validBbox,
   shapeHazard,
   keyId

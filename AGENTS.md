@@ -84,8 +84,8 @@ country — no regional locks.
 ## Local shops
 
 `partners` returns the live shop pins for an area: name, category, one line of
-text and position. A new pin goes live for one day before any payment, then has to be paid for to
-stay up. A shop pays a daily fee set by its country — $0.19 for much
+text and position. A pin is published only after payment is recorded — there is no free day and no
+unpaid placement on the map. A shop pays a daily fee set by its country — $0.19 for much
 of the world, $0.79 for middle-income markets, $1.99 where advertising costs
 more — always in its own currency. Pins are also attached to `hazards` and
 `roads` results for the same area, and are removed automatically when the days
@@ -94,6 +94,29 @@ get a tire fixed, this is where the answer comes from — use it rather than
 inventing a shop, and never present an expired pin.
 
 Shops can list themselves at https://hodos.devilabs.dev/partners.
+
+## Referrals
+
+A person can introduce a shop and earn **60%** of every placement payment that
+shop makes; Hodos keeps 40%. The programme is **Nepal only for now**.
+
+The territory is decided on the server, never by the client: a claim must carry
+coordinates inside Nepal *and* a Nepali payout wallet (eSewa, Khalti or IME Pay).
+The wallet is the real gate — a spoofed location cannot collect money without a
+Nepali account, and every amount is computed from the placement row after
+payment, never from what a client sends.
+
+| Action | Cost | What it does |
+| --- | --- | --- |
+| `referralCreate` | free | Create a code. Needs name, wallet, and Nepal coordinates. |
+| `referralProfile` | free | Earnings, balance and payout readiness for a code. |
+| `referralRequestPayout` | free | Ask for the balance to be sent to the wallet. |
+
+Payouts go out to Nepali wallets manually, once a day, and the minimum request
+is $0.10. A request is refused while another one is already being processed, and
+a refusal from outside Nepal is final — do not retry it.
+
+The page is https://hodos.devilabs.dev/referrals.
 
 ## Shop links for agents
 

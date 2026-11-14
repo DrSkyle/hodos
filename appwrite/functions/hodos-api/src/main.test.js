@@ -155,3 +155,78 @@ test("a placement needs a name, a line and a real point", () => {
   assert.equal(ok.name, "Shop");
   assert.equal(ok.lat, 27.7);
 });
+
+/* ---- Referrals: Nepal-only earnings, tamper-resistant ---- */
+
+test("referral split is 60/40 and never paid out below the minimum", () => {
+  assert.equal(testing.REFERRAL_SHARE, 0.6);
+  assert.equal(testing.REFERRAL_MIN_PAYOUT_MICRO, 100000);
+  assert.deepEqual(testing.REFERRAL_TERRITORIES, ["NP"]);
+});
+
+test("only Nepal coordinates pass the territory gate", () => {
+  // Kathmandu, Pokhara, Biratnagar.
+  assert.equal(testing.isNepalCoordinate(27.7172, 85.324), true);
+  assert.equal(testing.isNepalCoordinate(28.2096, 83.9856), true);
+  assert.equal(testing.isNepalCoordinate(26.4525, 87.2718), true);
+  // Delhi, Lhasa, Dhaka, and a junk value.
+  assert.equal(testing.isNepalCoordinate(28.6139, 77.209), false);
+  assert.equal(testing.isNepalCoordinate(29.652, 91.1721), false);
+  assert.equal(testing.isNepalCoordinate(23.8103, 90.4125), false);
+  assert.equal(testing.isNepalCoordinate(NaN, 85), false);
+});
+
+test("a claim needs a Nepali coordinates AND a Nepali wallet", () => {
+  const kathmandu = { lat: 27.7172, lng: 85.324 };
+  const esewa = { payoutMethod: "esewa", payoutAccount: "9801234567" };
+
+  assert.equal(testing.referralGate({ ...kathmandu, ...esewa }).ok, true);
+  assert.equal(testing.referralGate({ ...kathmandu, ...esewa, ownerName: "Sita" }).ok, true);
+
+  // Location alone is not enough.
+  assert.equal(testing.referralGate(kathmandu).ok, false);
+  // A wallet but no Nepali location.
+  assert.equal(testing.referralGate({ lat: 28.6139, lng: 77.209, ...esewa }).ok, false);
+  // An unsupported payout rail.
+  assert.equal(testing.referralGate({ ...kathmandu, payoutMethod: "paypal", payoutAccount: "x@y.com" }).ok, false);
+  // A wallet too short to be real.
+  assert.equal(testing.referralGate({ ...kathmandu, payoutMethod: "esewa", payoutAccount: "123" }).ok, false);
+});
+
+test("payout methods are the three Nepali wallets", () => {
+  assert.deepEqual(Object.keys(testing.PAYOUT_METHODS).sort(), ["esewa", "imepay", "khalti"]);
+  for (const rule of Object.values(testing.PAYOUT_METHODS)) {
+    assert.equal(rule.country, "NP");
+  }
+});
+
+test("referral codes are lowercase, unguessable and stable in shape", () => {
+  const code = testing.makeReferralCode("Sita Sharma");
+  assert.match(code, /^[a-z0-9]{6,24}$/);
+  assert.notEqual(testing.makeReferralCode("Sita Sharma"), testing.makeReferralCode("Sita Sharma"));
+  assert.equal(testing.validReferralCode("abcd1234"), true);
+  assert.equal(testing.validReferralCode("ABCD"), false);
+  assert.equal(testing.validReferralCode("ab"), false);
+});
+
+test("a referral profile masks the payout account and reports balance", () => {
+  const shaped = testing.shapeReferral(
+    { code: "sitaabcd123", ownerName: "Sita", payoutMethod: "esewa",
+      payoutAccount: "9801234567", country: "NP", disabled: false },
+    { earnedMicro: 2400000, paidMicro: 1000000, owedMicro: 1400000, placements: 2 }
+  );
+  assert.equal(shaped.share, 0.6);
+  assert.equal(shaped.payoutAccount, "••••••4567");
+  assert.equal(shaped.owedUsd, 1.4);
+  assert.equal(shaped.available, true);
+  assert.equal(shaped.referrals, 2);
+});
+
+test("below the minimum balance is not payable", () => {
+  const shaped = testing.shapeReferral(
+    { code: "sitaabcd123", ownerName: "Sita", payoutMethod: "esewa",
+      payoutAccount: "9801234567", country: "NP", disabled: false },
+    { earnedMicro: 50000, paidMicro: 0, owedMicro: 50000, placements: 1 }
+  );
+  assert.equal(shaped.available, false);
+});

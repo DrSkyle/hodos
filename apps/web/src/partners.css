@@ -333,3 +333,169 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Referral earnings (Nepal only) ---- */
+
+.referral-gate {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 24px;
+}
+
+.referral-gate h1 {
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 16px;
+}
+
+.gate-lede {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted, #736d61);
+  margin: 0 0 28px;
+}
+
+.gate-check {
+  border: 1px solid var(--line, #e4dfd1);
+  border-radius: 14px;
+  padding: 22px;
+  background: #faf8f2;
+}
+
+.gate-check p {
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+
+.gate-fine {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted, #736d61);
+  margin: 14px 0 0;
+}
+
+.gate-denied {
+  border: 1px solid var(--line, #e4dfd1);
+  border-radius: 14px;
+  padding: 22px;
+  background: #faf8f2;
+}
+
+.gate-denied h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.profile-card {
+  max-width: 720px;
+  margin: 0 auto 20px;
+  border: 1px solid var(--line, #e4dfd1);
+  border-radius: 16px;
+  padding: 26px;
+  background: #fffdf8;
+}
+
+.profile-card[hidden] {
+  display: none;
+}
+
+.profile-head {
+  margin-bottom: 18px;
+}
+
+.profile-eyebrow {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #736d61);
+  margin-bottom: 6px;
+}
+
+.profile-head h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.profile-code-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.profile-code-row code {
+  flex: 1;
+  font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 12px 16px;
+  border: 1px solid var(--line, #e4dfd1);
+  border-radius: 10px;
+  background: #faf8f2;
+  overflow-x: auto;
+}
+
+.profile-code-help {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted, #736d61);
+  margin: 0 0 22px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+.stat {
+  border: 1px solid var(--line, #e4dfd1);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.stat dt {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #736d61);
+  margin-bottom: 6px;
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.payout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line, #e4dfd1);
+  flex-wrap: wrap;
+}
+
+.payout-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #736d61);
+  margin-bottom: 4px;
+}
+
+.referral-form .field {
+  margin-bottom: 14px;
+}

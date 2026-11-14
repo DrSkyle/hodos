@@ -135,6 +135,7 @@ export default defineConfig({
         legacyMap: resolve(__dirname, "map.html"),
         garage: resolve(__dirname, "garage/index.html"),
         partners: resolve(__dirname, "partners/index.html"),
+        referrals: resolve(__dirname, "referrals/index.html"),
         app: resolve(__dirname, "app/index.html"),
         privacy: resolve(__dirname, "privacy.html"),
       },

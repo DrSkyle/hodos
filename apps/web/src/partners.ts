@@ -312,6 +312,7 @@ function wireForm() {
         lng: point.lng,
         days,
         reference,
+        referralCode: String(data.get("referralCode") || "").trim().toLowerCase(),
         locale: browserLocale()
       });
       if (!result.ok) throw new Error(result.error || "failed");
