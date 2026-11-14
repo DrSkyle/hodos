@@ -89,8 +89,13 @@ private enum class Screen(val label: String) {
     MAPPING("Drive"),
     ROADS("Roads"),
     INSIGHTS("Insights"),
-    YOU("You")
+    YOU("You"),
+    GARAGE("Garage")
 }
+
+/** The bottom bar only carries the five core destinations; the Garage is a
+ *  route reached from the You tab, not another tab to squeeze in. */
+private val ROUTE_TABS = listOf(Screen.MAP, Screen.MAPPING, Screen.ROADS, Screen.INSIGHTS, Screen.YOU)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -847,6 +852,9 @@ fun HodosApp(
                         hazards = hazards,
                         onBack = { screen = Screen.MAP }
                     )
+                    Screen.GARAGE -> GarageScreen(
+                        onBack = { screen = Screen.YOU }
+                    )
                     Screen.YOU -> YouScreen(
                         trips = trips,
                         hazards = hazards,
@@ -877,6 +885,7 @@ fun HodosApp(
                         onSelectSavedRoad = { selected = it },
                         onRemoveSavedRoad = { id -> updateSavedRoad(id, false) },
                         onOpenMapping = { screen = Screen.MAPPING },
+                        onOpenGarage = { screen = Screen.GARAGE },
                         onShare = {
                             scope.launch {
                                 AppUpdateAndShare.shareInstalledApk(context)
@@ -1081,8 +1090,8 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
         Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
             HorizontalDivider(color = Line, thickness = 1.dp)
             Row(Modifier.fillMaxWidth().height(84.dp)) {
-                Screen.entries.forEach { tab ->
-                    val active = current == tab
+                ROUTE_TABS.forEach { tab ->
+                    val active = if (current == Screen.GARAGE) tab == Screen.YOU else current == tab
                     val nodeScale by animateFloatAsState(
                         targetValue = if (active) 1.07f else 0.94f,
                         animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
@@ -1117,7 +1126,7 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                         Screen.MAPPING -> DoodleSymbol.CAR
                                         Screen.ROADS -> DoodleSymbol.ROAD
                                         Screen.INSIGHTS -> DoodleSymbol.INSIGHT
-                                        Screen.YOU -> DoodleSymbol.PERSON
+                                        else -> DoodleSymbol.PERSON
                                     },
                                     tint = if (active) Paper else Muted,
                                     modifier = Modifier.size(20.dp)
@@ -1859,6 +1868,7 @@ private fun YouScreen(
     onSelectSavedRoad: (RoadHazard) -> Unit,
     onRemoveSavedRoad: (String) -> Unit,
     onOpenMapping: () -> Unit,
+    onOpenGarage: () -> Unit,
     onShare: () -> Unit,
     onClearHistory: () -> Unit
 ) {
@@ -1955,6 +1965,52 @@ private fun YouScreen(
         }
         item {
             RoadDiaryCard(trips, onOpenMapping = onOpenMapping, onShare = onShare)
+        }
+        item {
+            Surface(
+                color = PaperRaised,
+                shape = RoundedCornerShape(20.dp),
+                shadowElevation = 2.dp
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DoodleIcon(DoodleSymbol.CAR, modifier = Modifier.size(22.dp), tint = Ink)
+                        Spacer(Modifier.width(10.dp))
+                        Text("The Garage", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Kit worth keeping in the car — inflators, mounts, dash cams, wipers and tires, " +
+                            "linked straight to the shop. Buying through the Garage is how Hodos earns.",
+                        fontSize = 13.sp,
+                        color = Muted,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = onOpenGarage,
+                            colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Browse the Garage", fontSize = 12.sp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(Garage.INSTAGRAM_URL))
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
+                        ) {
+                            Text("Follow us", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
         }
         item {
             SavedRoadsSection(

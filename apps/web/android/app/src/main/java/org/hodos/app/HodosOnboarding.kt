@@ -106,6 +106,7 @@ fun HodosOnboarding(
 ) {
     val pagerState = rememberPagerState(pageCount = { steps.size })
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scrollStates = List(steps.size) { rememberScrollState() }
     val page = pagerState.currentPage.coerceIn(0, steps.lastIndex)
 
@@ -299,6 +300,23 @@ fun HodosOnboarding(
                                     lineHeight = 18.sp,
                                     color = step.muted.copy(alpha = 0.85f)
                                 )
+
+                                if (pageIndex == steps.lastIndex) {
+                                    Spacer(Modifier.height(14.dp))
+                                    Text(
+                                        "Follow @minerva__corporation on Instagram ↗",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = step.accent,
+                                        modifier = Modifier.clickable {
+                                            val intent = android.content.Intent(
+                                                android.content.Intent.ACTION_VIEW,
+                                                android.net.Uri.parse(Garage.INSTAGRAM_URL)
+                                            )
+                                            runCatching { context.startActivity(intent) }
+                                        }
+                                    )
+                                }
 
                                 Spacer(Modifier.height(28.dp))
                             }

@@ -42,6 +42,7 @@ Beyond the shared map, Hodos turns your own journeys into road knowledge: which 
 - **Five destinations:** *Map* (live hazards), *Drive* (mapping status and trips), *Roads* (surface mix, corridor quality, vehicle wear), *Insights* (deterioration, repair value, smooth-route ceiling) and *You* (saved roads, perks, privacy).
 - **Interactive Vector Map:** MapLibre-powered Android map with nearby hazards, severity classifications, and pass corroboration counts.
 - **Road Quality Analysis:** On-device cells (~150 m) infer surface type, score corridor quality 0–100, and estimate vehicle wear from roughness × distance.
+- **The Garage:** A real catalogue of kit worth keeping in the car (inflators, mounts, dash cams, wipers, tires), priced by the shop that sells it. Offers are fetched at open time through our own backend, and buying through a Garage link funds the map at no extra cost to the driver.
 - **Community Verifications:** Confirm active hazards or mark repaired road segments.
 - **Offline Maps:** Wi-Fi-only automated tile pack caching (20 km radius, zoom levels 8–13) with quota caps (45 MiB / 2,400 tiles) to respect open basemap infrastructure.
 - **Privacy First:** Pseudonymous installation identifiers, quantized location coordinates, and no third-party tracking or advertising SDKs.
@@ -64,7 +65,7 @@ The project is organized as a monorepo:
 - **`apps/web`**: The website and live hazard map, built with Vite and TypeScript. The map consumes live published hazards from the backend; there is no static snapshot.
 - **`apps/web/public/map/hodos-layers.json`**: The single shared marker and heat-layer specification. Both the website and the Android app render hazards from this one file, so the map reads identically on both.
 - **`packages/core`**: Shared detection library for sensor signal processing, Butterworth filtering, jerk thresholding, and DBSCAN spatial clustering.
-- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and produce the public hazard map layer, plus anonymous partner footfall counting.
+- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and produce the public hazard map layer, anonymous partner footfall counting, and `hodos-affiliate` — the Garage proxy that serves catalogue offers and stores the road-notes email list.
 
 ---
 
@@ -107,6 +108,7 @@ pnpm -r test
 
 # Run backend aggregation tests
 node --test appwrite/functions/hodos-aggregate/src/main.test.js
+node --test appwrite/functions/hodos-affiliate/src/main.test.js
 
 # Build web static bundle
 pnpm --filter @hodos/web build

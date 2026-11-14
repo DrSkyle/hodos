@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="The Hodos Garage — the kit drivers actually replace: inflators, mounts, dash cams, wipers and tires, linked straight to the shop." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="The Garage · Hodos" />
+  <meta property="og:description" content="Kit worth keeping in the car, picked for the roads you drive." />
+  <meta property="og:url" content="__HODOS_SITE__/garage" />
+  <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
+  <link rel="canonical" href="__HODOS_SITE__/garage" />
+  <!--HODOS-ICONS-->
+  <title>The Garage · Hodos</title>
+</head>
+<body>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <a class="garage-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span></span>
+      </a>
+      <div class="garage-header-spacer"></div>
+      <a class="ig-pill" href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Follow @minerva__corporation</a>
+      <a class="ig-pill ig-pill-secondary" href="/map">Live map</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="garage-hero" aria-labelledby="garage-title">
+      <span class="garage-eyebrow">The garage</span>
+      <h1 class="garage-title" id="garage-title">Kit worth<br />keeping in the car<span class="dot">.</span></h1>
+      <p class="garage-lede">
+        The things that actually save a drive — a working inflator, a mount that holds,
+        wipers that clear. Picked for the roads Hodos maps, priced by the shop that sells them.
+      </p>
+      <div class="lane-rule" aria-hidden="true"></div>
+    </section>
+
+    <section class="garage-shelf" aria-labelledby="shelf-title">
+      <h2 id="shelf-title" class="visually-hidden">Picks by category</h2>
+      <div class="slot-row" id="slot-row" role="tablist" aria-label="Garage categories"></div>
+      <p class="shelf-status" id="shelf-status" role="status" aria-live="polite">Checking the shelf…</p>
+      <div class="offer-list" id="offer-list"></div>
+      <p class="garage-note">
+        Links on this page are affiliate links: if you buy, Hodos earns a small commission
+        from the shop at no extra cost to you. Prices and stock come from the retailers and
+        can change. Nothing here ever changes the map.
+      </p>
+    </section>
+
+    <section class="garage-block" aria-labelledby="follow-title">
+      <h2 id="follow-title">We post the map as it grows.</h2>
+      <p>
+        New roads mapped, before-and-after repairs, and the occasional find from the garage.
+        Follow <strong>@minerva__corporation</strong> to keep up.
+      </p>
+      <a class="follow-cta" href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">
+        Follow @minerva__corporation ↗
+      </a>
+    </section>
+
+    <section class="garage-block" aria-labelledby="list-title">
+      <h2 id="list-title">Road notes, occasionally.</h2>
+      <p>
+        Leave an address and we'll send the useful bits: new coverage areas, gear worth
+        replacing, and the odd deal. No account needed, unsubscribe in one click.
+      </p>
+      <form class="list-form" id="list-form" novalidate>
+        <label class="visually-hidden" for="list-email">Email address</label>
+        <input id="list-email" name="email" type="email" inputmode="email" autocomplete="email"
+               placeholder="you@example.com" required />
+        <button type="submit">Keep me posted</button>
+      </form>
+      <p class="form-hint" id="list-hint" role="status" aria-live="polite">
+        Only road notes. Your address is never sold or shared.
+      </p>
+    </section>
+
+    <footer class="garage-footer">
+      <span>Hodos · Devilabs · </span>
+      <a href="/map">Live map</a>
+      <span> · </span>
+      <a href="/privacy.html">Privacy</a>
+      <span> · </span>
+      <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Instagram</a>
+    </footer>
+  </main>
+
+  <script type="module" src="/src/garage.ts"></script>
+</body>
+</html>
