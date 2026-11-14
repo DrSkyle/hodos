@@ -91,7 +91,7 @@ export const OFFER_LINKS = {
 } as const;
 
 export const AFFILIATE_LINKS = {
-  aliexpress: "",
+  aliexpress: "https://rzekl.com/g/1e8d114494ecd1928bc816525dc3e8/",
   banggood: "",
   airalo: "",
   klook: "",

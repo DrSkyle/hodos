@@ -116,16 +116,74 @@ const direct: Offer[] = [
   }
 ];
 
+/**
+ * Car kit on AliExpress, as deeplinks to real live category pages.
+ *
+ * AliExpress is a programme link, not a single shop, so it can be pointed at any
+ * destination with `?ulp=`. These targets are the categories that actually match
+ * what a driver replaces, and each becomes its own row so a visitor sees products
+ * by name instead of one generic "AliExpress" card.
+ */
+const CAR_KIT: Array<{ key: string; name: string; blurb: string; target: string }> = [
+  {
+    key: "ali-mounts",
+    name: "Phone mounts",
+    blurb: "A mount that survives a bad road.",
+    target: "https://www.aliexpress.com/w/wholesale-car-phone-holder.html"
+  },
+  {
+    key: "ali-inflators",
+    name: "Tire inflators",
+    blurb: "Top up a soft tire in a car park, not a queue.",
+    target: "https://www.aliexpress.com/w/wholesale-portable-tire-inflator.html"
+  },
+  {
+    key: "ali-dashcams",
+    name: "Dash cams",
+    blurb: "Proof for the pothole that costs you a rim.",
+    target: "https://www.aliexpress.com/w/wholesale-car-dash-cam.html"
+  },
+  {
+    key: "ali-care",
+    name: "Car care & wash",
+    blurb: "Salt, mud and brake dust, handled.",
+    target: "https://www.aliexpress.com/w/wholesale-car-wash-kit.html"
+  },
+  {
+    key: "ali-lights",
+    name: "Lights & bulbs",
+    blurb: "See the unlit stretch before it sees you.",
+    target: "https://www.aliexpress.com/w/wholesale-car-led-light.html"
+  },
+  {
+    key: "ali-gauges",
+    name: "Gauges & tools",
+    blurb: "Read the tire before it reads the road.",
+    target: "https://www.aliexpress.com/w/wholesale-digital-tire-pressure-gauge.html"
+  }
+];
+
+/** `/g/<id>/?ulp=<destination>` — the documented Admitad deeplink shape. */
+function deeplink(base: string, target: string): string {
+  return `${base}?ulp=${encodeURIComponent(target)}`;
+}
+
+/** Car-kit rows, only when the AliExpress programme link is configured. */
+function carKitOffers(): Offer[] {
+  const base = AFFILIATE_LINKS.aliexpress.trim();
+  if (!base) return [];
+  return CAR_KIT.map((item, index) => ({
+    key: item.key,
+    name: item.name,
+    category: "Car & kit" as const,
+    blurb: item.blurb,
+    url: deeplink(base, item.target),
+    rank: index
+  }));
+}
+
 /** Program links, which can be pointed at any page on that shop. */
 const programs: Offer[] = [
-  {
-    key: "aliexpress",
-    name: "AliExpress",
-    category: "Car & kit",
-    blurb: "Mounts, inflators, dash cams and car care, at marketplace prices.",
-    url: AFFILIATE_LINKS.aliexpress,
-    rank: 0
-  },
   {
     key: "banggood",
     name: "Banggood",
@@ -221,13 +279,22 @@ export function visitorCountry(): string {
  * dropped rather than rendered as dead links.
  */
 export function offersFor(country = visitorCountry()): Offer[] {
-  const all = [...programs, ...direct].filter(usable);
+  const all = [...carKitOffers(), ...programs, ...direct].filter(usable);
   const visible = all.filter((offer) => !offer.regions || offer.regions.includes(country));
 
+  // Category first, so car kit reads as a group and not interleaved with
+  // travel; then local before worldwide; then the category's own ordering.
+  const CATEGORY_ORDER: Offer["category"][] = ["Car & kit", "Travel", "Money back", "Tech", "Style"];
+
   return visible.sort((a, b) => {
+    const catA = CATEGORY_ORDER.indexOf(a.category);
+    const catB = CATEGORY_ORDER.indexOf(b.category);
+    if (catA !== catB) return catA - catB;
+
     const localA = a.regions?.includes(country) ? 0 : a.regions ? 2 : 1;
     const localB = b.regions?.includes(country) ? 0 : b.regions ? 2 : 1;
     if (localA !== localB) return localA - localB;
+
     if (a.rank !== b.rank) return a.rank - b.rank;
     return a.name.localeCompare(b.name);
   });
