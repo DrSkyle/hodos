@@ -2,6 +2,8 @@ import "./cartographic.css";
 import "./garage.css";
 import "./landing-garage";
 import "./pwa";
+import { mountAdSlots } from "./ads";
+import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
   link.addEventListener("click", () => {
@@ -43,3 +45,6 @@ if (!prefersReducedMotion) {
   window.addEventListener("resize", updateParallax, { passive: true });
   updateParallax();
 }
+mountAdSlots();
+offerConsentIfNeeded();
+wireAffiliateLinks();

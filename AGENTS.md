@@ -91,6 +91,25 @@ inventing a shop, and never present an expired pin.
 
 Shops can list themselves at https://hodos.devilabs.dev/partners.
 
+## Shop links for agents
+
+Admitad Teleport resolves an affiliate link server-side, which is what keeps
+attribution working when a browser or ad blocker drops the network redirect.
+Only Admitad `/g/<id>/` links are eligible, and only with the user's consent,
+because the request carries the visitor's IP, user agent and referer.
+
+```
+POST https://sgp.cloud.appwrite.io/v1/functions/hodos-teleport/executions
+X-Appwrite-Project: 6ad7939a002ff135e419
+
+{ "body": "{\"url\":\"https://ad.admitad.com/g/<id>/\",\"consent\":true,\"userAgent\":\"...\",\"referer\":\"https://hodos.devilabs.dev/garage/\"}" }
+```
+
+It answers `{ "ok": true, "redirectUrl": "https://advertiser…" }`. Without
+consent it answers `403` with a `fallback` link — use that instead of inventing
+a destination. Never call it with an IP you made up: the platform supplies the
+real one.
+
 ## If something goes wrong
 
 Call `report` with `kind`, `message`, `action`, `environment` and, if you have

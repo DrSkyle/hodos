@@ -7,7 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 // Single source of truth for every value repeated across pages lives in
 // src/site-constants.ts (shared with runtime TS modules).
 // Use in HTML as: <!--HODOS-ICONS--> __HODOS_VERSION__ __HODOS_DOWNLOAD__ __HODOS_REPO__ __HODOS_CONTACT__ __HODOS_SITE__ __HODOS_INSTAGRAM__
-import { SITE_VERSION, DOWNLOAD_URL, REPO_URL, CONTACT_EMAIL, SITE_URL, INSTAGRAM_URL } from "./src/site-constants";
+import { SITE_VERSION, DOWNLOAD_URL, REPO_URL, CONTACT_EMAIL, SITE_URL, INSTAGRAM_URL, ADS_TXT_LINES } from "./src/site-constants";
 
 const ICON_HEAD = [
   `<link rel="icon" href="/brandmark.svg?v=${SITE_VERSION}" type="image/svg+xml" />`,
@@ -34,6 +34,33 @@ const substitute = (text: string): string =>
     .replaceAll("__HODOS_CONTACT__", CONTACT_EMAIL)
     .replaceAll("__HODOS_SITE__", SITE_URL)
     .replaceAll("__HODOS_INSTAGRAM__", INSTAGRAM_URL);
+
+const adsTxt = (): string =>
+  [
+    "# Authorised sellers for hodos.devilabs.dev",
+    ...ADS_TXT_LINES.map((line) => line.trim()).filter(Boolean)
+  ].join("\n") + "\n";
+
+function hodosAdsTxt(): Plugin {
+  // Published only when there is a real seller to declare. An empty ads.txt
+  // would publicly state that no seller is authorised, which is not true yet.
+  const publishable = () => ADS_TXT_LINES.some((line) => line.trim().length > 0);
+  return {
+    name: "hodos-ads-txt",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? "").split("?")[0];
+        if (url !== "/ads.txt" || !publishable()) return next();
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.end(adsTxt());
+      });
+    },
+    closeBundle() {
+      const target = resolve(__dirname, "dist/ads.txt");
+      if (publishable()) fs.writeFileSync(target, adsTxt());
+    },
+  };
+}
 
 function hodosSharedConstants(): Plugin {
   return {
@@ -95,7 +122,7 @@ function hodosAgentDocs(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [tailwindcss(), hodosSharedConstants(), hodosAgentDocs()],
+  plugins: [tailwindcss(), hodosSharedConstants(), hodosAgentDocs(), hodosAdsTxt()],
   server: { host: true, port: 5173 },
   build: {
     target: "es2022",

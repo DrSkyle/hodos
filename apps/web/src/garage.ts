@@ -1,6 +1,8 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
+import { mountAdSlots } from "./ads";
+import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
 import {
   DEFAULT_GARAGE_SLOT_ID,
   GARAGE_SLOTS,
@@ -184,4 +186,9 @@ function wireListForm() {
 
 buildChips();
 wireListForm();
-void loadSlot(activeSlot);
+void loadSlot(activeSlot).then(() => {
+  // Affiliate links are only enriched once the reader has agreed.
+  offerConsentIfNeeded();
+  wireAffiliateLinks();
+});
+mountAdSlots();
