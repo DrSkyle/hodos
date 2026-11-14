@@ -1,20 +1,7 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./landing-garage";
-
-// Purge any legacy PWA service workers and caches
-if ("serviceWorker" in navigator) {
-  void navigator.serviceWorker
-    .getRegistrations()
-    .then((items) => Promise.all(items.map((item) => item.unregister())))
-    .catch(() => {});
-}
-if ("caches" in window) {
-  void caches
-    .keys()
-    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-    .catch(() => {});
-}
+import "./pwa";
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
   link.addEventListener("click", () => {

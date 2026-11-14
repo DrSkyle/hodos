@@ -1,6 +1,18 @@
 {
-  "name": "Hodos — Open Road Intelligence",
+  "id": "/",
+  "name": "Hodos — the road maps itself",
   "short_name": "Hodos",
+  "description": "A live map of potholes, rough stretches and speed bumps, built by the phones already driving. Free, everywhere.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#faf8f2",
+  "background_color": "#faf8f2",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["navigation", "travel", "utilities"],
   "icons": [
     {
       "src": "/icon-192.png?v=__HODOS_VERSION__",
@@ -12,10 +24,33 @@
       "src": "/icon-512.png?v=__HODOS_VERSION__",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png?v=__HODOS_VERSION__",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "theme_color": "#E69A4C",
-  "background_color": "#FAF8F3",
-  "display": "standalone"
+  "shortcuts": [
+    {
+      "name": "Live map",
+      "short_name": "Map",
+      "url": "/map/",
+      "description": "See the roads near you"
+    },
+    {
+      "name": "The Garage",
+      "short_name": "Garage",
+      "url": "/garage/",
+      "description": "Kit for the roads you drive"
+    },
+    {
+      "name": "For shops",
+      "short_name": "Shops",
+      "url": "/partners/",
+      "description": "Put your shop on the map"
+    }
+  ]
 }

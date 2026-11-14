@@ -1,5 +1,6 @@
 import "./cartographic.css";
 import "./garage.css";
+import "./pwa";
 import {
   DEFAULT_GARAGE_SLOT_ID,
   GARAGE_SLOTS,

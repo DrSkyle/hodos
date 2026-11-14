@@ -16,6 +16,13 @@ const ICON_HEAD = [
   `<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=${SITE_VERSION}" />`,
   `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=${SITE_VERSION}" />`,
   `<link rel="manifest" href="/site.webmanifest?v=${SITE_VERSION}" />`,
+  // iOS ignores the manifest for install, so these tags carry the app identity.
+  `<meta name="apple-mobile-web-app-capable" content="yes" />`,
+  `<meta name="mobile-web-app-capable" content="yes" />`,
+  `<meta name="apple-mobile-web-app-status-bar-style" content="default" />`,
+  `<meta name="apple-mobile-web-app-title" content="Hodos" />`,
+  `<meta name="application-name" content="Hodos" />`,
+  `<meta name="format-detection" content="telephone=no" />`,
 ].join("\n  ");
 
 const substitute = (text: string): string =>
@@ -43,13 +50,23 @@ function hodosSharedConstants(): Plugin {
           res.end(substitute(src));
           return;
         }
+        if (url === "/sw.js") {
+          // Serve the worker with a real version so a release invalidates its cache.
+          const src = fs.readFileSync(path.resolve(__dirname, "public/sw.js"), "utf8");
+          res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+          res.setHeader("Cache-Control", "no-cache");
+          res.end(substitute(src));
+          return;
+        }
         next();
       });
     },
     closeBundle() {
-      const manifest = resolve(__dirname, "dist/site.webmanifest");
-      if (fs.existsSync(manifest)) {
-        fs.writeFileSync(manifest, substitute(fs.readFileSync(manifest, "utf8")));
+      for (const file of ["dist/site.webmanifest", "dist/sw.js"]) {
+        const target = resolve(__dirname, file);
+        if (fs.existsSync(target)) {
+          fs.writeFileSync(target, substitute(fs.readFileSync(target, "utf8")));
+        }
       }
     },
   };

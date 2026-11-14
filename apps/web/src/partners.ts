@@ -1,5 +1,6 @@
 import "./cartographic.css";
 import "./partners.css";
+import "./pwa";
 import {
   APPWRITE_ENDPOINT,
   APPWRITE_PROJECT_ID

@@ -43,6 +43,19 @@ master.resize((32, 32), Image.Resampling.LANCZOS).save(
     web_pub / "favicon.ico", format="ICO", sizes=[(16, 16), (32, 32)]
 )
 
+# 2b. iOS refuses to draw transparency, and a maskable icon must be full bleed
+#     with its art inside the safe zone. Both are flattened onto the paper tone.
+paper = (250, 248, 242, 255)
+
+apple = Image.new("RGBA", (180, 180), paper)
+apple.paste(master.resize((180, 180), Image.Resampling.LANCZOS), (0, 0), master.resize((180, 180), Image.Resampling.LANCZOS))
+apple.convert("RGB").save(web_pub / "apple-touch-icon.png", "PNG", optimize=True)
+
+maskable = Image.new("RGBA", (512, 512), paper)
+inner = master.resize((410, 410), Image.Resampling.LANCZOS)
+maskable.paste(inner, (51, 51), inner)
+maskable.convert("RGB").save(web_pub / "icon-maskable-512.png", "PNG", optimize=True)
+
 # 3. Circular master (1024x1024)
 size = 1024
 round_img = master.resize((size, size), Image.Resampling.LANCZOS)
