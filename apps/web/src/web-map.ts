@@ -264,7 +264,9 @@ export function initWebMap(
       qualitySrc.setData(buildQualityGeoJSON(hazards));
     }
     if (statusEl) {
-      statusEl.textContent = `${hazards.length} road observations`;
+      statusEl.textContent = hazards.length === 0
+        ? "No published road observations yet"
+        : `${hazards.length} road observations`;
     }
     onHazardsUpdated?.(hazards);
   };
@@ -294,7 +296,9 @@ export function initWebMap(
 
       src.setData(buildGeoJSON(filtered));
       if (statusEl) {
-        statusEl.textContent = `${filtered.length} road observations`;
+        statusEl.textContent = filtered.length === 0
+          ? "No road observations match this filter"
+          : `${filtered.length} road observations`;
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards, true),
@@ -345,11 +349,11 @@ export function initWebMap(
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
           <strong style="font-size: 14px; font-weight: 700;">${p.name}</strong>
           <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">
-            ${p.sponsorLabel}
+            Local shop
           </span>
         </div>
         ${p.offer ? `<div style="font-size: 12.5px; color: #57534e; margin-bottom: 6px;">${p.offer}</div>` : ""}
-        <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Partner%20Placement" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Become a partner →</a>
+        <a href="/partners" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Put your shop here →</a>
       </div>
     `;
 
@@ -378,16 +382,30 @@ export function initWebMap(
         "circle-opacity": 0.14
       }
     });
+    // MapLibre circle layers have no dashed stroke, so the partner pin reads as
+    // a white dot inside an amber ring: an outer translucent ring plus the dot.
+    map.addLayer({
+      id: "hodos-partner-ring",
+      type: "circle",
+      source: "hodos-partners",
+      paint: {
+        "circle-radius": 11.5,
+        "circle-color": "#d97706",
+        "circle-opacity": 0.18,
+        "circle-stroke-color": "#d97706",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-opacity": 0.55
+      }
+    });
     map.addLayer({
       id: "hodos-partner-dots",
       type: "circle",
       source: "hodos-partners",
       paint: {
-        "circle-radius": 9,
+        "circle-radius": 7.5,
         "circle-color": "#fffdf7",
         "circle-stroke-color": "#d97706",
-        "circle-stroke-width": 3,
-        "circle-stroke-dasharray": [2, 1.5]
+        "circle-stroke-width": 2.5
       }
     });
     map.on("click", "hodos-partner-dots", (e: MapLayerMouseEvent) => {
@@ -442,8 +460,8 @@ export function initWebMap(
         });
         if (hazards.length > 0) {
           fitBoundsToData(hazards);
-          updateSourceData();
         }
+        updateSourceData();
         onLoaded?.(handle);
       })
       .catch(() => {});
@@ -512,10 +530,15 @@ export function initWebMap(
     .then((data) => {
       if (!data || !Array.isArray(data.rows)) return;
       const parsed: WebPartner[] = [];
+      const now = Date.now();
       (data.rows as any[]).forEach((raw, i) => {
         const lat = Number(raw.lat);
         const lng = Number(raw.lng);
         if (!Number.isFinite(lat) || !Number.isFinite(lng) || !raw.name) return;
+        // A placement is sold by the day. Once the day is over the pin must
+        // disappear without anyone having to remember to take it down.
+        const until = Date.parse(String(raw.activeUntil ?? ""));
+        if (Number.isFinite(until) && until < now) return;
         parsed.push({
           id: String(raw.id ?? `partner-${i}`),
           name: String(raw.name),

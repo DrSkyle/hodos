@@ -17,6 +17,8 @@ for a yes before doing anything.
   pressure gauges, wash kits, wipers, tires, lights.
 - [Live map](https://hodos.devilabs.dev/map): published hazards, free, no account.
 - [Android app](https://github.com/DrSkyle/hodos/releases): hands-free mapping.
+- [For shops](https://hodos.devilabs.dev/partners): a pin on the live map, $0.99 a
+  day in local currency, visible to riders and to AI assistants.
 
 ## API, in one line each
 
@@ -24,6 +26,7 @@ for a yes before doing anything.
 - `provision` — free. Creates a key with trial credit, after the user approves.
 - `hazards` — 100 micro-USD. Points in a bounding box: kind, severity, passes.
 - `garage` — 80 micro-USD. In-stock offers for one shelf.
+- `partners` — 80 micro-USD. Live local shop pins: name, category, line, position.
 - `roads` — 300 micro-USD. Road-quality cells for a corridor.
 - `graph` — 1200 micro-USD. Time series and heat layers.
 - `report` — free. Silent error or fix report to the maintainers.

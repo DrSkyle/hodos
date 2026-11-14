@@ -7,7 +7,6 @@ import java.util.TimeZone
 data class PerkTier(
     val id: String,
     val label: String,
-    val detail: String,
     val atKm: Int
 )
 
@@ -17,28 +16,34 @@ data class PerkSummary(
     val unlocked: List<PerkTier>,
     val next: PerkTier?,
     val progress: Float,
-    val code: String?
+    val code: String?,
+    /** Live partner shops a rider can actually redeem at, from the backend. */
+    val shops: List<String>
 )
 
 /**
- * Perks are earned by distance mapped in the current calendar month, whatever
- * the vehicle. A daily commuter on the same road earns the same as a rider.
- * Everything is local: no account, no upload, no personal data leaves the phone
- * to calculate a perk.
+ * Rider perks are earned by distance mapped in the current calendar month,
+ * whatever the vehicle. A daily commuter on the same road earns the same as a
+ * rider.
+ *
+ * The shop list is not invented: it is the live set of paid partner pins the
+ * backend is currently serving. If no shop is listed in the user's area the app
+ * says so rather than promising a redemption nobody has agreed to honour.
  */
 object Perks {
 
     private val TIERS = listOf(
-        PerkTier("tire_check", "Free tire pressure check", "Any labeled partner garage", 20),
-        PerkTier("chain_lube", "Free chain lube", "Partner scooter & bike shops", 50),
-        PerkTier("alignment", "Free alignment check", "Partner garages", 100)
+        PerkTier("tire_check", "Free tire pressure check", 20),
+        PerkTier("chain_lube", "Free chain lube", 50),
+        PerkTier("alignment", "Free alignment check", 100)
     )
 
     fun summarize(
         trips: List<RoadTrip>,
         nowMillis: Long,
         timeZone: TimeZone = TimeZone.getDefault(),
-        seed: String = ""
+        seed: String = "",
+        shops: List<String> = emptyList()
     ): PerkSummary {
         val calendar = Calendar.getInstance(timeZone)
         calendar.timeInMillis = nowMillis
@@ -75,6 +80,14 @@ object Perks {
             "HODOS-" + hash.takeLast(4) + "-" + km.toInt()
         }
 
-        return PerkSummary(km, journeys, unlocked, next, progress, code)
+        return PerkSummary(
+            monthlyKm = km,
+            monthlyJourneys = journeys,
+            unlocked = unlocked,
+            next = next,
+            progress = progress,
+            code = code,
+            shops = shops.distinct().take(3)
+        )
     }
 }

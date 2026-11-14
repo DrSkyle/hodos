@@ -796,6 +796,7 @@ fun HodosApp(
                     Screen.MAPPING -> MappingScreen(
                         armed = armed,
                         trips = trips,
+                        partners = partners,
                         offlineMaps = offlineMaps,
                         onToggle = onToggle,
                         onRefresh = onRefresh,
@@ -1309,6 +1310,7 @@ private fun formatDurationFriendly(seconds: Long): String {
 private fun MappingScreen(
     armed: Boolean,
     trips: List<RoadTrip>,
+    partners: List<PartnerPoi>,
     offlineMaps: OfflineMaps,
     onToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
@@ -1448,7 +1450,7 @@ private fun MappingScreen(
             RoadkeeperCard(trips)
         }
         item {
-            PerksCard(trips)
+            PerksCard(trips, partners)
         }
         item {
             Surface(
@@ -2397,14 +2399,15 @@ private fun RoadkeeperCard(trips: List<RoadTrip>) {
 }
 
 @Composable
-private fun PerksCard(trips: List<RoadTrip>) {
+private fun PerksCard(trips: List<RoadTrip>, partners: List<PartnerPoi>) {
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE)
     }
     val seed = remember { prefs.getString("deviceId", "").orEmpty() }
-    val summary = remember(trips) {
-        Perks.summarize(trips, System.currentTimeMillis(), TimeZone.getDefault(), seed)
+    val shops = remember(partners) { partners.map { it.name } }
+    val summary = remember(trips, shops) {
+        Perks.summarize(trips, System.currentTimeMillis(), TimeZone.getDefault(), seed, shops)
     }
     val progress by animateFloatAsState(
         targetValue = summary.progress,
@@ -2432,7 +2435,10 @@ private fun PerksCard(trips: List<RoadTrip>) {
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Every ride or drive counts. Redeem at labeled partner shops.",
+                if (summary.shops.isEmpty())
+                    "Every ride or drive counts. Partner shops appear here as they join."
+                else
+                    "Every ride or drive counts. Redeem at a listed partner shop.",
                 color = Muted,
                 fontSize = 13.sp
             )
@@ -2475,9 +2481,24 @@ private fun PerksCard(trips: List<RoadTrip>) {
                         )
                         summary.unlocked.forEach { perk ->
                             Text(
-                                "• ${perk.label} · ${perk.detail}",
+                                "• ${perk.label}",
                                 fontSize = 12.sp,
                                 color = Ink
+                            )
+                        }
+                        if (summary.shops.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Redeem at: " + summary.shops.joinToString(", "),
+                                fontSize = 11.5.sp,
+                                color = Muted
+                            )
+                        } else {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "No partner shop listed near you yet.",
+                                fontSize = 11.5.sp,
+                                color = Muted
                             )
                         }
                         summary.code?.let { code ->

@@ -82,6 +82,12 @@
       border-color: var(--accent);
       color: var(--accent);
     }
+    .map-instagram-wide {
+      display: inline-flex;
+    }
+    @media (max-width: 1180px) {
+      .map-instagram-wide { display: none; }
+    }
     .search-box {
       display: flex;
       align-items: center;
@@ -249,108 +255,6 @@
       background: var(--accent-deep);
       border-color: var(--accent-deep);
     }
-    .map-ad-floating {
-      position: absolute;
-      bottom: 24px;
-      right: 16px;
-      max-width: 310px;
-      background: var(--surface);
-      border: 1px solid var(--ink);
-      border-radius: 10px;
-      padding: 14px 16px;
-      color: var(--ink);
-      z-index: 5;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .map-ad-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .map-ad-badge {
-      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #ffffff;
-      background: var(--accent);
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-    .map-ad-cta {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--accent-deep);
-      text-decoration: none;
-    }
-    .map-ad-cta:hover {
-      text-decoration: underline;
-    }
-    .map-ad-title {
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.35;
-    }
-    .map-ad-sub {
-      font-size: 11.5px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-    @media (max-width: 680px) {
-      .map-ad-floating {
-        display: none;
-      }
-    }
-
-    .maplibregl-ctrl-group {
-      background: var(--surface) !important;
-      border: 1px solid var(--ink) !important;
-      border-radius: 10px !important;
-      box-shadow: none !important;
-      overflow: hidden;
-    }
-    .maplibregl-ctrl-group button {
-      width: 34px !important;
-      height: 34px !important;
-      border-radius: 0 !important;
-    }
-    .maplibregl-ctrl-group button:hover {
-      background-color: var(--line) !important;
-    }
-    .maplibregl-ctrl-group button + button {
-      border-top: 1px solid var(--line) !important;
-    }
-    .maplibregl-ctrl-attrib {
-      background: var(--surface) !important;
-      border: 1px solid var(--line);
-      border-radius: 8px 0 0 0 !important;
-      font-size: 10.5px;
-    }
-    .maplibregl-ctrl-attrib a {
-      color: var(--muted);
-    }
-    .maplibregl-popup {
-      z-index: 6;
-    }
-    .maplibregl-popup-content {
-      background: var(--surface) !important;
-      border: 1px solid var(--ink);
-      border-radius: 10px !important;
-      box-shadow: none !important;
-      padding: 12px 14px !important;
-    }
-    .maplibregl-popup-close-button {
-      color: var(--muted);
-      font-size: 16px;
-      padding: 4px 8px !important;
-    }
-    .maplibregl-popup-tip {
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -360,7 +264,7 @@
       <span class="brand-title">hodos<span class="brand-stop">.</span></span>
     </a>
     <a href="/garage" class="map-instagram">Garage</a>
-    <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer" class="map-instagram" aria-label="Follow @minerva__corporation on Instagram">Follow @minerva__corporation</a>
+    <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer" class="map-instagram map-instagram-wide" aria-label="Follow @minerva__corporation on Instagram">Follow @minerva__corporation</a>
 
     <label class="search-box" aria-label="Filter observations">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -376,7 +280,7 @@
     </div>
 
     <div class="action-group">
-      <a href="/#pricing" class="btn-sponsor">Partner with us</a>
+      <a href="/partners" class="btn-sponsor">Put your shop here</a>
       <button id="btn-fit-all" class="btn-action">Fit route</button>
       <a href="/" class="btn-action">← Back</a>
     </div>
@@ -392,14 +296,7 @@
       <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed bump</span></div>
       <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Repaired</span></div>
     </div>
-    <aside class="map-ad-floating" aria-label="Partner offer">
-      <div class="map-ad-top">
-        <span class="map-ad-badge">Partner shop</span>
-        <a href="mailto:__HODOS_CONTACT__?subject=Hodos%20Partner%20Placement" class="map-ad-cta">Place your shop →</a>
-      </div>
-      <div class="map-ad-title">Service, tires, and fuel offers from shops near the roads you drive</div>
-      <div class="map-ad-sub">Clearly labeled placements keep the live map 100% free for everyone.</div>
-    </aside>
+
   </main>
 
   <script type="module" src="/src/map-page.ts"></script>

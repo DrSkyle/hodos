@@ -92,3 +92,43 @@ test("unparseable bodies become an empty request", () => {
   assert.deepEqual(testing.parseBody(""), {});
   assert.deepEqual(testing.parseBody('{"action":"hazards"}'), { action: "hazards" });
 });
+
+test("placement days are clamped to a sane range", () => {
+  assert.equal(testing.clampDays(9), 9);
+  assert.equal(testing.clampDays(0), 1);
+  assert.equal(testing.clampDays(-4), 1);
+  assert.equal(testing.clampDays(9999), 90);
+  assert.equal(testing.clampDays("7"), 7);
+});
+
+test("currency is resolved from a locale tag, never from the network", () => {
+  assert.equal(testing.currencyFor("ne-NP"), "NPR");
+  assert.equal(testing.currencyFor("en-IN"), "INR");
+  assert.equal(testing.currencyFor("ur_PK"), "PKR");
+  assert.equal(testing.currencyFor("en-GB"), "GBP");
+  assert.equal(testing.currencyFor("ja-JP"), "JPY");
+  assert.equal(testing.currencyFor("en-US"), "USD");
+  assert.equal(testing.currencyFor("xx-YY"), "USD");
+  assert.equal(testing.currencyFor("en-NP", "usd"), "USD");
+});
+
+test("the daily price stays one flat USD wherever it is sold", () => {
+  assert.equal(testing.PARTNER_USD_PER_DAY, 0.99);
+  assert.equal(testing.PARTNER_MICRO_PER_DAY, 990000);
+});
+
+test("zero-decimal currencies are not given cents", () => {
+  assert.equal(testing.roundMoney(133.6, "JPY"), 134);
+  assert.equal(testing.roundMoney(133.6, "NPR"), 133.6);
+  assert.equal(testing.roundMoney(0.1234, "USD"), 0.123);
+});
+
+test("a placement needs a name, a line and a real point", () => {
+  assert.equal(testing.validPartner({ name: "A", offer: "x", lat: 1, lng: 1 }), null);
+  assert.equal(testing.validPartner({ name: "Shop", offer: "", lat: 1, lng: 1 }), null);
+  assert.equal(testing.validPartner({ name: "Shop", offer: "Fix", lat: 91, lng: 1 }), null);
+  assert.equal(testing.validPartner({ name: "Shop", offer: "Fix", lat: 1, lng: 181 }), null);
+  const ok = testing.validPartner({ name: "Shop", offer: "Puncture repair", lat: 27.7, lng: 85.3 });
+  assert.equal(ok.name, "Shop");
+  assert.equal(ok.lat, 27.7);
+});

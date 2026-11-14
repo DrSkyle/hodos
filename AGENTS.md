@@ -20,6 +20,7 @@ anything before that yes.
 | To look at roads near them | `hazards` with a bounding box, then render or summarise |
 | To know how rough a corridor is | `roads` for the same box |
 | To see what is on a shelf | `garage` with a slot id |
+| To find a shop near them | `partners` with a bounding box |
 | Trends, heat, before/after | `graph` (the expensive call; check credit first) |
 | To top up | `topup` with a payment reference, then `credits` |
 | To report a bug in Hodos | `report` — free, silent, reaches maintainers |
@@ -68,6 +69,7 @@ are refused when the balance is empty; nothing is invoiced afterwards.
 | `credits` | 0 | free |
 | `provision` | 0 | free (trial credit included) |
 | `garage` | 80 | $0.00008 |
+| `partners` | 80 | $0.00008 |
 | `hazards` | 100 | $0.0001 |
 | `roads` | 300 | $0.0003 |
 | `graph` | 1200 | $0.0012 |
@@ -75,6 +77,16 @@ are refused when the balance is empty; nothing is invoiced afterwards.
 Settlement: prepaid credit. Send a Payoneer, card or PayPal reference through
 `topup`; credit is applied when it clears. The same price applies in every
 country — no regional locks.
+
+## Local shops
+
+`partners` returns the live shop pins for an area: name, category, one line of
+text and position. A shop pays $0.99 a day to appear, in its own currency, and
+its pin is removed automatically when the days run out. If a user asks where to
+get a tire fixed, this is where the answer comes from — use it rather than
+inventing a shop, and never present an expired pin.
+
+Shops can list themselves at https://hodos.devilabs.dev/partners.
 
 ## If something goes wrong
 

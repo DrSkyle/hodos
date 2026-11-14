@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="Put your shop on the Hodos map. $0.99 a day, in your own currency. Seen by riders and by their AI assistants. One pin, one line, never over the route ahead." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Put your shop on the map · Hodos" />
+  <meta property="og:description" content="A shop pin on the live road map. Cheaper than a classified ad, priced in your currency." />
+  <meta property="og:url" content="__HODOS_SITE__/partners" />
+  <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
+  <link rel="canonical" href="__HODOS_SITE__/partners" />
+  <!--HODOS-ICONS-->
+  <title>Put your shop on the map · Hodos</title>
+</head>
+<body>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <a class="garage-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span></span>
+      </a>
+      <div class="garage-header-spacer"></div>
+      <a class="ig-pill" href="/garage">The Garage</a>
+      <a class="ig-pill ig-pill-secondary" href="/map">Live map</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="partners-hero" aria-labelledby="partners-title">
+      <span class="garage-eyebrow">Shop placement</span>
+      <h1 class="garage-title" id="partners-title">Put your shop<br />on the map<span class="dot">.</span></h1>
+      <p class="garage-lede">
+        A pin where drivers already look: garages, tire shops, fuel stops and parts shops.
+        Seen by riders, and by the AI assistants they ask for help. One pin, one line of
+        text, sold by the day. No account, no contract.
+      </p>
+
+      <div class="price-block">
+        <div class="price-main" id="price-line">…</div>
+        <div class="price-note" id="price-note">Quoted in your own currency.</div>
+      </div>
+
+      <div class="day-row" id="day-row" role="tablist" aria-label="How many days"></div>
+    </section>
+
+
+    <section class="benefits" aria-labelledby="benefits-title">
+      <div class="benefits-head">
+        <h2 class="partners-sub" id="benefits-title">What a placement includes</h2>
+        <p>
+          Everything below is included in the daily price. No setup fee, no account,
+          no contract, no commission on anything you sell.
+        </p>
+      </div>
+
+      <ul class="benefit-list">
+        <li>
+          <h3>A pin on the live map</h3>
+          <p>Your shop sits on the same map riders already open to avoid potholes, so it is seen at the moment they are thinking about their vehicle.</p>
+        </li>
+        <li>
+          <h3>Your line, in your words</h3>
+          <p>One line of text on the pin — a repair, a price, opening hours. Edited by us whenever you ask, at no extra cost.</p>
+        </li>
+        <li>
+          <h3>Visible to AI agents</h3>
+          <p>
+            Every live pin is served by the Hodos API, so when someone asks their own
+            AI assistant "where can I fix a puncture near me", your shop is one of the
+            shops the assistant can find, name and recommend. The same listing works for
+            people browsing and for assistants answering.
+          </p>
+        </li>
+        <li>
+          <h3>Rider perks that point at you</h3>
+          <p>
+            Riders earn a free tire check, chain lube or alignment check by distance
+            driven each month. Their app names the partner shops they can redeem at —
+            and that list is drawn from live pins, so joining puts you in it.
+          </p>
+        </li>
+        <li>
+          <h3>Real pass numbers</h3>
+          <p>
+            Anonymous: we count how many distinct devices passed your shop this month,
+            never who they were. You can see whether the placement is doing anything.
+          </p>
+        </li>
+        <li>
+          <h3>Never over the road ahead</h3>
+          <p>A placement never covers the route, never interrupts navigation and never changes hazard data. It is a pin, not an ad.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="partners-grid" aria-labelledby="form-title">
+      <div class="partners-form-col">
+        <h2 id="form-title" class="partners-sub">Your pin</h2>
+        <form id="placement-form" class="placement-form" novalidate>
+          <label class="field">
+            <span class="field-label">Shop name</span>
+            <input name="name" type="text" maxlength="80" placeholder="Kalimati Tyre House" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">One line on the pin</span>
+            <input name="offer" type="text" maxlength="160" placeholder="Puncture repair · open till 9pm" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Category</span>
+            <select name="category">
+              <option value="pit-stop">Garage / pit stop</option>
+              <option value="tires">Tires</option>
+              <option value="fuel">Fuel</option>
+              <option value="parts">Parts</option>
+              <option value="wash">Wash</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Phone or email for us to reach you</span>
+            <input name="contact" type="text" maxlength="120" placeholder="98xxxxxxxx" />
+          </label>
+
+          <div class="pin-row">
+            <span class="field-label">Where is it</span>
+            <span class="pin-value" id="pin-label" data-tone="idle">Tap the map to place your shop</span>
+            <button type="button" class="pin-locate" id="use-my-location">Use my location</button>
+          </div>
+
+          <button type="submit" class="submit-btn">Reserve this pin</button>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <p class="fine-print">
+          Placements never cover the road ahead and never change hazard data. Payment is by
+          Payoneer, card or PayPal reference; the pin goes live when it clears and comes down
+          on its own when the days run out.
+        </p>
+      </div>
+
+      <div class="partners-map-col">
+        <div id="pin-map" class="pin-map" aria-label="Map to place your shop"></div>
+        <p class="map-caption">Drop the pin on your door. Drivers see it near the roads they already drive.</p>
+      </div>
+    </section>
+
+    <footer class="garage-footer">
+      <span>Hodos · Devilabs · </span>
+      <a href="/map">Live map</a>
+      <span> · </span>
+      <a href="/garage">Garage</a>
+      <span> · </span>
+      <a href="/privacy.html">Privacy</a>
+    </footer>
+  </main>
+
+  <script type="module" src="/src/partners.ts"></script>
+</body>
+</html>

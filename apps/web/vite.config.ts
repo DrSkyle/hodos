@@ -90,6 +90,7 @@ export default defineConfig({
         map: resolve(__dirname, "map/index.html"),
         legacyMap: resolve(__dirname, "map.html"),
         garage: resolve(__dirname, "garage/index.html"),
+        partners: resolve(__dirname, "partners/index.html"),
         privacy: resolve(__dirname, "privacy.html"),
       },
     },
