@@ -4,7 +4,7 @@
 # Prerequisites:
 #   appwrite login
 #
-# Then: CHANNEL3_API_KEY=... scripts/deploy-agent-api.sh
+# Then: scripts/deploy-agent-api.sh
 #
 # Creates:
 #   - apiKeys:       NO client permissions. Row id is sha256(apiKey) truncated to
@@ -77,23 +77,6 @@ if ! appwrite functions get --function-id hodos-api >/dev/null 2>&1; then
     --timeout 30 --execute any \
     --scopes tables.read --scopes rows.read --scopes rows.write \
     --scopes executions.read --scopes executions.write
-fi
-
-# The Garage action reads the catalogue directly, so this function needs its own
-# copy of the catalogue secret. It is never returned to a client. Appwrite wants
-# a project-unique variable id, hence the suffix on this function's copy.
-if [[ -n "${CHANNEL3_API_KEY:-}" ]]; then
-  VARIABLE_ID="$(appwrite functions list-variables --function-id hodos-api -j 2>/dev/null \
-    | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const p=JSON.parse(s);const list=p.variables||p;const hit=(Array.isArray(list)?list:[]).find(v=>v.key==="CHANNEL3_API_KEY");process.stdout.write(hit&&hit.$id?hit.$id:"")}catch{process.stdout.write("")}})')"
-  if [[ -n "$VARIABLE_ID" ]]; then
-    appwrite functions update-variable --function-id hodos-api \
-      --variable-id "$VARIABLE_ID" --key CHANNEL3_API_KEY \
-      --value "$CHANNEL3_API_KEY" --secret >/dev/null
-  else
-    appwrite functions create-variable --function-id hodos-api \
-      --variable-id channel3_api_key_api \
-      --key CHANNEL3_API_KEY --value "$CHANNEL3_API_KEY" --secret >/dev/null
-  fi
 fi
 
 appwrite functions create-deployment \

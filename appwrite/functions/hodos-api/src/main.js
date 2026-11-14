@@ -330,91 +330,28 @@ async function roads(body) {
 }
 
 /**
- * Garage shelf ids. This mirrors the whitelist in `hodos-affiliate` and the
- * web client's `GARAGE_SLOTS`; all three must list the same ids. Queries are
- * fixed so the catalogue key can never be used as a general search proxy.
+ * Partner shops, mirroring the web app's own list.
+ *
+ * The links carry no product data, so this returns shops and what they sell, not
+ * invented prices. Only shops with a configured link are returned.
  */
-const GARAGE_SLOTS = {
-  inflator: { query: "portable tire inflator air compressor", maxPrice: 120 },
-  mount: { query: "car phone mount", maxPrice: 60 },
-  dashcam: { query: "dash cam for car", maxPrice: 260 },
-  pressure: { query: "digital tire pressure gauge", maxPrice: 40 },
-  care: { query: "car wash kit microfiber towels", maxPrice: 80 },
-  wipers: { query: "windshield wiper blades", maxPrice: 60 },
-  tires: { query: "all season car tires", maxPrice: 320 },
-  light: { query: "car headlight bulbs", maxPrice: 90 }
-};
-
-function bestOffer(product) {
-  const offers = Array.isArray(product && product.offers) ? product.offers : [];
-  const usable = offers.filter((offer) =>
-    offer && typeof offer.url === "string" && /^https:\/\//i.test(offer.url) &&
-    offer.availability !== "OutOfStock" &&
-    offer.price && typeof offer.price.price === "number");
-  if (usable.length === 0) return null;
-  return usable.sort((a, b) =>
-    ((b.max_commission_rate || 0) - (a.max_commission_rate || 0)) ||
-    (a.price.price - b.price.price))[0];
-}
-
-function shapeOffer(product) {
-  const offer = bestOffer(product);
-  if (!offer || typeof product.id !== "string" || typeof product.title !== "string") return null;
-  const images = Array.isArray(product.images) ? product.images : [];
-  const main = images.find((image) => image && image.is_main_image) || images[0];
-  const brand = Array.isArray(product.brands) ? product.brands[0] : null;
-  return {
-    id: product.id,
-    title: product.title.trim().slice(0, 140),
-    brand: brand && typeof brand.name === "string" ? brand.name : null,
-    image: main && typeof main.url === "string" ? main.url : null,
-    price: offer.price.price,
-    compareAt: typeof offer.price.compare_at_price === "number" ? offer.price.compare_at_price : null,
-    currency: offer.price.currency || "USD",
-    merchant: offer.domain || null,
-    url: offer.url
-  };
-}
+const PARTNER_SHOPS = [
+  { key: "woopdrive", name: "WoopDrive", category: "Travel", blurb: "Car hire for a road trip.", url: "https://dkfrh.com/g/ffzns2ktmfecd1928bc8d80355ec70/" },
+  { key: "flyfi", name: "Flyfi", category: "Travel", blurb: "Hotels and stays.", url: "https://xcdus.com/g/0xtgjon8aeecd1928bc8a2e4f55a9f/" },
+  { key: "avitovip", name: "AvitoVIP", category: "Travel", blurb: "Fixed-price airport transfers in Turkey.", url: "https://kjuzv.com/g/02swkf5uv6ecd1928bc8babf13962c/", regions: ["TR"] },
+  { key: "compensair", name: "Compensair", category: "Money back", blurb: "Flight delay and cancellation compensation.", url: "https://dbnua.com/g/5k6m2qm7z5ecd1928bc890465e1588/" },
+  { key: "lennuabi", name: "Lennuabi", category: "Money back", blurb: "EU flight compensation up to €600.", url: "https://cafxq.com/g/913bhutj0zecd1928bc8a8b9cbb737/", regions: ["EE", "LV", "LT", "FI", "SE", "DE", "FR", "ES", "IT", "NL", "PL", "IE"] },
+  { key: "redmagic", name: "REDMAGIC", category: "Tech", blurb: "Gaming phones and mobile hardware.", url: "https://yyczo.com/g/qmttmvxh1uecd1928bc856637026d8/" },
+  { key: "bewakoof", name: "Bewakoof", category: "Style", blurb: "Street basics, shipped in India.", url: "https://tjzuh.com/g/el5arbwariecd1928bc88f3bde6dea/", regions: ["IN"] },
+  { key: "hellomolly", name: "Hello Molly", category: "Style", blurb: "Occasion wear, worldwide.", url: "https://ntzgd.com/g/v4mbsetakjecd1928bc85fd6c9cc83/" },
+  { key: "chicme", name: "ChicMe", category: "Style", blurb: "Everyday womenswear.", url: "https://rzekl.com/g/gf807z8tarecd1928bc8312b8f391a/" },
+  { key: "versace", name: "Palazzo Versace", category: "Travel", blurb: "A Dubai stopover hotel.", url: "https://xmknb.com/g/6z621dqopyecd1928bc8080b20079f/", regions: ["AE"] }
+];
 
 async function garage(body) {
-  const slot = typeof body.slot === "string" ? body.slot : "inflator";
-  const definition = GARAGE_SLOTS[slot];
-  if (!definition) throw new Error(`unknown garage slot ${slot}`);
-  const key = process.env.CHANNEL3_API_KEY;
-  if (!key) throw new Error("catalogue key not configured");
-  const response = await fetch("https://api.trychannel3.com/v1/search", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "Content-Type": "application/json",
-      "User-Agent": "Hodos-API"
-    },
-    body: JSON.stringify({
-      query: definition.query,
-      limit: 20,
-      filters: { price: { max_price: definition.maxPrice } },
-      config: { country: "US", currency: "USD", language: "en", mode: "default" }
-    }),
-    signal: AbortSignal.timeout(12_000)
-  });
-  if (!response.ok) throw new Error(`catalogue ${response.status}`);
-  const payload = await response.json();
-  const products = (Array.isArray(payload.products) ? payload.products : [])
-    .map(shapeOffer)
-    .filter(Boolean)
-    .slice(0, 8);
-  return { slot, products };
-}
-
-/**
- * Active shop pins. A placement is sold by the day, so rows past `activeUntil`
- * are dropped here as well as on the map: an expired shop is not for sale and
- * must not be served to an agent either.
- */
-async function partners(body) {
-  const bbox = validBbox(body.bbox);
-  const live = await liveShops(bbox, PAGE);
-  return { count: live.length, bbox, partners: live };
+  const country = String(body.country || "").toUpperCase().slice(0, 2);
+  const shops = PARTNER_SHOPS.filter((shop) => !shop.regions || (country && shop.regions.includes(country)));
+  return { country: country || null, count: shops.length, shops };
 }
 
 async function graph(body) {

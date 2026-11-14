@@ -3,35 +3,35 @@ import "./garage.css";
 import "./pwa";
 import { mountAdSlots } from "./ads";
 import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
-import { renderDealShelf } from "./deals";
-import {
-  DEFAULT_GARAGE_SLOT_ID,
-  GARAGE_SLOTS,
-  isGarageSlot,
-  isValidEmail,
-  loadOffers,
-  money,
-  offerMeta,
-  subscribeEmail,
-  wasPrice,
-  type GearOffer
-} from "./garage-client";
+import { isValidEmail, subscribeEmail } from "./garage-client";
+import { offersFor, visitorCountry, type Offer } from "./offers";
 
 /**
- * The Garage — Hodos' affiliate shelf.
+ * The Garage.
  *
- * Every card is a real catalogue product fetched through the hodos-affiliate
- * function; there is no bundled sample data. If the catalogue or the network
- * is unavailable the page says so instead of filling the shelf with filler.
+ * Every row is a shop the account actually has a working link for, named for the
+ * shop it opens. There is no product catalogue behind it: the links carry no
+ * product data, so nothing here claims a price or a stock level. A shop with no
+ * link yet does not appear at all, rather than appearing as a dead card.
  */
 
-const slotRow = document.getElementById("slot-row");
-const list = document.getElementById("offer-list");
+const grid = document.getElementById("shop-grid");
 const status = document.getElementById("shelf-status");
+const chips = document.getElementById("slot-row");
 
-const requested = new URLSearchParams(window.location.search).get("slot");
-let activeSlot = isGarageSlot(requested) ? requested : DEFAULT_GARAGE_SLOT_ID;
-let requestId = 0;
+const CATEGORIES: Array<Offer["category"] | "All"> = [
+  "All",
+  "Car & kit",
+  "Travel",
+  "Money back",
+  "Tech",
+  "Style"
+];
+
+/** Query string still works: /garage?slot=travel selects that category. */
+const requested = (new URLSearchParams(window.location.search).get("slot") || "").toLowerCase();
+const fromQuery = CATEGORIES.find((category) => category.toLowerCase().replace(/[^a-z]/g, "") === requested.replace(/[^a-z]/g, ""));
+let activeCategory: Offer["category"] | "All" = fromQuery ?? "All";
 
 function setStatus(text: string, tone: "idle" | "error" = "idle") {
   if (!status) return;
@@ -39,119 +39,83 @@ function setStatus(text: string, tone: "idle" | "error" = "idle") {
   status.dataset.tone = tone;
 }
 
-function skeleton() {
-  if (!list) return;
-  list.replaceChildren();
-  for (let i = 0; i < 4; i += 1) {
-    const bar = document.createElement("div");
-    bar.className = "offer-skeleton";
-    list.append(bar);
-  }
+function card(offer: Offer): HTMLElement {
+  const link = document.createElement("a");
+  link.className = "partner-card";
+  link.href = offer.url;
+  link.rel = "sponsored noopener noreferrer";
+  link.target = "_blank";
+
+  const category = document.createElement("span");
+  category.className = "partner-card-cat";
+  category.textContent = offer.category;
+
+  const name = document.createElement("strong");
+  name.textContent = offer.name;
+
+  const blurb = document.createElement("span");
+  blurb.className = "partner-card-blurb";
+  blurb.textContent = offer.blurb;
+
+  const go = document.createElement("span");
+  go.className = "partner-card-go";
+  go.textContent = "Visit ↗";
+
+  link.append(category, name, blurb, go);
+  return link;
 }
 
-function offerRow(offer: GearOffer): HTMLElement {
-  const row = document.createElement("article");
-  row.className = "offer-row";
+function render() {
+  if (!grid) return;
+  const country = visitorCountry();
+  const all = offersFor(country);
+  const shown = activeCategory === "All" ? all : all.filter((offer) => offer.category === activeCategory);
 
-  if (offer.image) {
-    const image = document.createElement("img");
-    image.className = "offer-thumb";
-    image.src = offer.image;
-    image.alt = "";
-    image.loading = "lazy";
-    image.referrerPolicy = "no-referrer";
-    row.append(image);
+  grid.replaceChildren();
+  for (const offer of shown) grid.append(card(offer));
+
+  const local = shown.filter((offer) => offer.regions?.includes(country)).length;
+  if (shown.length === 0) {
+    setStatus("No shops in this category yet.");
+  } else if (local > 0) {
+    setStatus(`${shown.length} shops · ${local} local to you`);
+  } else {
+    setStatus(`${shown.length} shops`);
   }
 
-  const body = document.createElement("div");
-  body.className = "offer-body";
-
-  const title = document.createElement("div");
-  title.className = "offer-title";
-  title.textContent = offer.title;
-  body.append(title);
-
-  const meta = document.createElement("div");
-  meta.className = "offer-meta";
-  meta.textContent = offerMeta(offer);
-  if (meta.textContent) body.append(meta);
-
-  const price = document.createElement("div");
-  price.className = "offer-price";
-  price.textContent = money(offer.price, offer.currency);
-  const before = wasPrice(offer);
-  if (before) {
-    const was = document.createElement("s");
-    was.textContent = before;
-    price.append(was);
+  for (const chip of chips?.querySelectorAll<HTMLButtonElement>(".slot-chip") ?? []) {
+    chip.setAttribute("aria-selected", String(chip.dataset.category === activeCategory));
   }
-  if (price.textContent) body.append(price);
 
-  row.append(body);
-
-  const cta = document.createElement("a");
-  cta.className = "offer-cta";
-  cta.href = offer.url;
-  cta.target = "_blank";
-  cta.rel = "sponsored noopener noreferrer";
-  const longLabel = document.createElement("span");
-  longLabel.className = "cta-long";
-  longLabel.textContent = "View offer ↗";
-  const shortLabel = document.createElement("span");
-  shortLabel.className = "cta-short";
-  shortLabel.textContent = "Open ↗";
-  cta.append(longLabel, shortLabel);
-  row.append(cta);
-
-  return row;
-}
-
-async function loadSlot(slot: string) {
-  activeSlot = slot;
-  requestId += 1;
-  const current = requestId;
-  document.querySelectorAll<HTMLButtonElement>(".slot-chip").forEach((chip) => {
-    chip.setAttribute("aria-selected", String(chip.dataset.slot === slot));
-  });
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set("slot", slot);
-  window.history.replaceState(null, "", nextUrl);
-  skeleton();
-  setStatus("Checking the shelf…");
-
-  try {
-    const products = await loadOffers(slot);
-    if (current !== requestId) return;
-    if (!list) return;
-    list.replaceChildren();
-    if (products.length === 0) {
-      setStatus("Nothing on this shelf right now.");
-      return;
-    }
-    for (const offer of products) list.append(offerRow(offer));
-    setStatus(`${products.length} picks · prices update from the shops`);
-  } catch (_) {
-    if (current !== requestId) return;
-    if (list) list.replaceChildren();
-    setStatus("The shelf is unreachable right now. Try again in a moment.", "error");
+  // Consent and click enrichment for the links just rendered.
+  if (shown.length > 0) {
+    offerConsentIfNeeded();
+    wireAffiliateLinks();
   }
 }
 
 function buildChips() {
-  if (!slotRow) return;
-  for (const slot of GARAGE_SLOTS) {
+  if (!chips) return;
+  for (const category of CATEGORIES) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "slot-chip";
-    chip.dataset.slot = slot.id;
+    chip.dataset.category = category;
     chip.setAttribute("role", "tab");
-    chip.setAttribute("aria-selected", String(slot.id === activeSlot));
-    chip.textContent = slot.label;
-    chip.addEventListener("click", () => void loadSlot(slot.id));
-    slotRow.append(chip);
+    chip.setAttribute("aria-selected", String(category === activeCategory));
+    chip.textContent = category;
+    chip.addEventListener("click", () => {
+      activeCategory = category;
+      render();
+    });
+    chips.append(chip);
   }
 }
 
+buildChips();
+render();
+
+/* Newsletter: still the only thing a visitor is asked for. */
 function wireListForm() {
   const form = document.getElementById("list-form") as HTMLFormElement | null;
   const input = document.getElementById("list-email") as HTMLInputElement | null;
@@ -185,17 +149,5 @@ function wireListForm() {
   });
 }
 
-const dealsHost = document.getElementById("deal-list");
-const dealsBlock = document.getElementById("deals-block");
-if (dealsHost && dealsBlock && renderDealShelf(dealsHost) > 0) {
-  dealsBlock.hidden = false;
-}
-
-buildChips();
 wireListForm();
-void loadSlot(activeSlot).then(() => {
-  // Affiliate links are only enriched once the reader has agreed.
-  offerConsentIfNeeded();
-  wireAffiliateLinks();
-});
 mountAdSlots();

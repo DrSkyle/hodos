@@ -1,6 +1,6 @@
 import "./cartographic.css";
 import "./garage.css";
-import "./landing-garage";
+import "./landing-offers";
 import "./pwa";
 import { mountAdSlots } from "./ads";
 import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
