@@ -499,3 +499,28 @@
 .referral-form .field {
   margin-bottom: 14px;
 }
+
+/* ---- Referral agreement step ---- */
+
+.nda-card {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line, #e4dfd1);
+}
+
+.nda-card[hidden] {
+  display: none;
+}
+
+.nda-card h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.nda-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted, #736d61);
+  margin: 0 0 12px;
+}

@@ -110,6 +110,10 @@ function paint(referral: Referral | null) {
 
   const available = Boolean(referral?.available);
   if (payoutButton) payoutButton.disabled = !available;
+  // The agreement is a prerequisite for any payout, so it appears as soon as
+  // there is something to pay out.
+  const nda = document.getElementById("nda-card");
+  if (nda) nda.hidden = !(Number(referral?.earnedUsd) > 0);
   if (noteEl) {
     noteEl.textContent = available
       ? "Payouts go out to Nepali wallets daily."

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 /**
  * Hodos Launch & Outreach Dispatcher via Resend
@@ -57,7 +59,7 @@ const TEMPLATES = {
             <li style="margin-bottom: 6px;"><strong>100% Autonomous Sensing:</strong> Runs quietly in your pocket using adaptive noise-floor filtering that automatically tunes for diesel buses, cars, or scooters.</li>
             <li style="margin-bottom: 6px;"><strong>Zero Distraction:</strong> Completely silent with zero haptic buzzing or popup interruptions while driving.</li>
             <li style="margin-bottom: 6px;"><strong>Privacy by Design:</strong> Automatically trims 250 meters from departure and arrival points so private homes are never recorded.</li>
-            <li style="margin-bottom: 6px;"><strong>Real Live Data:</strong> Over 430 verified potholes and rough road sections mapped and viewable right now.</li>
+            <li style="margin-bottom: 6px;"><strong>Real Live Data:</strong> A live map that fills itself from real drives. Nothing is seeded: what you see is what independent trips have corroborated.</li>
           </ul>
         </div>
 
@@ -124,10 +126,108 @@ const TEMPLATES = {
         </p>
       </div>
     `
+  },
+
+  /**
+   * The two agreements are SENT, never shared. This email is the only channel:
+   * it carries a private, expiring link and says plainly not to copy it on.
+   */
+  "referrer-agreement": {
+    subject: "Your Hodos referrer agreement (private, do not share)",
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #111827; line-height: 1.6; padding: 24px;">
+        <div style="border-bottom: 2px solid #257B65; padding-bottom: 16px; margin-bottom: 24px;">
+          <h1 style="font-size: 22px; font-weight: 800; color: #111827; margin: 0;">hodos<span style="color:#257B65;">.</span></h1>
+          <p style="font-size: 13px; color: #6B7280; margin: 4px 0 0;">Referrer agreement</p>
+        </div>
+
+        <p style="font-size: 15px;">Hello,</p>
+
+        <p style="font-size: 15px;">
+          Thank you for introducing shops to Hodos. Before we can pay you for a referral we need
+          the attached agreement signed and returned.
+        </p>
+
+        <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px; margin: 24px 0;">
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #374151;">
+            <li style="margin-bottom: 6px;">You earn <strong>60%</strong> of every placement payment a shop you introduced makes. Hodos keeps 40%.</li>
+            <li style="margin-bottom: 6px;">A shop can be referred <strong>once</strong>, by one person, permanently.</li>
+            <li style="margin-bottom: 6px;">Payouts go to a Nepali wallet (eSewa, Khalti or IME Pay), once a day, minimum $0.10.</li>
+            <li style="margin-bottom: 6px;">The programme is open in <strong>Nepal only</strong> for now.</li>
+          </ul>
+        </div>
+
+        <p style="font-size: 15px;">
+          <strong>Please do not forward, copy or screenshot this document.</strong> It is sent to you
+          privately. Hodos will never ask you to copy it on to anyone else.
+        </p>
+
+        <p style="font-size: 13px; color: #6B7280;">
+          Sign, date, and reply to this email with your name and payout wallet filled in. Questions:
+          <a href="mailto:hodos@devilabs.dev" style="color: #257B65;">hodos@devilabs.dev</a>.
+        </p>
+      </div>
+    `
+  },
+
+  "partner-agreement": {
+    subject: "Your Hodos partner agreement (private, do not share)",
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #111827; line-height: 1.6; padding: 24px;">
+        <div style="border-bottom: 2px solid #257B65; padding-bottom: 16px; margin-bottom: 24px;">
+          <h1 style="font-size: 22px; font-weight: 800; color: #111827; margin: 0;">hodos<span style="color:#257B65;">.</span></h1>
+          <p style="font-size: 13px; color: #6B7280; margin: 4px 0 0;">Partner network agreement</p>
+        </div>
+
+        <p style="font-size: 15px;">Hello,</p>
+
+        <p style="font-size: 15px;">
+          Thank you for putting your shop forward. Here is the agreement that covers your pin on the
+          Hodos map, how we handle each other's confidential information, and how placements are paid for.
+        </p>
+
+        <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px; margin: 24px 0;">
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #374151;">
+            <li style="margin-bottom: 6px;">A pin is published only after payment is recorded. There is no free day and no invoice afterwards.</li>
+            <li style="margin-bottom: 6px;">Your pin is one line of text and a position, sold by the day, in your own currency.</li>
+            <li style="margin-bottom: 6px;">A placement never covers the road ahead and never changes hazard data.</li>
+            <li style="margin-bottom: 6px;">We need a real shop name, a real street address and a phone number we can reach you on.</li>
+          </ul>
+        </div>
+
+        <p style="font-size: 15px;">
+          <strong>Please do not forward, copy or screenshot this document.</strong> It is sent to you
+          privately. Hodos will never ask you to copy it on to anyone else.
+        </p>
+
+        <p style="font-size: 13px; color: #6B7280;">
+          Sign, stamp, and reply to this email with the signed copy. Questions:
+          <a href="mailto:hodos@devilabs.dev" style="color: #257B65;">hodos@devilabs.dev</a>.
+        </p>
+      </div>
+    `
   }
 };
 
 const template = TEMPLATES[TEMPLATE_ARG] || TEMPLATES.launch;
+
+/**
+ * The agreements are NOT published on the website. They are delivered to the
+ * one recipient who signs them, as an attachment. A public page would be
+ * copyable, shareable and indexable, which is exactly what must not happen.
+ */
+const AGREEMENT_DOCUMENTS = {
+  "referrer-agreement": "apps/web/legal/referrer-agreement.html",
+  "partner-agreement": "apps/web/legal/partner-agreement.html"
+};
+
+function agreementAttachment() {
+  const relative = AGREEMENT_DOCUMENTS[TEMPLATE_ARG];
+  if (!relative) return [];
+  const path = resolve(import.meta.dirname ?? ".", "..", relative);
+  if (!existsSync(path)) return [];
+  return [{ filename: relative.split("/").pop(), content: readFileSync(path).toString("base64") }];
+}
 
 async function sendEmail(recipient) {
   const payload = {
@@ -138,13 +238,14 @@ async function sendEmail(recipient) {
   };
 
   try {
+    const attachments = agreementAttachment();
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(attachments.length > 0 ? { ...payload, attachments } : payload)
     });
 
     const data = await res.json();

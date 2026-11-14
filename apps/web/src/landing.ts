@@ -1,10 +1,16 @@
 import "./cartographic.css";
 import "./garage.css";
-import "./landing-offers";
-import "./landing-products";
 import "./pwa";
 import { mountAdSlots } from "./ads";
 import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
+import { visitorCountry } from "./offers";
+
+// The referral programme is Nepal-only. The link is revealed only there, and
+// the page itself refuses everyone else server-side, so hiding it is comfort,
+// not the gate.
+if (visitorCountry() === "NP") {
+  document.getElementById("footer-referrals")?.removeAttribute("hidden");
+}
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
   link.addEventListener("click", () => {

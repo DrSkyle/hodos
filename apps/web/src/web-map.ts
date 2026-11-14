@@ -128,6 +128,12 @@ export function initWebMap(
     style: OSM_CLEAN_STYLE,
     center: [0, 20],
     zoom: 2,
+    minZoom: 2,
+    // The raster source stops at z19; panning beyond it would render blank
+    // tiles, so the camera stops where the data does.
+    maxZoom: 19,
+    // Without this the world repeats sideways forever as you drag.
+    renderWorldCopies: false,
     attributionControl: false,
     // Encoding the camera in the URL hash keeps the rider's view across
     // refreshes and makes any spot shareable.

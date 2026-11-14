@@ -52,7 +52,7 @@ const PARTNER_TIERS = {
   low: { usdPerDay: 0.19, label: "Access" }
 };
 
-const PARTNER_MAX_DAYS = 90;
+const PARTNER_MAX_DAYS = 365;
 const DAY_MS = 86_400_000;
 const FX_TTL_MS = 12 * 60 * 60 * 1000;
 const FX_URL = "https://open.er-api.com/v6/latest/USD";
@@ -291,6 +291,69 @@ function normalizePayout(body) {
   if (!rule) return null;
   if (account.length < 6 || account.length > 120) return null;
   return { method, account, country: rule.country, label: rule.label };
+}
+
+/**
+ * A shop can only ever be referred once, by one person, forever. The claim is
+ * keyed on the shop's own identity (normalised name + coarse position), so a
+ * re-submitted or re-worded placement cannot farm the same shop twice. The
+ * `shopKey` column carries a unique index: a second claim fails at the database.
+ */
+function shopKeyFor(shop) {
+  const name = String(shop.name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const lat = (Math.round(Number(shop.lat) * 1000) / 1000).toFixed(3);
+  const lng = (Math.round(Number(shop.lng) * 1000) / 1000).toFixed(3);
+  return `${name}|${lat}|${lng}`.slice(0, 120);
+}
+
+/**
+ * Records which referrer introduced a shop, exactly once. Returns the code that
+ * actually owns the shop: the original claimer if it was already claimed.
+ */
+async function claimShopReferral(code, shop, placementId) {
+  const shopKey = shopKeyFor(shop);
+  const id = shopKey.replace(/[^a-z0-9]/g, "").slice(0, 24) || "shop";
+
+  let existing = null;
+  try {
+    existing = await readRow("partnerReferrals", id);
+  } catch (_) {
+    existing = null;
+  }
+  if (existing) {
+    // Already referred by someone. The original referrer keeps the shop.
+    return { code: existing.code, alreadyClaimed: true };
+  }
+
+  try {
+    await writeRow("partnerReferrals", id, {
+      code,
+      shopKey,
+      shopName: String(shop.name || "").slice(0, 80),
+      placementId,
+      claimedAt: nowIso()
+    });
+  } catch (error) {
+    // Lost the race: read back whoever won rather than double-crediting.
+    log(`shop claim race for ${id}: ${error}`);
+    const winner = await readRow("partnerReferrals", id).catch(() => null);
+    return winner ? { code: winner.code, alreadyClaimed: true } : null;
+  }
+  return { code, alreadyClaimed: false };
+}
+
+/** The referrer an existing shop already belongs to, if any. */
+async function referralOwnerOf(shop) {
+  const shopKey = shopKeyFor(shop);
+  const id = shopKey.replace(/[^a-z0-9]/g, "").slice(0, 24) || "shop";
+  try {
+    const row = await readRow("partnerReferrals", id);
+    return row ? String(row.code || "") : "";
+  } catch (_) {
+    return "";
+  }
 }
 
 function validReferralCode(value) {
@@ -573,6 +636,11 @@ async function liveShops(bbox, cap = 12) {
       lat,
       lng,
       offer: String(row.offer || "").slice(0, 160),
+      address: typeof row.address === "string" && row.address ? row.address.slice(0, 160) : null,
+      // Contact reaches the assistant only in the form the shop chose: a phone
+      // number or an email it published for exactly this purpose.
+      phone: typeof row.phone === "string" && row.phone ? row.phone : null,
+      email: typeof row.email === "string" && row.email ? row.email : null,
       link: typeof row.link === "string" && row.link ? row.link : null
     });
     if (shops.length >= cap) break;
@@ -817,7 +885,15 @@ async function partnerQuote(body) {
     tiers: Object.fromEntries(
       Object.entries(PARTNER_TIERS).map(([name, value]) => [name, value.usdPerDay])
     ),
-    settlement: "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
+    // Pay with what the shop actually has. A Nepali tyre shop can pay from
+    // eSewa or a bank in a minute; asking it for a Payoneer account is asking
+    // it not to buy.
+    settlement: country === "NP"
+      ? "Pay by eSewa, Khalti or bank transfer. Send the reference through partnerPlace; the pin goes live once it clears."
+      : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
+    settlementOptions: country === "NP"
+      ? ["esewa", "khalti", "imepay", "bank"]
+      : ["payoneer", "card", "paypal"],
     note: "One shop, one pin, one line of text. Never over the route ahead."
   };
 }
@@ -827,32 +903,141 @@ function clampDays(value) {
   return Math.min(Math.max(days, 1), PARTNER_MAX_DAYS);
 }
 
+/**
+ * Two shops cannot occupy the same spot. A second pin at (or within a few
+ * metres of) an existing one is refused rather than stacked invisibly on top —
+ * otherwise the map shows one marker where two shops paid for visibility.
+ */
+const PIN_MIN_SEPARATION_M = 8;
+
+function metresBetween(a, b) {
+  const earth = 6_371_008.8;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * earth * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Returns the live pin already occupying this spot, if any. */
+async function pinAt(shop) {
+  let rows = [];
+  try {
+    rows = await readRows("partners", [{ method: "limit", values: [500] }]);
+  } catch (_) {
+    return null;
+  }
+  const now = Date.now();
+  for (const row of rows) {
+    const until = Date.parse(String(row.activeUntil || ""));
+    if (Number.isFinite(until) && until < now) continue;
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (metresBetween(shop, { lat, lng }) <= PIN_MIN_SEPARATION_M) {
+      return { id: row.$id, name: String(row.name || "") };
+    }
+  }
+  return null;
+}
+
+/**
+ * Strict validation for every placement, trial included.
+ *
+ * A public pin is a promise to a driver and to the assistants that read this
+ * API: a real shop, that can actually be found, and reached. "Some name on a
+ * random point" is refused.
+ */
+const SHOP_NAME_MIN = 3;
+const PHONE_RE = /^\+?[0-9][0-9\s-]{6,19}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
+function normalisePhone(raw) {
+  const cleaned = String(raw || "").replace(/[()\s-]/g, "");
+  return PHONE_RE.test(cleaned) ? cleaned.slice(0, 20) : "";
+}
+
 function validPartner(body) {
   const name = String(body.name || "").trim();
   const offer = String(body.offer || "").trim();
   const lat = Number(body.lat);
   const lng = Number(body.lng);
-  if (name.length < 2 || name.length > 80) return null;
-  if (offer.length < 2 || offer.length > 160) return null;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+
+  // Name: present, not a placeholder, and long enough to identify a shop.
+  if (name.length < SHOP_NAME_MIN || name.length > 80) {
+    return { error: "give the shop's real name" };
+  }
+  if (!/[a-z\u0900-\u097F]{2}/i.test(name)) {
+    return { error: "give the shop's real name" };
+  }
+
+  // One line: what a driver actually gets there.
+  if (offer.length < 8 || offer.length > 160) {
+    return { error: "describe in one line what the shop offers (at least 8 characters)" };
+  }
+
+  // Position: a real point on Earth, never 0,0 or a rounded-off guess.
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { error: "place the pin on the shop" };
+  }
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return { error: "place the pin on the shop" };
+  }
+  if (Math.abs(lat) < 0.0001 && Math.abs(lng) < 0.0001) {
+    return { error: "place the pin on the shop" };
+  }
+
+  // Contact: mandatory, because a placement nobody can verify is not a shop.
+  // Either a phone number or an email, and it must look like one.
+  const phone = normalisePhone(body.phone || body.contact);
+  const email = EMAIL_RE.test(String(body.email || "").trim())
+    ? String(body.email).trim().slice(0, 254)
+    : "";
+  // A placement nobody can call is not a shop. The phone number is mandatory for
+  // every placement, trial included, and must look like a real one.
+  if (!phone) {
+    return { error: "a phone number is required so we can reach the shop" };
+  }
+  if (String(body.email || "").trim() && !email) {
+    return { error: "that email address does not look complete" };
+  }
+
+  // Address: the street the shop is on, so a driver can find the door.
+  const address = String(body.address || "").trim();
+  if (address.length < 5 || address.length > 160) {
+    return { error: "include the street address of the shop" };
+  }
+
   let link = "";
   if (typeof body.link === "string" && body.link.trim()) {
     try {
       const parsed = new URL(body.link.trim());
-      if (parsed.protocol === "https:" || parsed.protocol === "http:") link = parsed.toString().slice(0, 200);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+        link = parsed.toString().slice(0, 200);
+      } else {
+        return { error: "the link must start with https://" };
+      }
     } catch (_) {
-      // A malformed link is dropped rather than stored half-valid.
+      return { error: "the link is not a valid URL" };
     }
   }
+
   return {
-    name,
-    offer,
-    lat,
-    lng,
-    category: String(body.category || "business").slice(0, 32),
-    contact: String(body.contact || "").slice(0, 120),
-    link
+    shop: {
+      name,
+      offer,
+      lat,
+      lng,
+      category: String(body.category || "business").slice(0, 32),
+      contact: phone ? `tel:${phone}` : `mailto:${email}`,
+      phone,
+      email,
+      address,
+      link
+    }
   };
 }
 
@@ -905,6 +1090,11 @@ async function partnerExtend(req, body) {
         lng: order.lng,
         offer: order.offer || "",
         sponsorLabel: "Local shop",
+        phone: order.phone || "",
+        email: order.email || "",
+        address: order.address || "",
+        link: order.link || "",
+        contact: order.contact || "",
         activeUntil
       });
     }
@@ -967,21 +1157,40 @@ async function partnerExtend(req, body) {
 }
 
 async function partnerPlace(req, body) {
-  const shop = validPartner(body);
-  if (!shop) {
-    return { ok: false, error: "include name, offer, lat and lng" };
+  const validation = validPartner(body);
+  if (!validation.shop) {
+    return { ok: false, error: validation.error || "include the shop's details" };
   }
+  const shop = validation.shop;
   const quote = await partnerQuote(body);
   const reference = String(body.reference || "").trim();
   const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+  // One shop, one spot. A live pin already here means this one cannot publish,
+  // whether it is the same shop reordering or a competitor stacking on top.
+  const occupied = await pinAt({ lat: shop.lat, lng: shop.lng });
+  if (occupied) {
+    return {
+      ok: false,
+      error: "a shop is already on the map at this spot",
+      occupiedBy: occupied.name
+    };
+  }
 
   // The pin goes live only when the money is in. No free day, no trial, no
   // unpaid "reserved" pin on the public map: a shop that has not paid has no
   // placement to extend either.
   const paid = reference.length > 0;
-  const referredBy = validReferralCode(String(body.referralCode || "").toLowerCase())
-    ? String(body.referralCode).toLowerCase()
-    : "";
+
+  // A shop is referred exactly once, by the first person who brings it. A
+  // later submission inherits the original referrer and never re-attributes.
+  const claimed = String(body.referralCode || "").toLowerCase();
+  let referredBy = await referralOwnerOf(shop);
+  if (!referredBy && validReferralCode(claimed)) {
+    const claim = await claimShopReferral(claimed, shop, id)
+      .catch((error) => { log(`shop claim failed: ${error}`); return null; });
+    referredBy = claim ? claim.code : "";
+  }
   const amountMicro = Math.round(quote.usdPerDay * 1_000_000) * quote.days;
 
   await writeRow("partnerPlacements", id, {
@@ -1015,6 +1224,11 @@ async function partnerPlace(req, body) {
         lng: shop.lng,
         offer: shop.offer,
         sponsorLabel: "Local shop",
+        phone: shop.phone || "",
+        email: shop.email || "",
+        address: shop.address || "",
+        link: shop.link || "",
+        contact: shop.contact || "",
         activeUntil
       });
     } catch (error) {
@@ -1344,6 +1558,7 @@ module.exports.testing = {
   PRICES,
   ACTIONS,
   PARTNER_TIERS,
+  partnerQuote,
   countryFor,
   tierFor,
   clampDays,
@@ -1364,6 +1579,12 @@ module.exports.testing = {
   referralGate,
   shapeReferral,
   creditReferral,
+  shopKeyFor,
+  claimShopReferral,
+  referralOwnerOf,
+  pinAt,
+  metresBetween,
+  PIN_MIN_SEPARATION_M,
   validBbox,
   shapeHazard,
   keyId

@@ -41,7 +41,7 @@ type Quote = {
   error?: string;
 };
 
-const DAY_OPTIONS = [1, 3, 7, 14, 30];
+const DAY_OPTIONS = [1, 3, 7, 14, 30, 90, 180, 365];
 
 let days = 1;
 let quote: Quote | null = null;
@@ -139,7 +139,7 @@ function buildDayChips() {
     chip.className = "day-chip";
     chip.dataset.days = String(option);
     chip.setAttribute("role", "tab");
-    chip.textContent = option === 1 ? "1 day" : `${option} days`;
+    chip.textContent = option === 1 ? "1 day" : option === 365 ? "1 year" : `${option} days`;
     chip.addEventListener("click", () => {
       days = option;
       void refreshQuote();
@@ -168,6 +168,9 @@ function buildMap() {
     },
     center: [10, 24],
     zoom: 1.8,
+    minZoom: 1.5,
+    maxZoom: 19,
+    renderWorldCopies: false,
     attributionControl: { compact: true }
   });
   map.addControl(new NavigationControl({ showCompass: false }), "top-right");
@@ -288,11 +291,23 @@ function wireForm() {
     const data = new FormData(form);
     const name = String(data.get("name") || "").trim();
     const offer = String(data.get("offer") || "").trim();
-    const contact = String(data.get("contact") || "").trim();
+    const address = String(data.get("address") || "").trim();
+    const phone = String(data.get("phone") || "").trim();
+    const email = String(data.get("email") || "").trim();
     const reference = String(data.get("reference") || "").trim();
 
-    if (name.length < 2) return setStatus("Add the shop name.", "error");
-    if (offer.length < 2) return setStatus("Add the line you want on the pin.", "error");
+    if (name.length < 3) return setStatus("Add the shop's real name, as it is on the door.", "error");
+    if (offer.length < 8) return setStatus("Describe in one line what the shop offers.", "error");
+    if (address.length < 5) return setStatus("Add the street address of the shop.", "error");
+    // A placement nobody can call is not a shop: the phone number is mandatory
+    // and must look like one, exactly as the server validates it.
+    const digits = phone.replace(/[()\s-]/g, "");
+    if (!/^\+?[0-9][0-9\s-]{6,19}$/.test(digits)) {
+      return setStatus("Add a phone number the shop actually answers.", "error");
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
+      return setStatus("That email address doesn't look complete.", "error");
+    }
     if (reference.length < 4) return setStatus("Add the payment reference so we can match your pay-in.", "error");
     if (!point) return setStatus("Tap the map to place your shop.", "error");
 
@@ -305,7 +320,9 @@ function wireForm() {
         action: "partnerPlace",
         name,
         offer,
-        contact,
+        address,
+        phone,
+        email,
         category: String(data.get("category") || "").trim() || "business",
         link: String(data.get("link") || "").trim(),
         lat: point.lat,

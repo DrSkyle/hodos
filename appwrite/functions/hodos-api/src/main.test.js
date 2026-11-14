@@ -97,7 +97,9 @@ test("placement days are clamped to a sane range", () => {
   assert.equal(testing.clampDays(9), 9);
   assert.equal(testing.clampDays(0), 1);
   assert.equal(testing.clampDays(-4), 1);
-  assert.equal(testing.clampDays(9999), 90);
+  // A shop can buy as long as a year at once, and never more.
+  assert.equal(testing.clampDays(365), 365);
+  assert.equal(testing.clampDays(9999), 365);
   assert.equal(testing.clampDays("7"), 7);
 });
 
@@ -146,15 +148,47 @@ test("zero-decimal currencies are not given cents", () => {
   assert.equal(testing.roundMoney(0.1234, "USD"), 0.123);
 });
 
-test("a placement needs a name, a line and a real point", () => {
-  assert.equal(testing.validPartner({ name: "A", offer: "x", lat: 1, lng: 1 }), null);
-  assert.equal(testing.validPartner({ name: "Shop", offer: "", lat: 1, lng: 1 }), null);
-  assert.equal(testing.validPartner({ name: "Shop", offer: "Fix", lat: 91, lng: 1 }), null);
-  assert.equal(testing.validPartner({ name: "Shop", offer: "Fix", lat: 1, lng: 181 }), null);
-  const ok = testing.validPartner({ name: "Shop", offer: "Puncture repair", lat: 27.7, lng: 85.3 });
-  assert.equal(ok.name, "Shop");
+test("a placement needs a real shop, a real point and a reachable contact", () => {
+  const base = {
+    name: "Bhatbhateni Tyre House",
+    offer: "Puncture repair and tyre fitting",
+    address: "Kalanki, Ring Road, Kathmandu",
+    phone: "9801234567",
+    lat: 27.7,
+    lng: 85.3
+  };
+
+  // Refused: placeholder name, empty line, missing address, no contact, bad coords.
+  assert.ok(testing.validPartner({ ...base, name: "A" }).error);
+  assert.ok(testing.validPartner({ ...base, name: "123" }).error);
+  assert.ok(testing.validPartner({ ...base, offer: "" }).error);
+  assert.ok(testing.validPartner({ ...base, offer: "Fix" }).error);
+  assert.ok(testing.validPartner({ ...base, address: "" }).error);
+  assert.ok(testing.validPartner({ ...base, phone: "", email: "" }).error);
+  assert.ok(testing.validPartner({ ...base, phone: "abc" }).error);
+  assert.ok(testing.validPartner({ ...base, lat: 91 }).error);
+  assert.ok(testing.validPartner({ ...base, lat: 0, lng: 0 }).error);
+  assert.ok(testing.validPartner({ ...base, link: "not-a-url" }).error);
+
+  // Accepted: a shop with a name, a real line, an address and a phone.
+  const ok = testing.validPartner(base).shop;
+  assert.equal(ok.name, "Bhatbhateni Tyre House");
   assert.equal(ok.lat, 27.7);
+  assert.equal(ok.phone, "9801234567");
+  assert.equal(ok.contact, "tel:9801234567");
+
+  // A phone number is mandatory for every placement, trial included: a pin
+  // nobody can call is not a shop. An email is a bonus, not a substitute.
+  assert.ok(testing.validPartner({ ...base, phone: "", email: "shop@example.com" }).error);
+  const withEmail = testing.validPartner({ ...base, email: "shop@example.com" }).shop;
+  assert.equal(withEmail.email, "shop@example.com");
+  assert.equal(withEmail.phone, "9801234567");
+  assert.equal(withEmail.contact, "tel:9801234567");
+
+  // Nepali shop names are welcome.
+  assert.ok(testing.validPartner({ ...base, name: "सागर टायर पसल" }).shop);
 });
+
 
 /* ---- Referrals: Nepal-only earnings, tamper-resistant ---- */
 
@@ -229,4 +263,18 @@ test("below the minimum balance is not payable", () => {
     { earnedMicro: 50000, paidMicro: 0, owedMicro: 50000, placements: 1 }
   );
   assert.equal(shaped.available, false);
+});
+
+test("Nepali shops are offered rails they actually have", async () => {
+  // The quote is async (it reads FX rates), so this exercises the real shape.
+  // A Nepali shop should never be asked for a Payoneer account.
+  const np = await testing.partnerQuote({ countryCode: "NP", days: 3 });
+  assert.equal(np.country, "NP");
+  assert.match(np.settlement, /eSewa|Khalti|bank/i);
+  assert.ok(np.settlementOptions.includes("esewa"));
+
+  const de = await testing.partnerQuote({ countryCode: "DE", days: 3 });
+  assert.equal(de.country, "DE");
+  assert.match(de.settlement, /Payoneer|card|PayPal/i);
+  assert.ok(!de.settlementOptions.includes("esewa"));
 });

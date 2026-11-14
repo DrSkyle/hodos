@@ -2,24 +2,47 @@ import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
 import { mountAdSlots } from "./ads";
-import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
 import { isValidEmail, subscribeEmail } from "./garage-client";
-import { offersFor, visitorCountry, type Offer } from "./offers";
+import { visitorCountry } from "./offers";
+import { loadLiveShops, type LiveShop } from "./live-shops";
+import {
+  checkedLabel,
+  loadShelf,
+  priceFor,
+  shelfFor,
+  soldLabel,
+  visitorCurrency,
+  type Product
+} from "./products";
 
 /**
  * The Garage.
  *
- * Every row is a shop the account actually has a working link for, named for the
- * shop it opens. There is no product catalogue behind it: the links carry no
- * product data, so nothing here claims a price or a stock level. A shop with no
- * link yet does not appear at all, rather than appearing as a dead card.
+ * Two genuine shelves, chosen by where the visitor is, not by a flag we flip:
+ *
+ *  - Nepal: the shops that actually paid for a pin on the map, and the products
+ *    they chose to put here. Riders get the discount at the counter once the
+ *    shop honours the pin. These are real local businesses, and the list is
+ *    drawn from the live pins, so it is never stale.
+ *  - Everywhere else: direct affiliate product links — a real product, a real
+ *    price and a real destination, straight to the retailer. No partner store
+ *    is implied, because there is no partner store outside Nepal yet.
+ *
+ * A shop with no working link does not appear at all, rather than as a dead
+ * card, and nothing here is invented to fill a grid.
  */
 
 const grid = document.getElementById("shop-grid");
 const status = document.getElementById("shelf-status");
 const chips = document.getElementById("slot-row");
+const title = document.getElementById("garage-title");
+const lede = document.querySelector<HTMLElement>(".garage-lede");
+const perks = document.getElementById("perks-title");
 
-const CATEGORIES: Array<Offer["category"] | "All"> = [
+const country = visitorCountry();
+const isNepal = country === "NP";
+
+const CATEGORIES: string[] = [
   "All",
   "Car & kit",
   "Travel",
@@ -30,8 +53,11 @@ const CATEGORIES: Array<Offer["category"] | "All"> = [
 
 /** Query string still works: /garage?slot=travel selects that category. */
 const requested = (new URLSearchParams(window.location.search).get("slot") || "").toLowerCase();
-const fromQuery = CATEGORIES.find((category) => category.toLowerCase().replace(/[^a-z]/g, "") === requested.replace(/[^a-z]/g, ""));
-let activeCategory: Offer["category"] | "All" = fromQuery ?? "All";
+const fromQuery = CATEGORIES.find(
+  (category) => category.toLowerCase().replace(/[^a-z]/g, "") === requested.replace(/[^a-z]/g, "")
+);
+let activeCategory: string = fromQuery ?? "All";
+let activeShelf = "All";
 
 function setStatus(text: string, tone: "idle" | "error" = "idle") {
   if (!status) return;
@@ -39,80 +65,227 @@ function setStatus(text: string, tone: "idle" | "error" = "idle") {
   status.dataset.tone = tone;
 }
 
-function card(offer: Offer): HTMLElement {
+/* ---- Everywhere else: direct affiliate product links ---- */
+
+function productCard(product: Product, currency: string): HTMLElement {
   const link = document.createElement("a");
-  link.className = "partner-card";
-  link.href = offer.url;
+  link.className = "product-card";
+  link.href = product.url;
   link.rel = "sponsored noopener noreferrer";
   link.target = "_blank";
 
-  const category = document.createElement("span");
-  category.className = "partner-card-cat";
-  category.textContent = offer.category;
+  const price = priceFor(product, currency);
+  const bought = soldLabel(product.sold);
 
-  const name = document.createElement("strong");
-  name.textContent = offer.name;
+  link.innerHTML = `
+    <span class="product-card-thumb">
+      ${product.image ? `<img src="" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ""}
+    </span>
+    <span class="product-card-body">
+      <span class="product-card-title"></span>
+      <span class="product-card-meta">
+        <strong class="product-card-price"></strong>
+        ${bought ? `<span class="product-card-sold"></span>` : ""}
+      </span>
+    </span>
+  `;
 
-  const blurb = document.createElement("span");
-  blurb.className = "partner-card-blurb";
-  blurb.textContent = offer.blurb;
+  // Text and attributes are set directly, so a product title can never
+  // introduce markup into this page.
+  const image = link.querySelector("img");
+  if (image) image.src = product.image;
 
-  const go = document.createElement("span");
-  go.className = "partner-card-go";
-  go.textContent = "Visit ↗";
+  const titleNode = link.querySelector(".product-card-title");
+  if (titleNode) titleNode.textContent = product.title;
 
-  link.append(category, name, blurb, go);
+  const priceNode = link.querySelector(".product-card-price");
+  if (priceNode) priceNode.textContent = price.amount;
+
+  const sold = link.querySelector(".product-card-sold");
+  if (sold) sold.textContent = bought;
+
+  if (price.original) link.title = `Shop lists this at ${price.original}`;
   return link;
 }
 
-function render() {
-  if (!grid) return;
-  const country = visitorCountry();
-  const all = offersFor(country);
-  const shown = activeCategory === "All" ? all : all.filter((offer) => offer.category === activeCategory);
+/* ---- Nepal: the shops that paid for a pin, and their own products ---- */
 
-  grid.replaceChildren();
-  for (const offer of shown) grid.append(card(offer));
+function shopCard(shop: LiveShop): HTMLElement {
+  // A shop with its own link goes there. Otherwise the card is not clickable:
+  // the reason to visit is the counter, not a website.
+  const card: HTMLElement = shop.link ? document.createElement("a") : document.createElement("div");
+  card.className = "partner-card";
 
-  const local = shown.filter((offer) => offer.regions?.includes(country)).length;
-  if (shown.length === 0) {
-    setStatus("No shops in this category yet.");
-  } else if (local > 0) {
-    setStatus(`${shown.length} shops · ${local} local to you`);
+  if (shop.link) {
+    (card as HTMLAnchorElement).href = shop.link;
+    (card as HTMLAnchorElement).rel = "sponsored noopener noreferrer";
+    (card as HTMLAnchorElement).target = "_blank";
+  }
+
+  const category = document.createElement("span");
+  category.className = "partner-card-cat";
+  category.textContent = shop.category;
+
+  const name = document.createElement("strong");
+  name.textContent = shop.name;
+
+  const blurb = document.createElement("span");
+  blurb.className = "partner-card-blurb";
+  blurb.textContent = shop.offer || shop.address || "";
+
+  // Only the shop's own published details: a rider redeeming a perk needs to
+  // reach the shop, and nothing else about them is shown.
+  const go = document.createElement(shop.link ? "span" : "a");
+  go.className = "partner-card-go";
+  if (shop.link) {
+    go.textContent = "Visit ↗";
+  } else if (shop.phone) {
+    (go as HTMLAnchorElement).href = `tel:${shop.phone}`;
+    go.textContent = "Call ↗";
+  } else if (shop.email) {
+    (go as HTMLAnchorElement).href = `mailto:${shop.email}`;
+    go.textContent = "Email ↗";
   } else {
-    setStatus(`${shown.length} shops`);
+    go.textContent = "On the map ↗";
   }
 
-  for (const chip of chips?.querySelectorAll<HTMLButtonElement>(".slot-chip") ?? []) {
-    chip.setAttribute("aria-selected", String(chip.dataset.category === activeCategory));
-  }
-
-  // Consent and click enrichment for the links just rendered.
-  if (shown.length > 0) {
-    offerConsentIfNeeded();
-    wireAffiliateLinks();
-  }
+  card.append(category, name, blurb, go);
+  return card;
 }
 
-function buildChips() {
+function buildChips(labels: string[], onPick: (label: string) => void, active: () => string) {
   if (!chips) return;
-  for (const category of CATEGORIES) {
+  chips.replaceChildren();
+  for (const label of labels) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "slot-chip";
-    chip.dataset.category = category;
+    chip.dataset.category = label;
     chip.setAttribute("role", "tab");
-    chip.setAttribute("aria-selected", String(category === activeCategory));
-    chip.textContent = category;
-    chip.addEventListener("click", () => {
-      activeCategory = category;
-      render();
-    });
+    chip.setAttribute("aria-selected", String(label === active()));
+    chip.textContent = label;
+    chip.addEventListener("click", () => onPick(label));
     chips.append(chip);
   }
 }
 
-buildChips();
+function markChips(active: string) {
+  for (const chip of chips?.querySelectorAll<HTMLButtonElement>(".slot-chip") ?? []) {
+    chip.setAttribute("aria-selected", String(chip.dataset.category === active));
+  }
+}
+
+async function renderNepal() {
+  if (!grid) return;
+
+  // The shops that actually paid for a pin on the map. Not an affiliate
+  // programme, not a partner logo wall: local businesses a rider can walk into.
+  const shops = await loadLiveShops();
+  const categories = ["All", ...Array.from(new Set(shops.map((shop) => shop.category)))];
+  if (!categories.includes(activeCategory)) activeCategory = "All";
+  const shown =
+    activeCategory === "All" ? shops : shops.filter((shop) => shop.category === activeCategory);
+
+  grid.replaceChildren();
+  for (const shop of shown) grid.append(shopCard(shop));
+
+  if (shops.length === 0) {
+    setStatus("No shops have put a pin on the map yet. Be the first — the map is free to join.");
+  } else if (shown.length === 0) {
+    setStatus("No shops on the map in this category yet.");
+  } else {
+    setStatus(`${shown.length} shops on the map near the roads you drive`);
+  }
+
+  // Chips reflect what is actually on the map right now, not a fixed list.
+  buildChips(categories, (label) => {
+    activeCategory = label;
+    void renderNepal();
+  }, () => activeCategory);
+  markChips(activeCategory);
+}
+
+async function renderWorld() {
+  if (!grid) return;
+
+  const data = await loadShelf();
+  if (!data) {
+    grid.replaceChildren();
+    setStatus("The shelf is unavailable right now.", "error");
+    return;
+  }
+
+  const currency = visitorCurrency();
+  const shelves = shelfFor(data, 8, country);
+  const labels = ["All", ...shelves.map((shelf) => shelf.shelf)];
+  if (!labels.includes(activeShelf)) activeShelf = "All";
+
+  grid.replaceChildren();
+  let count = 0;
+
+  for (const shelf of shelves) {
+    if (activeShelf !== "All" && shelf.shelf !== activeShelf) continue;
+    const section = document.createElement("div");
+    section.className = "product-shelf";
+
+    const head = document.createElement("div");
+    head.className = "product-shelf-head";
+    const name = document.createElement("h3");
+    name.textContent = shelf.shelf;
+    const stamp = document.createElement("span");
+    stamp.className = "product-shelf-stamp";
+    stamp.textContent = `checked ${checkedLabel(shelf.checkedAt)}`;
+    head.append(name, stamp);
+
+    const row = document.createElement("div");
+    row.className = "product-row";
+    for (const product of shelf.products) {
+      row.append(productCard(product, currency));
+      count += 1;
+    }
+
+    section.append(head, row);
+    grid.append(section);
+  }
+
+  setStatus(
+    count === 0
+      ? "Nothing in stock in this category right now."
+      : `${count} products · prices checked ${checkedLabel(data.checkedAt)}`
+  );
+
+  buildChips(labels, (label) => {
+    activeShelf = label;
+    void renderWorld();
+  }, () => activeShelf);
+}
+
+function render() {
+  if (isNepal) {
+    void renderNepal();
+  } else {
+    void renderWorld();
+  }
+}
+
+/* ---- Copy: the two shelves are not the same product ---- */
+
+if (title) {
+  title.innerHTML = isNepal
+    ? "Shops on the map<span class=\"dot\">.</span>"
+    : "Kit worth<br />keeping in the car<span class=\"dot\">.</span>";
+}
+
+if (lede) {
+  lede.textContent = isNepal
+    ? "The shops that put a pin on the Hodos map, and the products they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
+    : "The things that actually save a drive — a working inflator, a mount that holds, wipers that clear. Bought straight from the shop that sells them, at the shop's own price.";
+}
+
+if (perks) {
+  perks.textContent = isNepal ? "Riders earn perks, not points." : "Keep the kit, skip the guesswork.";
+}
+
 render();
 
 /* Newsletter: still the only thing a visitor is asked for. */
