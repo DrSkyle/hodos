@@ -2,7 +2,14 @@ export type HazardKind = "pothole" | "speed_bump" | "rough_pavement";
 
 export type Severity = 1 | 2 | 3;
 
-export type TravelMode = "vehicle" | "pedestrian";
+/**
+ * What the device is doing, decided from several independent signals.
+ * Only "vehicle", "cycling" and "walking" may ever emit an impact; "unknown"
+ * (ambiguous or conflicting evidence) and the rest never do.
+ */
+export type MotionState = "still" | "walking" | "cycling" | "in_hand" | "vehicle" | "unknown";
+
+export type TravelMode = "vehicle" | "pedestrian" | "cycling";
 
 export interface LatLng {
   lat: number;
@@ -50,6 +57,12 @@ export interface ImpactFeatures {
   jerk: number;
   /** Lateral acceleration at the event, as a fraction of the peak. */
   lateralRatio: number;
+  /** Share of the pulse energy that sits in the road band (0.5-6 Hz), 0..1. Handling jolts are broadband. */
+  roadBandRatio?: number;
+  /** Peak rotation rate around the event, deg/s. Large = the phone itself was moved. */
+  gyroPeakDps?: number;
+  /** Peak rotation about the vertical axis (yaw), deg/s. Large with lateral load = a swerve. */
+  yawPeakDps?: number;
 }
 
 export interface Impact {
@@ -73,6 +86,10 @@ export interface Impact {
   /** How the device was moving. */
   mode: TravelMode;
   features: ImpactFeatures;
+  /** Motion state the device was in when the impact was felt. */
+  motionState?: MotionState;
+  /** How many earlier, separate passes felt the same defect in the same place (on-device ledger). */
+  repeats?: number;
 }
 
 export interface ObservedImpact extends Impact {

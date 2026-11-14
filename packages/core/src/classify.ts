@@ -1,4 +1,4 @@
-import { clamp } from "./signal";
+import { clamp, round3 } from "./signal";
 import type { HazardKind, ImpactFeatures } from "./types";
 
 export interface ClassifyOptions {
@@ -8,8 +8,18 @@ export interface ClassifyOptions {
   bumpMinWidthMs: number;
   /** Jerk per unit peak (1/s) at which abruptness saturates. */
   jerkRef: number;
-  /** Lateral share above which the event is not a road defect at all. */
+  /** Lateral share above which the event is not a road defect at all (extreme only). */
   maxLateralRatio: number;
+  /** Lateral share at which the soft penalty starts: an angled pothole survives, a kerb strike does not. */
+  softLateralRatio: number;
+  /** Largest score penalty the lateral share can apply. */
+  lateralPenalty: number;
+  /** Yaw rate (deg/s) that, with real lateral load, marks a swerve. */
+  yawRejectDps: number;
+  /** Peak gyro (deg/s) at which the phone itself is being moved (handling). */
+  handlingGyroDps: number;
+  /** Road-band energy share below which the pulse is broadband (a tap, a drop). */
+  minRoadBandRatio: number;
   /** Score a class must reach before the event is kept. */
   minScore: number;
 }
@@ -18,7 +28,12 @@ export const DEFAULT_CLASSIFY_OPTIONS: ClassifyOptions = {
   sharpRiseMs: 60,
   bumpMinWidthMs: 180,
   jerkRef: 50,
-  maxLateralRatio: 0.8,
+  maxLateralRatio: 1.4,
+  softLateralRatio: 0.5,
+  lateralPenalty: 0.3,
+  yawRejectDps: 35,
+  handlingGyroDps: 120,
+  minRoadBandRatio: 0.35,
   minScore: 0.5,
 };
 
@@ -43,6 +58,28 @@ export function classify(
   if (features.lateralRatio > cfg.maxLateralRatio) {
     return null;
   }
+  // A swerve is lateral load AND rotation about the vertical axis.
+  if (
+    features.yawPeakDps !== undefined &&
+    features.yawPeakDps >= cfg.yawRejectDps &&
+    features.lateralRatio > cfg.softLateralRatio
+  ) {
+    return null;
+  }
+  if (features.gyroPeakDps !== undefined && features.gyroPeakDps >= cfg.handlingGyroDps * 2) {
+    return null;
+  }
+
+  // Soft evidence against "road defect": sideways share, handling rotation, broadband energy.
+  const lateralSpan = Math.max(1e-6, cfg.maxLateralRatio - cfg.softLateralRatio);
+  let penalty =
+    cfg.lateralPenalty * clamp((features.lateralRatio - cfg.softLateralRatio) / lateralSpan, 0, 1);
+  if (features.gyroPeakDps !== undefined) {
+    penalty += 0.25 * clamp((features.gyroPeakDps - cfg.handlingGyroDps / 2) / cfg.handlingGyroDps, 0, 1);
+  }
+  if (features.roadBandRatio !== undefined) {
+    penalty += 0.25 * clamp(1 - features.roadBandRatio / cfg.minRoadBandRatio, 0, 1);
+  }
 
   const sharpness = clamp(1 - features.riseMs / cfg.sharpRiseMs, 0, 1);
   const width = clamp(features.widthMs / cfg.bumpMinWidthMs, 0, 1);
@@ -50,7 +87,7 @@ export function classify(
   const jerkRate = features.jerk / Math.max(features.peak, 1);
   const jerk = clamp(jerkRate / cfg.jerkRef, 0, 1);
 
-  const scores: Array<{ kind: HazardKind; score: number }> = [
+  const raw: Array<{ kind: HazardKind; score: number }> = [
     {
       kind: "pothole",
       score: clamp(0.45 * sharpness + 0.3 * jerk + 0.25 * (1 - width) - 0.3 * lobes, 0, 1),
@@ -64,6 +101,7 @@ export function classify(
       score: clamp(0.55 * lobes + 0.25 * width + 0.2 * (1 - sharpness), 0, 1),
     },
   ];
+  const scores = raw.map((r) => ({ kind: r.kind, score: clamp(r.score - penalty, 0, 1) }));
   scores.sort((a, b) => b.score - a.score);
   const best = scores[0];
   if (best === undefined || best.score < cfg.minScore) {
@@ -71,5 +109,5 @@ export function classify(
   }
   const runnerUp = scores[1]?.score ?? 0;
   const margin = clamp((best.score - runnerUp) / 0.25, 0, 1);
-  return { kind: best.kind, score: Number(clamp(0.7 * best.score + 0.3 * margin, 0, 1).toFixed(3)) };
+  return { kind: best.kind, score: round3(clamp(0.7 * best.score + 0.3 * margin, 0, 1)) };
 }

@@ -438,3 +438,24 @@ test("uncorroborated single-device observations are not written as new rows in p
   }
 });
 
+
+test("the additive wire format accepts cycling and the new optional fields", () => {
+  // Same fixed clock as the rest of this file.
+  const since = now - 86400000;
+  // New clients may report cycling, a fused motion state, a repeat count.
+  assert.equal(testing.validEvent({
+    ...base, mode: "cycling", motionState: "cycling", repeats: 2
+  }, since, now), true);
+  // Every documented motion state is valid.
+  for (const state of ["still", "walking", "cycling", "in_hand", "vehicle", "unknown"]) {
+    assert.equal(testing.validEvent({ ...base, motionState: state }, since, now), true);
+  }
+  // Old clients that send none of it keep working.
+  assert.equal(testing.validEvent({ ...base }, since, now), true);
+  assert.equal(testing.validEvent({ ...base, mode: "pedestrian" }, since, now), true);
+  // Nonsense is still refused.
+  assert.equal(testing.validEvent({ ...base, mode: "flying" }, since, now), false);
+  assert.equal(testing.validEvent({ ...base, motionState: "hovering" }, since, now), false);
+  assert.equal(testing.validEvent({ ...base, repeats: -1 }, since, now), false);
+  assert.equal(testing.validEvent({ ...base, repeats: "2" }, since, now), false);
+});

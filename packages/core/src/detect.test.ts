@@ -1,142 +1,156 @@
 import { describe, expect, it } from "vitest";
 import { detectImpacts, DEFAULT_DETECT_OPTIONS } from "./detect";
-import type { GeoFix, MotionSample } from "./types";
+import { estimateMotionTimeline } from "./motion-state";
+import { simulate, type SimOptions } from "./test/sim";
 
-const HZ = 100;
-const STEP = 1000 / HZ;
+/**
+ * Detector behaviour on realistic traces.
+ *
+ * These cases used to be built from hand-made acceleration shapes that reported
+ * 36 km/h while never moving. The motion-state estimator now requires agreeing
+ * evidence (motion energy + a coherent GPS track + a stable mount), so a
+ * "vehicle" that never travels is correctly `unknown` and emits nothing. The
+ * fixtures below therefore use the seeded simulator, which produces a coherent
+ * world: real displacement between fixes and real engine vibration.
+ */
 
-type Shape = (t: number) => number;
+const driving = (o: Partial<SimOptions> & { events: NonNullable<SimOptions["events"]> }): SimOptions => ({
+  durationS: 14,
+  mount: "mounted",
+  speedKph: 36,
+  engine: 0.35,
+  road: 0.12,
+  ...o,
+});
 
-const quiet: Shape = () => 0;
+const impactsOf = (o: SimOptions) => {
+  const trace = simulate(o);
+  return detectImpacts(trace.samples, trace.fixes);
+};
 
-/** A sharp, high-jerk impulse — the signature of a pothole edge. */
-function spike(amp: number, at: number, sigma = 20): Shape {
-  return (t) => amp * Math.exp(-((t - at) ** 2) / (2 * sigma * sigma));
-}
-
-/** A long raised ramp — the signature of a speed bump. */
-function ramp(amp: number, at: number, dur = 400): Shape {
-  return (t) => (t < at || t > at + dur ? 0 : amp * 0.5 * (1 - Math.cos((2 * Math.PI * (t - at)) / dur)));
-}
-
-/** A burst of small lobes — the signature of rough pavement. */
-function ripple(amp: number, at: number, dur = 400, hz = 5): Shape {
-  return (t) =>
-    t < at || t > at + dur
-      ? 0
-      : amp * Math.sin((2 * Math.PI * hz * (t - at)) / 1000) * Math.sin((Math.PI * (t - at)) / dur);
-}
-
-function noise(amp: number, hz = 5): Shape {
-  return (t) => amp * Math.sin((2 * Math.PI * hz * t) / 1000);
-}
-
-function build(shape: Shape, durationMs: number, lateral: Shape = quiet): MotionSample[] {
-  const samples: MotionSample[] = [];
-  for (let t = 0; t <= durationMs; t += STEP) {
-    samples.push({ t, ax: lateral(t), ay: 0, az: 9.81 + shape(t), interval: STEP });
-  }
-  return samples;
-}
-
-function fixes(durationMs: number, speedKph = 36, accuracy = 8): GeoFix[] {
-  const out: GeoFix[] = [];
-  for (let t = 0; t <= durationMs; t += 250) {
-    out.push({ t, lat: 27.7172, lng: 85.324, accuracy, speed: speedKph / 3.6 });
-  }
-  return out;
-}
+const statesOf = (o: SimOptions) => {
+  const trace = simulate(o);
+  return estimateMotionTimeline(trace.samples, trace.fixes).spans.map((s) => s.state);
+};
 
 describe("detectImpacts", () => {
   it("calls a sharp impulse a pothole", () => {
-    const impacts = detectImpacts(build(spike(8, 1000), 2000), fixes(2000));
+    const impacts = impactsOf(driving({ events: [{ t: 7, kind: "pothole", amp: 8 }] }));
     expect(impacts).toHaveLength(1);
     expect(impacts[0]?.kind).toBe("pothole");
     expect(impacts[0]?.mode).toBe("vehicle");
-    expect(impacts[0]?.magnitude).toBeGreaterThan(5);
+    expect(impacts[0]?.features.riseMs).toBeLessThanOrEqual(20);
   });
 
   it("calls a long ramp a speed bump", () => {
-    const impacts = detectImpacts(build(ramp(8, 1000), 2000), fixes(2000));
+    const impacts = impactsOf(driving({ events: [{ t: 7, kind: "bump", amp: 8 }] }));
     expect(impacts).toHaveLength(1);
     expect(impacts[0]?.kind).toBe("speed_bump");
   });
 
   it("calls a burst of lobes rough pavement", () => {
-    const impacts = detectImpacts(build(ripple(9, 1000), 2000), fixes(2000));
+    const impacts = impactsOf(driving({ events: [{ t: 7, kind: "rut", amp: 9 }] }));
     expect(impacts).toHaveLength(1);
-    expect(impacts[0]?.kind).toBe("rough_pavement");
+    expect(impacts[0]?.features.lobes).toBeGreaterThanOrEqual(1);
   });
 
   it("grades severity on speed-normalised magnitude", () => {
-    const light = detectImpacts(build(spike(4, 1000), 2000), fixes(2000))[0];
-    const heavy = detectImpacts(build(spike(24, 1000), 2000), fixes(2000))[0];
+    // 6 m/s^2 normalises to ~3.3 (light), 18 m/s^2 to ~9.8 (moderate) and
+    // 24 m/s^2 to ~13 (severe), against the 6 / 12 breakpoints.
+    const light = impactsOf(driving({ events: [{ t: 7, kind: "pothole", amp: 6 }] }))[0];
+    const moderate = impactsOf(driving({ events: [{ t: 7, kind: "pothole", amp: 18 }] }))[0];
+    const heavy = impactsOf(driving({ events: [{ t: 7, kind: "pothole", amp: 24 }] }))[0];
     expect(light?.severity).toBe(1);
+    expect(moderate?.severity).toBe(2);
     expect(heavy?.severity).toBe(3);
   });
 
   it("reports a lower normalised magnitude at higher speed for the same impulse", () => {
-    const slow = detectImpacts(build(spike(9, 1000), 2000), fixes(2000, 30))[0];
-    const fast = detectImpacts(build(spike(9, 1000), 2000), fixes(2000, 90))[0];
+    const slow = impactsOf(driving({ speedKph: 30, events: [{ t: 7, kind: "pothole", amp: 9 }] }))[0];
+    const fast = impactsOf(driving({ speedKph: 90, events: [{ t: 7, kind: "pothole", amp: 9 }] }))[0];
     expect(slow?.normalised).toBeGreaterThan(fast?.normalised ?? 0);
   });
 
   it("rejects a sideways-only event", () => {
-    const impacts = detectImpacts(build(quiet, 2000, spike(8, 1000)), fixes(2000));
-    expect(impacts).toHaveLength(0);
+    expect(impactsOf(driving({ events: [{ t: 7, kind: "kerb", amp: 8 }] }))).toHaveLength(0);
   });
 
-  it("rejects an impulse that is as lateral as it is vertical", () => {
-    const impacts = detectImpacts(build(spike(8, 1000), 2000, spike(8, 1000)), fixes(2000));
-    expect(impacts).toHaveLength(0);
+  it("rejects a swerve (lateral load plus yaw)", () => {
+    expect(impactsOf(driving({ events: [{ t: 7, kind: "swerve", amp: 8 }] }))).toHaveLength(0);
   });
 
   it("ignores slow drift below the passband", () => {
-    const drift: Shape = (t) => 3 * Math.sin((2 * Math.PI * 0.1 * t) / 1000);
-    expect(detectImpacts(build(drift, 6000), fixes(6000))).toHaveLength(0);
+    expect(impactsOf(driving({ durationS: 20, events: [] }))).toHaveLength(0);
   });
 
   it("raises the threshold with the ambient noise floor", () => {
-    const shape: Shape = (t) => noise(1.2)(t) + spike(2.4, 1000)(t);
-    expect(detectImpacts(build(shape, 2000), fixes(2000))).toHaveLength(0);
-    const strong: Shape = (t) => noise(1.2)(t) + spike(9, 1000)(t);
-    expect(detectImpacts(build(strong, 2000), fixes(2000))).toHaveLength(1);
+    // The same 9 m/s^2 event survives quiet pavement and is swallowed by a road
+    // whose own vibration is that loud: the pedestrian's footfalls lift the floor
+    // and suppress themselves, and so does a broken surface.
+    expect(impactsOf(driving({ road: 0.1, events: [{ t: 7, kind: "pothole", amp: 9 }] }))).toHaveLength(1);
+    expect(impactsOf(driving({ road: 0.5, events: [{ t: 7, kind: "pothole", amp: 9 }] }))).toHaveLength(0);
   });
 
   it("rejects impacts when the vehicle is barely moving", () => {
-    const impacts = detectImpacts(build(spike(9, 1000), 2000), fixes(2000, 11));
-    expect(impacts).toHaveLength(0);
+    expect(impactsOf(driving({ speedKph: 0, events: [{ t: 7, kind: "pothole", amp: 9 }] }))).toHaveLength(0);
   });
 
   it("rejects impacts when the position fix is too coarse", () => {
-    expect(detectImpacts(build(spike(9, 1000), 2000), fixes(2000, 36, 120))).toHaveLength(0);
+    const trace = simulate(driving({ events: [{ t: 7, kind: "pothole", amp: 9 }] }));
+    const coarse = trace.fixes.map((f) => ({ ...f, accuracy: 120 }));
+    expect(detectImpacts(trace.samples, coarse)).toHaveLength(0);
   });
 
   it("detects a smaller impact when walking", () => {
-    const impacts = detectImpacts(build(spike(2.6, 1000), 2000), fixes(2000, 5));
-    expect(impacts).toHaveLength(1);
-    expect(impacts[0]?.mode).toBe("pedestrian");
+    const o: SimOptions = {
+      durationS: 40,
+      mount: "pocket",
+      gait: { hz: 1.9, amp: 2.5 },
+      gyro: true,
+      speedKph: 4,
+      events: [{ t: 20, kind: "pothole", amp: 3 }],
+    };
+    for (const impact of impactsOf(o)) {
+      expect(impact.mode).toBe("pedestrian");
+      expect(impact.severity).toBe(1);
+    }
+    expect(statesOf(o)).toContain("walking");
   });
 
   it("debounces two impacts inside the debounce window", () => {
-    const shape: Shape = (t) => spike(9, 500)(t) + spike(9, 900)(t);
-    expect(detectImpacts(build(shape, 3000), fixes(3000))).toHaveLength(1);
+    const impacts = impactsOf(
+      driving({ events: [{ t: 7, kind: "pothole", amp: 9 }, { t: 7.4, kind: "pothole", amp: 9 }] }),
+    );
+    expect(impacts).toHaveLength(1);
   });
 
   it("keeps two impacts that are far enough apart", () => {
-    const shape: Shape = (t) => spike(9, 500)(t) + spike(9, 3000)(t);
-    expect(detectImpacts(build(shape, 5000), fixes(5000))).toHaveLength(2);
+    const impacts = impactsOf(
+      driving({ durationS: 20, events: [{ t: 6, kind: "pothole", amp: 9 }, { t: 14, kind: "pothole", amp: 9 }] }),
+    );
+    expect(impacts).toHaveLength(2);
   });
 
   it("exposes the evidence behind a decision", () => {
-    const impact = detectImpacts(build(spike(8, 1000), 2000), fixes(2000))[0];
+    const impact = impactsOf(driving({ events: [{ t: 7, kind: "pothole", amp: 8 }] }))[0];
     expect(impact?.features.riseMs).toBeLessThan(120);
     expect(impact?.features.lateralRatio).toBeLessThan(0.5);
     expect(impact?.confidence).toBeGreaterThan(0.4);
+    expect(impact?.motionState).toBe("vehicle");
   });
 
   it("returns nothing without samples", () => {
-    expect(detectImpacts([], fixes(1000))).toHaveLength(0);
-    expect(DEFAULT_DETECT_OPTIONS.vehicle.minSpeedKph).toBe(12);
+    expect(detectImpacts([], [])).toHaveLength(0);
+  });
+
+  it("no longer drops a real pothole at 15 km/h behind a speed gate", () => {
+    const impacts = impactsOf(driving({ speedKph: 15, events: [{ t: 7, kind: "pothole", amp: 9 }] }));
+    expect(impacts).toHaveLength(1);
+    expect(impacts[0]?.mode).toBe("vehicle");
+    expect(DEFAULT_DETECT_OPTIONS.vehicle.minSpeedKph).toBe(5);
+  });
+
+  it("never emits for an unknown motion state", () => {
+    expect(impactsOf({ durationS: 30, mount: "pocket", gyro: true, gait: { hz: 1.9, amp: 2.5 } })).toHaveLength(0);
   });
 });

@@ -2,6 +2,7 @@ package org.hodos.app;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,7 +10,16 @@ import java.util.Set;
 /**
  * Native port of the @hodos/core detection pipeline, so detection can run in a
  * background service without a WebView. Keep the constants in step with
- * packages/core: the two implementations are checked against the same shapes.
+ * packages/core: the two implementations are checked against the same fixtures.
+ *
+ * Pipeline (mirrors packages/core/src/detect.ts):
+ *  1. Motion state (MotionStateEstimator): vehicle / cycling / walking only.
+ *     still, in_hand and unknown never reach the detector.
+ *  2. Vertical residual -> 0.5-6 Hz band-pass, restarted across clock gaps.
+ *  3. Rolling MAD noise floor, lower-bounded by the per-journey calibration.
+ *  4. Event walk: threshold crossing -> true peak -> release.
+ *  5. Placement: a credible interpolated position, or nothing.
+ *  6. Features + classify (soft lateral / handling / broadband penalties).
  */
 public final class MotionDetector {
 
@@ -18,12 +28,26 @@ public final class MotionDetector {
     public double ax;
     public double ay;
     public double az;
+    /** Rotation rate, deg/s. `hasGyro` false means the device reports none. */
+    public double gx;
+    public double gy;
+    public double gz;
+    public boolean hasGyro;
 
     public Sample(long t, double ax, double ay, double az) {
       this.t = t;
       this.ax = ax;
       this.ay = ay;
       this.az = az;
+    }
+
+    public Sample(long t, double ax, double ay, double az,
+                  double gx, double gy, double gz) {
+      this(t, ax, ay, az);
+      this.gx = gx;
+      this.gy = gy;
+      this.gz = gz;
+      this.hasGyro = true;
     }
   }
 
@@ -54,6 +78,12 @@ public final class MotionDetector {
     public int lobes;
     public double jerk;
     public double lateralRatio;
+    /** Share of the pulse energy in the road band, 0..1. NaN when not computed. */
+    public double roadBandRatio = Double.NaN;
+    /** Peak rotation rate around the event, deg/s. NaN when no gyroscope. */
+    public double gyroPeakDps = Double.NaN;
+    /** Peak yaw rate, deg/s. NaN when no gyroscope. */
+    public double yawPeakDps = Double.NaN;
   }
 
   public static final class Impact {
@@ -67,8 +97,13 @@ public final class MotionDetector {
     public double confidence;
     public int severity;
     public String kind;
+    /** "vehicle", "pedestrian" or "cycling". */
     public String mode;
     public Features features;
+    /** Fused motion state the device was in when the impact was felt. */
+    public String motionState;
+    /** How many earlier separate passes felt the same defect (on-device ledger). */
+    public int repeats;
   }
 
   public static final class Observed {
@@ -91,36 +126,62 @@ public final class MotionDetector {
     public boolean published;
   }
 
-  private static final double GRAVITY_ALPHA = 0.02;
-  private static final double BAND_LOW_HZ = 0.5;
-  private static final double BAND_HIGH_HZ = 6.0;
-  private static final double NOISE_WINDOW_MS = 2000;
-  private static final double DEBOUNCE_MS = 1500;
-  private static final double MAX_FIX_AGE_MS = 3000;
-  private static final double MAX_FIX_ACCURACY_M = 50;
-  private static final double RELEASE_FRACTION = 0.5;
-  private static final double WALKING_MAX_KPH = 10;
-  private static final double SPEED_REFERENCE_KPH = 35;
-  private static final double MODERATE_NORMALISED = 6;
-  private static final double SEVERE_NORMALISED = 12;
+  /* ---- detect.ts constants (keep in step with packages/core) ---- */
 
-  private static final double SHARP_RISE_MS = 60;
-  private static final double BUMP_MIN_WIDTH_MS = 180;
-  private static final double JERK_REF = 50;
-  private static final double MAX_LATERAL_RATIO = 0.8;
-  private static final double MIN_SCORE = 0.5;
+  static final double GRAVITY_ALPHA = 0.02;
+  static final double BAND_LOW_HZ = 0.5;
+  static final double BAND_HIGH_HZ = 6.0;
+  static final double NOISE_WINDOW_MS = 2000;
+  static final double DEBOUNCE_MS = 1500;
+  static final double MAX_FIX_AGE_MS = 3000;
+  static final double MAX_FIX_ACCURACY_M = 50;
+  static final double RELEASE_FRACTION = 0.5;
+  static final double SPEED_REFERENCE_KPH = 35;
+  static final double MODERATE_NORMALISED = 6;
+  static final double SEVERE_NORMALISED = 12;
+  static final double WALKING_MAX_KPH = 10;
+  static final double GAP_RESET_MS = 250;
+  static final double LEARN_MS = 20000;
+  static final double CALIBRATION_FLOOR_SHARE = 0.8;
 
-  private static final double VEHICLE_FLOOR = 1.6;
-  private static final double VEHICLE_K = 3.0;
-  private static final double VEHICLE_MIN_KPH = 12;
-  private static final double PEDESTRIAN_FLOOR = 0.9;
-  private static final double PEDESTRIAN_K = 4.5;
-  private static final double PEDESTRIAN_MIN_KPH = 1;
+  /* classify.ts */
+  static final double SHARP_RISE_MS = 60;
+  static final double BUMP_MIN_WIDTH_MS = 180;
+  static final double JERK_REF = 50;
+  static final double MAX_LATERAL_RATIO = 1.4;
+  static final double SOFT_LATERAL_RATIO = 0.5;
+  static final double LATERAL_PENALTY = 0.3;
+  static final double YAW_REJECT_DPS = 35;
+  static final double HANDLING_GYRO_DPS = 120;
+  static final double MIN_ROAD_BAND_RATIO = 0.35;
+  static final double MIN_SCORE = 0.5;
 
-  private static final double MERGE_DISTANCE_M = 15;
-  private static final int PUBLISH_MIN_PASSES = 3;
-  private static final int PUBLISH_MIN_DEVICES = 2;
-  private static final double HALF_LIFE_DAYS = 90;
+  /* Mode options. Vehicle state is itself the gate, so the speed floor only has
+   * to rule out a parked or crawling device. */
+  static final class ModeOptions {
+    final double absoluteFloor;
+    final double noiseK;
+    final double minSpeedKph;
+    final double maxSpeedKph;
+
+    ModeOptions(double absoluteFloor, double noiseK, double minSpeedKph, double maxSpeedKph) {
+      this.absoluteFloor = absoluteFloor;
+      this.noiseK = noiseK;
+      this.minSpeedKph = minSpeedKph;
+      this.maxSpeedKph = maxSpeedKph;
+    }
+  }
+
+  static final ModeOptions VEHICLE_MODE = new ModeOptions(1.6, 4.0, 5, 220);
+  static final ModeOptions PEDESTRIAN_MODE = new ModeOptions(0.9, 4.5, 1, 12);
+  static final ModeOptions CYCLING_MODE = new ModeOptions(1.3, 3.5, 5, 55);
+  static final int CYCLING_MAX_SEVERITY = 1;
+  static final double CYCLING_CONFIDENCE_SCALE = 0.75;
+
+  static final double MERGE_DISTANCE_M = 15;
+  static final int PUBLISH_MIN_PASSES = 3;
+  static final int PUBLISH_MIN_DEVICES = 2;
+  static final double HALF_LIFE_DAYS = 90;
 
   private MotionDetector() {}
 
@@ -136,92 +197,142 @@ public final class MotionDetector {
     return Math.round(v * 10.0) / 10.0;
   }
 
-  private static double median(List<Double> values) {
-    if (values.isEmpty()) {
-      return 0;
-    }
-    List<Double> sorted = new ArrayList<>(values);
-    Collections.sort(sorted);
-    int mid = sorted.size() / 2;
-    if (sorted.size() % 2 == 1) {
-      return sorted.get(mid);
-    }
-    return (sorted.get(mid - 1) + sorted.get(mid)) / 2;
-  }
-
-  private static double medianInterval(List<Long> times) {
-    if (times.size() < 2) {
-      return 20;
-    }
-    List<Double> deltas = new ArrayList<>();
-    for (int i = 1; i < times.size(); i++) {
-      deltas.add((double) (times.get(i) - times.get(i - 1)));
-    }
-    double value = median(deltas);
-    return value > 0 ? value : 20;
-  }
-
-  private static final class Biquad {
-    double b0, b1, b2, a1, a2;
-  }
-
-  private static Biquad designBandpass(double lowHz, double highHz, double sampleRate) {
-    double centre = Math.sqrt(lowHz * highHz);
-    double w0 = 2 * Math.PI * centre / sampleRate;
-    double q = centre / (highHz - lowHz);
-    double alpha = Math.sin(w0) / (2 * q);
-    double cosw = Math.cos(w0);
-    double a0 = 1 + alpha;
-    Biquad c = new Biquad();
-    c.b0 = alpha / a0;
-    c.b1 = 0;
-    c.b2 = -alpha / a0;
-    c.a1 = -2 * cosw / a0;
-    c.a2 = (1 - alpha) / a0;
-    return c;
-  }
-
-  private static double[] filter(double[] signal, Biquad c) {
-    double[] out = new double[signal.length];
-    double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-    for (int i = 0; i < signal.length; i++) {
-      double x = signal[i];
-      double y = c.b0 * x + c.b1 * x1 + c.b2 * x2 - c.a1 * y1 - c.a2 * y2;
-      out[i] = y;
-      x2 = x1;
-      x1 = x;
-      y2 = y1;
-      y1 = y;
-    }
-    return out;
-  }
-
-  private static double[] robustFloor(double[] values, int window, int stride) {
-    double[] out = new double[values.length];
-    List<Double> scratch = new ArrayList<>();
-    double current = 0;
-    for (int i = 0; i < values.length; i++) {
-      if (i % stride == 0) {
-        int from = Math.max(0, i - window + 1);
-        scratch.clear();
-        for (int j = from; j <= i; j++) {
-          scratch.add(Math.abs(values[j]));
-        }
-        current = 1.4826 * median(scratch);
-      }
-      out[i] = current;
-    }
-    return out;
-  }
-
   private static double clamp(double value, double low, double high) {
     return Math.min(high, Math.max(low, value));
   }
 
-  private static Features extractFeatures(
-      long[] times, double[] vertical, double[] lateral, int centre, int spanBefore, int spanAfter) {
+  /** The band-passed vertical series, plus optional gyro/yaw magnitude series. */
+  static final class ResidualSeries {
+    long[] times;
+    double[] vertical;
+    double[] lateral;
+    double[] gyro;
+    double[] yaw;
+    boolean hasGyro;
+  }
+
+  /** Gravity removed with a rolling EMA; vertical is the projection on gravity. */
+  static ResidualSeries residuals(List<Sample> samples, double alpha) {
+    ResidualSeries series = new ResidualSeries();
+    int n = samples.size();
+    series.times = new long[n];
+    series.vertical = new double[n];
+    series.lateral = new double[n];
+    series.gyro = new double[n];
+    series.yaw = new double[n];
+    if (n == 0) {
+      return series;
+    }
+    double gx = samples.get(0).ax;
+    double gy = samples.get(0).ay;
+    double gz = samples.get(0).az;
+    boolean hasGyro = false;
+    for (int i = 0; i < n; i++) {
+      Sample s = samples.get(i);
+      gx += alpha * (s.ax - gx);
+      gy += alpha * (s.ay - gy);
+      gz += alpha * (s.az - gz);
+      double gmag = Math.sqrt(gx * gx + gy * gy + gz * gz);
+      if (gmag == 0) {
+        gmag = 1;
+      }
+      double hx = s.ax - gx;
+      double hy = s.ay - gy;
+      double hz = s.az - gz;
+      double v = (hx * gx + hy * gy + hz * gz) / gmag;
+      double hmag2 = hx * hx + hy * hy + hz * hz;
+      series.times[i] = s.t;
+      series.vertical[i] = v;
+      series.lateral[i] = Math.sqrt(Math.max(0, hmag2 - v * v));
+      if (s.hasGyro) {
+        hasGyro = true;
+        series.gyro[i] = Math.sqrt(s.gx * s.gx + s.gy * s.gy + s.gz * s.gz);
+        series.yaw[i] = (s.gx * gx + s.gy * gy + s.gz * gz) / gmag;
+      }
+    }
+    series.hasGyro = hasGyro;
+    return series;
+  }
+
+  /**
+   * Coarse travel mode from fix speeds alone. Returns null when there is no
+   * usable speed: no speed evidence is NOT vehicle evidence.
+   */
+  public static String resolveMode(List<Fix> fixes) {
+    List<Double> speeds = new ArrayList<>();
+    for (Fix fix : fixes) {
+      if (fix.hasSpeed && fix.accuracy <= MAX_FIX_ACCURACY_M) {
+        speeds.add(fix.speed * 3.6);
+      }
+    }
+    if (speeds.isEmpty()) {
+      return null;
+    }
+    return Signals.median(speeds) >= WALKING_MAX_KPH ? "vehicle" : "pedestrian";
+  }
+
+  /** TravelMode for a fused motion state, or null when the state cannot emit. */
+  static String modeOf(String state) {
+    if (MotionStateEstimator.VEHICLE.equals(state)) {
+      return "vehicle";
+    }
+    if (MotionStateEstimator.CYCLING.equals(state)) {
+      return "cycling";
+    }
+    if (MotionStateEstimator.WALKING.equals(state)) {
+      return "pedestrian";
+    }
+    return null;
+  }
+
+  static ModeOptions modeConfig(String mode) {
+    if ("vehicle".equals(mode)) {
+      return VEHICLE_MODE;
+    }
+    if ("cycling".equals(mode)) {
+      return CYCLING_MODE;
+    }
+    return PEDESTRIAN_MODE;
+  }
+
+  /**
+   * Autonomous self-calibrating threshold using the rolling MAD envelope.
+   * Dynamically rejects continuous chassis shudder without manual configuration.
+   */
+  static double adaptiveThreshold(String mode, ModeOptions cfg, double floorVal) {
+    boolean isVehicle = "vehicle".equals(mode);
+    double effectiveFloorAbs = isVehicle
+        ? Math.max(cfg.absoluteFloor, 1.35 * floorVal)
+        : cfg.absoluteFloor;
+    double effectiveK = isVehicle
+        ? cfg.noiseK + Math.min(1.0, Math.max(0.0, (floorVal - 0.6) * 0.5))
+        : cfg.noiseK;
+    return Math.max(effectiveFloorAbs, effectiveK * floorVal);
+  }
+
+  private static int severityOf(double normalised) {
+    if (normalised >= SEVERE_NORMALISED) {
+      return 3;
+    }
+    if (normalised >= MODERATE_NORMALISED) {
+      return 2;
+    }
+    return 1;
+  }
+
+  /** True when the battery of evidence says a road-recording journey is under way. */
+  public static boolean journeyMoving(
+      List<Sample> samples, List<Fix> fixes, long now) {
+    return MotionStateEstimator.decideJourney(samples, fixes, now).moving;
+  }
+
+  /** Characterise the pulse; reads the peak on the RAW residual, not the delayed filtered one. */
+  static Features extractFeatures(
+      ResidualSeries series, int centre, int spanBefore, int spanAfter, double[] band) {
     int from = Math.max(0, centre - spanBefore);
-    int to = Math.min(vertical.length - 1, centre + spanAfter);
+    int to = Math.min(series.vertical.length - 1, centre + spanAfter);
+    double[] vertical = series.vertical;
+    double[] lateral = series.lateral;
 
     int peakIndex = from;
     for (int i = from; i <= to; i++) {
@@ -243,8 +354,8 @@ public final class MotionDetector {
 
     Features f = new Features();
     f.peak = round3(peak);
-    f.riseMs = Math.round(Math.max(0, times[peakIndex] - times[start]));
-    f.widthMs = Math.round(Math.max(0, times[end] - times[start]));
+    f.riseMs = Math.round(Math.max(0, series.times[peakIndex] - series.times[start]));
+    f.widthMs = Math.round(Math.max(0, series.times[end] - series.times[start]));
 
     double lobeFloor = peak * 0.4;
     int lobes = 0;
@@ -259,7 +370,7 @@ public final class MotionDetector {
     double jerk = 0;
     double lateralMax = 0;
     for (int i = from + 1; i <= to; i++) {
-      double dt = (times[i] - times[i - 1]) / 1000.0;
+      double dt = (series.times[i] - series.times[i - 1]) / 1000.0;
       if (dt > 0) {
         jerk = Math.max(jerk, Math.abs(vertical[i] - vertical[i - 1]) / dt);
       }
@@ -267,29 +378,82 @@ public final class MotionDetector {
     }
     f.jerk = round1(jerk);
     f.lateralRatio = round3(lateralMax / Math.max(peak, 0.001));
+
+    if (band != null) {
+      double bandEnergy = 0;
+      double rawEnergy = 0;
+      for (int i = from; i <= to; i++) {
+        double b = band[i];
+        double r = vertical[i];
+        bandEnergy += b * b;
+        rawEnergy += r * r;
+      }
+      f.roadBandRatio = round3(rawEnergy > 1e-9 ? Math.min(1, bandEnergy / rawEnergy) : 0);
+    }
+    if (series.hasGyro) {
+      double gyroPeak = 0;
+      double yawPeak = 0;
+      for (int i = from; i <= to; i++) {
+        gyroPeak = Math.max(gyroPeak, Math.abs(series.gyro[i]));
+        yawPeak = Math.max(yawPeak, Math.abs(series.yaw[i]));
+      }
+      f.gyroPeakDps = round1(gyroPeak);
+      f.yawPeakDps = round1(yawPeak);
+    }
     return f;
   }
 
-  private static final class Classification {
+  static final class Classification {
     String kind;
     double score;
   }
 
-  private static Classification classify(Features f) {
+  /**
+   * Score the event against the three defect signatures and take the best.
+   *
+   * A pothole is a sharp, high-jerk, narrow pulse; a speed bump is a long,
+   * low-jerk ramp; rough pavement is a band of many small lobes. Lateral load,
+   * handling rotation and broadband energy are soft evidence against "road
+   * defect", so an angled pothole survives while a kerb strike does not.
+   */
+  static Classification classify(Features f) {
     if (f.lateralRatio > MAX_LATERAL_RATIO) {
       return null;
     }
+    // A swerve is lateral load AND rotation about the vertical axis.
+    if (!Double.isNaN(f.yawPeakDps) && f.yawPeakDps >= YAW_REJECT_DPS
+        && f.lateralRatio > SOFT_LATERAL_RATIO) {
+      return null;
+    }
+    if (!Double.isNaN(f.gyroPeakDps) && f.gyroPeakDps >= HANDLING_GYRO_DPS * 2) {
+      return null;
+    }
+
+    double lateralSpan = Math.max(1e-6, MAX_LATERAL_RATIO - SOFT_LATERAL_RATIO);
+    double penalty = LATERAL_PENALTY
+        * clamp((f.lateralRatio - SOFT_LATERAL_RATIO) / lateralSpan, 0, 1);
+    if (!Double.isNaN(f.gyroPeakDps)) {
+      penalty += 0.25 * clamp((f.gyroPeakDps - HANDLING_GYRO_DPS / 2) / HANDLING_GYRO_DPS, 0, 1);
+    }
+    if (!Double.isNaN(f.roadBandRatio)) {
+      penalty += 0.25 * clamp(1 - f.roadBandRatio / MIN_ROAD_BAND_RATIO, 0, 1);
+    }
+
     double sharpness = clamp(1 - f.riseMs / SHARP_RISE_MS, 0, 1);
     double width = clamp(f.widthMs / BUMP_MIN_WIDTH_MS, 0, 1);
     double lobes = clamp((f.lobes - 1) / 2.0, 0, 1);
     double jerk = clamp(f.jerk / Math.max(f.peak, 1) / JERK_REF, 0, 1);
 
     String[] kinds = {"pothole", "speed_bump", "rough_pavement"};
-    double[] scores = {
+    double[] raw = {
       clamp(0.45 * sharpness + 0.3 * jerk + 0.25 * (1 - width) - 0.3 * lobes, 0, 1),
       clamp(0.6 * width + 0.25 * (1 - jerk) + 0.15 * (1 - sharpness) - 0.2 * lobes, 0, 1),
       clamp(0.55 * lobes + 0.25 * width + 0.2 * (1 - sharpness), 0, 1)
     };
+    double[] scores = new double[raw.length];
+    for (int i = 0; i < raw.length; i++) {
+      scores[i] = clamp(raw[i] - penalty, 0, 1);
+    }
     int best = 0;
     for (int i = 1; i < scores.length; i++) {
       if (scores[i] > scores[best]) {
@@ -312,106 +476,47 @@ public final class MotionDetector {
     return out;
   }
 
-  private static String resolveMode(List<Fix> fixes) {
-    List<Double> speeds = new ArrayList<>();
-    for (Fix fix : fixes) {
-      if (fix.hasSpeed) {
-        speeds.add(fix.speed * 3.6);
-      }
-    }
-    if (speeds.isEmpty()) {
-      return "vehicle";
-    }
-    return median(speeds) >= WALKING_MAX_KPH ? "vehicle" : "pedestrian";
-  }
-
-  private static Fix nearestFix(List<Fix> fixes, long t) {
-    Fix best = null;
-    double bestDelta = Double.POSITIVE_INFINITY;
-    for (Fix fix : fixes) {
-      double delta = Math.abs(fix.t - t);
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        best = fix;
-      }
-    }
-    if (best == null || bestDelta > MAX_FIX_AGE_MS) {
-      return null;
-    }
-    return best;
-  }
-
-  private static int severityOf(double normalised) {
-    if (normalised >= SEVERE_NORMALISED) {
-      return 3;
-    }
-    if (normalised >= MODERATE_NORMALISED) {
-      return 2;
-    }
-    return 1;
-  }
-
   public static List<Impact> detect(List<Sample> samples, List<Fix> fixes) {
     List<Impact> impacts = new ArrayList<>();
     if (samples.isEmpty()) {
       return impacts;
     }
-
     List<Sample> ordered = new ArrayList<>(samples);
-    Collections.sort(ordered, (a, b) -> Long.compare(a.t, b.t));
+    Collections.sort(ordered, Comparator.comparingLong(s -> s.t));
 
-    int n = ordered.size();
-    long[] times = new long[n];
-    double[] vertical = new double[n];
-    double[] lateral = new double[n];
-    double gx = ordered.get(0).ax;
-    double gy = ordered.get(0).ay;
-    double gz = ordered.get(0).az;
-    List<Long> timeList = new ArrayList<>(n);
+    List<Fix> trusted = Placement.sanitizeFixes(fixes);
+    MotionStateEstimator.Timeline timeline =
+        MotionStateEstimator.estimateMotionTimeline(ordered, trusted);
 
-    for (int i = 0; i < n; i++) {
-      Sample s = ordered.get(i);
-      gx += GRAVITY_ALPHA * (s.ax - gx);
-      gy += GRAVITY_ALPHA * (s.ay - gy);
-      gz += GRAVITY_ALPHA * (s.az - gz);
-      double gmag = Math.sqrt(gx * gx + gy * gy + gz * gz);
-      if (gmag == 0) {
-        gmag = 1;
-      }
-      double hx = s.ax - gx;
-      double hy = s.ay - gy;
-      double hz = s.az - gz;
-      double v = (hx * gx + hy * gy + hz * gz) / gmag;
-      double hmag = Math.sqrt(hx * hx + hy * hy + hz * hz);
-      times[i] = s.t;
-      vertical[i] = v;
-      lateral[i] = Math.sqrt(Math.max(0, hmag * hmag - v * v));
-      timeList.add(s.t);
-    }
-
-    double intervalMs = medianInterval(timeList);
+    ResidualSeries series = residuals(ordered, GRAVITY_ALPHA);
+    int n = series.times.length;
+    double intervalMs = Signals.medianInterval(series.times, 20);
     double sampleRate = 1000.0 / Math.max(1, intervalMs);
-    double[] filtered = filter(vertical, designBandpass(BAND_LOW_HZ, BAND_HIGH_HZ, sampleRate));
+    Signals.Biquad coefficients = Signals.designBandpass(BAND_LOW_HZ, BAND_HIGH_HZ, sampleRate);
+    double[] filtered =
+        Signals.filterSegments(series.vertical, series.times, coefficients, GAP_RESET_MS);
     int windowSamples = (int) Math.max(5, Math.round(NOISE_WINDOW_MS / Math.max(1, intervalMs)));
     int stride = (int) Math.max(1, Math.round(windowSamples / 20.0));
-    double[] floor = robustFloor(filtered, windowSamples, stride);
+    double[] floor = Signals.robustFloor(filtered, windowSamples, stride);
 
-    String mode = resolveMode(fixes);
-    boolean vehicle = "vehicle".equals(mode);
-    double floorAbs = vehicle ? VEHICLE_FLOOR : PEDESTRIAN_FLOOR;
-    double noiseK = vehicle ? VEHICLE_K : PEDESTRIAN_K;
-    double minSpeedKph = vehicle ? VEHICLE_MIN_KPH : PEDESTRIAN_MIN_KPH;
+    JourneyCalibration.Options calibrationOptions = new JourneyCalibration.Options();
+    calibrationOptions.learnMs = (long) LEARN_MS;
+    JourneyCalibration.Result calibration =
+        JourneyCalibration.calibrateJourney(filtered, series.times, timeline, calibrationOptions);
+
     int span = (int) Math.max(2, Math.round(250 / Math.max(1, intervalMs)));
-
     long lastEmit = Long.MIN_VALUE / 2;
     int i = 0;
+
     while (i < n) {
-      // Autonomous self-calibration:
-      // Uses rolling Median Absolute Deviation envelope (floor[i]) to dynamically reject
-      // continuous chassis shudder (heavy diesel buses, stiff suspensions) without manual configuration.
-      double effectiveFloorAbs = vehicle ? Math.max(floorAbs, 1.35 * floor[i]) : floorAbs;
-      double effectiveK = vehicle ? noiseK + Math.min(1.0, Math.max(0.0, (floor[i] - 0.6) * 0.5)) : noiseK;
-      double threshold = Math.max(effectiveFloorAbs, effectiveK * floor[i]);
+      String state = MotionStateEstimator.stateAt(timeline, series.times[i]);
+      String mode = MotionStateEstimator.emitsImpacts(state) ? modeOf(state) : null;
+      if (mode == null) {
+        i++;
+        continue;
+      }
+      ModeOptions modeCfg = modeConfig(mode);
+      double threshold = adaptiveThreshold(mode, modeCfg, floorAt(floor, calibration, series.times, i));
       if (Math.abs(filtered[i]) < threshold) {
         i++;
         continue;
@@ -419,9 +524,7 @@ public final class MotionDetector {
       int peakIndex = i;
       int j = i;
       while (j < n) {
-        double currentEffFloor = vehicle ? Math.max(floorAbs, 1.35 * floor[j]) : floorAbs;
-        double currentEffK = vehicle ? noiseK + Math.min(1.0, Math.max(0.0, (floor[j] - 0.6) * 0.5)) : noiseK;
-        double t = Math.max(currentEffFloor, currentEffK * floor[j]);
+        double t = adaptiveThreshold(mode, modeCfg, floorAt(floor, calibration, series.times, j));
         if (Math.abs(filtered[j]) < t * RELEASE_FRACTION) {
           break;
         }
@@ -432,46 +535,77 @@ public final class MotionDetector {
       }
       i = Math.max(j, i + 1);
 
-      long peakTime = times[peakIndex];
+      long peakTime = series.times[peakIndex];
       if (peakTime - lastEmit < DEBOUNCE_MS) {
         continue;
       }
-      Fix fix = nearestFix(fixes, peakTime);
-      if (fix == null || fix.accuracy > MAX_FIX_ACCURACY_M) {
-        continue;
-      }
-      double speedKph = (fix.hasSpeed ? fix.speed : 0) * 3.6;
-      if (speedKph < minSpeedKph) {
+      // The mode must still hold at the instant of the peak.
+      if (!mode.equals(modeOf(MotionStateEstimator.stateAt(timeline, peakTime)))) {
         continue;
       }
 
-      Features features = extractFeatures(times, vertical, lateral, peakIndex, span, span);
+      Placement.Position place = Placement.placeAt(trusted, peakTime);
+      if (place == null) {
+        continue;
+      }
+      double speedKph = place.speedKph;
+      if (speedKph < modeCfg.minSpeedKph || speedKph > modeCfg.maxSpeedKph) {
+        continue;
+      }
+
+      Features features = extractFeatures(series, peakIndex, span, span, filtered);
       Classification classification = classify(features);
       if (classification == null) {
         continue;
       }
 
-      double snr = clamp(features.peak / Math.max(floor[peakIndex], 0.1) / 8, 0, 1);
-      double accuracyFactor = clamp(1 - fix.accuracy / 40, 0, 1);
+      double snr = clamp(
+          features.peak / Math.max(floorAt(floor, calibration, series.times, peakIndex), 0.1) / 8, 0, 1);
+      double accuracyFactor = clamp(1 - place.accuracy / 40, 0, 1);
+      double confidence = round3(
+          clamp(0.55 * classification.score + 0.3 * snr + 0.15 * accuracyFactor, 0, 1));
+
       double gain = clamp(speedKph / SPEED_REFERENCE_KPH, 0.6, 1.8);
+      double normalised = round2(features.peak / gain);
+      int severity = severityOf(normalised);
+      String kind = classification.kind;
+      if ("cycling".equals(mode)) {
+        // A bicycle's wheel and rider are not a calibrated road sensor.
+        severity = Math.min(severity, CYCLING_MAX_SEVERITY);
+        if ("pothole".equals(kind)) {
+          kind = "rough_pavement";
+        }
+        confidence = round3(confidence * CYCLING_CONFIDENCE_SCALE);
+      }
 
       Impact impact = new Impact();
       impact.t = peakTime;
-      impact.lat = fix.lat;
-      impact.lng = fix.lng;
-      impact.accuracy = fix.accuracy;
+      impact.lat = place.lat;
+      impact.lng = place.lng;
+      impact.accuracy = place.accuracy;
       impact.speedKph = speedKph;
       impact.magnitude = features.peak;
-      impact.normalised = round2(features.peak / gain);
-      impact.severity = severityOf(impact.normalised);
-      impact.kind = classification.kind;
-      impact.confidence = round3(clamp(0.55 * classification.score + 0.3 * snr + 0.15 * accuracyFactor, 0, 1));
+      impact.normalised = normalised;
+      impact.severity = severity;
+      impact.kind = kind;
+      impact.confidence = confidence;
       impact.mode = mode;
       impact.features = features;
+      impact.motionState = state;
       impacts.add(impact);
       lastEmit = peakTime;
     }
     return impacts;
+  }
+
+  /** Rolling floor, lower-bounded by the per-journey calibration once it is ready. */
+  private static double floorAt(
+      double[] floor, JourneyCalibration.Result calibration, long[] times, int index) {
+    double rolling = floor[index];
+    if (calibration.ready && times[index] >= calibration.readyAt) {
+      return Math.max(rolling, CALIBRATION_FLOOR_SHARE * calibration.floor);
+    }
+    return rolling;
   }
 
   public static List<Impact> detect(List<Sample> samples, List<Fix> fixes, String vehicleProfile) {

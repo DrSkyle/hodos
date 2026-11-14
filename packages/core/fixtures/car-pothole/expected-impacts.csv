@@ -1,0 +1,2 @@
+t,lat,lng,accuracy,speedKph,magnitude,normalised,severity,kind,confidence,mode,motionState,peak,riseMs,widthMs,lobes,jerk,lateralRatio
+1700000007040,27.7178324,85.3240000,5.000,36.000,4.936,4.800,1,pothole,0.965,vehicle,vehicle,4.936,0,20,1,244.9,0.091

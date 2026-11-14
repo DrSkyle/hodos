@@ -24,8 +24,8 @@ function hazard(overrides: Partial<Hazard> = {}): Hazard {
   };
 }
 
-function fix(lat: number, lng: number, accuracy = 8): GeoFix {
-  return { t: T0, lat, lng, accuracy, speed: 30 / 3.6 };
+function fix(lat: number, lng: number, accuracy = 8, at = T0): GeoFix {
+  return { t: at, lat, lng, accuracy, speed: 30 / 3.6 };
 }
 
 function impact(lat: number, lng: number): Impact {
@@ -47,14 +47,16 @@ function impact(lat: number, lng: number): Impact {
 
 describe("passedHazards", () => {
   it("reports a hazard the device travelled past without feeling it", () => {
-    const track = [fix(27.7172, 85.324), fix(27.718, 85.325)];
+    // Two distinct, accurate, moving fixes near the hazard: the device actually
+    // moved through, which is what makes a clear-road claim trustworthy.
+    const track = [fix(27.71715, 85.324), fix(27.71722, 85.3241, 8, T0 + 800)];
     const result = passedHazards(track, [hazard()], []);
     expect(result).toHaveLength(1);
     expect(result[0]?.id).toBe("hazard-a");
   });
 
   it("does not report a hazard the device felt", () => {
-    const track = [fix(27.7172, 85.324)];
+    const track = [fix(27.71715, 85.324), fix(27.71722, 85.3241, 8, T0 + 800)];
     const felt = [impact(27.71721, 85.32401)];
     expect(passedHazards(track, [hazard()], felt)).toHaveLength(0);
   });
@@ -64,8 +66,15 @@ describe("passedHazards", () => {
     expect(passedHazards(elsewhere, [hazard()], [])).toHaveLength(0);
   });
 
+  it("ignores a single fix rather than treating it as a traversal", () => {
+    // One GPS point beside a hazard is not evidence of a clear road: the phone
+    // may be parked and the fix may have drifted.
+    const one = [fix(27.7172, 85.324)];
+    expect(passedHazards(one, [hazard()], [])).toHaveLength(0);
+  });
+
   it("ignores coarse fixes rather than treating them as a traversal", () => {
-    const coarse = [fix(27.7172, 85.324, 90)];
+    const coarse = [fix(27.71715, 85.324, 90), fix(27.71722, 85.3241, 90, T0 + 800)];
     expect(passedHazards(coarse, [hazard()], [])).toHaveLength(0);
   });
 

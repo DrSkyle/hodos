@@ -99,6 +99,11 @@ function validEvent(event, sinceMs, now) {
   const kinds = ["pothole", "speed_bump", "rough_pavement"];
   const observations = ["impact", "pass", "fix"];
   const observation = event.observation || "impact";
+  // Additive wire format: newer clients may report `cycling`, a fused
+  // `motionState`, an on-device `repeats` count, and feature extras. Older
+  // rows predate all of it, so absence stays valid.
+  const modes = ["vehicle", "pedestrian", "cycling"];
+  const motionStates = ["still", "walking", "cycling", "in_hand", "vehicle", "unknown"];
   return typeof lat === "number" && Number.isFinite(lat) &&
     typeof lng === "number" && Number.isFinite(lng) &&
     Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
@@ -113,7 +118,10 @@ function validEvent(event, sinceMs, now) {
     typeof event.deviceId === "string" && event.deviceId.length > 0 && event.deviceId.length <= 64 &&
     typeof event.tripId === "string" && event.tripId.length > 0 && event.tripId.length <= 64 &&
     kinds.includes(event.kind) && observations.includes(observation) &&
-    (event.mode == null || ["vehicle", "pedestrian"].includes(event.mode)) &&
+    (event.mode == null || modes.includes(event.mode)) &&
+    (event.motionState == null || motionStates.includes(event.motionState)) &&
+    (event.repeats == null ||
+      (Number.isInteger(event.repeats) && event.repeats >= 0 && event.repeats <= 1000)) &&
     (observation === "impact" ||
       (typeof event.hazardRef === "string" && event.hazardRef.length > 0 &&
        event.hazardRef.length <= 64));

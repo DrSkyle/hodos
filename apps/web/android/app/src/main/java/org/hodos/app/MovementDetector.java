@@ -65,6 +65,8 @@ public final class MovementDetector {
     public double displacementSpeedMps;
     public double vibrationSeconds;
     public boolean walkingVeto;
+    /** Fused motion state from the evidence-fusion estimator. */
+    public String state = MotionStateEstimator.UNKNOWN;
     public String reason = "still";
   }
 
@@ -90,6 +92,16 @@ public final class MovementDetector {
 
   private MovementDetector() {}
 
+  /**
+   * Is a road-recording journey under way?
+   *
+   * A journey starts ONLY when the fused estimator says vehicle or cycling, i.e.
+   * motion energy, GPS speed/displacement, engine-band vibration and a stable
+   * grip all agree. Vibration alone never starts one, GPS alone never starts
+   * one, and no GPS never starts one. The platform step detector is a bonus
+   * veto, not a single point of failure: cadence autocorrelation inside the
+   * estimator already detects walking without ACTIVITY_RECOGNITION.
+   */
   public static Decision evaluate(
       List<Accel> accelSamples, List<Fix> fixes, long lastStepAt, long now) {
     Decision decision = new Decision();
@@ -106,39 +118,40 @@ public final class MovementDetector {
     decision.walkingVeto =
         lastStepAt > 0 && now >= lastStepAt && now - lastStepAt <= STEP_VETO_MS;
 
-    boolean vibration = stats.sustainMs >= VIBRATION_SUSTAIN_MS;
-    boolean gpsMoving = gps.maxSpeed >= GPS_SPEED_MPS || gps.moved;
+    // Convert to the estimator's input shapes and ask it, which is the authority.
+    List<MotionDetector.Sample> samples = new ArrayList<>(accelSamples.size());
+    for (Accel a : accelSamples) {
+      samples.add(new MotionDetector.Sample(a.t, a.ax, a.ay, a.az));
+    }
+    List<MotionDetector.Fix> estimatorFixes = new ArrayList<>(fixes.size());
+    for (Fix f : fixes) {
+      estimatorFixes.add(new MotionDetector.Fix(
+          f.t, f.lat, f.lng, f.accuracy, f.speed, f.hasSpeed));
+    }
+    MotionStateEstimator.JourneyDecision fused =
+        MotionStateEstimator.decideJourney(samples, estimatorFixes, now);
+    decision.state = fused.state;
 
     if (decision.walkingVeto) {
+      decision.moving = false;
       decision.reason = "walking";
       return decision;
     }
-    if (gpsMoving && vibration) {
-      decision.moving = true;
-      decision.confidence = 0.95;
-      decision.reason = "vibration+gps";
-    } else if (gpsMoving) {
-      decision.moving = true;
-      decision.confidence = 0.75;
-      decision.reason = "gps";
-    } else if (vibration && gps.fixCount == 0) {
-      // No GPS fix yet (tunnel, cold start, indoor). Trust the vibration
-      // evidence rather than silently missing a journey.
-      decision.moving = true;
-      decision.confidence = 0.6;
-      decision.reason = "vibration";
-    } else if (vibration) {
-      // Vibration but GPS says still: could be handling the phone or a
-      // stationary engine. Require more evidence next cycle.
-      decision.confidence = 0.5;
-      decision.reason = "vibration-unconfirmed";
-    } else if (gpsMoving) {
-      decision.confidence = 0.5;
-      decision.reason = "gps-unconfirmed";
-    } else {
-      decision.confidence = 0;
-      decision.reason = "still";
+    if (!fused.moving) {
+      // Includes every "GPS says it moved but the body did not", which is what
+      // a phone in a car that is being pushed, or a passenger, looks like.
+      decision.moving = false;
+      decision.confidence = fused.confidence * 0.5;
+      decision.reason = fused.reason;
+      return decision;
     }
+
+    // The estimator agrees it is moving; the onset still needs the sustained
+    // energy that distinguishes a running vehicle from a brief jolt.
+    boolean vibration = stats.sustainMs >= VIBRATION_SUSTAIN_MS;
+    decision.moving = true;
+    decision.confidence = vibration ? 0.95 : 0.75;
+    decision.reason = vibration ? "fused:" + fused.state + "+energy" : "fused:" + fused.state;
     decision.moving = decision.moving && decision.confidence >= MIN_CONFIDENCE;
     return decision;
   }

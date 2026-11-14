@@ -1,3 +1,4 @@
+import { round1, round3 } from "./signal";
 import type { ImpactFeatures } from "./types";
 
 export interface ResidualSeries {
@@ -6,6 +7,10 @@ export interface ResidualSeries {
   vertical: number[];
   /** Lateral acceleration at the same instants, m/s^2. */
   lateral: number[];
+  /** Rotation-rate magnitude, deg/s, when the device reports a gyroscope. */
+  gyro?: number[];
+  /** Rotation rate about the gravity (vertical) axis, deg/s. */
+  yaw?: number[];
 }
 
 const HALF = 0.5;
@@ -25,6 +30,8 @@ export function extractFeatures(
   centerIndex: number,
   spanBefore: number,
   spanAfter: number,
+  /** The band-passed vertical series, for the road-band energy share. */
+  band?: number[],
 ): ImpactFeatures {
   const from = Math.max(0, centerIndex - spanBefore);
   const to = Math.min(series.vertical.length - 1, centerIndex + spanAfter);
@@ -75,12 +82,35 @@ export function extractFeatures(
     lateralMax = Math.max(lateralMax, Math.abs(series.lateral[i] ?? 0));
   }
 
-  return {
-    peak: Number(peak.toFixed(3)),
+  const features: ImpactFeatures = {
+    peak: round3(peak),
     riseMs: Math.round(riseMs),
     widthMs: Math.round(widthMs),
     lobes: Math.max(1, lobes),
-    jerk: Number(jerk.toFixed(1)),
-    lateralRatio: Number((lateralMax / Math.max(peak, 0.001)).toFixed(3)),
+    jerk: round1(jerk),
+    lateralRatio: round3(lateralMax / Math.max(peak, 0.001)),
   };
+
+  if (band !== undefined) {
+    let bandEnergy = 0;
+    let rawEnergy = 0;
+    for (let i = from; i <= to; i += 1) {
+      const b = band[i] ?? 0;
+      const r = series.vertical[i] ?? 0;
+      bandEnergy += b * b;
+      rawEnergy += r * r;
+    }
+    features.roadBandRatio = round3(rawEnergy > 1e-9 ? Math.min(1, bandEnergy / rawEnergy) : 0);
+  }
+  if (series.gyro !== undefined && series.yaw !== undefined) {
+    let gyroPeak = 0;
+    let yawPeak = 0;
+    for (let i = from; i <= to; i += 1) {
+      gyroPeak = Math.max(gyroPeak, Math.abs(series.gyro[i] ?? 0));
+      yawPeak = Math.max(yawPeak, Math.abs(series.yaw[i] ?? 0));
+    }
+    features.gyroPeakDps = round1(gyroPeak);
+    features.yawPeakDps = round1(yawPeak);
+  }
+  return features;
 }

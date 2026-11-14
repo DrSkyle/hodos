@@ -13,4 +13,8 @@ export * from "./map-match";
 export * from "./validation";
 export * from "./segments";
 export * from "./analytics";
+export * from "./motion-state";
+export * from "./calibration";
+export * from "./placement";
+export * from "./ledger";
 

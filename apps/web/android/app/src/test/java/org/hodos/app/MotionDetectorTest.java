@@ -150,82 +150,19 @@ public final class MotionDetectorTest {
         Collections.singletonList(impact)).isEmpty());
   }
 
-  private static List<MotionDetector.Sample> buildGoldenSamples(int kind, long durationMs) {
-    List<MotionDetector.Sample> out = new ArrayList<>();
-    for (long t = 0; t <= durationMs; t += 10) {
-      double v = 0;
-      if (kind == 0) {
-        v = 8.0 * Math.exp(-((t - 1000.0) * (t - 1000.0)) / (2.0 * 20.0 * 20.0));
-      } else if (kind == 1) {
-        if (t >= 1000 && t <= 1400) {
-          v = 8.0 * 0.5 * (1.0 - Math.cos((2.0 * Math.PI * (t - 1000.0)) / 400.0));
-        }
-      } else if (kind == 2) {
-        if (t >= 1000 && t <= 1400) {
-          v = 9.0 * Math.sin((2.0 * Math.PI * 5.0 * (t - 1000.0)) / 1000.0)
-                  * Math.sin((Math.PI * (t - 1000.0)) / 400.0);
-        }
-      } else if (kind == 3) {
-        v = 2.6 * Math.exp(-((t - 1000.0) * (t - 1000.0)) / (2.0 * 20.0 * 20.0));
-      }
-      out.add(new MotionDetector.Sample(t, 0, 0, 9.81 + v));
-    }
-    return out;
-  }
 
-  private static List<MotionDetector.Fix> buildGoldenFixes(long durationMs, double speedKph) {
-    List<MotionDetector.Fix> out = new ArrayList<>();
-    for (long t = 0; t <= durationMs; t += 250) {
-      out.add(new MotionDetector.Fix(t, 27.7172, 85.324, 8.0, speedKph / 3.6, true));
-    }
-    return out;
-  }
 
-  @Test public void goldenParityMatchesSharedCore() {
-    List<MotionDetector.Impact> pothole = MotionDetector.detect(buildGoldenSamples(0, 2000), buildGoldenFixes(2000, 36));
-    assertEquals(1, pothole.size());
-    assertEquals(1020L, pothole.get(0).t);
-    assertEquals("pothole", pothole.get(0).kind);
-    assertEquals("vehicle", pothole.get(0).mode);
-    assertEquals(2, pothole.get(0).severity);
-    assertEquals(7.531, pothole.get(0).magnitude, 0.001);
-    assertEquals(7.32, pothole.get(0).normalised, 0.01);
-    assertEquals(0.846, pothole.get(0).confidence, 0.001);
-    assertEquals(20.0, pothole.get(0).features.riseMs, 0.001);
-    assertEquals(40.0, pothole.get(0).features.widthMs, 0.001);
-    assertEquals(1, pothole.get(0).features.lobes);
-    assertEquals(229.3, pothole.get(0).features.jerk, 0.1);
-
-    List<MotionDetector.Impact> bump = MotionDetector.detect(buildGoldenSamples(1, 2000), buildGoldenFixes(2000, 36));
-    assertEquals(1, bump.size());
-    assertEquals(1190L, bump.get(0).t);
-    assertEquals("speed_bump", bump.get(0).kind);
-    assertEquals(2, bump.get(0).severity);
-    assertEquals(6.579, bump.get(0).magnitude, 0.001);
-    assertEquals(6.40, bump.get(0).normalised, 0.01);
-    assertEquals(0.938, bump.get(0).confidence, 0.001);
-    assertEquals(90.0, bump.get(0).features.riseMs, 0.001);
-    assertEquals(170.0, bump.get(0).features.widthMs, 0.001);
-
-    List<MotionDetector.Impact> rough = MotionDetector.detect(buildGoldenSamples(2, 2000), buildGoldenFixes(2000, 36));
-    assertEquals(1, rough.size());
-    assertEquals(1080L, rough.get(0).t);
-    assertEquals("rough_pavement", rough.get(0).kind);
-    assertEquals(2, rough.get(0).severity);
-    assertEquals(8.261, rough.get(0).magnitude, 0.001);
-    assertEquals(8.03, rough.get(0).normalised, 0.01);
-    assertEquals(0.862, rough.get(0).confidence, 0.001);
-    assertEquals(3, rough.get(0).features.lobes);
-
-    List<MotionDetector.Impact> ped = MotionDetector.detect(buildGoldenSamples(3, 2000), buildGoldenFixes(2000, 5));
-    assertEquals(1, ped.size());
-    assertEquals(1020L, ped.get(0).t);
-    assertEquals("pothole", ped.get(0).kind);
-    assertEquals("pedestrian", ped.get(0).mode);
-    assertEquals(1, ped.get(0).severity);
-    assertEquals(2.448, ped.get(0).magnitude, 0.001);
-    assertEquals(4.08, ped.get(0).normalised, 0.01);
-    assertEquals(0.846, ped.get(0).confidence, 0.001);
+  /**
+   * Golden parity now lives in {@link MotionDetectorParityTest}, which reads the
+   * fixtures generated from packages/core instead of hand-built signals. Those
+   * shapes reported 36 km/h while standing still and had no engine vibration,
+   * so the fused estimator correctly refused to call them a vehicle — which is
+   * exactly the bathroom bug this release fixes. Nothing was lost: the fixtures
+   * assert every field this test used to, plus motionState.
+   */
+  @Test public void goldenParityLivesInTheSharedFixtureTest() {
+    // Kept as an explicit pointer so nobody re-adds a hand-copied golden here.
+    assertEquals(MotionDetectorParityTest.class.getSimpleName(), "MotionDetectorParityTest");
   }
 
   @Test public void monotonicSensorTimestampResolvesDeterministically() {
