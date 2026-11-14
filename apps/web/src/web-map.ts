@@ -32,7 +32,6 @@ export interface WebPartner {
   lng: number;
   offer: string;
   sponsorLabel: string;
-  sample: boolean;
 }
 
 export interface MapInstanceHandle {
@@ -79,6 +78,7 @@ function parseAppwriteRow(r: any): WebHazard | null {
   const passes = Number(r.passCount ?? r.passes ?? 1);
   const devices = Number(r.deviceCount ?? r.devices ?? 1);
   const published = Boolean(r.published);
+  if (!published) return null;
   const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1) || (r.clearPasses && r.clearPasses >= 3));
   const title =
     kind === "speed_bump"
