@@ -28,6 +28,7 @@ data class GarageOffer(
  */
 object Garage {
     const val INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/"
+    const val SITE_URL = "https://hodos.devilabs.dev"
 
     val slots = listOf(
         GarageSlot("inflator", "Tire inflator"),

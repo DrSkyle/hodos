@@ -112,9 +112,32 @@ test("currency is resolved from a locale tag, never from the network", () => {
   assert.equal(testing.currencyFor("en-NP", "usd"), "USD");
 });
 
-test("the daily price stays one flat USD wherever it is sold", () => {
-  assert.equal(testing.PARTNER_USD_PER_DAY, 0.99);
-  assert.equal(testing.PARTNER_MICRO_PER_DAY, 990000);
+test("placement pricing follows the local economy, not one global number", () => {
+  const { high, mid, low } = testing.PARTNER_TIERS;
+  assert.ok(low.usdPerDay < mid.usdPerDay, "low tier must be cheaper than mid");
+  assert.ok(mid.usdPerDay < high.usdPerDay, "mid tier must be cheaper than standard");
+  assert.equal(low.usdPerDay, 0.19);
+  assert.equal(high.usdPerDay, 1.99);
+});
+
+test("country tiers resolve from a locale tag only", () => {
+  assert.equal(testing.countryFor("ne-NP"), "NP");
+  assert.equal(testing.countryFor("en-IN"), "IN");
+  assert.equal(testing.countryFor("en_US"), "US");
+  assert.equal(testing.countryFor("", "lk"), "LK");
+  assert.equal(testing.countryFor("en-GB", "fr"), "FR");
+  assert.equal(testing.countryFor(""), "");
+});
+
+test("cheap markets are sold at the access tier, rich ones at standard", () => {
+  for (const code of ["NP", "IN", "PK", "BD", "NG", "KE", "VN", "PH", "ET"]) {
+    assert.equal(testing.tierFor(code), "low", `${code} should be low tier`);
+  }
+  for (const code of ["US", "GB", "DE", "JP", "AU", "CA"]) {
+    assert.equal(testing.tierFor(code), "high", `${code} should be high tier`);
+  }
+  assert.equal(testing.tierFor("MX"), "mid");
+  assert.equal(testing.tierFor("ZZ"), "high", "unknown countries default to standard");
 });
 
 test("zero-decimal currencies are not given cents", () => {

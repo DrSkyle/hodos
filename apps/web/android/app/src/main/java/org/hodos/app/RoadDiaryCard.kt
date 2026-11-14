@@ -45,7 +45,6 @@ internal fun RoadDiaryCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = PaperRaised,
-        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

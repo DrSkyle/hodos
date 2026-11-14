@@ -24,9 +24,12 @@ const ENDPOINT = `${APPWRITE_ENDPOINT}/functions/hodos-api/executions`;
 
 type Quote = {
   ok: boolean;
+  country?: string | null;
+  tier?: "high" | "mid" | "low";
   currency: string;
   usdPerDay: number;
   localPerDay: number;
+  weeksFrom?: number;
   days: number;
   totalLocal: number;
   totalUsd: number;
@@ -95,10 +98,14 @@ function renderQuote() {
   priceHost.textContent = `${money(quote.localPerDay, quote.currency)} a day`;
   if (priceNote) {
     const total = money(quote.totalLocal, quote.currency);
+    const week = quote.weeksFrom
+      ? `${money(quote.weeksFrom, quote.currency)} a week`
+      : `about $${(quote.usdPerDay * 7).toFixed(2)} USD a week`;
+    const tierName = quote.tier === "low" ? "Access" : quote.tier === "mid" ? "Local" : "Standard";
     priceNote.textContent =
       quote.days === 1
-        ? `About $${quote.usdPerDay.toFixed(2)} USD · no account, no contract`
-        : `${total} for ${quote.days} days · about $${quote.totalUsd.toFixed(2)} USD`;
+        ? `${week} · ${tierName} tier · no account, no contract`
+        : `${total} for ${quote.days} days · ${week} · ${tierName} tier`;
   }
   document.querySelectorAll<HTMLButtonElement>(".day-chip").forEach((chip) => {
     chip.setAttribute("aria-selected", String(Number(chip.dataset.days) === days));

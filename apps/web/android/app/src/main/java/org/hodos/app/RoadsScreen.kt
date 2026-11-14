@@ -117,9 +117,8 @@ internal fun RoadsScreen(
             SectionLabel("VEHICLE WEAR")
             Spacer(Modifier.height(12.dp))
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PaperRaised,
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp),
+                color = PaperRaised
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

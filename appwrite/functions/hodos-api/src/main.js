@@ -38,13 +38,20 @@ const PRICES = {
 };
 
 /**
- * A partner placement is sold by the day, not by the call: $0.99/day, quoted
- * in the buyer's own currency. It is the cheap tier for shops in places where
- * the Garage catalogue has no retailers to sell through, and it is deliberately
- * far cheaper than a classified ad.
+ * A partner placement is sold by the day, and the daily price follows the local
+ * economy rather than one global number: a shop in Kathmandu or Lagos pays a
+ * fraction of what a shop in California pays, in its own currency. All three
+ * tiers are published, so nobody has to guess what they will be charged.
  */
-const PARTNER_USD_PER_DAY = 0.99;
-const PARTNER_MICRO_PER_DAY = 990_000;
+const PARTNER_TIERS = {
+  // Where a shop's typical day of takings is measured in hundreds of dollars.
+  high: { usdPerDay: 1.99, label: "Standard" },
+  // Middle-income markets: real budget for a shop, still a cheap experiment.
+  mid: { usdPerDay: 0.79, label: "Local" },
+  // Where the Garage catalogue barely reaches: priced to be an easy yes.
+  low: { usdPerDay: 0.19, label: "Access" }
+};
+
 const PARTNER_MAX_DAYS = 90;
 const FX_TTL_MS = 12 * 60 * 60 * 1000;
 const FX_URL = "https://open.er-api.com/v6/latest/USD";
@@ -55,6 +62,18 @@ const FX_FALLBACK = {
   NGN: 1550, KES: 129, GHS: 15.2, TZS: 2700, UGX: 3700,
   ZMW: 27, EGP: 48, VND: 25400, PHP: 58, IDR: 15800,
   MYR: 4.5, THB: 34
+};
+
+/** Which daily tier a country is sold at. Anything unlisted is `high`. */
+const COUNTRY_TIER = {
+  high: ["US","CA","GB","AU","NZ","IE","DE","FR","NL","BE","AT","CH","IT","ES","PT",
+         "FI","SE","NO","DK","IS","LU","JP","KR","SG","AE","IL","HK","TW","QA","KW","SA"],
+  mid: ["MX","BR","AR","CL","CO","PE","UY","CR","PA","TR","ZA","TH","MY","CN","PL","CZ",
+        "SK","HU","GR","RO","BG","HR","SI","EE","LV","LT","RU","KZ","UA","RS","BY","EG","MA","TN","DZ","JO","LB","OM","BH"],
+  low: ["NP","IN","PK","BD","LK","BT","MM","KH","LA","VN","PH","ID","NG","KE","GH","TZ",
+        "UG","ZM","ET","SN","CI","CM","ZW","MW","RW","MZ","AO","MG","BF","ML","NE","TD",
+        "CD","CG","BJ","TG","GN","SL","LR","GM","SO","SD","SS","YE","SY","IQ","AF","PS",
+        "BO","PY","HN","GT","SV","NI","VE","HT","CU","DO","JM","FJ","PG"]
 };
 
 /** Language-region and bare-region tags mapped to the currency people use. */
@@ -224,6 +243,33 @@ function shapeHazard(row) {
   };
 }
 
+/** Live shop pins inside a box, minus anything past its paid expiry. */
+async function liveShops(bbox, cap = 12) {
+  const rows = await readRows("partners", [{ method: "limit", values: [PAGE] }]);
+  const now = Date.now();
+  const shops = [];
+  for (const row of rows) {
+    const until = Date.parse(String(row.activeUntil || ""));
+    if (Number.isFinite(until) && until < now) continue;
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (bbox && (lat < bbox.south || lat > bbox.north || lng < bbox.west || lng > bbox.east)) {
+      continue;
+    }
+    shops.push({
+      id: row.$id,
+      name: String(row.name || "").slice(0, 80),
+      category: row.category || "pit-stop",
+      lat,
+      lng,
+      offer: String(row.offer || "").slice(0, 160)
+    });
+    if (shops.length >= cap) break;
+  }
+  return shops;
+}
+
 async function hazards(body) {
   const bbox = validBbox(body.bbox);
   const limit = Math.min(Math.max(Number(body.limit) || 200, 1), PAGE);
@@ -237,7 +283,10 @@ async function hazards(body) {
     count: filtered.length,
     returned: Math.min(filtered.length, limit),
     bbox,
-    hazards: filtered.slice(0, limit)
+    hazards: filtered.slice(0, limit),
+    // Shops that paid to be here are surfaced alongside the road data, so an
+    // assistant answering "where can I fix this" has a real name to give.
+    shops: bbox ? await liveShops(bbox) : []
   };
 }
 
@@ -264,7 +313,7 @@ async function roads(body) {
     hazards: cell.hazards,
     meanSeverity: Number((cell.severity / cell.hazards).toFixed(2))
   }));
-  return { bbox, cells: out.length, roads: out };
+  return { bbox, cells: out.length, roads: out, shops: bbox ? await liveShops(bbox) : [] };
 }
 
 /**
@@ -351,28 +400,7 @@ async function garage(body) {
  */
 async function partners(body) {
   const bbox = validBbox(body.bbox);
-  const rows = await readRows("partners", [{ method: "limit", values: [PAGE] }]);
-  const now = Date.now();
-  const live = [];
-  for (const row of rows) {
-    const until = Date.parse(String(row.activeUntil || ""));
-    if (Number.isFinite(until) && until < now) continue;
-    const lat = Number(row.lat);
-    const lng = Number(row.lng);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-    if (bbox && (lat < bbox.south || lat > bbox.north || lng < bbox.west || lng > bbox.east)) {
-      continue;
-    }
-    live.push({
-      id: row.$id,
-      name: String(row.name || "").slice(0, 80),
-      category: row.category || "pit-stop",
-      lat,
-      lng,
-      offer: String(row.offer || "").slice(0, 160),
-      activeUntil: row.activeUntil || null
-    });
-  }
+  const live = await liveShops(bbox, PAGE);
   return { count: live.length, bbox, partners: live };
 }
 
@@ -492,6 +520,26 @@ function currencyFor(locale, requested) {
   return "USD";
 }
 
+/** The ISO country the caller is in, from a locale tag only. No IP lookup. */
+function countryFor(locale, requested) {
+  if (typeof requested === "string" && /^[A-Za-z]{2}$/.test(requested)) {
+    return requested.toUpperCase();
+  }
+  const parts = String(locale || "").trim().replace("_", "-").split("-");
+  for (let i = parts.length - 1; i >= 0; i -= 1) {
+    if (/^[A-Za-z]{2}$/.test(parts[i]) && i > 0) return parts[i].toUpperCase();
+  }
+  return "";
+}
+
+/** Country -> pricing tier. Unlisted countries are sold at the standard tier. */
+function tierFor(country) {
+  for (const [tier, countries] of Object.entries(COUNTRY_TIER)) {
+    if (countries.includes(country)) return tier;
+  }
+  return "high";
+}
+
 function roundMoney(value, currency) {
   const zeroDecimal = ["JPY", "KRW", "VND", "IDR", "UGX", "TZS", "CLP", "PYG"];
   if (zeroDecimal.includes(currency)) return Math.round(value);
@@ -500,18 +548,28 @@ function roundMoney(value, currency) {
 }
 
 async function partnerQuote(body) {
-  const currency = currencyFor(body.locale || body.country, body.currency);
+  const country = countryFor(body.locale, body.countryCode || body.country);
+  const currency = currencyFor(body.locale, body.currency);
+  const tier = tierFor(country);
   const rates = await usdRates();
   const rate = Number(rates[currency]) || 1;
   const days = clampDays(body.days);
-  const perDay = roundMoney(PARTNER_USD_PER_DAY * rate, currency);
+  const usdPerDay = PARTNER_TIERS[tier].usdPerDay;
+  const perDay = roundMoney(usdPerDay * rate, currency);
+  const week = roundMoney(perDay * 7, currency);
   return {
+    country: country || null,
+    tier,
     currency,
-    usdPerDay: PARTNER_USD_PER_DAY,
+    usdPerDay,
     localPerDay: perDay,
+    weeksFrom: week,
     days,
     totalLocal: roundMoney(perDay * days, currency),
-    totalUsd: roundMoney(PARTNER_USD_PER_DAY * days, "USD"),
+    totalUsd: roundMoney(usdPerDay * days, "USD"),
+    tiers: Object.fromEntries(
+      Object.entries(PARTNER_TIERS).map(([name, value]) => [name, value.usdPerDay])
+    ),
     settlement: "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
     note: "One shop, one pin, one line of text. Never over the route ahead."
   };
@@ -557,9 +615,11 @@ async function partnerPlace(body) {
     category: shop.category,
     contact: shop.contact,
     days: quote.days,
-    amountMicro: PARTNER_MICRO_PER_DAY * quote.days,
+    amountMicro: Math.round(quote.usdPerDay * 1_000_000) * quote.days,
     currency: quote.currency,
     localTotal: Number(quote.totalLocal) || 0,
+    tier: quote.tier,
+    country: quote.country || "",
     reference,
     status: reference ? "pending" : "awaiting-payment",
     at: nowIso()
@@ -617,8 +677,11 @@ function manifest() {
     worldwide: "Same pricing and latency everywhere. No regional locks.",
     partners: {
       what: "Local shop pins on the live map. Call action:partners with a bounding box to read them.",
-      price: "80 micro-USD per call; the shop pays $0.99 per day, in their own currency.",
-      aiVisible: "Every live shop pin is returned by this API, so agents can find, name and recommend local shops.",
+      price: "80 micro-USD per call. A shop pays a daily placement fee set by its country, in its own currency.",
+      dailyTiersUsd: Object.fromEntries(
+        Object.entries(PARTNER_TIERS).map(([name, value]) => [name, value.usdPerDay])
+      ),
+      aiVisible: "A live pin is returned by action:partners and is also attached to action:hazards and action:roads results for the same area, so an assistant answering a local question can name and recommend the shop.",
       buy: "https://hodos.devilabs.dev/partners"
     },
     if_you_see_an_error: "Call action:report with the error, the action you were calling, your environment and, if you know it, the fix. It is free and it reaches the maintainers.",
@@ -832,8 +895,9 @@ module.exports = async function main(context) {
 module.exports.testing = {
   PRICES,
   ACTIONS,
-  PARTNER_USD_PER_DAY,
-  PARTNER_MICRO_PER_DAY,
+  PARTNER_TIERS,
+  countryFor,
+  tierFor,
   clampDays,
   currencyFor,
   roundMoney,

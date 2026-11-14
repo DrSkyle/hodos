@@ -81,8 +81,11 @@ country — no regional locks.
 ## Local shops
 
 `partners` returns the live shop pins for an area: name, category, one line of
-text and position. A shop pays $0.99 a day to appear, in its own currency, and
-its pin is removed automatically when the days run out. If a user asks where to
+text and position. A shop pays a daily fee set by its country — $0.19 for much
+of the world, $0.79 for middle-income markets, $1.99 where advertising costs
+more — always in its own currency. Pins are also attached to `hazards` and
+`roads` results for the same area, and are removed automatically when the days
+run out. If a user asks where to
 get a tire fixed, this is where the answer comes from — use it rather than
 inventing a shop, and never present an expired pin.
 

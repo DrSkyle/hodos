@@ -4,15 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#faf8f2" />
-  <meta name="description" content="The Hodos Garage — kit worth keeping in the car, linked straight to the shop. Every purchase keeps the road map free." />
+  <meta name="description" content="Hodos maps the road through the phone you already drive with. Free for everyone. The Garage keeps it free, and local shops can put a pin on the map from $0.19 a day." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="The Garage · Hodos" />
-  <meta property="og:description" content="Inflators, mounts, dash cams, wipers and tires, picked for the roads Hodos maps." />
+  <meta property="og:title" content="Hodos — the road maps itself" />
+  <meta property="og:description" content="A live map of potholes, rough stretches and speed bumps, built by the phones already driving. Free, forever." />
   <meta property="og:url" content="__HODOS_SITE__/" />
   <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
   <link rel="canonical" href="__HODOS_SITE__/" />
   <!--HODOS-ICONS-->
-  <title>The Garage · Hodos</title>
+  <title>Hodos — the road maps itself</title>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -24,11 +24,7 @@
     "url": "__HODOS_SITE__/",
     "downloadUrl": "__HODOS_DOWNLOAD__",
     "license": "__HODOS_REPO__/blob/main/LICENSE",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
   }
   </script>
 </head>
@@ -42,12 +38,11 @@
         <span>hodos<span class="dot">.</span></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a class="nav-garage" href="/garage">The Garage</a>
-        <a href="/map">Live Map</a>
+        <a class="nav-garage" href="/garage">Garage</a>
+        <a href="/map">Live map</a>
+        <a href="#shops">For shops</a>
         <a href="#app">The app</a>
-        <a href="#map-section">The map</a>
         <a href="#faq">FAQ</a>
-        <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Instagram</a>
       </nav>
       <div class="nav-actions">
         <a class="nav-cta nav-cta-garage" href="/garage">Shop the Garage</a>
@@ -56,10 +51,10 @@
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14"/></svg>
           </summary>
           <nav class="nav-menu-panel" aria-label="Mobile navigation">
-            <a class="nav-garage" href="/garage">The Garage</a>
-            <a href="/map">Live Map</a>
+            <a href="/garage">Garage</a>
+            <a href="/map">Live map</a>
+            <a href="#shops">For shops</a>
             <a href="#app">The app</a>
-            <a href="#map-section">The map</a>
             <a href="#faq">FAQ</a>
             <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Instagram</a>
             <a href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download the app</a>
@@ -70,36 +65,73 @@
   </header>
 
   <main id="content">
-    <section class="hero hero-garage" aria-labelledby="hero-title">
+    <section class="hero" aria-labelledby="hero-title">
       <div class="container">
         <div class="hero-grid">
           <div>
-            <span class="garage-eyebrow">The garage</span>
-            <h1 id="hero-title" class="hero-headline" data-parallax="-0.06">
-              Kit for the<br />roads you drive<span class="dot">.</span>
+            <h1 id="hero-title" class="hero-headline" data-parallax="-0.05">
+              The road<br />maps itself<span class="dot">.</span>
             </h1>
-            <p class="hero-subhead" data-parallax="-0.04">
-              The things that actually save a drive — an inflator that works, a mount that holds,
-              wipers that clear. Real prices from the shops that sell them, picked for the roads
-              Hodos maps. Buying here is what keeps the map free.
+            <p class="hero-subhead" data-parallax="-0.03">
+              Hodos reads the road through the phone already in your pocket, and turns every
+              ordinary drive into a live map of potholes, rough stretches and speed bumps.
+              No buttons. No reporting. Free, for everyone.
             </p>
-            <div class="hero-cta-row" data-parallax="-0.025">
-              <a class="btn btn-primary" href="/garage">Open the Garage</a>
-              <a class="btn btn-ghost" href="/map">See the live map</a>
+            <div class="hero-cta-row" data-parallax="-0.02">
+              <a class="btn btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
+              <a class="btn btn-ghost" href="/map">Open the live map</a>
             </div>
-            <p class="hero-note">Eight shelves · prices and stock straight from the retailers</p>
+            <p class="hero-note">Android · free · no account</p>
           </div>
 
-          <div class="hero-art hero-art-garage" data-parallax="0.05">
-            <div class="shelf-panel">
-              <div class="shelf-panel-head">
-                <span class="shelf-panel-title">On the shelf now</span>
-                <a class="shelf-panel-link" href="/garage">All shelves →</a>
-              </div>
-              <div id="hero-shelf" class="shelf-panel-body"></div>
-              <p id="hero-shelf-status" class="shelf-panel-status" role="status" aria-live="polite">Reading the shelf…</p>
-            </div>
+          <div class="hero-art" data-parallax="0.04">
+            <svg viewBox="0 0 620 540" role="img" aria-label="Illustrated map fragment: a driving route crossing a city grid with a corroborated pothole, a rough stretch, a speed bump and a repaired spot" fill="none">
+              <rect x="0.5" y="0.5" width="619" height="539" rx="22" fill="var(--paper-raised)" stroke="var(--soft-2)" />
+              <path d="M62 0V8 M124 0V8 M186 0V8 M248 0V8 M310 0V8 M372 0V8 M434 0V8 M496 0V8 M558 0V8 M62 540V532 M124 540V532 M186 540V532 M248 540V532 M310 540V532 M372 540V532 M434 540V532 M496 540V532 M558 540V532 M0 67.5H8 M0 135H8 M0 202.5H8 M0 270H8 M0 337.5H8 M0 405H8 M0 472.5H8 M620 67.5H612 M620 135H612 M620 202.5H612 M620 270H612 M620 337.5H612 M620 405H612 M620 472.5H612" stroke="#ddd6c6" stroke-width="1" class="mk-fade" style="animation-delay:1.2s" />
+
+              <path d="M0 210H620 M452 0V540" stroke="var(--road)" stroke-width="12" class="mk-draw" pathLength="1" />
+              <path d="M0 330H620 M0 452H620 M180 210V540 M560 0V540" stroke="var(--road)" stroke-width="6" class="mk-draw" pathLength="1" style="animation-delay:0.12s" />
+              <path d="M96 0V210 M330 210V540 M96 96H560 M260 96V210" stroke="var(--road)" stroke-width="4" class="mk-draw" pathLength="1" style="animation-delay:0.24s" />
+
+              <g fill="#f0ebde" class="mk-fade" style="animation-delay:0.4s">
+                <rect x="24" y="110" width="120" height="84" rx="4" />
+                <rect x="300" y="24" width="120" height="56" rx="4" />
+                <rect x="480" y="24" width="110" height="56" rx="4" />
+                <rect x="24" y="240" width="120" height="60" rx="4" />
+                <rect x="380" y="240" width="48" height="60" rx="4" />
+                <rect x="480" y="240" width="110" height="68" rx="4" />
+                <rect x="24" y="360" width="120" height="60" rx="4" />
+                <rect x="214" y="352" width="80" height="70" rx="4" />
+                <rect x="480" y="480" width="110" height="40" rx="4" />
+                <rect x="24" y="480" width="120" height="44" rx="4" />
+              </g>
+
+              <path d="M180 528V210H452V102" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="mk-draw" pathLength="1" style="animation-delay:0.6s" />
+              <circle cx="180" cy="528" r="6" fill="var(--ink)" class="mk-pop" style="animation-delay:1.4s" />
+              <rect x="445" y="89" width="13" height="13" rx="3" fill="var(--ink)" class="mk-pop" style="animation-delay:1.45s" />
+
+              <line x1="100" y1="330" x2="172" y2="330" stroke="var(--rough)" stroke-width="8" stroke-linecap="round" class="mk-pop" style="animation-delay:1.2s" />
+              <circle cx="180" cy="300" r="6.5" fill="var(--pothole)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.05s" />
+              <circle cx="452" cy="150" r="6.5" fill="var(--bump)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.15s" />
+              <circle cx="300" cy="452" r="6.5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="3" class="mk-pop" style="animation-delay:1.3s" />
+
+              <g font-family="var(--font-mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)" font-weight="600">
+                <text x="196" y="304" class="mk-fade" style="animation-delay:1.35s">POTHOLE</text>
+                <text x="438" y="154" text-anchor="end" class="mk-fade" style="animation-delay:1.4s">SPEED BUMP</text>
+                <text x="100" y="358" class="mk-fade" style="animation-delay:1.45s">ROUGH STRETCH</text>
+                <text x="272" y="482" class="mk-fade" style="animation-delay:1.5s">REPAIRED</text>
+              </g>
+            </svg>
           </div>
+        </div>
+
+        <div class="shelf-panel" style="margin-top:64px">
+          <div class="shelf-panel-head">
+            <span class="shelf-panel-title">The Garage · what drivers keep in the car</span>
+            <a class="shelf-panel-link" href="/garage">All shelves →</a>
+          </div>
+          <div id="hero-shelf" class="shelf-panel-body"></div>
+          <p id="hero-shelf-status" class="shelf-panel-status" role="status" aria-live="polite">Reading the shelf…</p>
         </div>
 
         <nav class="cat-rail" aria-label="Garage categories">
@@ -112,363 +144,153 @@
           <a class="cat-chip" href="/garage?slot=tires">Tires</a>
           <a class="cat-chip" href="/garage?slot=light">Lights</a>
         </nav>
-
-        <div class="spec-strip">
-          <div class="spec-cell"><span>Selling</span><strong>Real catalogue prices</strong></div>
-          <div class="spec-cell"><span>Shops</span><strong>Merchant links, no markup</strong></div>
-          <div class="spec-cell"><span>Funds</span><strong>The free road map</strong></div>
-          <div class="spec-cell"><span>Data</span><strong>No accounts, no tracking</strong></div>
-        </div>
-      </div>
-    </section>
-
-    <hr class="lane" />
-
-    <section class="section" id="map-section" aria-labelledby="map-title">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="map-title">The map underneath<span class="dot">.</span></h2>
-          <p class="lead">Every purchase in the Garage pays for the part that costs us money: reading the road through phones and publishing hazards everyone can use, free.</p>
-        </div>
-
-        <div class="map-band">
-          <div class="map-band-art">
-            <svg viewBox="0 0 620 540" role="img" aria-label="Illustrated map fragment: a driving route crossing a city grid with a corroborated pothole, a rough stretch, a speed bump, and a repaired spot" fill="none">
-              <rect x="0.5" y="0.5" width="619" height="539" fill="var(--paper-raised)" stroke="var(--ink)" />
-              <path d="M62 0V8 M124 0V8 M186 0V8 M248 0V8 M310 0V8 M372 0V8 M434 0V8 M496 0V8 M558 0V8 M62 540V532 M124 540V532 M186 540V532 M248 540V532 M310 540V532 M372 540V532 M434 540V532 M496 540V532 M558 540V532 M0 67.5H8 M0 135H8 M0 202.5H8 M0 270H8 M0 337.5H8 M0 405H8 M0 472.5H8 M620 67.5H612 M620 135H612 M620 202.5H612 M620 270H612 M620 337.5H612 M620 405H612 M620 472.5H612" stroke="#b5ac96" stroke-width="1" class="mk-fade" style="animation-delay:1.7s" />
-
-              <path d="M0 210H620 M452 0V540" stroke="var(--road)" stroke-width="12" class="mk-draw" pathLength="1" />
-              <path d="M0 330H620 M0 452H620 M180 210V540 M560 0V540" stroke="var(--road)" stroke-width="6" class="mk-draw" pathLength="1" style="animation-delay:0.12s" />
-              <path d="M96 0V210 M330 210V540 M96 96H560 M260 96V210" stroke="var(--road)" stroke-width="4" class="mk-draw" pathLength="1" style="animation-delay:0.24s" />
-              <path d="M60 540L220 452" stroke="var(--road)" stroke-width="2.5" class="mk-draw" pathLength="1" style="animation-delay:0.34s" />
-
-              <g fill="#efe9d9" class="mk-fade" style="animation-delay:0.5s">
-                <rect x="24" y="110" width="120" height="84" />
-                <rect x="300" y="24" width="120" height="56" />
-                <rect x="480" y="24" width="110" height="56" />
-                <rect x="24" y="240" width="120" height="60" />
-                <rect x="380" y="240" width="48" height="60" />
-                <rect x="480" y="240" width="110" height="68" />
-                <rect x="24" y="360" width="120" height="60" />
-                <rect x="214" y="352" width="80" height="70" />
-                <rect x="480" y="480" width="110" height="40" />
-                <rect x="24" y="480" width="120" height="44" />
-              </g>
-
-              <path d="M180 528V210H452V102" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="mk-draw" pathLength="1" style="animation-delay:0.7s" />
-              <circle cx="180" cy="528" r="6" fill="var(--ink)" class="mk-pop" style="animation-delay:1.55s" />
-              <rect x="445" y="89" width="13" height="13" fill="var(--ink)" class="mk-pop" style="animation-delay:1.6s" />
-
-              <line x1="100" y1="330" x2="172" y2="330" stroke="var(--rough)" stroke-width="8" stroke-linecap="round" class="mk-pop" style="animation-delay:1.35s" />
-              <circle cx="180" cy="300" r="6.5" fill="var(--pothole)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.2s" />
-              <circle cx="452" cy="150" r="6.5" fill="var(--bump)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.3s" />
-              <circle cx="300" cy="452" r="6.5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="3" class="mk-pop" style="animation-delay:1.45s" />
-
-              <g font-family="var(--font-mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)" font-weight="600">
-                <text x="196" y="304" class="mk-fade" style="animation-delay:1.5s">POTHOLE · 3 PASSES</text>
-                <text x="438" y="154" text-anchor="end" class="mk-fade" style="animation-delay:1.55s">SPEED BUMP</text>
-                <text x="100" y="358" class="mk-fade" style="animation-delay:1.6s">ROUGH STRETCH</text>
-                <text x="272" y="482" class="mk-fade" style="animation-delay:1.65s">REPAIRED</text>
-              </g>
-
-              <g class="mk-fade" style="animation-delay:1.8s">
-                <rect x="20" y="20" width="176" height="124" fill="var(--paper-raised)" stroke="var(--ink)" />
-                <text x="34" y="44" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5" fill="var(--muted)" font-weight="700">KEY</text>
-                <circle cx="42" cy="62" r="5" fill="var(--pothole)" />
-                <text x="56" y="66" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">POTHOLE</text>
-                <line x1="34" y1="86" x2="50" y2="86" stroke="var(--rough)" stroke-width="7" stroke-linecap="round" />
-                <text x="56" y="90" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">ROUGH STRETCH</text>
-                <circle cx="42" cy="110" r="5" fill="var(--bump)" />
-                <text x="56" y="114" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">SPEED BUMP</text>
-                <circle cx="42" cy="132" r="5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="2.5" />
-                <text x="56" y="136" font-family="var(--font-mono)" font-size="9.5" letter-spacing="1" fill="var(--ink)" font-weight="600">REPAIRED</text>
-              </g>
-            </svg>
-          </div>
-          <div class="map-band-copy">
-            <h3>Free to use. Paid for by the shelf.</h3>
-            <p>The app senses the road on your phone, the network corroborates hazards from independent passes, and the map publishes only what several trips agree on.</p>
-            <p>No subscription, no account, no tracking. The Garage covers it.</p>
-            <ul class="map-band-list">
-              <li><strong>Live map</strong> — potholes, rough stretches, speed bumps, repairs</li>
-              <li><strong>Automatic mapping</strong> — hands-free, offline-first</li>
-              <li><strong>Your data</strong> — stays on your phone</li>
-            </ul>
-            <div class="hero-cta-row">
-              <a class="btn btn-primary" href="/map">Open the live map</a>
-              <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download for Android</a>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
     <section class="section" id="how" aria-labelledby="how-title">
       <div class="container">
         <div class="section-head">
-          <h2 id="how-title">How the Garage works<span class="dot">.</span></h2>
-          <p class="lead">No warehouse, no stock, no markup. We show what the shop currently sells and send you straight there.</p>
+          <h2 id="how-title">Turn it on once. That is the whole setup<span class="dot">.</span></h2>
         </div>
-
-        <div class="pipeline">
-          <div class="pipeline-intro">
-            <h3>Three steps, and none of them involve us holding your money.</h3>
-            <p>The catalogue is queried when you open a shelf, so prices and stock are the retailer's, not a stale copy. You pay the shop exactly what you would pay them directly.</p>
-          </div>
-
-          <div class="route-steps">
-            <article class="step">
-              <span class="step-num">01 · PICK</span>
-              <h4>Shelves, not a search box.</h4>
-              <p>Eight categories chosen for what actually fails on bad roads: inflators, mounts, dash cams, gauges, wash kits, wipers, tires and lights.</p>
-              <p class="spec-inline"><b>Live prices</b> · <b>In-stock only</b> · <b>Best offer first</b></p>
-            </article>
-
-            <article class="step">
-              <span class="step-num">02 · BUY</span>
-              <h4>You check out at the shop.</h4>
-              <p>The link opens the retailer's own page. Same price, same returns, same warranty — nothing is routed through a Hodos account.</p>
-              <p class="spec-inline"><b>No markup</b> · <b>No resale</b> · <b>No card details on our side</b></p>
-            </article>
-
-            <article class="step">
-              <span class="step-num">03 · FUND</span>
-              <h4>The map stays free.</h4>
-              <p>Every shelf sale helps cover the cost of running the map. It never touches what the map shows.</p>
-              <p class="spec-inline"><b>Affiliate links</b> · <b>Never changes map data</b> · <b>No ads in the app</b></p>
-            </article>
-          </div>
+        <div class="steps">
+          <article class="step-card">
+            <span class="step-num">01 · SENSE</span>
+            <h3>It listens for the road, not for you.</h3>
+            <p>Phone motion and GPS separate a real impact from engine vibration, then tag potholes, rough pavement and speed bumps as you drive.</p>
+          </article>
+          <article class="step-card">
+            <span class="step-num">02 · CORROBORATE</span>
+            <h3>One jolt is never published alone.</h3>
+            <p>Only spots that independent trips agree on reach the map, so a single bad bump cannot fill your street with false alarms.</p>
+          </article>
+          <article class="step-card">
+            <span class="step-num">03 · KEEP GOING</span>
+            <h3>Maps that outlast the signal.</h3>
+            <p>Cache a nearby region over Wi-Fi once and the map keeps working through dead zones, tunnels and back roads.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="section hazard-section" aria-label="The hazard key">
-      <div class="container">
-        <div class="hazard-key">
-          <div class="hazard-cell">
-            <span class="hk-marker hk-pothole" aria-hidden="true"></span>
-            <div>
-              <strong>Pothole</strong>
-              <p>Confirmed impacts, ranked by severity.</p>
-            </div>
-          </div>
-          <div class="hazard-cell">
-            <span class="hk-marker hk-rough" aria-hidden="true"></span>
-            <div>
-              <strong>Rough stretch</strong>
-              <p>Sustained bad pavement along a corridor.</p>
-            </div>
-          </div>
-          <div class="hazard-cell">
-            <span class="hk-marker hk-bump" aria-hidden="true"></span>
-            <div>
-              <strong>Speed bump</strong>
-              <p>Flagged where traffic calming sits.</p>
-            </div>
-          </div>
-          <div class="hazard-cell">
-            <span class="hk-marker hk-fixed" aria-hidden="true"></span>
-            <div>
-              <strong>Repaired</strong>
-              <p>Cleared once fixes are verified on the ground.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="app" aria-labelledby="app-title">
+    <section class="section section-soft" id="app" aria-labelledby="app-title">
       <div class="container">
         <div class="section-head">
-          <h2 id="app-title">Made for the drive you already make.</h2>
-          <p class="lead">Hodos sits in your pocket, senses the road, and quietly turns every trip into map. This is what it looks like when you do look.</p>
+          <h2 id="app-title">Made for the drive you already make<span class="dot">.</span></h2>
+          <p class="lead">Everything below is included, and nothing costs anything.</p>
         </div>
-
-        <ul class="app-features">
-          <li>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 15.5a5 5 0 0 1 0-7"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M5.6 18.4a9 9 0 0 1 0-12.8"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg>
+        <ul class="feature-list">
+          <li class="feature">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 15.5a5 5 0 0 1 0-7"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M5.6 18.4a9 9 0 0 1 0-12.8"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg>
             <div>
-              <h4>Hands-free by default</h4>
-              <p>Start mapping once. Journeys begin and end on their own while you navigate, ride, or deliver in any other app.</p>
+              <h3>Hands-free by default</h3>
+              <p>Journeys start and end on their own while you navigate, ride or deliver in any other app.</p>
             </div>
           </li>
-          <li>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.8l5-.7z"/></svg>
+          <li class="feature">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.8l5-.7z"/></svg>
             <div>
-              <h4>The Garage in the app</h4>
-              <p>The same eight shelves live in the You tab, so the kit is one tap away when something on the car gives up.</p>
+              <h3>Perks as you drive</h3>
+              <p>Free tire check, chain lube and alignment check, unlocked by the distance you already cover each month.</p>
             </div>
           </li>
-          <li>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1 1 13 0C18.5 15.7 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/></svg>
+          <li class="feature">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1 1 13 0C18.5 15.7 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/></svg>
             <div>
-              <h4>Saved roads</h4>
+              <h3>Saved roads</h3>
               <p>Pin the routes you repeat and watch them heal as verified repairs land on the map.</p>
             </div>
           </li>
-          <li>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v9"/><path d="M8.5 9.5L12 13l3.5-3.5"/><path d="M4.5 16.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+          <li class="feature">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v9"/><path d="M8.5 9.5L12 13l3.5-3.5"/><path d="M4.5 16.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
             <div>
-              <h4>Offline first</h4>
-              <p>Queue observations without signal and cache a 20 km region over Wi-Fi.</p>
+              <h3>Private by design</h3>
+              <p>Routes stay on your phone. Only anonymous hazard reports are published, trimmed at both ends of every journey.</p>
             </div>
           </li>
         </ul>
-
-        <figure class="journey">
-          <svg viewBox="0 0 1040 250" role="img" aria-label="One recorded journey: a route trace annotated with a pothole, a rough stretch, a speed bump, and a repaired spot. Both ends of the trace are trimmed for privacy." fill="none">
-            <text x="0" y="16" font-family="var(--font-mono)" font-size="10" letter-spacing="1.5" fill="var(--muted)" font-weight="700">JOURNEY RECORD</text>
-            <text x="1040" y="16" text-anchor="end" font-family="var(--font-mono)" font-size="10" letter-spacing="1.5" fill="var(--muted)" font-weight="700">250 M ENDPOINT TRIM</text>
-
-            <path d="M16 150C40 135 62 131 90 136" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="2 5" opacity="0.5" />
-            <path d="M90 136C150 145 220 180 300 150C380 120 440 185 520 155C600 128 660 100 720 140C780 178 850 172 910 146C925 140 938 137 950 137" stroke="var(--muted)" stroke-width="1.75" />
-            <path d="M950 137C975 134 1000 138 1024 146" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="2 5" opacity="0.5" />
-
-            <path d="M90 66V214" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5" />
-            <path d="M950 66V214" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5" />
-            <text x="90" y="232" text-anchor="middle" font-family="var(--font-mono)" font-size="9" letter-spacing="1" fill="var(--muted)" font-weight="600">DEPART</text>
-            <text x="950" y="232" text-anchor="middle" font-family="var(--font-mono)" font-size="9" letter-spacing="1" fill="var(--muted)" font-weight="600">ARRIVE</text>
-
-            <circle cx="300" cy="150" r="6" fill="var(--pothole)" stroke="var(--paper)" stroke-width="2.5" />
-            <path d="M300 142V120" stroke="var(--ink)" stroke-width="1" />
-            <text x="300" y="112" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">POTHOLE · LEVEL 2</text>
-
-            <line x1="425" y1="168" x2="457" y2="168" stroke="var(--rough)" stroke-width="7" stroke-linecap="round" />
-            <text x="441" y="198" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">ROUGH STRETCH</text>
-
-            <circle cx="660" cy="104" r="6" fill="var(--bump)" stroke="var(--paper)" stroke-width="2.5" />
-            <text x="660" y="88" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">SPEED BUMP</text>
-
-            <circle cx="860" cy="162" r="6" fill="var(--paper)" stroke="var(--fixed)" stroke-width="3" />
-            <text x="860" y="192" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" letter-spacing="1.2" fill="var(--ink)" font-weight="600">REPAIRED</text>
-          </svg>
-        </figure>
       </div>
     </section>
 
-    <section class="section" id="pricing" aria-labelledby="pricing-title">
+    <section class="section" id="shops" aria-labelledby="shops-title">
       <div class="container">
         <div class="section-head">
-          <h2 id="pricing-title">Free for everyone.</h2>
-          <p class="lead">The <a href="/garage">Garage</a> is how the map pays for itself: kit people were going to buy anyway. Everything else — the map, the app, the data on your phone — stays free.</p>
+          <h2 id="shops-title">Put your shop on the map<span class="dot">.</span></h2>
+          <p class="lead">
+            One pin, one line, sold by the day. The price follows your country's economy, and
+            in much of the world that is a couple of coffees a week.
+          </p>
         </div>
 
-        <div class="ledger">
-          <div class="ledger-head mono-label" aria-hidden="true">
-            <span>Who</span>
-            <span>What you get</span>
-            <span></span>
-          </div>
-
-          <div class="ledger-row ledger-row-garage">
-            <div class="ledger-who">
-              <span class="tag tag-amber">Garage</span>
-              <h3>Anything on four wheels</h3>
-              <p>Commuters, riders, delivery drivers, weekend cars.</p>
-            </div>
-            <ul class="ledger-features">
-              <li>Eight shelves of road-proof kit</li>
-              <li>Live prices, in-stock only</li>
-              <li>Same price as buying direct</li>
-              <li>Keeps the map free for everyone</li>
+        <div class="plan-grid">
+          <article class="plan">
+            <span class="plan-tier">Access</span>
+            <div class="plan-price">$0.19<small>a day · Nepal, India and similar markets</small></div>
+            <p class="plan-who">Priced to be an easy yes for a single garage, tire shop or fuel stop.</p>
+            <ul class="plan-list">
+              <li>A pin on the live map</li>
+              <li>Your own line of text</li>
+              <li>Listed to AI assistants too</li>
+              <li>In the rider perk list</li>
             </ul>
-            <div class="ledger-actions">
-              <a class="btn btn-primary" href="/garage">Shop the Garage</a>
-            </div>
-          </div>
+            <div class="plan-cta"><a class="btn btn-ghost" href="/partners">Reserve a pin</a></div>
+          </article>
 
-          <div class="ledger-row">
-            <div class="ledger-who">
-              <h3>Riders &amp; commuters</h3>
-              <p>Anyone with a phone and a road.</p>
-            </div>
-            <ul class="ledger-features">
-              <li>Live hazard map &amp; search</li>
-              <li>Hands-free automatic mapping</li>
-              <li>20 km offline map caching</li>
-              <li>No subscription, no tracking</li>
+          <article class="plan plan-featured">
+            <span class="plan-tier">Local</span>
+            <div class="plan-price">$0.79<small>a day · middle-income markets</small></div>
+            <p class="plan-who">For cities where a workshop's day is worth more but ad budgets stay small.</p>
+            <ul class="plan-list">
+              <li>Everything in Access</li>
+              <li>Category shown on the pin</li>
+              <li>Anonymous pass count each month</li>
             </ul>
-            <div class="ledger-actions">
-              <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__/latest" target="_blank" rel="noopener noreferrer">Get the app</a>
-            </div>
-          </div>
+            <div class="plan-cta"><a class="btn btn-invert" href="/partners">Reserve a pin</a></div>
+          </article>
 
-          <div class="ledger-row">
-            <div class="ledger-who">
-              <h3>Fleets &amp; cities</h3>
-              <p>Road roughness, hazard feeds, corridor health.</p>
-            </div>
-            <ul class="ledger-features">
-              <li>GeoJSON / H3 road-quality API</li>
-              <li>Smooth-route optimization</li>
-              <li>Repair verification &amp; alerts</li>
-              <li>Commercial licensing waiver</li>
+          <article class="plan">
+            <span class="plan-tier">Standard</span>
+            <div class="plan-price">$1.99<small>a day · US, UK, EU and similar markets</small></div>
+            <p class="plan-who">Where a placement competes with local advertising, and still costs less.</p>
+            <ul class="plan-list">
+              <li>Everything in Local</li>
+              <li>Front-of-mind for drivers on your road</li>
+              <li>No contract, stop anytime</li>
             </ul>
-            <div class="ledger-actions">
-              <a class="btn btn-ghost" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Commercial%20Data%20API">License road data</a>
-            </div>
-          </div>
+            <div class="plan-cta"><a class="btn btn-ghost" href="/partners">Reserve a pin</a></div>
+          </article>
         </div>
 
-        <p class="ledger-note">The road ahead is never for sale.</p>
-      </div>
-    </section>
-
-    <section class="section section-dark" id="privacy" aria-labelledby="privacy-title">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="privacy-title">Maps the road. Never your life.</h2>
-          <p class="lead">The Garage and aggregated road data fund the map. Personal location tracking is never the product.</p>
-        </div>
-
-        <div class="privacy-grid">
-          <div class="privacy-cell">
-            <h4>No account required</h4>
-            <p>Browse the Garage or the live map without signing up. No emails, phone numbers or passwords to use either.</p>
-          </div>
-          <div class="privacy-cell">
-            <h4>250 m endpoint trimming</h4>
-            <p>Observations near the start and end of your journey are discarded on your device so home and pickup locations stay private.</p>
-          </div>
-          <div class="privacy-cell">
-            <h4>Checkout stays with the shop</h4>
-            <p>Card details never reach Hodos. Offers open the retailer's own page, with their checkout, returns and warranty.</p>
-          </div>
-          <div class="privacy-cell">
-            <h4>Dual-licensed open source</h4>
-            <p>App code is MIT open source; the corroborated road dataset is CC BY-NC-SA 4.0, free for civic use and licensed for commercial fleets.</p>
-          </div>
-        </div>
+        <p class="hero-note" style="margin-top:28px">
+          Every live pin is served to AI assistants, so a question like "where can I fix a puncture near me" can find your shop by name
+        </p>
       </div>
     </section>
 
     <section class="section" id="faq" aria-labelledby="faq-title">
-      <div class="container faq-grid">
-        <div class="faq-aside">
-          <h2 id="faq-title">Good to know.</h2>
-          <p>Short answers about the Garage, how Hodos rides along, and what it never collects.</p>
+      <div class="container">
+        <div class="section-head">
+          <h2 id="faq-title">Good to know<span class="dot">.</span></h2>
         </div>
-
         <div class="faq-list">
           <details>
-            <summary>Does buying from the Garage cost more?</summary>
-            <p>No. You pay the retailer's price, with their returns and warranty. Buying through a shelf link is how the free map gets funded.</p>
-          </details>
-          <details>
-            <summary>Why these eight categories?</summary>
-            <p>They are the parts that actually fail on poor roads — a tire that loses pressure, a mount that lets go, wipers that smear. Anything that cannot be linked to a real, in-stock offer is not shown.</p>
+            <summary>Does it cost anything?</summary>
+            <p>No. The app, the map and the data on your phone are free. The Garage and shop placements pay for it.</p>
           </details>
           <details>
             <summary>Can I run Hodos alongside my navigation or ride app?</summary>
-            <p>Yes. Turn automatic mapping on once and Hodos runs silently in the background while you navigate, accept rides, or follow directions in whatever app you already use.</p>
+            <p>Yes. Turn automatic mapping on once and it runs quietly in the background while you navigate, accept rides or follow directions in whatever app you use.</p>
           </details>
           <details>
-            <summary>How does Hodos make money if the app is free?</summary>
-            <p>Three ways: the Garage, licensing of aggregated road-quality data, and partner placements. None of them change what the map shows.</p>
+            <summary>Where does my data go?</summary>
+            <p>Route traces stay on your phone. Only anonymous hazard reports are published, and the first and last 250 metres of every journey are trimmed before anything leaves the device.</p>
           </details>
           <details>
-            <summary>Does it work offline?</summary>
-            <p>Yes. The Android app queues observations locally when you're offline and can automatically cache a 20 km nearby map area over Wi-Fi. The Garage needs a connection because it reads live shop prices.</p>
+            <summary>I run a shop. How much is a pin?</summary>
+            <p>From $0.19 a day for much of the world, $0.79 for middle-income markets and $1.99 where advertising costs more. You pay in your own currency, there is no contract, and the pin comes down when the days run out.</p>
+          </details>
+          <details>
+            <summary>Does a placement change the map?</summary>
+            <p>Never. It is a pin next to the road, not an ad over it, and hazard data is never for sale.</p>
           </details>
         </div>
       </div>
@@ -476,12 +298,12 @@
 
     <section class="site-closing">
       <div class="container">
-        <h2 class="closing-head">Start with the Garage<span class="dot">.</span></h2>
-        <p>Kit for the roads you drive, priced by the shop that sells it — and every purchase keeps the map free. Follow the build at <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer" style="color:#faf8f2;text-decoration:underline">@minerva__corporation</a>.</p>
+        <h2 class="closing-head">The road maps itself<span class="dot">.</span></h2>
+        <p>Free for everyone, everywhere. Install it, drive, and the map gets sharper for the next person through.</p>
         <div class="hero-cta-row">
-          <a class="btn btn-invert" href="/garage">Shop the Garage</a>
+          <a class="btn btn-invert" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
           <a class="btn btn-ghost-invert" href="/map">Open the live map</a>
-          <a class="btn btn-ghost-invert" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
+          <a class="btn btn-ghost-invert" href="/partners">List your shop</a>
         </div>
       </div>
     </section>
@@ -492,16 +314,15 @@
       <div class="footer-brand">
         <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="20" height="20" />
         <span>hodos<span class="dot">.</span></span>
-        <span class="footer-meta">Open source · MIT app · CC BY-NC-SA data</span>
+        <span class="footer-meta">Open source · free</span>
       </div>
       <div class="footer-links">
         <a href="/garage">Garage</a>
+        <a href="/map">Live map</a>
         <a href="/partners">For shops</a>
-        <a href="/map">Live Map</a>
-        <a href="#pricing">Funding</a>
         <a href="/AGENTS.md">For AI agents</a>
         <a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Instagram · @minerva__corporation</a>
+        <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">@minerva__corporation</a>
         <a href="/privacy.html">Privacy</a>
       </div>
     </div>

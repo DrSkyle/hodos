@@ -121,9 +121,9 @@ internal fun HodosTheme(content: @Composable () -> Unit) {
         ),
         typography = HodosTypography,
         shapes = Shapes(
-            small = RoundedCornerShape(10.dp),
-            medium = RoundedCornerShape(14.dp),
-            large = RoundedCornerShape(18.dp)
+            small = RoundedCornerShape(12.dp),
+            medium = RoundedCornerShape(18.dp),
+            large = RoundedCornerShape(22.dp)
         ),
         content = content
     )

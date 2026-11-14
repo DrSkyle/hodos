@@ -1360,9 +1360,8 @@ private fun MappingScreen(
         }
         item {
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PaperRaised,
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp),
+                color = PaperRaised
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1454,9 +1453,8 @@ private fun MappingScreen(
         }
         item {
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PaperRaised,
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp),
+                color = PaperRaised
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Text(
@@ -1467,26 +1465,23 @@ private fun MappingScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Clearly labeled offers from local garages, tire shops, and fuel stops. Never over your route.",
+                        "Local garages, tire shops and fuel stops with a pin on the map. From $0.19 a day in much of the world, in your own currency.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
-                                )
+                                Intent(Intent.ACTION_VIEW, Uri.parse(Garage.SITE_URL + "/partners"))
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
+                        shape = RoundedCornerShape(999.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Paper)
                     ) {
-                        Text("Become a partner", fontSize = 12.sp)
+                        Text("Put your shop on the map", fontSize = 12.sp)
                     }
                 }
             }
@@ -1545,9 +1540,8 @@ private fun MappingScreen(
         item {
             val saved = offlineMaps.state
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PaperRaised,
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp),
+                color = PaperRaised
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1607,9 +1601,8 @@ private fun MappingScreen(
         // Observation Sync
         item {
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PaperRaised,
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp),
+                color = PaperRaised
             ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1666,7 +1659,6 @@ private fun MappingScreen(
                 Surface(
                     color = PaperRaised,
                     shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 2.dp
                 ) {
                     Column(Modifier.fillMaxWidth().padding(24.dp)) {
                         Icon(Icons.Outlined.History, null, tint = Muted, modifier = Modifier.size(26.dp))
@@ -1682,8 +1674,7 @@ private fun MappingScreen(
                 val durationText = trip.durationS?.let { formatDurationFriendly(it) }
                 Surface(
                     color = PaperRaised,
-                    shape = RoundedCornerShape(16.dp),
-                    shadowElevation = 2.dp,
+                    shape = RoundedCornerShape(18.dp),
                     modifier = Modifier
                         .animateItem()
                         .clickable { selectedTrip = trip }
@@ -1921,7 +1912,6 @@ private fun YouScreen(
             Surface(
                 color = if (latestRelease?.isNewer == true) Sand else PaperRaised,
                 shape = RoundedCornerShape(20.dp),
-                shadowElevation = 2.dp
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1987,8 +1977,7 @@ private fun YouScreen(
         item {
             Surface(
                 color = PaperRaised,
-                shape = RoundedCornerShape(20.dp),
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp)
             ) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2051,8 +2040,7 @@ private fun YouScreen(
         item {
             Surface(
                 color = PaperRaised,
-                shape = RoundedCornerShape(20.dp),
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp)
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2106,7 +2094,6 @@ private fun YouScreen(
                 Surface(
                     color = PaperRaised,
                     shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 2.dp
                 ) {
                     Column(
                         Modifier.padding(18.dp),
@@ -2153,8 +2140,7 @@ private fun YouScreen(
         item {
             Surface(
                 color = PaperRaised,
-                shape = RoundedCornerShape(20.dp),
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(22.dp)
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2415,9 +2401,8 @@ private fun PerksCard(trips: List<RoadTrip>, partners: List<PartnerPoi>) {
         label = "perkProgress"
     )
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = PaperRaised,
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(22.dp),
+        color = PaperRaised
     ) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2543,7 +2528,6 @@ private fun TravelProfileCard() {
     Surface(
         color = PaperRaised,
         shape = RoundedCornerShape(20.dp),
-        shadowElevation = 2.dp
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Text("How do you travel?", fontWeight = FontWeight.Bold, fontSize = 16.sp)

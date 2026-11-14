@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -186,9 +185,8 @@ internal fun GarageScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(12.dp))
             Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = PaperRaised,
-                border = BorderStroke(1.dp, Line),
+                shape = RoundedCornerShape(999.dp),
+                color = Sand,
                 onClick = {
                     runCatching {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Garage.INSTAGRAM_URL)))
@@ -205,7 +203,7 @@ internal fun GarageScreen(onBack: () -> Unit) {
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(20.dp), color = PaperRaised, border = BorderStroke(1.dp, Line)) {
+            Surface(shape = RoundedCornerShape(22.dp), color = PaperRaised) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
                     Text("Road notes, occasionally.", fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
@@ -300,8 +298,7 @@ private fun GarageChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val alpha by animateFloatAsState(if (selected) 1f else 0.9f, label = "garage chip")
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) Ink else PaperRaised,
-        border = BorderStroke(1.dp, if (selected) Ink else Line),
+        color = if (selected) Ink else Sand,
         onClick = onClick
     ) {
         Text(
@@ -369,8 +366,7 @@ private fun GarageOfferRow(offer: GarageOffer, onOpen: () -> Unit) {
             Spacer(Modifier.width(10.dp))
             Surface(
                 shape = RoundedCornerShape(999.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, Ink),
+                color = Sand,
                 onClick = onOpen
             ) {
                 Text(
