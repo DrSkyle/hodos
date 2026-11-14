@@ -301,6 +301,9 @@ async function main() {
   const payload = {
     checkedAt: new Date().toISOString(),
     rateAt: fx.at,
+    // USD→X rates captured at refresh time, so the site converts with the same
+    // numbers the prices were computed from instead of a hardcoded guess.
+    rates: fx.rates,
     source: 'aliexpress',
     note: 'Prices and stock are as the shop listed them when checked. They change; the shop is the source of truth.',
     categories

@@ -39,18 +39,22 @@ export type ProductCategory = {
 export type ShelfData = {
   checkedAt: string;
   rateAt: string | null;
+  /** USD→X rates as of rateAt. Absent only if the fetch failed. */
+  rates?: Record<string, number> | null;
   categories: ProductCategory[];
 };
 
 /** Fallback rates, used only when the stored conversion is missing. */
+/** Used only when the data file has no stored rate for a currency. */
 const FALLBACK: Record<string, number> = {
-  USD: 1,
-  INR: 88,
-  EUR: 0.92,
-  GBP: 0.79,
-  NPR: 135,
-  PKR: 278,
-  BDT: 120
+  USD: 1, INR: 94, EUR: 0.86, GBP: 0.76, NPR: 135, PKR: 278, BDT: 120,
+  LKR: 300, AED: 3.67, SAR: 3.75, TRY: 34, PLN: 4, CZK: 23, HUF: 360,
+  RON: 4.6, BGN: 1.7, SEK: 10.5, NOK: 10.7, DKK: 6.8, CHF: 0.88,
+  AUD: 1.5, NZD: 1.65, CAD: 1.37, JPY: 150, KRW: 1330, CNY: 7.2,
+  SGD: 1.34, MYR: 4.5, THB: 34, IDR: 15800, PHP: 58, VND: 25400,
+  BRL: 5, MXN: 17, ARS: 950, CLP: 950, COP: 4000, PEN: 3.8,
+  ZAR: 18, NGN: 1550, KES: 129, GHS: 15, EGP: 48, MAD: 10,
+  ILS: 3.7, RUB: 92, UAH: 41, KZT: 480
 };
 
 let cached: ShelfData | null = null;
@@ -62,6 +66,7 @@ export async function loadShelf(): Promise<ShelfData | null> {
     if (!response.ok) return null;
     const data = (await response.json()) as ShelfData;
     if (!Array.isArray(data.categories)) return null;
+    useRates(data.rates);
     cached = data;
     return data;
   } catch (_) {
@@ -69,10 +74,35 @@ export async function loadShelf(): Promise<ShelfData | null> {
   }
 }
 
+/**
+ * Country → currency. A locale tag gives a *region* ("en-IN" → IN), not a
+ * currency, so this map is what turns a region into the money a visitor reads.
+ * Unlisted countries fall back to USD, which is honest rather than guessing.
+ */
+const REGION_CURRENCY: Record<string, string> = {
+  US: "USD", GB: "GBP", IE: "EUR", DE: "EUR", FR: "EUR", ES: "EUR", IT: "EUR",
+  NL: "EUR", BE: "EUR", AT: "EUR", PT: "EUR", FI: "EUR", GR: "EUR", SK: "EUR",
+  SI: "EUR", LT: "EUR", LV: "EUR", EE: "EUR", LU: "EUR", CY: "EUR", MT: "EUR",
+  IN: "INR", NP: "NPR", PK: "PKR", BD: "BDT", LK: "LKR",
+  AE: "AED", SA: "SAR", QA: "QAR", KW: "KWD", OM: "OMR", BH: "BHD",
+  TR: "TRY", PL: "PLN", CZ: "CZK", HU: "HUF", RO: "RON", BG: "BGN", HR: "EUR",
+  SE: "SEK", NO: "NOK", DK: "DKK", CH: "CHF",
+  AU: "AUD", NZ: "NZD", CA: "CAD", JP: "JPY", KR: "KRW", CN: "CNY",
+  SG: "SGD", MY: "MYR", TH: "THB", ID: "IDR", PH: "PHP", VN: "VND",
+  BR: "BRL", MX: "MXN", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN",
+  ZA: "ZAR", NG: "NGN", KE: "KES", GH: "GHS", EG: "EGP", MA: "MAD",
+  IL: "ILS", RU: "RUB", UA: "UAH", KZ: "KZT"
+};
+
 export function visitorCurrency(): string {
   const tag = (navigator.language || "en-US").replace("_", "-");
-  const direct = tag.split("-")[1]?.toUpperCase() ?? "";
-  return FALLBACK[direct] ? direct : "USD";
+  const parts = tag.split("-");
+  const region = (parts[1] ?? "").toUpperCase();
+  const mapped = REGION_CURRENCY[region];
+  if (mapped) return mapped;
+  // A tag may carry a currency directly in rare cases ("en-US-u-cu-eur").
+  const direct = parts.find((part) => /^[A-Z]{3}$/.test(part));
+  return direct ?? "USD";
 }
 
 /** Deterministic 32-bit hash, so the same seed always yields the same order. */
@@ -156,6 +186,13 @@ export function shelfFor(data: ShelfData, perShelf: number, country: string): Sh
  * the original is kept so the card can show both. No rate is invented: if the
  * conversion is missing, the shop's own currency is shown unchanged.
  */
+let activeRates: Record<string, number> | null = null;
+
+/** Called when the shelf loads, so conversion uses the stored rates. */
+export function useRates(rates: Record<string, number> | null | undefined) {
+  activeRates = rates ?? null;
+}
+
 export function priceFor(product: Product, currency: string): { amount: string; original: string | null } {
   const shopPrice = new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -166,7 +203,8 @@ export function priceFor(product: Product, currency: string): { amount: string; 
   if (currency === product.currency) return { amount: shopPrice, original: null };
   if (product.priceUsd === null) return { amount: shopPrice, original: null };
 
-  const rate = FALLBACK[currency];
+  // Prefer the rate stored with the data; fall back only if it is missing.
+  const rate = activeRates?.[currency] ?? FALLBACK[currency];
   if (!rate || currency === "USD") {
     return {
       amount: new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(product.priceUsd),
