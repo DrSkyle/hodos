@@ -93,9 +93,12 @@ private enum class Screen(val label: String) {
     GARAGE("Garage")
 }
 
-/** The bottom bar only carries the five core destinations; the Garage is a
- *  route reached from the You tab, not another tab to squeeze in. */
-private val ROUTE_TABS = listOf(Screen.MAP, Screen.MAPPING, Screen.ROADS, Screen.INSIGHTS, Screen.YOU)
+/** The route bar's stops. The Garage sits in the middle and is the one stop
+ *  that draws in amber: it is the product's earning surface and the shelf
+ *  people actually open, so it must never be buried behind a menu. */
+private val ROUTE_TABS = listOf(
+    Screen.MAP, Screen.MAPPING, Screen.GARAGE, Screen.ROADS, Screen.INSIGHTS, Screen.YOU
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1091,7 +1094,8 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
             HorizontalDivider(color = Line, thickness = 1.dp)
             Row(Modifier.fillMaxWidth().height(84.dp)) {
                 ROUTE_TABS.forEach { tab ->
-                    val active = if (current == Screen.GARAGE) tab == Screen.YOU else current == tab
+                    val active = current == tab
+                    val highlight = tab == Screen.GARAGE
                     val nodeScale by animateFloatAsState(
                         targetValue = if (active) 1.07f else 0.94f,
                         animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
@@ -1112,10 +1116,21 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                         scaleX = nodeScale
                                         scaleY = nodeScale
                                     }
-                                    .background(if (active) Ink else PaperRaised, CircleShape)
+                                    .background(
+                                        when {
+                                            active -> Ink
+                                            highlight -> Amber
+                                            else -> PaperRaised
+                                        },
+                                        CircleShape
+                                    )
                                     .border(
                                         1.5.dp,
-                                        if (active) Ink else Line,
+                                        when {
+                                            active -> Ink
+                                            highlight -> AmberDeep
+                                            else -> Line
+                                        },
                                         CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -1126,9 +1141,10 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                         Screen.MAPPING -> DoodleSymbol.CAR
                                         Screen.ROADS -> DoodleSymbol.ROAD
                                         Screen.INSIGHTS -> DoodleSymbol.INSIGHT
+                                        Screen.GARAGE -> DoodleSymbol.CAR
                                         else -> DoodleSymbol.PERSON
                                     },
-                                    tint = if (active) Paper else Muted,
+                                    tint = if (active) Paper else if (highlight) Paper else Muted,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -1163,10 +1179,10 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                         Text(
                             tab.label.uppercase(),
                             fontSize = 9.5.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = if (highlight) FontWeight.Bold else FontWeight.SemiBold,
                             fontFamily = OverpassMono,
                             letterSpacing = 1.1.sp,
-                            color = if (active) Ink else Muted
+                            color = if (active || highlight) Ink else Muted
                         )
                     }
                 }

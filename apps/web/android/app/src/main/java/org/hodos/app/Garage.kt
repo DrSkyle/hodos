@@ -23,9 +23,8 @@ data class GarageOffer(
 
 /**
  * The Garage reads the catalogue through the `hodos-affiliate` function, never
- * directly: the Channel3 key lives on the server, and the offer URLs that come
- * back are already affiliate-tracked. There is no bundled sample shelf — an
- * unreachable catalogue renders nothing rather than invented products.
+ * directly: the catalogue key lives on the server. There is no bundled sample
+ * shelf — an unreachable catalogue renders nothing rather than invented items.
  */
 object Garage {
     const val INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/"

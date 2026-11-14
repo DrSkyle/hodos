@@ -55,8 +55,30 @@ function hodosSharedConstants(): Plugin {
   };
 }
 
+function hodosAgentDocs(): Plugin {
+  // AGENTS.md lives at the repo root as the single source of truth. Serve it at
+  // /AGENTS.md in dev and copy it into dist so agents can fetch it in one call.
+  const source = path.resolve(__dirname, "../../AGENTS.md");
+  const read = () => fs.readFileSync(source, "utf8");
+  return {
+    name: "hodos-agent-docs",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? "").split("?")[0];
+        if (url !== "/AGENTS.md") return next();
+        res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+        res.end(read());
+      });
+    },
+    closeBundle() {
+      const target = resolve(__dirname, "dist/AGENTS.md");
+      if (fs.existsSync(source)) fs.writeFileSync(target, read());
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [tailwindcss(), hodosSharedConstants()],
+  plugins: [tailwindcss(), hodosSharedConstants(), hodosAgentDocs()],
   server: { host: true, port: 5173 },
   build: {
     target: "es2022",

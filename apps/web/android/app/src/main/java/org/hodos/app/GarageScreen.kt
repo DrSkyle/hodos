@@ -60,7 +60,7 @@ import java.util.Locale
 /**
  * The Garage: real catalogue kit, linked straight to the shop.
  *
- * Every row comes from the affiliate backend at open time. There is no shipped
+ * Every row comes from the Garage backend at open time. There is no shipped
  * fixture, so an unreachable catalogue shows an honest message instead of
  * made-up products.
  */
@@ -168,9 +168,7 @@ internal fun GarageScreen(onBack: () -> Unit) {
         }
         item {
             Text(
-                "Links here are affiliate links: if you buy, Hodos earns a small commission " +
-                    "from the shop at no extra cost to you. Prices and stock come from the " +
-                    "retailers and can change. Nothing here ever changes the map.",
+                "Prices and stock come from the shops and can change. Nothing here ever changes the map.",
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
                 color = Muted

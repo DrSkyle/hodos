@@ -1,10 +1,17 @@
 import "./cartographic.css";
 import "./garage.css";
 import {
-  APPWRITE_ENDPOINT,
-  APPWRITE_PROJECT_ID,
-  GARAGE_FUNCTION
-} from "./site-constants";
+  DEFAULT_GARAGE_SLOT_ID,
+  GARAGE_SLOTS,
+  isGarageSlot,
+  isValidEmail,
+  loadOffers,
+  money,
+  offerMeta,
+  subscribeEmail,
+  wasPrice,
+  type GearOffer
+} from "./garage-client";
 
 /**
  * The Garage — Hodos' affiliate shelf.
@@ -14,84 +21,18 @@ import {
  * is unavailable the page says so instead of filling the shelf with filler.
  */
 
-type GearOffer = {
-  id: string;
-  title: string;
-  brand: string | null;
-  image: string | null;
-  price: number | null;
-  compareAt: number | null;
-  currency: string;
-  merchant: string | null;
-  url: string;
-};
-
-type OffersResponse = {
-  ok: boolean;
-  slot?: string;
-  label?: string;
-  products?: GearOffer[];
-  error?: string;
-};
-
-const SLOTS: { id: string; label: string }[] = [
-  { id: "inflator", label: "Tire inflator" },
-  { id: "mount", label: "Phone mount" },
-  { id: "dashcam", label: "Dash cam" },
-  { id: "pressure", label: "Pressure gauge" },
-  { id: "care", label: "Wash kit" },
-  { id: "wipers", label: "Wipers" },
-  { id: "tires", label: "Tires" },
-  { id: "light", label: "Lights" }
-];
-
-const endpoint = `${APPWRITE_ENDPOINT}/functions/${GARAGE_FUNCTION}/executions`;
-
 const slotRow = document.getElementById("slot-row");
 const list = document.getElementById("offer-list");
 const status = document.getElementById("shelf-status");
 
-let activeSlot = SLOTS[0].id;
+const requested = new URLSearchParams(window.location.search).get("slot");
+let activeSlot = isGarageSlot(requested) ? requested : DEFAULT_GARAGE_SLOT_ID;
 let requestId = 0;
-
-function callFunction(payload: Record<string, unknown>): Promise<unknown> {
-  return fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Appwrite-Project": APPWRITE_PROJECT_ID
-    },
-    body: JSON.stringify({
-      body: JSON.stringify(payload),
-      method: "POST",
-      path: "/"
-    })
-  }).then(async (response) => {
-    if (!response.ok) throw new Error(`backend ${response.status}`);
-    const execution = await response.json();
-    const inner = execution?.responseBody;
-    if (typeof inner !== "string") throw new Error("empty response");
-    return JSON.parse(inner);
-  });
-}
 
 function setStatus(text: string, tone: "idle" | "error" = "idle") {
   if (!status) return;
   status.textContent = text;
   status.dataset.tone = tone;
-}
-
-function money(value: number | null, currency: string): string {
-  if (value === null) return "";
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency || "USD",
-      maximumFractionDigits: 2
-    }).format(value);
-  } catch (_) {
-    return `${value.toFixed(2)} ${currency}`;
-  }
 }
 
 function skeleton() {
@@ -128,15 +69,16 @@ function offerRow(offer: GearOffer): HTMLElement {
 
   const meta = document.createElement("div");
   meta.className = "offer-meta";
-  meta.textContent = [offer.brand, offer.merchant].filter(Boolean).join(" · ");
+  meta.textContent = offerMeta(offer);
   if (meta.textContent) body.append(meta);
 
   const price = document.createElement("div");
   price.className = "offer-price";
   price.textContent = money(offer.price, offer.currency);
-  if (offer.compareAt && offer.price !== null && offer.compareAt > offer.price) {
+  const before = wasPrice(offer);
+  if (before) {
     const was = document.createElement("s");
-    was.textContent = money(offer.compareAt, offer.currency);
+    was.textContent = before;
     price.append(was);
   }
   if (price.textContent) body.append(price);
@@ -167,14 +109,15 @@ async function loadSlot(slot: string) {
   document.querySelectorAll<HTMLButtonElement>(".slot-chip").forEach((chip) => {
     chip.setAttribute("aria-selected", String(chip.dataset.slot === slot));
   });
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set("slot", slot);
+  window.history.replaceState(null, "", nextUrl);
   skeleton();
   setStatus("Checking the shelf…");
 
   try {
-    const data = (await callFunction({ action: "offers", slot })) as OffersResponse;
+    const products = await loadOffers(slot);
     if (current !== requestId) return;
-    if (!data?.ok) throw new Error(data?.error || "unavailable");
-    const products = data.products ?? [];
     if (!list) return;
     list.replaceChildren();
     if (products.length === 0) {
@@ -183,7 +126,7 @@ async function loadSlot(slot: string) {
     }
     for (const offer of products) list.append(offerRow(offer));
     setStatus(`${products.length} picks · prices update from the shops`);
-  } catch (error) {
+  } catch (_) {
     if (current !== requestId) return;
     if (list) list.replaceChildren();
     setStatus("The shelf is unreachable right now. Try again in a moment.", "error");
@@ -192,7 +135,7 @@ async function loadSlot(slot: string) {
 
 function buildChips() {
   if (!slotRow) return;
-  for (const slot of SLOTS) {
+  for (const slot of GARAGE_SLOTS) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "slot-chip";
@@ -215,7 +158,7 @@ function wireListForm() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = input.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    if (!isValidEmail(email)) {
       hint.textContent = "That address doesn't look complete.";
       hint.dataset.tone = "error";
       input.focus();
@@ -225,12 +168,7 @@ function wireListForm() {
     hint.textContent = "Saving…";
     hint.dataset.tone = "";
     try {
-      const result = (await callFunction({
-        action: "subscribe",
-        email,
-        source: "web-garage"
-      })) as { ok: boolean; error?: string };
-      if (!result?.ok) throw new Error(result?.error || "failed");
+      await subscribeEmail(email, "web-garage");
       form.reset();
       hint.textContent = "You're on the list. No spam, just road notes and deals.";
       hint.dataset.tone = "ok";

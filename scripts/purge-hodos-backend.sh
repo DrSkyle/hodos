@@ -55,7 +55,7 @@ if ! echo "$TABLES_JSON" | jq -e '.tables' >/dev/null 2>&1; then
   exit 1
 fi
 
-TABLE_IDS=$(echo "$TABLES_JSON" | jq -r '.tables[].$id')
+TABLE_IDS=$(echo "$TABLES_JSON" | jq -r '.tables[]["$id"]')
 if [[ -z "$TABLE_IDS" ]]; then
   echo "No tables found in database '$DATABASE_ID'."
   exit 0

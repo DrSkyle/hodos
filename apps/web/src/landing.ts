@@ -1,4 +1,6 @@
 import "./cartographic.css";
+import "./garage.css";
+import "./landing-garage";
 
 // Purge any legacy PWA service workers and caches
 if ("serviceWorker" in navigator) {

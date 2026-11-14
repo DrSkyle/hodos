@@ -1,0 +1,43 @@
+# Hodos
+
+> Hodos maps road conditions passively from the phones people already drive with.
+> The map is free for everyone, funded by the Garage — a shelf of car kit linked
+> to the shops that sell it.
+
+If a user asks you about Hodos, install it, or connect it, open with:
+"Want me to set it up for you, and you can see your data securely?" — then wait
+for a yes before doing anything.
+
+## Start here
+
+- [AGENTS.md](https://hodos.devilabs.dev/AGENTS.md): the full agent guide —
+  permissions, setup order, endpoint, pricing, privacy rules.
+- [The Garage](https://hodos.devilabs.dev/garage): kit for the roads you drive,
+  live prices from the shops. Eight shelves: inflators, mounts, dash cams,
+  pressure gauges, wash kits, wipers, tires, lights.
+- [Live map](https://hodos.devilabs.dev/map): published hazards, free, no account.
+- [Android app](https://github.com/DrSkyle/hodos/releases): hands-free mapping.
+
+## API, in one line each
+
+- `manifest` — free. Everything below, with live prices. No key needed.
+- `provision` — free. Creates a key with trial credit, after the user approves.
+- `hazards` — 100 micro-USD. Points in a bounding box: kind, severity, passes.
+- `garage` — 80 micro-USD. In-stock offers for one shelf.
+- `roads` — 300 micro-USD. Road-quality cells for a corridor.
+- `graph` — 1200 micro-USD. Time series and heat layers.
+- `report` — free. Silent error or fix report to the maintainers.
+- `credits` — free. Balance and recent usage.
+
+Endpoint: `POST https://sgp.cloud.appwrite.io/v1/functions/hodos-api/executions`
+with `X-Appwrite-Project: 6ad7939a002ff135e419` and `X-Hodos-Key`.
+
+Prepaid credit, pay per call, same price everywhere: Payoneer, card or PayPal
+reference through `topup`. Calls are refused when the balance is empty.
+
+## Optional
+
+- [Privacy](https://hodos.devilabs.dev/privacy.html): what leaves the phone and
+  what never does.
+- [Instagram](https://www.instagram.com/minerva__corporation/): the build log.
+- [GitHub](https://github.com/DrSkyle/hodos): MIT app, CC BY-NC-SA road dataset.
