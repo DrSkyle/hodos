@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="Hodos for the web: the same road-sensing app, in your browser. Maps potholes, rough stretches and speed bumps as you drive, and keeps everything on your device." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Hodos Web — the road maps itself" />
+  <meta property="og:description" content="The same sensing engine as the Android app, running in your browser." />
+  <meta property="og:url" content="__HODOS_SITE__/app" />
+  <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
+  <link rel="canonical" href="__HODOS_SITE__/app" />
+  <!--HODOS-ICONS-->
+  <title>Hodos Web</title>
+</head>
+<body>
+  <a class="skip-link" href="#app-main">Skip to app</a>
+
+  <div class="app-shell">
+    <aside class="app-rail" aria-label="Sections">
+      <a class="rail-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+      </a>
+      <nav class="rail-nav" id="rail-nav" aria-label="App sections"></nav>
+      <div class="rail-foot">
+        <button class="rail-install" id="rail-install" type="button" hidden>Install</button>
+      </div>
+    </aside>
+
+    <main class="app-main" id="app-main">
+      <section class="app-screen" id="screen-map" aria-label="Map"></section>
+      <section class="app-screen" id="screen-drive" aria-label="Drive" hidden></section>
+      <section class="app-screen" id="screen-garage" aria-label="Garage" hidden></section>
+      <section class="app-screen" id="screen-roads" aria-label="Roads" hidden></section>
+      <section class="app-screen" id="screen-insights" aria-label="Insights" hidden></section>
+      <section class="app-screen" id="screen-you" aria-label="You" hidden></section>
+    </main>
+  </div>
+
+  <nav class="app-route" id="app-route" aria-label="App sections"></nav>
+
+  <div class="app-toast" id="app-toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>

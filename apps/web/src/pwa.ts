@@ -237,6 +237,23 @@ window.addEventListener("beforeinstallprompt", (event) => {
   }, 5000);
 });
 
+/** True while the browser is offering an install prompt. */
+export function installPromptAvailable(): boolean {
+  return deferredPrompt !== null;
+}
+
+/** Runs the browser's own install prompt. Must be called from a tap. */
+export async function promptInstall(): Promise<"accepted" | "dismissed" | "unavailable"> {
+  const prompt = deferredPrompt;
+  if (!prompt) return "unavailable";
+  deferredPrompt = null;
+  document.querySelector(".hodos-install")?.remove();
+  await prompt.prompt();
+  const choice = await prompt.userChoice.catch(() => ({ outcome: "dismissed" as const }));
+  if (choice.outcome === "dismissed") rememberDismissal();
+  return choice.outcome;
+}
+
 window.addEventListener("appinstalled", () => {
   deferredPrompt = null;
   document.querySelector(".hodos-install")?.remove();

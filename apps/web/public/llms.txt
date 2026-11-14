@@ -17,6 +17,8 @@ for a yes before doing anything.
   pressure gauges, wash kits, wipers, tires, lights.
 - [Live map](https://hodos.devilabs.dev/map): published hazards, free, no account.
 - [Android app](https://github.com/DrSkyle/hodos/releases): hands-free mapping.
+- [Web app](https://hodos.devilabs.dev/app): the same sensing engine in a browser
+  tab, with the same permissions. No install required.
 - [For shops](https://hodos.devilabs.dev/partners): a pin on the live map from
   $0.19 a day, priced by country and charged in local currency, visible to riders
   and to AI assistants.

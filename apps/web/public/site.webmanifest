@@ -41,6 +41,12 @@
       "description": "See the roads near you"
     },
     {
+      "name": "Hodos Web app",
+      "short_name": "Web app",
+      "url": "/app/",
+      "description": "The same road-sensing app, in your browser"
+    },
+    {
       "name": "The Garage",
       "short_name": "Garage",
       "url": "/garage/",

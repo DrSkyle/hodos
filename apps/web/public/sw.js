@@ -13,6 +13,7 @@ const CACHE = `hodos-${VERSION}`;
 const SHELL = [
   "/",
   "/map/",
+  "/app/",
   "/garage/",
   "/partners/",
   "/privacy.html",

@@ -28,6 +28,8 @@ export type GarageSlot = {
 
 export const DEFAULT_GARAGE_SLOT_ID = "inflator";
 
+export const GARAGE_SLOT_STORAGE_KEY = "hodos.garage.slot.v1";
+
 export const GARAGE_SLOTS: GarageSlot[] = [
   { id: "inflator", label: "Tire inflator", blurb: "Top up a soft tire in a car park, not a queue." },
   { id: "mount", label: "Phone mount", blurb: "A mount that survives a bad road." },

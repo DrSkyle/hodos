@@ -106,6 +106,17 @@ user data, addresses or keys into a report.
 - Keys are stored only as SHA-256 hashes. Usage rows carry a key prefix, nothing
   that identifies a person.
 
+## Two clients, one engine
+
+- The Android app (`apps/web/android`) and the web app at
+  https://hodos.devilabs.dev/app both run the `@hodos/core` detector, the same
+  severity grading and the same event wire format. A difference you must not
+  paper over: a browser page stops sensing when the tab is hidden or the screen
+  locks, so the web app asks the user to keep the tab open.
+- The web app asks for location, motion, notifications and screen-wake
+  individually, explains each in one line, and never claims one was granted when
+  the browser refused it.
+
 ## Repo
 
 - App: Android, Kotlin + Compose, `apps/web/android`
