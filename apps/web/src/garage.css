@@ -784,3 +784,124 @@
     margin-top: 48px;
   }
 }
+
+/* ---------- product shelves (landing) ---------- */
+
+.product-band {
+  margin-top: 72px;
+}
+
+.product-shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+
+.product-shelf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.product-shelf-head h3 {
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.product-shelf-stamp {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.product-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 14px;
+  border-radius: 18px;
+  background: var(--paper-raised);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  background: var(--soft);
+}
+
+.product-card-thumb {
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: var(--soft);
+  overflow: hidden;
+}
+
+.product-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  mix-blend-mode: multiply;
+}
+
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.product-card-title {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.product-card-price {
+  font-size: 14.5px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.product-card-sold {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .product-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .product-band {
+    margin-top: 48px;
+  }
+}

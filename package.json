@@ -15,12 +15,14 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "generate-assets": "node scripts/generate-brand-assets.mjs",
-    "dev": "pnpm --filter @hodos/web dev"
+    "dev": "pnpm --filter @hodos/web dev",
+    "refresh-products": "node scripts/refresh-products.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "playwright": "^1.65.1"
   }
 }

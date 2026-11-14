@@ -1,0 +1,65 @@
+name: Refresh product shelf
+
+# Keeps apps/web/public/data/products.json honest: real products, real prices,
+# fetched from the live category pages and committed back, so the deploy that
+# follows serves what was actually checked.
+#
+# Weekly, plus on demand. If a run extracts nothing it fails instead of
+# committing an empty shelf, and the script itself refuses to shrink the shelf by
+# more than half to guard against a block page.
+
+on:
+  schedule:
+    - cron: "17 4 * * 1" # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Refresh products
+        run: node scripts/refresh-products.mjs
+
+      - name: Check the file is real
+        run: |
+          node -e '
+          const d = require("./apps/web/public/data/products.json");
+          const n = d.categories.reduce((s, c) => s + c.products.length, 0);
+          if (n < 10) { console.error("Only " + n + " products — refusing to commit"); process.exit(1); }
+          const priced = d.categories.flatMap(c => c.products).filter(p => p.price > 0 && p.url.includes("/g/"));
+          if (priced.length !== n) { console.error("Some products have no price or no tracked link"); process.exit(1); }
+          console.log(n + " products, all priced and linked");
+          '
+
+      - name: Commit
+        run: |
+          git config user.name "hodos-refresh"
+          git config user.email "noreply@devilabs.dev"
+          if git diff --quiet apps/web/public/data/products.json; then
+            echo "No change since last run."
+            exit 0
+          fi
+          git add apps/web/public/data/products.json
+          git commit -m "chore(data): refresh product shelf"
+          git push
