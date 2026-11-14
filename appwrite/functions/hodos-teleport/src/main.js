@@ -12,8 +12,27 @@
  * them, so the caller must state that consent was given.
  */
 
-const TELEPORT_HOST_SUFFIX = ".admitad.com";
-const DIRECT_HOSTS = ["ad.admitad.com", "admitad.com"];
+/**
+ * Admitad issues links on its own short tracking domains, not only on
+ * admitad.com. This is the allowlist of domains this account has been seen
+ * using; anything else is refused so the resolver cannot be pointed elsewhere.
+ */
+const TRACKING_HOSTS = [
+  "ad.admitad.com",
+  "admitad.com",
+  "ntzgd.com",
+  "tjzuh.com",
+  "yyczo.com",
+  "dbnua.com",
+  "xcdus.com",
+  "dkfrh.com",
+  "rzekl.com",
+  "kjuzv.com",
+  "cafxq.com",
+  "xmknb.com",
+  "zallj.com",
+  "vxrlm.com"
+];
 
 const ENDPOINT = process.env.HODOS_ENDPOINT ||
   process.env.APPWRITE_FUNCTION_API_ENDPOINT ||
@@ -48,10 +67,15 @@ function parseBody(raw) {
   }
 }
 
-/** Only Admitad's own tracking hosts, so this can never be used as a proxy. */
+/** Only Admitad's tracking hosts, so this can never be used as a proxy. */
 function isAdmitadHost(host) {
-  const lower = host.toLowerCase();
-  return DIRECT_HOSTS.includes(lower) || lower.endsWith(TELEPORT_HOST_SUFFIX);
+  const lower = String(host || "").toLowerCase();
+  if (!lower) return false;
+  // Anything that looks like an internal address is refused outright.
+  if (lower === "localhost" || /^\d{1,3}(\.\d{1,3}){3}$/.test(lower) || lower.includes(":")) {
+    return false;
+  }
+  return TRACKING_HOSTS.some((allowed) => lower === allowed || lower.endsWith(`.${allowed}`));
 }
 
 /** Turns /g/<hash>/ into /tptv2/<hash>/, the documented transform. */

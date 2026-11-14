@@ -1,4 +1,8 @@
-import { APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID } from "./site-constants";
+import {
+  APPWRITE_ENDPOINT,
+  APPWRITE_PROJECT_ID,
+  isAdmitadTrackingHost
+} from "./site-constants";
 
 /**
  * Admitad Teleport, from the browser.
@@ -40,10 +44,7 @@ export function isTeleportableUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return false;
-    const host = parsed.hostname.toLowerCase();
-    if (!(host === "admitad.com" || host === "ad.admitad.com" || host.endsWith(".admitad.com"))) {
-      return false;
-    }
+    if (!isAdmitadTrackingHost(parsed.hostname)) return false;
     return /^\/g\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname);
   } catch (_) {
     return false;

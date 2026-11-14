@@ -17,6 +17,28 @@ test("only Admitad tracking hosts are accepted", () => {
   assert.equal(testing.isAdmitadHost("localhost"), false);
 });
 
+test("the account's short tracking domains are accepted", () => {
+  for (const host of ["ntzgd.com", "tjzuh.com", "yyczo.com", "dbnua.com", "xcdus.com", "dkfrh.com", "rzekl.com", "kjuzv.com", "cafxq.com", "xmknb.com", "zallj.com", "vxrlm.com"]) {
+    assert.equal(testing.isAdmitadHost(host), true, `${host} should be accepted`);
+  }
+});
+
+test("internal addresses and look-alikes are refused", () => {
+  assert.equal(testing.isAdmitadHost("127.0.0.1"), false);
+  assert.equal(testing.isAdmitadHost("169.254.169.254"), false);
+  assert.equal(testing.isAdmitadHost("[::1]"), false);
+  assert.equal(testing.isAdmitadHost("localhost.localdomain"), false);
+  assert.equal(testing.isAdmitadHost("ntzgd.com.evil.example"), false);
+  assert.equal(testing.isAdmitadHost("eviltzgd.com"), false);
+  assert.equal(testing.isAdmitadHost(""), false);
+});
+
+test("a short-domain tracking link becomes a Teleport link on that same host", () => {
+  const result = testing.toTeleportUrl("https://dkfrh.com/g/ffzns2ktmfecd1928bc8d80355ec70/");
+  assert.equal(result.hash, "ffzns2ktmfecd1928bc8d80355ec70");
+  assert.equal(result.url.toString(), "https://dkfrh.com/tptv2/ffzns2ktmfecd1928bc8d80355ec70/");
+});
+
 test("a /g/ affiliate link becomes a /tptv2/ Teleport link", () => {
   const result = testing.toTeleportUrl("https://ad.admitad.com/g/1e8d114494b7e165239416525dc3e8/");
   assert.equal(result.hash, "1e8d114494b7e165239416525dc3e8");

@@ -30,6 +30,66 @@ export const AD_TAG_HTML = "";
  * A program left empty simply does not appear on the site. Nothing is invented:
  * a filled link becomes a tracked deeplink to that shop's own live page.
  */
+/**
+ * Admitad hands out links on its own short tracking domains, not only on
+ * admitad.com — the account already has links on seven of them. Anything not in
+ * this list is refused, so the teleport resolver can never be pointed at an
+ * arbitrary host.
+ */
+export const ADMITAD_TRACKING_HOSTS = [
+  "ad.admitad.com",
+  "admitad.com",
+  "ntzgd.com",
+  "tjzuh.com",
+  "yyczo.com",
+  "dbnua.com",
+  "xcdus.com",
+  "dkfrh.com",
+  "rzekl.com",
+  "kjuzv.com",
+  "cafxq.com",
+  "xmknb.com",
+  "zallj.com",
+  "vxrlm.com"
+] as const;
+
+/** True when a host is one of Admitad's tracking domains. */
+export function isAdmitadTrackingHost(host: string): boolean {
+  const lower = host.toLowerCase();
+  return ADMITAD_TRACKING_HOSTS.some((allowed) => lower === allowed || lower.endsWith(`.${allowed}`));
+}
+
+/**
+ * Offer links that already point at one specific shop.
+ *
+ * These are per-offer links: the destination is baked into the id, so they are
+ * used exactly as issued rather than turned into a deeplink. Each is resolved
+ * from the account and labelled with the shop it actually opens.
+ */
+export const OFFER_LINKS = {
+  /** → https://www.woopdrive.com/ — car hire, fits road trips. */
+  woopdrive: "https://dkfrh.com/g/ffzns2ktmfecd1928bc8d80355ec70/",
+  /** → https://global.redmagic.gg/ — gaming phones and accessories. */
+  redmagic: "https://yyczo.com/g/qmttmvxh1uecd1928bc856637026d8/",
+  /** → https://www.compensair.com/ — flight delay compensation. */
+  compensair: "https://dbnua.com/g/5k6m2qm7z5ecd1928bc890465e1588/",
+  /** → https://avitovip.com — airport transfers in Turkey, fixed price. */
+  avitovip: "https://kjuzv.com/g/02swkf5uv6ecd1928bc8babf13962c/",
+  /** → https://www.lennuabi.com — EU flight compensation up to €600. */
+  lennuabi: "https://cafxq.com/g/913bhutj0zecd1928bc8a8b9cbb737/",
+  /** → https://www.palazzoversace.ae/ — Dubai stopover hotel. */
+  versace: "https://xmknb.com/g/6z621dqopyecd1928bc8080b20079f/",
+  /** → https://flyfi.io — travel. */
+  flyfi: "https://xcdus.com/g/0xtgjon8aeecd1928bc8a2e4f55a9f/",
+  /**
+   * These three are fashion and belong on the network's style sites, not on a
+   * road app: hellomolly.com, bewakoof.com (India), chicme.com.
+   */
+  hellomolly: "https://ntzgd.com/g/v4mbsetakjecd1928bc85fd6c9cc83/",
+  bewakoof: "https://tjzuh.com/g/el5arbwariecd1928bc88f3bde6dea/",
+  chicme: "https://rzekl.com/g/gf807z8tarecd1928bc8312b8f391a/"
+} as const;
+
 export const AFFILIATE_LINKS = {
   aliexpress: "",
   banggood: "",

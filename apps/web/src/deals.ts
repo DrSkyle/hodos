@@ -1,4 +1,9 @@
-import { AFFILIATE_LINKS, type AffiliateProgram } from "./site-constants";
+import {
+  AFFILIATE_LINKS,
+  OFFER_LINKS,
+  isAdmitadTrackingHost,
+  type AffiliateProgram
+} from "./site-constants";
 
 /**
  * Deals for the Garage, from the programs actually joined in the account.
@@ -19,13 +24,20 @@ import { AFFILIATE_LINKS, type AffiliateProgram } from "./site-constants";
  */
 
 export type Deal = {
-  program: AffiliateProgram;
+  /** A configured program, or the name of a partner offer. */
+  program: AffiliateProgram | "woopdrive" | "flyfi" | "avitovip" | "lennuabi";
   title: string;
   blurb: string;
   target: string;
   rate: string;
   /** Extra line for offers that are not car parts. */
   note?: string;
+  /**
+   * A ready-made per-offer link from the account. When present it is used as
+   * issued, because the destination is baked into the id and a deeplink would
+   * either be ignored or point somewhere else.
+   */
+  href?: string;
   /**
    * ISO country codes this row is for. Absent means worldwide. A visitor in
    * India sees the Indian shops first and still sees the global ones, because a
@@ -93,6 +105,38 @@ export const DEALS: Deal[] = [
     rate: "1.6–8%"
   },
   {
+    program: "woopdrive",
+    title: "Car hire for the road trip",
+    blurb: "Rent instead of wearing your own car out on a long route.",
+    target: "",
+    rate: "4.2–6%",
+    href: OFFER_LINKS.woopdrive
+  },
+  {
+    program: "flyfi",
+    title: "A bed at the end of the drive",
+    blurb: "Hotels and stays for the overnight part of a long route.",
+    target: "",
+    rate: "Partner",
+    href: OFFER_LINKS.flyfi
+  },
+  {
+    program: "avitovip",
+    title: "Airport transfers, fixed price",
+    blurb: "The first and last leg of a road trip, without haggling at arrivals.",
+    target: "",
+    rate: "Partner",
+    href: OFFER_LINKS.avitovip
+  },
+  {
+    program: "lennuabi",
+    title: "Cancelled flight? Claim up to €600",
+    blurb: "When the road trip starts with a delay, this handles the airline.",
+    target: "",
+    rate: "Partner",
+    href: OFFER_LINKS.lennuabi
+  },
+  {
     program: "hamaramall",
     title: "Car & bike kit, delivered in India",
     blurb: "Indian marketplace, domestic delivery, no customs wait.",
@@ -134,7 +178,20 @@ export const DEALS: Deal[] = [
   }
 ];
 
-const ADMITAD_HOST = /(^|\.)admitad\.com$/i;
+/** https + an Admitad tracking host + a /g/<id>/ path. */
+function verifiedLink(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") return null;
+    if (!isAdmitadTrackingHost(parsed.hostname)) return null;
+    if (!/^\/g\/[A-Za-z0-9_-]{6,}\/?$/.test(parsed.pathname)) return null;
+    return parsed.toString();
+  } catch (_) {
+    return null;
+  }
+}
 
 /**
  * The configured link for a program, or null when it has not been pasted.
@@ -150,7 +207,9 @@ export function affiliateBase(program: AffiliateProgram): string | null {
   try {
     const parsed = new URL(raw);
     if (parsed.protocol !== "https:") return null;
-    return parsed.toString();
+    // A direct network link (Amazon ?tag=, Flipkart affid=) is used as given.
+    if (!isAdmitadTrackingHost(parsed.hostname)) return parsed.toString();
+    return verifiedLink(raw);
   } catch (_) {
     return null;
   }
@@ -160,8 +219,7 @@ export function isAdmitad(program: AffiliateProgram): boolean {
   const raw = AFFILIATE_LINKS[program]?.trim();
   if (!raw) return false;
   try {
-    const parsed = new URL(raw);
-    return ADMITAD_HOST.test(parsed.hostname) && /^\/g\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname);
+    return isAdmitadTrackingHost(new URL(raw).hostname);
   } catch (_) {
     return false;
   }
@@ -203,7 +261,7 @@ export function renderDealShelf(host: HTMLElement): number {
 
   for (const deal of ordered) {
     if (deal.regions && !deal.regions.includes(country)) continue;
-    const href = dealLink(deal.program, deal.target);
+    const href = deal.href ? verifiedLink(deal.href) : dealLink(deal.program, deal.target);
     if (!href) continue;
 
     const row = document.createElement("a");
@@ -216,7 +274,7 @@ export function renderDealShelf(host: HTMLElement): number {
         <strong>${deal.title}</strong>
         <small>${deal.blurb}${deal.note ? ` ${deal.note}` : ""}</small>
       </span>
-      <span class="deal-meta">${deal.rate} · ${label(deal.program)}</span>
+      <span class="deal-meta">${deal.href ? label(deal.program) : `${deal.rate} · ${label(deal.program)}`}</span>
       <span class="deal-arrow" aria-hidden="true">↗</span>
     `;
     rows.push(row);
@@ -227,7 +285,13 @@ export function renderDealShelf(host: HTMLElement): number {
   return rows.length;
 }
 
-const LABELS: Record<AffiliateProgram, string> = {
+const LABELS: Record<string, string> = {
+  woopdrive: "WoopDrive",
+  flyfi: "Flyfi",
+  avitovip: "AvitoVIP",
+  lennuabi: "Lennuabi",
+  redmagic: "REDMAGIC",
+  compensair: "Compensair",
   aliexpress: "AliExpress",
   banggood: "Banggood",
   airalo: "Airalo",
