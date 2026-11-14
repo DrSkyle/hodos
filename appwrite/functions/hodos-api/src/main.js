@@ -831,6 +831,13 @@ function manifest() {
       aiVisible: "A live pin is returned by action:partners and is also attached to action:hazards and action:roads results for the same area, so an assistant answering a local question can name and recommend the shop.",
       buy: "https://hodos.devilabs.dev/partners"
     },
+    how_to_talk_to_the_user: {
+      before_a_paid_call: "Say what the call costs and how much credit is left, then make it.",
+      template: "This will cost about {priceUsd} of your {creditsUsd} remaining credit.",
+      when_empty: "Do not retry a 402. Tell the user the balance is empty and offer action:topup.",
+      free_actions: "manifest, credits, report and provision are free. Say so when it helps.",
+      note: "Prices are per call and tiny by design. A full month of checking one corridor costs well under a coffee."
+    },
     if_you_see_an_error: "Call action:report with the error, the action you were calling, your environment and, if you know it, the fix. It is free and it reaches the maintainers.",
     docs: {
       agents: "https://hodos.devilabs.dev/AGENTS.md",

@@ -26,6 +26,12 @@ export type Deal = {
   rate: string;
   /** Extra line for offers that are not car parts. */
   note?: string;
+  /**
+   * ISO country codes this row is for. Absent means worldwide. A visitor in
+   * India sees the Indian shops first and still sees the global ones, because a
+   * local shop that cannot ship is worse than one that ships slowly.
+   */
+  regions?: string[];
 };
 
 export const DEALS: Deal[] = [
@@ -85,31 +91,99 @@ export const DEALS: Deal[] = [
     blurb: "Tickets and activities for the other end of the drive.",
     target: "https://www.klook.com/",
     rate: "1.6–8%"
+  },
+  {
+    program: "hamaramall",
+    title: "Car & bike kit, delivered in India",
+    blurb: "Indian marketplace, domestic delivery, no customs wait.",
+    target: "https://www.hamaramall.com/search?q=car+accessories",
+    rate: "10.5%",
+    regions: ["IN"]
+  },
+  {
+    program: "flipkart",
+    title: "Car & bike accessories in India",
+    blurb: "Mounts, pumps, mats and lights with next-day delivery.",
+    target: "https://www.flipkart.com/search?q=car%20accessories",
+    rate: "up to 8%",
+    regions: ["IN"]
+  },
+  {
+    program: "amazonin",
+    title: "Car care on Amazon India",
+    blurb: "Same-day on most car care, tyres and tools.",
+    target: "https://www.amazon.in/s?k=car+accessories",
+    rate: "1–9%",
+    regions: ["IN"]
+  },
+  {
+    program: "cars24",
+    title: "Used cars, inspected",
+    blurb: "If the repair bill outweighs the car, this is the other option.",
+    target: "https://www.cars24.com/",
+    rate: "varies",
+    regions: ["IN"]
+  },
+  {
+    program: "tyres",
+    title: "Tyres that suit these roads",
+    blurb: "Tyre and alignment offers from Indian chains.",
+    target: "https://www.ceat.com/",
+    rate: "varies",
+    regions: ["IN"]
   }
 ];
 
 const ADMITAD_HOST = /(^|\.)admitad\.com$/i;
 
-/** The affiliate base for one program, or null when it has not been pasted. */
+/**
+ * The configured link for a program, or null when it has not been pasted.
+ *
+ * Two shapes are accepted, because the networks differ:
+ *  · an Admitad `/g/<id>/` link, which can be pointed at any destination;
+ *  · a direct affiliate URL (Amazon `?tag=`, Flipkart `affid=`, and so on),
+ *    which is used exactly as given.
+ */
 export function affiliateBase(program: AffiliateProgram): string | null {
   const raw = AFFILIATE_LINKS[program]?.trim();
   if (!raw) return null;
   try {
     const parsed = new URL(raw);
-    const hasId = /^\/g\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname);
-    if (parsed.protocol !== "https:" || !ADMITAD_HOST.test(parsed.hostname) || !hasId) return null;
-    const path = parsed.pathname.endsWith("/") ? parsed.pathname : `${parsed.pathname}/`;
-    return `https://${parsed.hostname}${path}`;
+    if (parsed.protocol !== "https:") return null;
+    return parsed.toString();
   } catch (_) {
     return null;
   }
 }
 
-/** `/g/<id>/?ulp=<destination>`, the documented Admitad deeplink shape. */
+export function isAdmitad(program: AffiliateProgram): boolean {
+  const raw = AFFILIATE_LINKS[program]?.trim();
+  if (!raw) return false;
+  try {
+    const parsed = new URL(raw);
+    return ADMITAD_HOST.test(parsed.hostname) && /^\/g\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * `/g/<id>/?ulp=<destination>` for Admitad; the configured URL unchanged for a
+ * direct program, because a direct link already encodes the destination.
+ */
 export function dealLink(program: AffiliateProgram, target: string): string | null {
   const base = affiliateBase(program);
   if (!base) return null;
+  if (!isAdmitad(program)) return base;
   return `${base}?ulp=${encodeURIComponent(target)}`;
+}
+
+/** The visitor's country from the locale tag. No IP lookup, no permission. */
+export function visitorCountry(): string {
+  const tag = (navigator.language || "en-US").replace("_", "-");
+  const parts = tag.split("-");
+  const last = parts[parts.length - 1];
+  return parts.length > 1 && last && last.length === 2 ? last.toUpperCase() : "";
 }
 
 /**
@@ -118,8 +192,17 @@ export function dealLink(program: AffiliateProgram, target: string): string | nu
  */
 export function renderDealShelf(host: HTMLElement): number {
   const rows: HTMLElement[] = [];
+  const country = visitorCountry();
 
-  for (const deal of DEALS) {
+  // Local shops first, then worldwide — and never a local shop that cannot
+  // deliver to the visitor, because that is a worse answer than a slow parcel.
+  const ordered = [...DEALS].sort((a, b) => {
+    const rank = (deal: Deal) => (deal.regions?.includes(country) ? 0 : deal.regions ? 2 : 1);
+    return rank(a) - rank(b);
+  });
+
+  for (const deal of ordered) {
+    if (deal.regions && !deal.regions.includes(country)) continue;
     const href = dealLink(deal.program, deal.target);
     if (!href) continue;
 
@@ -144,9 +227,18 @@ export function renderDealShelf(host: HTMLElement): number {
   return rows.length;
 }
 
+const LABELS: Record<AffiliateProgram, string> = {
+  aliexpress: "AliExpress",
+  banggood: "Banggood",
+  airalo: "Airalo",
+  klook: "Klook",
+  hamaramall: "HamaraMall",
+  flipkart: "Flipkart",
+  amazonin: "Amazon India",
+  cars24: "Cars24",
+  tyres: "Tyres"
+};
+
 function label(program: AffiliateProgram): string {
-  if (program === "aliexpress") return "AliExpress";
-  if (program === "banggood") return "Banggood";
-  if (program === "airalo") return "Airalo";
-  return "Klook";
+  return LABELS[program] ?? "Shop";
 }

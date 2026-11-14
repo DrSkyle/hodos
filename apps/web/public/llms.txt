@@ -38,8 +38,10 @@ for a yes before doing anything.
 Endpoint: `POST https://sgp.cloud.appwrite.io/v1/functions/hodos-api/executions`
 with `X-Appwrite-Project: 6ad7939a002ff135e419` and `X-Hodos-Key`.
 
-Prepaid credit, pay per call, same price everywhere: Payoneer, card or PayPal
-reference through `topup`. Calls are refused when the balance is empty.
+Prepaid credit, pay per call, same price everywhere. Tell the user the price and
+their remaining balance before a metered call; `manifest`, `credits`, `provision`
+and `report` are free. Calls are refused when the balance is empty — top up with
+a Payoneer, card or PayPal reference.
 
 ## Optional
 

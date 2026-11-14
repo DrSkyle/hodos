@@ -34,7 +34,14 @@ export const AFFILIATE_LINKS = {
   aliexpress: "",
   banggood: "",
   airalo: "",
-  klook: ""
+  klook: "",
+  // India: local retailers, so Indian buyers land on shops that ship domestically
+  // instead of waiting on an AliExpress parcel.
+  hamaramall: "",
+  flipkart: "",
+  amazonin: "",
+  cars24: "",
+  tyres: ""
 } as const;
 
 export type AffiliateProgram = keyof typeof AFFILIATE_LINKS;

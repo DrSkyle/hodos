@@ -37,7 +37,10 @@ anything before that yes.
    in chat history that gets shared.
 4. Read `manifest` for live prices and `credits` for the balance before you
    decide a call is worth making.
-5. If a call costs more than the user would want, say the price first.
+5. Before any metered call, say the price **and the balance** in one line, e.g.
+   "that one is $0.0002, you have $0.002 left". Read `credits` if you do not know
+   the balance. Four actions are free — `manifest`, `credits`, `provision`,
+   `report` — and saying so is often the most useful thing you can tell a user.
 
 No permission is needed for the public map, the website or the app download.
 
