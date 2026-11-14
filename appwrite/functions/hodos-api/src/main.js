@@ -102,7 +102,8 @@ const ACTIONS = {
   provision: "Create a key with trial credit after the user approves setup.",
   topup: "Register a payment reference for manual credit settlement.",
   partnerQuote: "Price a shop placement in the caller's own currency. Free.",
-  partnerPlace: "Order a shop placement for N days and get payment instructions. Free."
+  partnerPlace: "Order a shop placement for N days. It goes live immediately. Free.",
+  partnerExtend: "Add days to a live placement. It stays live and we invoice afterwards. Free."
 };
 
 const CORS = {
@@ -171,6 +172,13 @@ async function api(path, options = {}) {
     signal: AbortSignal.timeout(options.timeoutMs || 12_000)
   });
   return response;
+}
+
+async function readRow(table, rowId) {
+  const response = await api(`/tablesdb/${DATABASE_ID}/tables/${table}/rows/${rowId}`);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`${table} read ${response.status}`);
+  return response.json();
 }
 
 async function readRows(table, queries = []) {
@@ -633,6 +641,77 @@ async function recentTrials(bucket) {
   }
 }
 
+/**
+ * Adds days to a live pin and puts them on the tab.
+ *
+ * There is no card step: the pin is already on the map, and the money is asked
+ * for afterwards. The placement id works as the key, so nobody can extend a pin
+ * they did not create.
+ */
+async function partnerExtend(req, body) {
+  const id = String(body.placement || "").trim();
+  if (!/^p[a-z0-9]{6,24}$/i.test(id)) return { ok: false, error: "unknown placement" };
+
+  let order;
+  try {
+    order = await readRow("partnerPlacements", id);
+  } catch (_) {
+    order = null;
+  }
+  if (!order) return { ok: false, error: "unknown placement" };
+
+  const days = clampDays(body.days);
+  const quote = await partnerQuote({ ...body, days });
+  const addMicro = Math.round(quote.usdPerDay * 1_000_000) * days;
+
+  let pin = null;
+  try {
+    pin = await readRow("partners", id);
+  } catch (_) {
+    pin = null;
+  }
+
+  const currentUntil = pin ? Date.parse(String(pin.activeUntil || "")) : NaN;
+  const from = Number.isFinite(currentUntil) && currentUntil > Date.now() ? currentUntil : Date.now();
+  const activeUntil = new Date(from + days * DAY_MS).toISOString();
+
+  if (pin) {
+    await patchRow("partners", id, { activeUntil });
+  } else {
+    // The free day already lapsed; putting it back up is the same write.
+    await writeRow("partners", id, {
+      name: order.name,
+      category: order.category || "business",
+      lat: order.lat,
+      lng: order.lng,
+      offer: order.offer || "",
+      sponsorLabel: "Local shop",
+      activeUntil
+    });
+  }
+
+  const totalDays = (Number(order.days) || 1) + days;
+  const owedMicro = (Number(order.amountMicro) || 0) + addMicro;
+  await patchRow("partnerPlacements", id, {
+    days: totalDays,
+    amountMicro: owedMicro,
+    status: "owed"
+  });
+
+  return {
+    ok: true,
+    placement: id,
+    activeUntil,
+    days: totalDays,
+    addedDays: days,
+    owedMicro,
+    owedUsd: Number((owedMicro / 1_000_000).toFixed(4)),
+    currency: quote.currency,
+    owedLocal: quote.localPerDay * totalDays,
+    next: `Live until ${activeUntil}. Nothing to pay now — we invoice afterwards.`
+  };
+}
+
 async function partnerPlace(req, body) {
   const shop = validPartner(body);
   if (!shop) {
@@ -800,6 +879,16 @@ module.exports = async function main(context) {
     } catch (error) {
       log(`partnerQuote: ${error}`);
       return res.json({ ok: false, error: "quote unavailable" }, 502, CORS);
+    }
+  }
+
+  if (action === "partnerExtend") {
+    try {
+      const result = await partnerExtend(req, body);
+      return res.json(result, result.ok ? 200 : 400, CORS);
+    } catch (error) {
+      log(`partnerExtend: ${error}`);
+      return res.json({ ok: false, error: "could not extend" }, 502, CORS);
     }
   }
 

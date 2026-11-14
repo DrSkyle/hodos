@@ -21,24 +21,30 @@ export const INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/";
 export const AD_TAG_HTML = "";
 
 /**
- * Your AliExpress WW affiliate link from Admitad.
+ * Affiliate links, one per joined program.
  *
- * Ad space "devilabs" → Programs → AliExpress WW → Banners and Links → the
- * main affiliate link. It looks like:
- *   https://ad.admitad.com/g/<your-id>/
+ * In Admitad: Programs → the program → "Banners and Links" → the main
+ * affiliate link. Each looks like https://ad.admitad.com/g/<your-id>/ and is
+ * bound to the ad space "devilabs", so they cannot be guessed or shared.
  *
- * With it, every shelf link below becomes a tracked deeplink to an AliExpress
- * category page — no fake product data, no invented links. Until it is set, the
- * deals shelf simply does not render.
+ * A program left empty simply does not appear on the site. Nothing is invented:
+ * a filled link becomes a tracked deeplink to that shop's own live page.
  */
-export const ADMITAD_AFFILIATE_LINK = "https://ad.admitad.com/g/1e8d114494b7e165239416525dc3e8/";
+export const AFFILIATE_LINKS = {
+  aliexpress: "",
+  banggood: "",
+  airalo: "",
+  klook: ""
+} as const;
+
+export type AffiliateProgram = keyof typeof AFFILIATE_LINKS;
 
 /**
- * Where a shop pays to keep its pin. A Stripe Payment Link, a PayPal.me link or
- * a Revolut link all work — anything you can create from a dashboard without an
- * API key. Leave it empty and the page offers to arrange payment by email.
+ * Placements are not paid up front. A pin goes live and we ask for the money
+ * afterwards — Payoneer invoice today, Paddle once there is a fixed-price item
+ * to sell. This is the address those invoices point at.
  */
-export const PAYMENT_LINK = "";
+export const BILLING_EMAIL = "hodos@devilabs.dev";
 
 /**
  * Authorised-seller lines for /ads.txt, one per line, e.g.

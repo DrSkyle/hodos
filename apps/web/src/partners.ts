@@ -5,8 +5,7 @@ import "./pwa";
 import {
   APPWRITE_ENDPOINT,
   APPWRITE_PROJECT_ID,
-  CONTACT_EMAIL,
-  PAYMENT_LINK
+  BILLING_EMAIL
 } from "./site-constants";
 import { setWorkerUrl, Map, Marker, NavigationControl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -238,22 +237,47 @@ function showResult(order: {
       <strong>${order.live ? "Your pin is on the map" : "Your pin is reserved"}</strong>
       <p>${
         order.live
-          ? `Visible to riders and to AI assistants until ${untilText}. Keep it by paying for the days you want — ${order.amount} for ${order.days}.`
+          ? `Visible to riders and to AI assistants until ${untilText}. Nothing to pay now — keep it as long as you like and we invoice you afterwards.`
           : `${order.amount} for ${order.days}. ${order.next}`
       }</p>
       <div class="btn-row">
         <a class="btn btn-primary" href="/map/">See it on the map</a>
-        ${
-          PAYMENT_LINK
-            ? `<a class="btn btn-ghost" href="${PAYMENT_LINK}" target="_blank" rel="noopener noreferrer">Pay ${order.amount} to keep it</a>`
-            : `<a class="btn btn-ghost" href="mailto:${CONTACT_EMAIL}?subject=Shop%20pin%20${encodeURIComponent(order.placement)}">Arrange payment</a>`
-        }
+        <button class="btn btn-ghost" type="button" data-extend="7">Keep it 7 more days</button>
+        <button class="btn btn-ghost" type="button" data-extend="30">30 days</button>
       </div>
-      <p class="result-ref">Reference: ${order.placement}</p>
+      <p class="result-ref">Reference: ${order.placement} · billing: ${BILLING_EMAIL}</p>
     </div>
   `;
   host.hidden = false;
   host.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  host.querySelectorAll<HTMLButtonElement>("[data-extend]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const days = Number(button.dataset.extend) || 7;
+      button.disabled = true;
+      try {
+        const result = await callApi({
+          action: "partnerExtend",
+          placement: order.placement,
+          days,
+          locale: browserLocale()
+        });
+        if (!result.ok) throw new Error(result.error || "failed");
+        showResult({
+          live: true,
+          activeUntil: String(result.activeUntil),
+          placement: order.placement,
+          amount: money(Number(result.owedLocal) || 0, String(result.currency)),
+          days: Number(result.days) || days,
+          next: String(result.next || "")
+        });
+      } catch (error) {
+        setStatus(`Couldn't extend that — ${String(error).replace("Error: ", "")}`, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 function wireForm() {

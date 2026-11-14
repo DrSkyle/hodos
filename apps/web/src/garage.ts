@@ -3,7 +3,7 @@ import "./garage.css";
 import "./pwa";
 import { mountAdSlots } from "./ads";
 import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
-import { renderDealShelf } from "./aliexpress";
+import { renderDealShelf } from "./deals";
 import {
   DEFAULT_GARAGE_SLOT_ID,
   GARAGE_SLOTS,
@@ -187,7 +187,7 @@ function wireListForm() {
 
 const dealsHost = document.getElementById("deal-list");
 const dealsBlock = document.getElementById("deals-block");
-if (dealsHost && dealsBlock && renderDealShelf(dealsHost)) {
+if (dealsHost && dealsBlock && renderDealShelf(dealsHost) > 0) {
   dealsBlock.hidden = false;
 }
 
