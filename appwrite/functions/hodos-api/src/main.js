@@ -53,9 +53,6 @@ const PARTNER_TIERS = {
 };
 
 const PARTNER_MAX_DAYS = 90;
-/** Every shop gets one day live before it has to pay, so the flow never dead-ends. */
-const PARTNER_TRIAL_HOURS = 24;
-const PARTNER_TRIAL_PER_MONTH = 2;
 const DAY_MS = 86_400_000;
 const FX_TTL_MS = 12 * 60 * 60 * 1000;
 const FX_URL = "https://open.er-api.com/v6/latest/USD";
@@ -560,30 +557,10 @@ function validPartner(body) {
 }
 
 /**
- * Counts this address's recent trials. A free day is a real pin on a public map,
- * so it is limited per address rather than left open to a script.
- */
-async function recentTrials(bucket) {
-  if (!bucket) return 0;
-  const since = new Date(Date.now() - 30 * DAY_MS).toISOString();
-  try {
-    const rows = await readRows("partnerPlacements", [
-      { method: "equal", attribute: "ipBucket", values: [bucket] },
-      { method: "greaterThan", attribute: "at", values: [since] },
-      { method: "limit", values: [50] }
-    ]);
-    return rows.filter((row) => row.status === "trial").length;
-  } catch (_) {
-    return 0;
-  }
-}
-
-/**
- * Adds days to a live pin and puts them on the tab.
- *
- * There is no card step: the pin is already on the map, and the money is asked
- * for afterwards. The placement id works as the key, so nobody can extend a pin
- * they did not create.
+ * Adds paid days to a placement. The pin only exists once payment has cleared,
+ * so there is no free day and no unpaid "reserved" state: an extension either
+ * belongs to a live pin (it moves the expiry forward) or to a placement that
+ * has not settled yet (it only grows the amount owed).
  */
 async function partnerExtend(req, body) {
   const id = String(body.placement || "").trim();
@@ -608,44 +585,73 @@ async function partnerExtend(req, body) {
     pin = null;
   }
 
-  const currentUntil = pin ? Date.parse(String(pin.activeUntil || "")) : NaN;
-  const from = Number.isFinite(currentUntil) && currentUntil > Date.now() ? currentUntil : Date.now();
-  const activeUntil = new Date(from + days * DAY_MS).toISOString();
-
-  if (pin) {
-    await patchRow("partners", id, { activeUntil });
-  } else {
-    // The free day already lapsed; putting it back up is the same write.
-    await writeRow("partners", id, {
-      name: order.name,
-      category: order.category || "business",
-      lat: order.lat,
-      lng: order.lng,
-      offer: order.offer || "",
-      sponsorLabel: "Local shop",
-      activeUntil
-    });
-  }
-
   const totalDays = (Number(order.days) || 1) + days;
   const owedMicro = (Number(order.amountMicro) || 0) + addMicro;
+
+  // Payment recorded for the added days: the pin goes (or stays) live.
+  const reference = String(body.reference || "").trim();
+  if (reference) {
+    const currentUntil = pin ? Date.parse(String(pin.activeUntil || "")) : NaN;
+    const from = Number.isFinite(currentUntil) && currentUntil > Date.now() ? currentUntil : Date.now();
+    const activeUntil = new Date(from + days * DAY_MS).toISOString();
+
+    if (pin) {
+      await patchRow("partners", id, { activeUntil });
+    } else {
+      await writeRow("partners", id, {
+        name: order.name,
+        category: order.category || "business",
+        lat: order.lat,
+        lng: order.lng,
+        offer: order.offer || "",
+        sponsorLabel: "Local shop",
+        activeUntil
+      });
+    }
+
+    await patchRow("partnerPlacements", id, {
+      days: totalDays,
+      amountMicro: owedMicro,
+      reference,
+      status: "pending"
+    });
+
+    return {
+      ok: true,
+      placement: id,
+      status: "pending",
+      live: true,
+      activeUntil,
+      days: totalDays,
+      addedDays: days,
+      owedMicro: 0,
+      owedUsd: 0,
+      currency: quote.currency,
+      next: `Payment reference recorded. The pin is live until ${activeUntil}.`
+    };
+  }
+
+  // No payment with the extension: the placement stays unpaid and the map is
+  // untouched. A pin that is not paid for never appears.
   await patchRow("partnerPlacements", id, {
     days: totalDays,
     amountMicro: owedMicro,
-    status: "owed"
+    status: "awaiting-payment"
   });
 
   return {
     ok: true,
     placement: id,
-    activeUntil,
+    status: "awaiting-payment",
+    live: false,
+    activeUntil: null,
     days: totalDays,
     addedDays: days,
     owedMicro,
     owedUsd: Number((owedMicro / 1_000_000).toFixed(4)),
     currency: quote.currency,
     owedLocal: quote.localPerDay * totalDays,
-    next: `Live until ${activeUntil}. Nothing to pay now — we invoice afterwards.`
+    next: `Send a payment reference of ${money(owedMicro, quote.currency)} to publish this pin.`
   };
 }
 
@@ -656,14 +662,12 @@ async function partnerPlace(req, body) {
   }
   const quote = await partnerQuote(body);
   const reference = String(body.reference || "").trim();
-  const bucket = await ipBucket(req, body).catch(() => "");
   const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
-  // Free day first: create the live pin, then ask for money to keep it.
-  const wantsTrial = !reference && body.trial !== false;
-  const trialsUsed = wantsTrial ? await recentTrials(bucket) : PARTNER_TRIAL_PER_MONTH;
-  const trial = wantsTrial && trialsUsed < PARTNER_TRIAL_PER_MONTH;
-  const activeUntil = trial ? new Date(Date.now() + PARTNER_TRIAL_HOURS * 3600_000).toISOString() : null;
+  // The pin goes live only when the money is in. No free day, no trial, no
+  // unpaid "reserved" pin on the public map: a shop that has not paid has no
+  // placement to extend either.
+  const paid = reference.length > 0;
 
   await writeRow("partnerPlacements", id, {
     name: shop.name,
@@ -680,13 +684,12 @@ async function partnerPlace(req, body) {
     tier: quote.tier,
     country: quote.country || "",
     reference,
-    status: trial ? "trial" : reference ? "pending" : "awaiting-payment",
-    ipBucket: bucket,
+    status: paid ? "pending" : "awaiting-payment",
     at: nowIso()
   });
 
-  if (trial && activeUntil) {
-    // The pin itself lives in `partners`, which is what the map and the API read.
+  if (paid) {
+    const activeUntil = new Date(Date.now() + quote.days * DAY_MS).toISOString();
     try {
       await writeRow("partners", id, {
         name: shop.name,
@@ -698,24 +701,28 @@ async function partnerPlace(req, body) {
         activeUntil
       });
     } catch (error) {
-      log(`trial pin failed: ${error}`);
+      log(`paid pin failed: ${error}`);
       return { ok: false, error: "could not publish the pin", placement: id };
     }
+    return {
+      ok: true,
+      placement: id,
+      status: "pending",
+      live: true,
+      activeUntil,
+      ...quote,
+      next: `Payment reference recorded. Your pin is live until ${activeUntil}.`
+    };
   }
 
   return {
     ok: true,
     placement: id,
-    status: trial ? "trial" : reference ? "pending" : "awaiting-payment",
-    live: Boolean(trial),
-    activeUntil,
-    trialsUsed: trial ? trialsUsed + 1 : trialsUsed,
+    status: "awaiting-payment",
+    live: false,
+    activeUntil: null,
     ...quote,
-    next: trial
-      ? `Your pin is live until ${activeUntil}. Keep it by paying for the days you want.`
-      : reference
-      ? "Payment reference recorded. The pin goes live once it clears."
-      : "Free day already used from this address — pay to publish this one."
+    next: "Pay with the reference above and the pin goes live for the days you bought."
   };
 }
 

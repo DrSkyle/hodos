@@ -147,21 +147,26 @@
             <input name="link" type="url" maxlength="200" inputmode="url" placeholder="https://" />
           </label>
 
+          <label class="field">
+            <span class="field-label">Payment reference</span>
+            <input name="reference" type="text" maxlength="120" placeholder="Payoneer, card or PayPal reference" required />
+          </label>
+
           <div class="pin-row">
             <span class="field-label">Where is it</span>
             <span class="pin-value" id="pin-label" data-tone="idle">Tap the map to place your shop</span>
             <button type="button" class="pin-locate" id="use-my-location">Use my location</button>
           </div>
 
-          <button type="submit" class="submit-btn">Put it on the map</button>
+          <button type="submit" class="submit-btn">Pay and put it on the map</button>
           <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
           <div id="placement-result" hidden></div>
         </form>
 
         <p class="fine-print">
-          No card needed. The pin goes live straight away and we invoice you afterwards, by
-          Payoneer or Paddle. Placements never cover the road ahead and never change hazard
-          data, and a pin comes down on its own when the days run out.
+          The pin goes live once your payment reference is in. Placements never cover the road
+          ahead and never change hazard data, and a pin comes down on its own when the days run
+          out.
         </p>
       </div>
 

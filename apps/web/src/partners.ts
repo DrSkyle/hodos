@@ -214,8 +214,9 @@ function buildMap() {
 }
 
 /**
- * The result is a state, not a sentence: the pin is either live (with an
- * expiry) or waiting on money, and either way there is a next step to tap.
+ * The result is a state, not a sentence: the pin is either live (paid, with an
+ * expiry) or the payment reference is missing, and either way there is a next
+ * step to tap.
  */
 function showResult(order: {
   live: boolean;
@@ -233,11 +234,11 @@ function showResult(order: {
     : "";
   host.innerHTML = `
     <div class="result-card${order.live ? " is-live" : ""}">
-      <span class="result-tag">${order.live ? "Live now" : "Reserved"}</span>
-      <strong>${order.live ? "Your pin is on the map" : "Your pin is reserved"}</strong>
+      <span class="result-tag">${order.live ? "Live now" : "Payment needed"}</span>
+      <strong>${order.live ? "Your pin is on the map" : "Your pin is not on the map yet"}</strong>
       <p>${
         order.live
-          ? `Visible to riders and to AI assistants until ${untilText}. Nothing to pay now — keep it as long as you like and we invoice you afterwards.`
+          ? `Visible to riders and to AI assistants until ${untilText}. It comes down on its own when the days run out.`
           : `${order.amount} for ${order.days}. ${order.next}`
       }</p>
       <div class="btn-row">
@@ -264,8 +265,8 @@ function showResult(order: {
         });
         if (!result.ok) throw new Error(result.error || "failed");
         showResult({
-          live: true,
-          activeUntil: String(result.activeUntil),
+          live: Boolean(result.live),
+          activeUntil: String(result.activeUntil || ""),
           placement: order.placement,
           amount: money(Number(result.owedLocal) || 0, String(result.currency)),
           days: Number(result.days) || days,
@@ -288,9 +289,11 @@ function wireForm() {
     const name = String(data.get("name") || "").trim();
     const offer = String(data.get("offer") || "").trim();
     const contact = String(data.get("contact") || "").trim();
+    const reference = String(data.get("reference") || "").trim();
 
     if (name.length < 2) return setStatus("Add the shop name.", "error");
     if (offer.length < 2) return setStatus("Add the line you want on the pin.", "error");
+    if (reference.length < 4) return setStatus("Add the payment reference so we can match your pay-in.", "error");
     if (!point) return setStatus("Tap the map to place your shop.", "error");
 
     const button = form.querySelector("button[type=submit]") as HTMLButtonElement | null;
@@ -308,6 +311,7 @@ function wireForm() {
         lat: point.lat,
         lng: point.lng,
         days,
+        reference,
         locale: browserLocale()
       });
       if (!result.ok) throw new Error(result.error || "failed");

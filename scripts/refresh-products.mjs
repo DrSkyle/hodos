@@ -40,12 +40,15 @@ const only = onlyArg ? onlyArg.slice(7).split(',').map((s) => s.trim()) : null;
 
 /** Categories worth showing, each mapped to the shelf it belongs on. */
 const CATEGORIES = [
-  { key: 'mounts', shelf: 'Phone mounts', commission: 0.069, query: 'car-phone-holder', max: 8 },
-  { key: 'inflators', shelf: 'Tire inflators', commission: 0.069, query: 'portable-tire-inflator', max: 6 },
-  { key: 'dashcams', shelf: 'Dash cams', commission: 0.054, query: 'car-dash-cam', max: 6 },
-  { key: 'care', shelf: 'Car care', commission: 0.069, query: 'car-wash-kit', max: 6 },
-  { key: 'lights', shelf: 'Lights', commission: 0.023, query: 'car-led-light', max: 6 },
-  { key: 'gauges', shelf: 'Gauges', commission: 0.023, query: 'digital-tire-pressure-gauge', max: 4 }
+  { key: 'mounts', shelf: 'Phone mounts', commission: 0.069, query: 'car-phone-holder', max: 40, pages: 3 },
+  { key: 'inflators', shelf: 'Tire inflators', commission: 0.069, query: 'portable-tire-inflator', max: 32, pages: 3 },
+  { key: 'dashcams', shelf: 'Dash cams', commission: 0.054, query: 'car-dash-cam', max: 32, pages: 3 },
+  { key: 'care', shelf: 'Car care', commission: 0.069, query: 'car-wash-kit', max: 32, pages: 3 },
+  { key: 'lights', shelf: 'Lights', commission: 0.023, query: 'car-led-light', max: 32, pages: 3 },
+  { key: 'chargers', shelf: 'Chargers', commission: 0.069, query: 'car-charger', max: 32, pages: 3 },
+  { key: 'gauges', shelf: 'Gauges', commission: 0.023, query: 'digital-tire-pressure-gauge', max: 24, pages: 2 },
+  { key: 'wipers', shelf: 'Wipers', commission: 0.069, query: 'windshield-wiper-blade', max: 24, pages: 2 },
+  { key: 'storage', shelf: 'Car storage', commission: 0.069, query: 'car-organizer', max: 24, pages: 2 }
 ];
 
 function affiliateLink() {
@@ -139,6 +142,73 @@ async function rates() {
   return { rates: null, at: null };
 }
 
+/** Reads the product cards on the current page. Runs in the browser. */
+async function extractPage(page) {
+  return page.evaluate(() => {
+    const PRICE = /(?:US\s?\$\s?|Rs\.?\s?|\$\s?|€\s?|£\s?)([\d,]+(?:\.\d{1,2})?)/;
+    const out = [];
+    const seen = new Set();
+
+    for (const anchor of document.querySelectorAll('a[href*="/item/"]')) {
+      const idMatch = /\/(?:item|i)\/(\d{6,})/.exec(anchor.getAttribute('href') || '');
+      if (!idMatch || seen.has(idMatch[1])) continue;
+
+      // Walk up until the ancestor holds no other product link: one card.
+      let el = anchor;
+      let card = null;
+      for (let depth = 0; depth < 10 && el; depth += 1) {
+        const inner = el.querySelectorAll('a[href*="/item/"]');
+        if (inner.length <= 1 && PRICE.test(el.innerText || '')) {
+          card = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+      if (!card) continue;
+
+      const lines = (card.innerText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const priceLine = lines.find((line) => PRICE.test(line));
+      const priceMatch = priceLine ? PRICE.exec(priceLine) : null;
+      const title = lines.find((line) => line.length > 25 && !PRICE.test(line));
+      if (!priceMatch || !title) continue;
+
+      // Cards also hold badges and sale banners. The product photo is the one on
+      // the media CDN with a square resize suffix.
+      const productImage = [...card.querySelectorAll('img')]
+        .map((img) => img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('srcset') || '')
+        .map((value) => value.split(' ')[0] || '')
+        .find((value) => /aliexpress-media\.com/.test(value) && /_\d+x\d+q?\d*\.(jpg|png|webp)/.test(value));
+
+      const href = anchor.getAttribute('href') || '';
+      let itemUrl = '';
+      try {
+        itemUrl = new URL(href, 'https://www.aliexpress.com').toString();
+      } catch {
+        itemUrl = `https://www.aliexpress.com/item/${idMatch[1]}.html`;
+      }
+
+      const image = productImage ? (productImage.startsWith('//') ? `https:${productImage}` : productImage) : '';
+      // No photo means the card is almost always an ad slot or a broken tile.
+      if (!image) continue;
+
+      seen.add(idMatch[1]);
+      out.push({
+        id: idMatch[1],
+        title: title.slice(0, 160),
+        price: parseFloat(priceMatch[1].replace(/,/g, '')),
+        currency: /Rs|₹/.test(priceLine) ? 'INR' : /€/.test(priceLine) ? 'EUR' : /£/.test(priceLine) ? 'GBP' : 'USD',
+        image,
+        itemUrl,
+        sold: lines.find((line) => /sold$/.test(line)) || ''
+      });
+    }
+    return out;
+  });
+}
+
 async function main() {
   let chromium;
   try {
@@ -176,80 +246,34 @@ async function main() {
         await page.waitForTimeout(1200);
       }
 
-      const raw = await page.evaluate(() => {
-        const PRICE =
-          /(?:US\s?\$\s?|Rs\.?\s?|\$\s?|€\s?|£\s?)([\d,]+(?:\.\d{1,2})?)/;
-        const out = [];
-        const seen = new Set();
-        for (const anchor of document.querySelectorAll('a[href*="/item/"]')) {
-          const idMatch = /\/(?:item|i)\/(\d{6,})/.exec(anchor.getAttribute('href') || '');
-          if (!idMatch || seen.has(idMatch[1])) continue;
-
-          // Walk up until the ancestor holds no other product link: one card.
-          let el = anchor;
-          let card = null;
-          for (let depth = 0; depth < 10 && el; depth += 1) {
-            const inner = el.querySelectorAll('a[href*="/item/"]');
-            if (inner.length <= 1 && PRICE.test(el.innerText || '')) {
-              card = el;
-              break;
-            }
-            el = el.parentElement;
-          }
-          if (!card) continue;
-
-          const lines = (card.innerText || '')
-            .split('\n')
-            .map((line) => line.trim())
-            .filter(Boolean);
-          const priceLine = lines.find((line) => PRICE.test(line));
-          const priceMatch = priceLine ? PRICE.exec(priceLine) : null;
-          const title = lines.find((line) => line.length > 25 && !PRICE.test(line));
-          if (!priceMatch || !title) continue;
-
-          // The card also holds badges, logos and sale banners. The product
-          // photo is the one on the media CDN with a square resize suffix.
-          const productImage = [...card.querySelectorAll('img')]
-            .map((img) =>
-              img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('srcset') || ''
-            )
-            .map((value) => value.split(' ')[0] || '')
-            .find((value) => /aliexpress-media\.com/.test(value) && /_\d+x\d+q?\d*\.jpg|_\d+x\d+\.(jpg|png|webp)/.test(value));
-
-          const href = anchor.getAttribute('href') || '';
-          // Build an absolute product URL. AliExpress hands back "//x" and
-          // "https://x" and occasionally a bare path; all three must work, and
-          // the query string (algo_pvid etc.) is not needed or wanted.
-          let itemUrl = '';
-          try {
-            itemUrl = new URL(href, 'https://www.aliexpress.com').toString();
-          } catch {
-            itemUrl = `https://www.aliexpress.com/item/${idMatch[1]}.html`;
-          }
-
-          seen.add(idMatch[1]);
-          out.push({
-            id: idMatch[1],
-            title: title.slice(0, 160),
-            price: parseFloat(priceMatch[1].replace(/,/g, '')),
-            currency: /Rs|₹/.test(priceLine)
-              ? 'INR'
-              : /€/.test(priceLine)
-              ? 'EUR'
-              : /£/.test(priceLine)
-              ? 'GBP'
-              : 'USD',
-            image: productImage
-              ? productImage.startsWith('//')
-                ? `https:${productImage}`
-                : productImage
-              : '',
-            itemUrl,
-            sold: lines.find((line) => /sold$/.test(line)) || ''
-          });
+      // A category is a catalogue, not four picks: walk a few result pages and
+      // de-duplicate by product id across them.
+      const collected = [];
+      const seenIds = new Set();
+      for (let pageIndex = 1; pageIndex <= (category.pages ?? 1); pageIndex += 1) {
+        const target = new URL(url);
+        if (pageIndex > 1) target.searchParams.set('page', String(pageIndex));
+        await page.goto(target.toString(), { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+        await page.waitForTimeout(5000);
+        for (let i = 0; i < 4; i += 1) {
+          await page.mouse.wheel(0, 1800);
+          await page.waitForTimeout(1100);
         }
-        return out;
-      });
+
+        const rows = await extractPage(page);
+        let added = 0;
+        for (const row of rows) {
+          if (seenIds.has(row.id)) continue;
+          seenIds.add(row.id);
+          collected.push(row);
+          added += 1;
+        }
+        process.stdout.write(`${collected.length}${added === 0 ? '*' : ''} `);
+        // Nothing new on this page: later pages will not help either.
+        if (added === 0 && pageIndex > 1) break;
+      }
+
+      const raw = collected;
 
       if (raw.length === 0) {
         console.log('0 products (page changed or blocked)');
