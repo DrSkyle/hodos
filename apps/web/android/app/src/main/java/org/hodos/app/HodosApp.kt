@@ -102,7 +102,8 @@ fun HodosApp(
     onStartJourney: () -> Unit,
     onFinishJourney: () -> Unit,
     onRequestBackgroundLocation: () -> Unit = {},
-    onRequestBatteryOptimization: () -> Unit = {}
+    onRequestBatteryOptimization: () -> Unit = {},
+    onRequestLocationPermission: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val internetConnected by rememberInternetConnectivity()
@@ -136,19 +137,6 @@ fun HodosApp(
             }
         }
     }
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.values.any { it }) {
-            locationIssue = null
-            locating = true
-            locateRequest++
-        } else {
-            locating = false
-            locationIssue = LocationIssue.Permission
-        }
-    }
-
     var screen by remember { mutableStateOf(Screen.MAP) }
     var hazards by remember { mutableStateOf(repo.savedHazards()) }
     var trips by remember { mutableStateOf(repo.savedTrips()) }
@@ -202,7 +190,9 @@ fun HodosApp(
         }
     }
     // After foreground location permission is granted, automatically locate
-    // once so the Wi-Fi-only neighborhood pack can be downloaded.
+    // once so the Wi-Fi-only neighborhood pack can be downloaded. When it is
+    // not granted the map must say so, not sit silently on the world view.
+    var locationPermissionMissing by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val fine = ContextCompat.checkSelfPermission(context,
             Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -211,7 +201,18 @@ fun HodosApp(
         if (fine || coarse) {
             locating = true
             locateRequest++
+        } else {
+            locationPermissionMissing = true
         }
+    }
+    // Re-check after the user returns from the permission dialog.
+    LaunchedEffect(refreshSignal) {
+        locationPermissionMissing = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
     }
     val prefs = remember { context.getSharedPreferences("hodos", android.content.Context.MODE_PRIVATE) }
     var savedRoadIds by remember { mutableStateOf(SavedRoadsStore.load(prefs)) }
@@ -676,8 +677,25 @@ fun HodosApp(
                                         }
                                     }
                                 }
-                                if (!internetConnected || syncError) {
+                                if (locationPermissionMissing) {
                                     Spacer(Modifier.height(8.dp))
+                                    Surface(shape = RoundedCornerShape(12.dp), color = Sand) {
+                                        Row(
+                                            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                "Location is off — the map cannot find you or record roads.",
+                                                modifier = Modifier.weight(1f),
+                                                color = Ink, fontSize = 12.sp, lineHeight = 17.sp
+                                            )
+                                            TextButton(onClick = onRequestLocationPermission) {
+                                                Text("Allow", color = Ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                }
+                                if (!internetConnected || syncError) {
                                     Surface(shape = RoundedCornerShape(12.dp), color = Mist) {
                                         Row(
                                             Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 6.dp),
@@ -709,12 +727,10 @@ fun HodosApp(
                                         locationIssue = null
                                         locateRequest++
                                     } else {
-                                        locationPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.ACCESS_COARSE_LOCATION,
-                                                Manifest.permission.ACCESS_FINE_LOCATION
-                                            )
-                                        )
+                                        // Ask the activity for the grants so the
+                                        // result flows back through the refresh
+                                        // signal and clears the warning banner.
+                                        onRequestLocationPermission()
                                     }
                                 },
                                 colors = IconButtonDefaults.filledIconButtonColors(
@@ -2043,8 +2059,7 @@ private fun YouScreen(
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        if (partner.sample) "${partner.name} · Sample placement"
-                                        else "${partner.name} · ${partner.sponsorLabel}",
+                                        "${partner.name} · ${partner.sponsorLabel}",
                                         fontSize = 10.sp,
                                         color = Muted,
                                         fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp

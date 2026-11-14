@@ -228,8 +228,7 @@ export function initWebMap(
         name: p.name,
         category: p.category,
         offer: p.offer,
-        sponsorLabel: p.sponsorLabel,
-        sample: p.sample
+        sponsorLabel: p.sponsorLabel
       }
     }))
   });
@@ -350,11 +349,6 @@ export function initWebMap(
           </span>
         </div>
         ${p.offer ? `<div style="font-size: 12.5px; color: #57534e; margin-bottom: 6px;">${p.offer}</div>` : ""}
-        ${
-          p.sample
-            ? `<div style="font-size: 11px; color: #736d61; margin-bottom: 6px;">Sample placement showing how partner slots render on the map.</div>`
-            : ""
-        }
         <a href="mailto:${CONTACT_EMAIL}?subject=Hodos%20Partner%20Placement" style="font-size: 12px; font-weight: 600; color: #b45309; text-decoration: none;">Become a partner →</a>
       </div>
     `;
@@ -507,8 +501,7 @@ export function initWebMap(
     })
     .catch(() => {});
 
-  // Partner placements are served from the backend only; sample placements are
-  // never shipped to production.
+  // Partner placements are served from the backend only.
   fetch(
     "https://sgp.cloud.appwrite.io/v1/tablesdb/hodos/tables/partners/rows?queries[]=%7B%22method%22%3A%22limit%22%2C%22values%22%3A%5B100%5D%7D",
     {
@@ -530,8 +523,7 @@ export function initWebMap(
           lat,
           lng,
           offer: String(raw.offer ?? ""),
-          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored"),
-          sample: Boolean(raw.sample)
+          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored")
         });
       });
       if (parsed.length === 0) return;

@@ -577,9 +577,6 @@ fun RoadMap(
                             append(stats)
                             append("\nAggregated anonymously from trip data. Drivers are never identified.")
                         }
-                        if (activePartner.sample) {
-                            append("\n\nSample placement — become a partner to claim this spot.")
-                        }
                     }
                 )
             },

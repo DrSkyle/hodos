@@ -20,7 +20,6 @@ data class PartnerPoi(
     val lng: Double,
     val offer: String,
     val sponsorLabel: String,
-    val sample: Boolean,
     /** Aggregated unique drivers this month; null until the backend publishes it. */
     val passesThisMonth: Int? = null
 )
@@ -84,7 +83,6 @@ object PartnerOffers {
                         lng = lng,
                         offer = entry.optString("offer"),
                         sponsorLabel = entry.optString("sponsorLabel", "Sponsored"),
-                        sample = entry.optBoolean("sample", false),
                         passesThisMonth = if (entry.has("passesThisMonth")) {
                             entry.optInt("passesThisMonth").coerceAtLeast(0)
                         } else null

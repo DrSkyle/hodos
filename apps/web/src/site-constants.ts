@@ -5,3 +5,4 @@ export const DOWNLOAD_URL = "https://github.com/DrSkyle/hodos/releases";
 export const REPO_URL = "https://github.com/DrSkyle/hodos";
 export const CONTACT_EMAIL = "hodos@devilabs.dev";
 export const SITE_URL = "https://hodos.devilabs.dev";
+export const INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/";

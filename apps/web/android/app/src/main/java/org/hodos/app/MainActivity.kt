@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
  */
 class MainActivity : ComponentActivity() {
     private var armed by mutableStateOf(false)
+    private var onboardingDone by mutableStateOf(false)
     private var refreshSignal by mutableIntStateOf(0)
     private var mapLocationGranted by mutableStateOf(false)
     private var backgroundLocationGrantedState by mutableStateOf(false)
@@ -76,20 +77,61 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("hodos", MODE_PRIVATE)
         armed = prefs.getBoolean("armed", false)
+        onboardingDone = prefs.getBoolean("onboardingDone", false)
         updatePermissionStates()
         HodosNudgeWorker.schedule(this)
         setContent {
-            HodosApp(
-                armed = armed,
-                refreshSignal = refreshSignal,
-                onToggle = { if (it) continueEnabling() else stopMapping() },
-                onRefresh = { refreshSignal++ },
-                onStartJourney = { startManualJourney() },
-                onFinishJourney = { finishJourneyAction() },
-                onRequestBackgroundLocation = { requestBackgroundLocation() },
-                onRequestBatteryOptimization = { requestBatteryOptimization() }
-            )
+            // First launch runs the permission walkthrough. Without it a new
+            // install never asks for location, which makes the map and the
+            // automatic detector silently useless.
+            if (!onboardingDone) {
+                HodosOnboarding(
+                    locationGranted = mapLocationGranted,
+                    backgroundLocationGranted = backgroundLocationGrantedState,
+                    batteryUnrestricted = batteryUnrestrictedState,
+                    onRequestLocation = {
+                        val needed = mutableListOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        )
+                        if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
+                        if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
+                        permissions.launch(needed.toTypedArray())
+                    },
+                    onRequestBackgroundLocation = { requestBackgroundLocation() },
+                    onRequestBatteryOptimization = { requestBatteryOptimization() },
+                    onFinishAndEnableAutoMapping = {
+                        getSharedPreferences("hodos", MODE_PRIVATE).edit()
+                            .putBoolean("onboardingDone", true).apply()
+                        onboardingDone = true
+                        continueEnabling()
+                    }
+                )
+            } else {
+                HodosApp(
+                    armed = armed,
+                    refreshSignal = refreshSignal,
+                    onToggle = { if (it) continueEnabling() else stopMapping() },
+                    onRefresh = { refreshSignal++ },
+                    onStartJourney = { startManualJourney() },
+                    onFinishJourney = { finishJourneyAction() },
+                    onRequestBackgroundLocation = { requestBackgroundLocation() },
+                    onRequestBatteryOptimization = { requestBatteryOptimization() },
+                    onRequestLocationPermission = { requestLocationPermissions() }
+                )
+            }
         }
+    }
+
+    /** Asks for the foreground location + motion grants the map and detector need. */
+    private fun requestLocationPermissions() {
+        val needed = mutableListOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        if (Build.VERSION.SDK_INT >= 29) needed.add(Manifest.permission.ACTIVITY_RECOGNITION)
+        if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
+        permissions.launch(needed.toTypedArray())
     }
 
     override fun onResume() {

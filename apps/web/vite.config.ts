@@ -6,8 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 // Single source of truth for every value repeated across pages lives in
 // src/site-constants.ts (shared with runtime TS modules).
-// Use in HTML as: <!--HODOS-ICONS--> __HODOS_VERSION__ __HODOS_DOWNLOAD__ __HODOS_REPO__ __HODOS_CONTACT__
-import { SITE_VERSION, DOWNLOAD_URL, REPO_URL, CONTACT_EMAIL, SITE_URL } from "./src/site-constants";
+// Use in HTML as: <!--HODOS-ICONS--> __HODOS_VERSION__ __HODOS_DOWNLOAD__ __HODOS_REPO__ __HODOS_CONTACT__ __HODOS_SITE__ __HODOS_INSTAGRAM__
+import { SITE_VERSION, DOWNLOAD_URL, REPO_URL, CONTACT_EMAIL, SITE_URL, INSTAGRAM_URL } from "./src/site-constants";
 
 const ICON_HEAD = [
   `<link rel="icon" href="/brandmark.svg?v=${SITE_VERSION}" type="image/svg+xml" />`,
@@ -25,7 +25,8 @@ const substitute = (text: string): string =>
     .replaceAll("__HODOS_DOWNLOAD__", DOWNLOAD_URL)
     .replaceAll("__HODOS_REPO__", REPO_URL)
     .replaceAll("__HODOS_CONTACT__", CONTACT_EMAIL)
-    .replaceAll("__HODOS_SITE__", SITE_URL);
+    .replaceAll("__HODOS_SITE__", SITE_URL)
+    .replaceAll("__HODOS_INSTAGRAM__", INSTAGRAM_URL);
 
 function hodosSharedConstants(): Plugin {
   return {
