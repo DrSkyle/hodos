@@ -1,7 +1,7 @@
 // Single source of truth for site-wide constants, shared by vite.config.ts
 // (build-time HTML substitution) and runtime TS modules.
 export const SITE_VERSION = "3.0.2";
-export const DOWNLOAD_URL = "https://github.com/DrSkyle/hodos/releases";
+export const DOWNLOAD_URL = `https://github.com/DrSkyle/hodos/releases/download/v${SITE_VERSION}/Hodos-${SITE_VERSION}.apk`;
 export const REPO_URL = "https://github.com/DrSkyle/hodos";
 export const CONTACT_EMAIL = "hodos@devilabs.dev";
 export const SITE_URL = "https://hodos.devilabs.dev";

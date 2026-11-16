@@ -1,15 +1,25 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
+import { DOWNLOAD_URL } from "./site-constants";
 import { visitorCountry } from "./offers";
 
-// The referral programme and Nepal-personalized banner are revealed when the
+// The referral programme and Nepal-personalized hero/nav are revealed when the
 // visitor is in Nepal. The page and API also enforce the territory server-side.
 if (visitorCountry() === "NP") {
   document.getElementById("footer-referrals")?.removeAttribute("hidden");
   document.getElementById("nav-referrals")?.removeAttribute("hidden");
   document.getElementById("mobile-referrals")?.removeAttribute("hidden");
   document.getElementById("nepal-earn")?.removeAttribute("hidden");
+
+  // In Nepal, the primary highlighted CTA is downloading the app directly
+  // rather than "Shop the Garage" (Nepal's Garage is local map-pin shops).
+  const navCta = document.getElementById("nav-primary-cta") as HTMLAnchorElement | null;
+  if (navCta) {
+    navCta.textContent = "Download the app";
+    navCta.href = DOWNLOAD_URL;
+  }
+  document.querySelector(".nav-links .nav-garage")?.classList.remove("nav-garage");
 }
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
