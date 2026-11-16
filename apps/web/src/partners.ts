@@ -103,6 +103,69 @@ function setStatus(text: string, tone: "idle" | "ok" | "error" = "idle") {
   statusEl.dataset.tone = tone;
 }
 
+function buildMailtoHref(): string {
+  const data = form ? new FormData(form) : null;
+  const shopName = String(data?.get("name") || "").trim();
+  const offer = String(data?.get("offer") || "").trim();
+  const category = String(data?.get("category") || "").trim();
+  const address = String(data?.get("address") || "").trim();
+  const phone = String(data?.get("phone") || "").trim();
+  const referralCode = String(data?.get("referralCode") || "").trim();
+  const isNepal = quote?.country === "NP" || browserLocale() === "ne-NP";
+  const spanLabel = days === 365 ? "1 year" : `${days} day${days === 1 ? "" : "s"}`;
+  const totalText = quote ? money(quote.totalLocal, quote.currency) : "";
+  const planLine = totalText ? `${spanLabel} (${totalText})` : spanLabel;
+  const coordsLine = point ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}` : "(not pinned on map yet)";
+
+  const subject = shopName
+    ? `Hodos shop pin — ${shopName}`
+    : isNepal
+    ? "Hodos Nepal shop pin — payment details"
+    : "Hodos shop pin — payment details";
+
+  const bodyLines = isNepal
+    ? [
+        "Namaste Hodos team,",
+        "",
+        "Please send us your eSewa / Khalti / IME Pay payment details so we can put our shop pin on the Hodos map.",
+        "",
+        `Shop name: ${shopName || ""}`,
+        `One line / offer: ${offer || ""}`,
+        `Category: ${category || ""}`,
+        `Address: ${address || ""}`,
+        `Phone: ${phone || ""}`,
+        `Plan: ${planLine}`,
+        `Map location: ${coordsLine}`,
+        `Referred by (code): ${referralCode || "none"}`,
+        "",
+        "We will reply with our transaction ID once paid."
+      ]
+    : [
+        "Hi Hodos team,",
+        "",
+        "Please send us payment details to place our shop pin on the Hodos map.",
+        "",
+        `Shop name: ${shopName || ""}`,
+        `One line / offer: ${offer || ""}`,
+        `Category: ${category || ""}`,
+        `Address: ${address || ""}`,
+        `Phone: ${phone || ""}`,
+        `Plan: ${planLine}`,
+        `Map location: ${coordsLine}`,
+        `Referred by (code): ${referralCode || "none"}`
+      ];
+
+  return `mailto:${BILLING_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
+}
+
+function syncMailtoLinks() {
+  const href = buildMailtoHref();
+  const helpLink = document.querySelector<HTMLAnchorElement>("#payment-help a");
+  if (helpLink) helpLink.href = href;
+  const setupLink = document.getElementById("email-setup-link") as HTMLAnchorElement | null;
+  if (setupLink) setupLink.href = href;
+}
+
 function renderQuote() {
   if (!priceHost) return;
   if (!quote) {
@@ -131,19 +194,22 @@ function renderQuote() {
   const refLabel = document.getElementById("payment-reference-label");
   const refInput = document.getElementById("payment-reference-input") as HTMLInputElement | null;
   const refHelp = document.getElementById("payment-help");
+  const mailHref = buildMailtoHref();
   if (isNepal) {
     if (refLabel) refLabel.textContent = "eSewa / Khalti / IME Pay transaction ID";
     if (refInput) refInput.placeholder = "Your eSewa, Khalti or IME Pay transaction ID";
     if (refHelp) {
-      refHelp.innerHTML = `Email <a href="mailto:${BILLING_EMAIL}?subject=Hodos%20Nepal%20shop%20pin%20payment">${BILLING_EMAIL}</a> to get our eSewa, Khalti or IME Pay details (tell us your shop name and who referred you), then paste your transaction ID here.`;
+      refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> (opens your mail app with a ready-made message — just hit send) to get our eSewa, Khalti or IME Pay details, then paste your transaction ID here.`;
     }
   } else {
     if (refLabel) refLabel.textContent = "Payment reference";
     if (refInput) refInput.placeholder = "Card, Payoneer or PayPal reference";
     if (refHelp) {
-      refHelp.innerHTML = `Email <a href="mailto:${BILLING_EMAIL}?subject=Hodos%20shop%20placement%20payment%20details">${BILLING_EMAIL}</a> for payment details, then paste your reference here.`;
+      refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> for payment details, then paste your reference here.`;
     }
   }
+  const setupLink = document.getElementById("email-setup-link") as HTMLAnchorElement | null;
+  if (setupLink) setupLink.href = mailHref;
 
   document.querySelectorAll<HTMLButtonElement>(".day-chip").forEach((chip) => {
     chip.setAttribute("aria-selected", String(Number(chip.dataset.days) === days));
@@ -418,6 +484,7 @@ function wireLookup() {
 
 function wireForm() {
   if (!form) return;
+  form.addEventListener("input", syncMailtoLinks);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(form);
