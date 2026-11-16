@@ -107,6 +107,10 @@ a {
   border: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .container {
   width: 100%;
   max-width: var(--container);

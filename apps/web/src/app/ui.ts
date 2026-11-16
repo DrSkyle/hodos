@@ -297,8 +297,8 @@ export async function renderGarageScreen(host: HTMLElement, rerender: () => void
       ${
         isNepal
           ? `<div class="panel">
-              <h2>Refer a shop · keep 60%</h2>
-              <p>Introduce a local garage, tyre house or parts shop to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment lands in your eSewa, Khalti or IME Pay wallet.</p>
+              <h2>Refer any shop · keep 60%</h2>
+              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your eSewa, Khalti or IME Pay wallet after 1 month.</p>
               <div class="btn-row">
                 <a class="app-btn" href="/referrals">Get your referral code</a>
                 <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
@@ -590,8 +590,8 @@ export function renderYouScreen(host: HTMLElement, options: { shops: string[]; i
       ${
         isNepal
           ? `<div class="panel">
-              <h2>Refer a shop · earn 60%</h2>
-              <p>Introduce a local garage, tyre house or parts shop to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment is paid to your eSewa, Khalti or IME Pay wallet, and Hodos keeps 40%.</p>
+              <h2>Refer any shop · earn 60%</h2>
+              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your eSewa, Khalti or IME Pay wallet after 1 month.</p>
               <div class="btn-row">
                 <a class="app-btn" href="/referrals">Open referral dashboard</a>
                 <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>

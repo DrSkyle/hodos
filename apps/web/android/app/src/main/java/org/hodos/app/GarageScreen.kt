@@ -111,7 +111,7 @@ internal fun GarageScreen(onBack: () -> Unit) {
             Column {
                 Text(
                     if (Garage.isNepal())
-                        "The shops in Nepal that placed a pin on the Hodos map. Introduce a shop with your referral code and keep 60% of every placement payment they make."
+                        "The shops in Nepal that placed a pin on the Hodos map. If a shop sells or offers anything drivers might need, introduce them with your referral code and keep 60% of every placement payment they make (cashable after 30 days)."
                     else
                         "The things that actually save a drive — a working inflator, a mount that " +
                             "holds, wipers that clear. Priced by the shop that sells them.",

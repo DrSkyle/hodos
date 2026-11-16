@@ -949,6 +949,21 @@ function roundMoney(value, currency) {
   return rounded >= 1 ? rounded : Math.round(value * 1000) / 1000;
 }
 
+/**
+ * Duration discount ladder: base rate is for 1 day, and longer commitments get a
+ * progressively lower effective daily rate (1 day > 3 > 7 > 14 > 30 > 90 > 180 > 365).
+ */
+function durationFactor(days) {
+  if (days >= 365) return 0.6;
+  if (days >= 180) return 0.7;
+  if (days >= 90) return 0.78;
+  if (days >= 30) return 0.85;
+  if (days >= 14) return 0.9;
+  if (days >= 7) return 0.93;
+  if (days >= 3) return 0.97;
+  return 1;
+}
+
 async function partnerQuote(body) {
   const country = countryFor(body.locale, body.countryCode || body.country);
   const currency = currencyFor(body.locale, body.currency);
@@ -956,15 +971,22 @@ async function partnerQuote(body) {
   const rates = await usdRates();
   const rate = Number(rates[currency]) || 1;
   const days = clampDays(body.days);
-  const usdPerDay = PARTNER_TIERS[tier].usdPerDay;
-  const perDay = roundMoney(usdPerDay * rate, currency);
-  const week = roundMoney(perDay * 7, currency);
+  const baseUsdPerDay = PARTNER_TIERS[tier].usdPerDay;
+  const factor = durationFactor(days);
+  const discountPct = Math.round((1 - factor) * 100);
+  const usdPerDay = roundMoney(baseUsdPerDay * factor, "USD");
+  const baseLocalPerDay = roundMoney(baseUsdPerDay * rate, currency);
+  const perDay = roundMoney(baseUsdPerDay * rate * factor, currency);
+  const week = roundMoney(baseUsdPerDay * rate * durationFactor(7) * 7, currency);
   return {
     country: country || null,
     tier,
     currency,
+    baseUsdPerDay,
     usdPerDay,
+    baseLocalPerDay,
     localPerDay: perDay,
+    discountPct,
     weeksFrom: week,
     days,
     totalLocal: roundMoney(perDay * days, currency),
@@ -976,7 +998,7 @@ async function partnerQuote(body) {
     // public page: the shop emails us for the eSewa, Khalti or IME Pay details,
     // sends the payment, and submits the transaction reference here.
     settlement: country === "NP"
-      ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your payment reference through partnerPlace so the pin goes live immediately."
+      ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
       : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
     settlementOptions: country === "NP"
       ? ["esewa", "khalti", "imepay", "bank"]
@@ -1646,6 +1668,7 @@ module.exports.testing = {
   ACTIONS,
   PARTNER_TIERS,
   partnerQuote,
+  durationFactor,
   countryFor,
   tierFor,
   clampDays,

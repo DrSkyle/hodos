@@ -119,12 +119,13 @@ function paint(referral: Referral | null) {
   if (targetEl) targetEl.textContent = `${referral?.payoutMethod ?? ""} ${referral?.payoutAccount ?? ""}`.trim();
 
   const available = Boolean(referral?.available);
-  if (payoutButton) payoutButton.disabled = !available;
+  if (payoutButton) payoutButton.disabled = false;
   // The agreement is a prerequisite for any payout, so it appears as soon as
   // there is something to pay out.
   const nda = document.getElementById("nda-card");
   if (nda) nda.hidden = !(Number(referral?.earnedUsd) > 0);
   if (noteEl) {
+    noteEl.dataset.tone = "idle";
     if (available) {
       noteEl.textContent = `Ready to cash out ${money(referral?.maturedUsd ?? referral?.owedUsd)} to your Nepali wallet.`;
     } else if (Number(referral?.pendingUsd) > 0) {
@@ -295,7 +296,25 @@ document.getElementById("lookup-form")?.addEventListener("submit", async (event)
 
 document.getElementById("request-payout")?.addEventListener("click", async () => {
   const note = document.getElementById("payout-note") as HTMLElement;
+  const button = document.getElementById("request-payout") as HTMLButtonElement | null;
   if (!position || !current?.code) return;
+
+  if (!current.available) {
+    note.dataset.tone = "error";
+    if (Number(current.pendingUsd) > 0) {
+      const unlockDate = current.nextCashoutAt
+        ? new Date(current.nextCashoutAt).toLocaleDateString(undefined, { dateStyle: "medium" })
+        : "30 days after the shop's payment";
+      note.textContent = `Cannot cash out yet — ${money(current.owedUsd)} is in your account, and unlocks 1 month (30 days) after the shop's payment (${unlockDate}).`;
+    } else {
+      note.textContent = `Cannot request payout — insufficient funds in your account (minimum ${money(current.minPayoutUsd ?? 0.1)} required to cash out).`;
+    }
+    return;
+  }
+
+  if (button) button.disabled = true;
+  note.dataset.tone = "idle";
+  note.textContent = "Submitting payout request…";
   try {
     const result = await callApi({
       action: "referralRequestPayout",
@@ -305,11 +324,18 @@ document.getElementById("request-payout")?.addEventListener("click", async () =>
       payoutMethod: current.payoutMethod,
       payoutAccount: "0000000000"
     });
-    note.textContent = result.ok
-      ? `Cashout requested for ${money(result.amountUsd ?? current.maturedUsd ?? current.owedUsd)}. Matured commissions are paid to your Nepali wallet.`
-      : result.error || "Could not request a payout.";
+    if (result.ok) {
+      note.dataset.tone = "ok";
+      note.textContent = `Cashout requested for ${money(result.amountUsd ?? current.maturedUsd ?? current.owedUsd)}. Matured commissions are paid to your Nepali wallet.`;
+    } else {
+      note.dataset.tone = "error";
+      note.textContent = result.error || "Could not request a payout.";
+    }
   } catch (_) {
+    note.dataset.tone = "error";
     note.textContent = "Could not request a payout right now.";
+  } finally {
+    if (button) button.disabled = false;
   }
 });
 

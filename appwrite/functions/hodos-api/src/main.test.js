@@ -301,3 +301,19 @@ test("Nepali shops are offered rails they actually have", async () => {
   assert.match(de.settlement, /Payoneer|card|PayPal/i);
   assert.ok(!de.settlementOptions.includes("esewa"));
 });
+
+test("longer placement durations reduce the daily rate progressively (1 > 3 > 7 > 14 > 30 > 90 > 180 > 365)", async () => {
+  const steps = [1, 3, 7, 14, 30, 90, 180, 365];
+  const quotes = [];
+  for (const days of steps) {
+    quotes.push(await testing.partnerQuote({ countryCode: "NP", currency: "NPR", days }));
+  }
+  for (let i = 1; i < quotes.length; i += 1) {
+    assert.ok(
+      quotes[i].localPerDay < quotes[i - 1].localPerDay,
+      `expected ${steps[i]}d daily rate (${quotes[i].localPerDay}) < ${steps[i - 1]}d (${quotes[i - 1].localPerDay})`
+    );
+  }
+  assert.equal(quotes[0].discountPct, 0);
+  assert.equal(quotes[quotes.length - 1].discountPct, 40);
+});

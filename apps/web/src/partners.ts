@@ -30,8 +30,11 @@ type Quote = {
   country?: string | null;
   tier?: "high" | "mid" | "low";
   currency: string;
+  baseUsdPerDay?: number;
   usdPerDay: number;
+  baseLocalPerDay?: number;
   localPerDay: number;
+  discountPct?: number;
   weeksFrom?: number;
   days: number;
   totalLocal: number;
@@ -106,18 +109,42 @@ function renderQuote() {
     priceHost.textContent = "…";
     return;
   }
-  priceHost.textContent = `${money(quote.localPerDay, quote.currency)} a day`;
+  const hasDiscount = Number(quote.discountPct) > 0 && quote.baseLocalPerDay && quote.baseLocalPerDay > quote.localPerDay;
+  if (hasDiscount && quote.baseLocalPerDay) {
+    priceHost.innerHTML = `${money(quote.localPerDay, quote.currency)} a day <s style="font-size:0.52em;font-weight:600;color:var(--muted);margin-left:8px;">${money(quote.baseLocalPerDay, quote.currency)}</s>`;
+  } else {
+    priceHost.textContent = `${money(quote.localPerDay, quote.currency)} a day`;
+  }
+
   if (priceNote) {
     const total = money(quote.totalLocal, quote.currency);
-    const week = quote.weeksFrom
-      ? `${money(quote.weeksFrom, quote.currency)} a week`
-      : `about $${(quote.usdPerDay * 7).toFixed(2)} USD a week`;
     const tierName = quote.tier === "low" ? "Access" : quote.tier === "mid" ? "Local" : "Standard";
+    const saveTag = Number(quote.discountPct) > 0 ? `save ${quote.discountPct}%` : "longer plans cost less per day";
+    const spanLabel = quote.days === 365 ? "1 year" : `${quote.days} days`;
     priceNote.textContent =
       quote.days === 1
-        ? `${week} · ${tierName} tier · no account, no contract`
-        : `${total} for ${quote.days} days · ${week} · ${tierName} tier`;
+        ? `Base 1-day rate · ${saveTag} when you pick 3 days to 1 year · ${tierName} tier`
+        : `${total} for ${spanLabel} · ${saveTag} · ${tierName} tier`;
   }
+
+  const isNepal = quote.country === "NP" || browserLocale() === "ne-NP";
+  const refLabel = document.getElementById("payment-reference-label");
+  const refInput = document.getElementById("payment-reference-input") as HTMLInputElement | null;
+  const refHelp = document.getElementById("payment-help");
+  if (isNepal) {
+    if (refLabel) refLabel.textContent = "eSewa / Khalti / IME Pay transaction ID";
+    if (refInput) refInput.placeholder = "Your eSewa, Khalti or IME Pay transaction ID";
+    if (refHelp) {
+      refHelp.innerHTML = `Email <a href="mailto:${BILLING_EMAIL}?subject=Hodos%20Nepal%20shop%20pin%20payment">${BILLING_EMAIL}</a> to get our eSewa, Khalti or IME Pay details (tell us your shop name and who referred you), then paste your transaction ID here.`;
+    }
+  } else {
+    if (refLabel) refLabel.textContent = "Payment reference";
+    if (refInput) refInput.placeholder = "Card, Payoneer or PayPal reference";
+    if (refHelp) {
+      refHelp.innerHTML = `Email <a href="mailto:${BILLING_EMAIL}?subject=Hodos%20shop%20placement%20payment%20details">${BILLING_EMAIL}</a> for payment details, then paste your reference here.`;
+    }
+  }
+
   document.querySelectorAll<HTMLButtonElement>(".day-chip").forEach((chip) => {
     chip.setAttribute("aria-selected", String(Number(chip.dataset.days) === days));
   });
