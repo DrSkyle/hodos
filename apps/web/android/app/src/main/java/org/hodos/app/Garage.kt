@@ -31,15 +31,27 @@ object Garage {
     const val SITE_URL = "https://hodos.devilabs.dev"
 
     val slots = listOf(
-        GarageSlot("inflator", "Tire inflator"),
-        GarageSlot("mount", "Phone mount"),
-        GarageSlot("dashcam", "Dash cam"),
-        GarageSlot("pressure", "Pressure gauge"),
-        GarageSlot("care", "Wash kit"),
-        GarageSlot("wipers", "Wipers"),
-        GarageSlot("tires", "Tires"),
-        GarageSlot("light", "Lights")
+        GarageSlot("mounts", "Phone mounts"),
+        GarageSlot("inflators", "Tire inflators"),
+        GarageSlot("dashcams", "Dash cams"),
+        GarageSlot("care", "Car care"),
+        GarageSlot("lights", "Lights"),
+        GarageSlot("chargers", "Chargers"),
+        GarageSlot("gauges", "Gauges")
     )
+
+    fun isNepal(): Boolean {
+        val country = java.util.Locale.getDefault().country.uppercase()
+        if (country == "NP") return true
+        val tz = java.util.TimeZone.getDefault()
+        if (tz.id.equals("Asia/Kathmandu", ignoreCase = true) ||
+            tz.id.equals("Asia/Katmandu", ignoreCase = true) ||
+            tz.rawOffset == 345 * 60 * 1000
+        ) {
+            return true
+        }
+        return false
+    }
 
     private const val ENDPOINT = "https://sgp.cloud.appwrite.io/v1"
     private const val PROJECT_ID = "6ad7939a002ff135e419"
@@ -75,25 +87,98 @@ object Garage {
 
     suspend fun load(slot: String): Result<List<GarageOffer>> = withContext(Dispatchers.IO) {
         runCatching {
-            val json = execute(JSONObject().put("action", "offers").put("slot", slot))
-            if (!json.optBoolean("ok")) error(json.optString("error", "catalogue unavailable"))
-            val rows = json.optJSONArray("products") ?: return@runCatching emptyList()
+            if (isNepal()) {
+                return@runCatching loadNepalShops()
+            }
+            val request = Request.Builder()
+                .url("$SITE_URL/data/products.json")
+                .header("User-Agent", "Hodos-Android")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("HTTP ${response.code}")
+                val raw = response.body?.string() ?: error("empty response")
+                val root = JSONObject(raw)
+                val cats = root.optJSONArray("categories") ?: return@use emptyList()
+                buildList {
+                    for (c in 0 until cats.length()) {
+                        val cat = cats.optJSONObject(c) ?: continue
+                        val key = cat.optString("key")
+                        if (slot.isNotBlank() && key != slot) continue
+                        val shelfName = cat.optString("shelf", key)
+                        val rows = cat.optJSONArray("products") ?: continue
+                        for (i in 0 until rows.length()) {
+                            val row = rows.optJSONObject(i) ?: continue
+                            val url = row.optString("url")
+                            val title = row.optString("title")
+                            if (url.isBlank() || title.isBlank()) continue
+                            val sold = row.optInt("sold", 0)
+                            val soldLabel = when {
+                                sold >= 10000 -> "10k+ bought"
+                                sold >= 1000 -> "${sold / 1000}k bought"
+                                sold > 0 -> "$sold bought"
+                                else -> null
+                            }
+                            add(
+                                GarageOffer(
+                                    id = row.optString("id", "offer-$c-$i"),
+                                    title = title,
+                                    brand = shelfName.ifBlank { null },
+                                    image = row.optString("image").ifBlank { null },
+                                    price = if (row.isNull("price")) null else row.optDouble("price"),
+                                    compareAt = null,
+                                    currency = row.optString("currency", "USD").ifBlank { "USD" },
+                                    merchant = soldLabel,
+                                    url = url
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadNepalShops(): List<GarageOffer> {
+        val query = java.net.URLEncoder.encode("""{"method":"limit","values":[500]}""", "UTF-8")
+        val request = Request.Builder()
+            .url("$ENDPOINT/tablesdb/hodos/tables/partners/rows?queries[]=$query")
+            .header("X-Appwrite-Project", PROJECT_ID)
+            .header("User-Agent", "Hodos-Android")
+            .build()
+        return client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) error("HTTP ${response.code}")
+            val raw = response.body?.string() ?: error("empty response")
+            val rows = JSONObject(raw).optJSONArray("rows") ?: return@use emptyList()
+            val now = System.currentTimeMillis()
             buildList {
                 for (i in 0 until rows.length()) {
                     val row = rows.optJSONObject(i) ?: continue
-                    val url = row.optString("url")
-                    val title = row.optString("title")
-                    if (url.isBlank() || title.isBlank()) continue
+                    val name = row.optString("name").trim()
+                    if (name.isBlank()) continue
+                    val until = row.optString("activeUntil")
+                    val expired = runCatching {
+                        java.time.Instant.parse(until).toEpochMilli() < now
+                    }.getOrDefault(false)
+                    if (expired) continue
+                    val link = row.optString("link").trim()
+                    val phone = row.optString("phone").trim()
+                    val email = row.optString("email").trim()
+                    val url = when {
+                        link.isNotEmpty() -> link
+                        phone.isNotEmpty() -> "tel:$phone"
+                        email.isNotEmpty() -> "mailto:$email"
+                        else -> "$SITE_URL/map"
+                    }
                     add(
                         GarageOffer(
-                            id = row.optString("id", "offer-$i"),
-                            title = title,
-                            brand = row.optString("brand").ifBlank { null },
-                            image = row.optString("image").ifBlank { null },
-                            price = if (row.isNull("price")) null else row.optDouble("price"),
-                            compareAt = if (row.isNull("compareAt")) null else row.optDouble("compareAt"),
-                            currency = row.optString("currency", "USD").ifBlank { "USD" },
-                            merchant = row.optString("merchant").ifBlank { null },
+                            id = row.optString("\$id", "shop-$i"),
+                            title = name,
+                            brand = row.optString("category", "Shop").ifBlank { "Shop" },
+                            image = null,
+                            price = null,
+                            compareAt = null,
+                            currency = "NPR",
+                            merchant = row.optString("offer").ifBlank { row.optString("address").ifBlank { null } },
                             url = url
                         )
                     )

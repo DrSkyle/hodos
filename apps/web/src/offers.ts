@@ -263,12 +263,37 @@ function usable(offer: Offer): boolean {
   }
 }
 
-/** The visitor's country from the locale tag. No IP lookup, no permission. */
+/**
+ * The visitor's country from the locale tag or local time zone.
+ * No IP lookup, no permission prompt.
+ *
+ * Many users in Nepal have their OS/browser language set to `en-US`, so
+ * checking `Intl.DateTimeFormat().resolvedOptions().timeZone` (`Asia/Kathmandu`
+ * / `Asia/Katmandu`) or Nepal's unique +05:45 UTC offset ensures Nepali riders
+ * reliably get the Nepal-personalized Garage and referral programme.
+ */
 export function visitorCountry(): string {
+  try {
+    const param = new URLSearchParams(window.location.search).get("country");
+    if (param && /^[A-Za-z]{2}$/.test(param)) return param.toUpperCase();
+  } catch (_) {
+    // ignore outside browser
+  }
   const tag = (navigator.language || "en-US").replace("_", "-");
   const parts = tag.split("-");
   const last = parts[parts.length - 1] ?? "";
-  return parts.length > 1 && last.length === 2 ? last.toUpperCase() : "";
+  const fromLocale = parts.length > 1 && last.length === 2 ? last.toUpperCase() : "";
+  if (fromLocale && fromLocale !== "US" && fromLocale !== "GB") {
+    return fromLocale;
+  }
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (/^Asia\/Kath?mandu$/i.test(tz)) return "NP";
+    if (new Date().getTimezoneOffset() === -345) return "NP";
+  } catch (_) {
+    // ignore
+  }
+  return fromLocale;
 }
 
 /**

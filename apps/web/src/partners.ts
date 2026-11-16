@@ -63,7 +63,15 @@ async function callApi(payload: Record<string, unknown>): Promise<any> {
 }
 
 function browserLocale(): string {
-  // Never a network lookup: the browser already knows the shop's locale.
+  // Never a network lookup: the browser already knows the shop's locale and time zone.
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (/^Asia\/Kath?mandu$/i.test(tz) || new Date().getTimezoneOffset() === -345) {
+      return "ne-NP";
+    }
+  } catch (_) {
+    // ignore
+  }
   return navigator.language || "en-US";
 }
 

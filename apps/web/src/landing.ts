@@ -1,15 +1,15 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
-import { mountAdSlots } from "./ads";
-import { offerConsentIfNeeded, wireAffiliateLinks } from "./teleport";
 import { visitorCountry } from "./offers";
 
-// The referral programme is Nepal-only. The link is revealed only there, and
-// the page itself refuses everyone else server-side, so hiding it is comfort,
-// not the gate.
+// The referral programme and Nepal-personalized banner are revealed when the
+// visitor is in Nepal. The page and API also enforce the territory server-side.
 if (visitorCountry() === "NP") {
   document.getElementById("footer-referrals")?.removeAttribute("hidden");
+  document.getElementById("nav-referrals")?.removeAttribute("hidden");
+  document.getElementById("mobile-referrals")?.removeAttribute("hidden");
+  document.getElementById("nepal-earn")?.removeAttribute("hidden");
 }
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
@@ -52,6 +52,3 @@ if (!prefersReducedMotion) {
   window.addEventListener("resize", updateParallax, { passive: true });
   updateParallax();
 }
-mountAdSlots();
-offerConsentIfNeeded();
-wireAffiliateLinks();

@@ -715,8 +715,21 @@ const PARTNER_SHOPS = [
 
 async function garage(body) {
   const country = String(body.country || "").toUpperCase().slice(0, 2);
+  // In Nepal, the Garage serves the live shops that actually placed a pin on
+  // the map, never generic affiliate links.
+  if (country === "NP") {
+    const shops = await liveShops(null, PAGE);
+    return { country: "NP", mode: "nepal-map-shops", count: shops.length, shops };
+  }
   const shops = PARTNER_SHOPS.filter((shop) => !shop.regions || (country && shop.regions.includes(country)));
-  return { country: country || null, count: shops.length, shops };
+  return { country: country || null, mode: "affiliate", count: shops.length, shops };
+}
+
+async function partners(body) {
+  const bbox = validBbox(body.bbox);
+  const limit = Math.min(Math.max(Number(body.limit) || 50, 1), PAGE);
+  const shops = await liveShops(bbox, limit);
+  return { bbox, count: shops.length, shops };
 }
 
 async function graph(body) {

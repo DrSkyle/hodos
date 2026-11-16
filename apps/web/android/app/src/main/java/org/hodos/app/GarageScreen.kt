@@ -100,29 +100,75 @@ internal fun GarageScreen(onBack: () -> Unit) {
                         listState.firstVisibleItemScrollOffset * 0.35f else 0f
                 }
             ) {
-                HodosSubHeader("The Garage", "Kit worth keeping in the car", onBack)
+                HodosSubHeader(
+                    if (Garage.isNepal()) "Shops on the map" else "The Garage",
+                    if (Garage.isNepal()) "Local shops in Nepal · show at counter" else "Kit worth keeping in the car",
+                    onBack
+                )
             }
         }
         item {
             Column {
                 Text(
-                    "The things that actually save a drive — a working inflator, a mount that " +
-                        "holds, wipers that clear. Priced by the shop that sells them.",
+                    if (Garage.isNepal())
+                        "The shops in Nepal that placed a pin on the Hodos map. Introduce a shop with your referral code and keep 60% of every placement payment they make."
+                    else
+                        "The things that actually save a drive — a working inflator, a mount that " +
+                            "holds, wipers that clear. Priced by the shop that sells them.",
                     color = Muted,
                     fontSize = 14.sp,
                     lineHeight = 20.sp
                 )
                 Spacer(Modifier.height(16.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Garage.slots.forEach { option ->
-                        GarageChip(
-                            label = option.label,
-                            selected = option.id == slot.id,
-                            onClick = { slot = option }
-                        )
+                if (Garage.isNepal()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = Ink,
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${Garage.SITE_URL}/referrals")))
+                                }
+                            }
+                        ) {
+                            Text(
+                                "Refer a shop · earn 60% ↗",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Paper,
+                                modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = Sand,
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${Garage.SITE_URL}/partners")))
+                                }
+                            }
+                        ) {
+                            Text(
+                                "Place a pin ↗",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink,
+                                modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Garage.slots.forEach { option ->
+                            GarageChip(
+                                label = option.label,
+                                selected = option.id == slot.id,
+                                onClick = { slot = option }
+                            )
+                        }
                     }
                 }
             }

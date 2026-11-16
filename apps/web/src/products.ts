@@ -95,6 +95,14 @@ const REGION_CURRENCY: Record<string, string> = {
 };
 
 export function visitorCurrency(): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (/^Asia\/Kath?mandu$/i.test(tz) || new Date().getTimezoneOffset() === -345) {
+      return "NPR";
+    }
+  } catch (_) {
+    // ignore
+  }
   const tag = (navigator.language || "en-US").replace("_", "-");
   const parts = tag.split("-");
   const region = (parts[1] ?? "").toUpperCase();

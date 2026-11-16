@@ -51,6 +51,12 @@ const OSM_CLEAN_STYLE: any = {
       type: "raster",
       tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
+      // OpenStreetMap serves no tiles past z19: asking for z20+ returns HTTP
+      // 400 and MapLibre renders nothing, which is the blank map you get when
+      // you zoom in too far. Declaring the source ceiling makes MapLibre
+      // upscale the last good tiles instead of requesting tiles that cannot
+      // exist.
+      maxzoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     }
   },
@@ -134,16 +140,35 @@ export function initWebMap(
     maxZoom: 19,
     // Without this the world repeats sideways forever as you drag.
     renderWorldCopies: false,
-    attributionControl: false,
-    // Encoding the camera in the URL hash keeps the rider's view across
-    // refreshes and makes any spot shareable.
-    hash: true
+    attributionControl: false
+    // No `hash: true`: MapLibre's own hash handler applies a shared link's
+    // zoom before the style has loaded, so anything at or past the tile
+    // ceiling ends up with zero tile requests and a blank map. The camera is
+    // written below, after load, instead.
   });
+
+  /**
+   * Restore or clamp the camera from the URL hash, once the style is live.
+   *
+   * `#<zoom>/<lat>/<lng>` is the format the site has always used. A zoom past
+   * what OpenStreetMap serves (z19) is clamped rather than honoured, because
+   * the tiles cannot exist and the map would render blank.
+   */
+  const MAX_ZOOM = 19;
+  const applyHashCamera = () => {
+    const match = /^#([\d.]+)\/(-?[\d.]+)\/(-?[\d.]+)/.exec(window.location.hash);
+    if (!match) return false;
+    const zoom = Math.min(Number(match[1]) || 2, MAX_ZOOM);
+    const lat = Math.max(-85, Math.min(85, Number(match[2]) || 20));
+    const lng = Number(match[3]) || 0;
+    map.jumpTo({ center: [lng, lat], zoom });
+    return true;
+  };
 
   // Only pull the camera to the hazard spread when the visitor has no position
   // of their own yet (no hash in the URL). A refresh must never yank the map
   // back to the same overview after someone has moved around.
-  let shouldAutoFit = !/#\d/.test(window.location.hash);
+  let shouldAutoFit = !/^#[\d.]/.test(window.location.hash);
   map.on("moveend", () => {
     shouldAutoFit = false;
   });
@@ -373,6 +398,12 @@ export function initWebMap(
 
   const setupLayers = () => {
     if (map.getSource("hodos-hazards")) return;
+
+    // The camera from the URL, applied now that the style is live. Before the
+    // style loads, MapLibre has no tiles to place the camera against, and a
+    // zoom from a shared link applied too early is exactly how the map ends up
+    // blank with zero tile requests.
+    applyHashCamera();
 
     // Sponsored pins first (so hazard layers render on top — safety data always
     // wins), then the hazard layers.

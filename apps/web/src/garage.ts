@@ -1,7 +1,6 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
-import { mountAdSlots } from "./ads";
 import { isValidEmail, subscribeEmail } from "./garage-client";
 import { visitorCountry } from "./offers";
 import { loadLiveShops, type LiveShop } from "./live-shops";
@@ -12,7 +11,8 @@ import {
   shelfFor,
   soldLabel,
   visitorCurrency,
-  type Product
+  type Product,
+  type ShelfData
 } from "./products";
 
 /**
@@ -35,9 +35,11 @@ import {
 const grid = document.getElementById("shop-grid");
 const status = document.getElementById("shelf-status");
 const chips = document.getElementById("slot-row");
+const searchInput = document.getElementById("garage-search") as HTMLInputElement | null;
 const title = document.getElementById("garage-title");
 const lede = document.querySelector<HTMLElement>(".garage-lede");
 const perks = document.getElementById("perks-title");
+const nepalReferralBanner = document.getElementById("nepal-referral-banner");
 
 const country = visitorCountry();
 const isNepal = country === "NP";
@@ -58,6 +60,7 @@ const fromQuery = CATEGORIES.find(
 );
 let activeCategory: string = fromQuery ?? "All";
 let activeShelf = "All";
+let searchQuery = "";
 
 function setStatus(text: string, tone: "idle" | "error" = "idle") {
   if (!status) return;
@@ -175,56 +178,88 @@ function markChips(active: string) {
   }
 }
 
+/** Loaded once: switching category filters in the browser, never refetches. */
+let nepalShops: LiveShop[] | null = null;
+
 async function renderNepal() {
   if (!grid) return;
+  grid.classList.remove("is-shelves");
 
-  // The shops that actually paid for a pin on the map. Not an affiliate
-  // programme, not a partner logo wall: local businesses a rider can walk into.
-  const shops = await loadLiveShops();
-  const categories = ["All", ...Array.from(new Set(shops.map((shop) => shop.category)))];
-  if (!categories.includes(activeCategory)) activeCategory = "All";
-  const shown =
+  if (nepalShops === null) {
+    // The shops that actually paid for a pin on the map. Not an affiliate
+    // programme, not a partner logo wall: local businesses a rider can walk into.
+    nepalShops = await loadLiveShops();
+    // Chips reflect what is actually on the map right now, not a fixed list.
+    const categories = ["All", ...Array.from(new Set(nepalShops.map((shop) => shop.category)))];
+    buildChips(categories, (label) => {
+      activeCategory = label;
+      void renderNepal();
+    }, () => activeCategory);
+  }
+
+  const shops = nepalShops;
+  const q = searchQuery.toLowerCase();
+  const byCategory =
     activeCategory === "All" ? shops : shops.filter((shop) => shop.category === activeCategory);
+  const shown = !q
+    ? byCategory
+    : byCategory.filter((shop) =>
+        [shop.name, shop.category, shop.offer, shop.address]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(q))
+      );
 
   grid.replaceChildren();
   for (const shop of shown) grid.append(shopCard(shop));
 
   if (shops.length === 0) {
-    setStatus("No shops have put a pin on the map yet. Be the first — the map is free to join.");
+    setStatus("No shops have put a pin on the map yet. Be the first — or refer a shop and keep 60%.");
   } else if (shown.length === 0) {
-    setStatus("No shops on the map in this category yet.");
+    setStatus("No shops on the map match that filter yet.");
   } else {
-    setStatus(`${shown.length} shops on the map near the roads you drive`);
+    setStatus(`${shown.length} shop${shown.length === 1 ? "" : "s"} on the map near the roads you drive`);
   }
 
-  // Chips reflect what is actually on the map right now, not a fixed list.
-  buildChips(categories, (label) => {
-    activeCategory = label;
-    void renderNepal();
-  }, () => activeCategory);
   markChips(activeCategory);
 }
 
+/** Loaded once: switching shelf filters in the browser, never refetches. */
+let worldShelf: ShelfData | null = null;
+
 async function renderWorld() {
   if (!grid) return;
+  grid.classList.add("is-shelves");
 
-  const data = await loadShelf();
-  if (!data) {
-    grid.replaceChildren();
-    setStatus("The shelf is unavailable right now.", "error");
-    return;
+  if (worldShelf === null) {
+    const data = await loadShelf();
+    if (!data) {
+      grid.replaceChildren();
+      setStatus("The shelf is unavailable right now.", "error");
+      return;
+    }
+    worldShelf = data;
   }
+  const data = worldShelf;
 
   const currency = visitorCurrency();
-  const shelves = shelfFor(data, 8, country);
+  const shelves = shelfFor(data, 40, country);
   const labels = ["All", ...shelves.map((shelf) => shelf.shelf)];
   if (!labels.includes(activeShelf)) activeShelf = "All";
+  const q = searchQuery.toLowerCase();
 
   grid.replaceChildren();
   let count = 0;
 
   for (const shelf of shelves) {
     if (activeShelf !== "All" && shelf.shelf !== activeShelf) continue;
+    const filtered = !q
+      ? shelf.products
+      : shelf.products.filter(
+          (product) =>
+            product.title.toLowerCase().includes(q) || shelf.shelf.toLowerCase().includes(q)
+        );
+    if (filtered.length === 0) continue;
+
     const section = document.createElement("div");
     section.className = "product-shelf";
 
@@ -234,12 +269,12 @@ async function renderWorld() {
     name.textContent = shelf.shelf;
     const stamp = document.createElement("span");
     stamp.className = "product-shelf-stamp";
-    stamp.textContent = `checked ${checkedLabel(shelf.checkedAt)}`;
+    stamp.textContent = `${filtered.length} picks · checked ${checkedLabel(shelf.checkedAt)}`;
     head.append(name, stamp);
 
     const row = document.createElement("div");
     row.className = "product-row";
-    for (const product of shelf.products) {
+    for (const product of filtered) {
       row.append(productCard(product, currency));
       count += 1;
     }
@@ -250,14 +285,17 @@ async function renderWorld() {
 
   setStatus(
     count === 0
-      ? "Nothing in stock in this category right now."
+      ? "Nothing in stock matching that filter right now."
       : `${count} products · prices checked ${checkedLabel(data.checkedAt)}`
   );
 
-  buildChips(labels, (label) => {
-    activeShelf = label;
-    void renderWorld();
-  }, () => activeShelf);
+  if (chips && chips.childElementCount === 0) {
+    buildChips(labels, (label) => {
+      activeShelf = label;
+      void renderWorld();
+    }, () => activeShelf);
+  }
+  markChips(activeShelf);
 }
 
 function render() {
@@ -270,6 +308,20 @@ function render() {
 
 /* ---- Copy: the two shelves are not the same product ---- */
 
+if (isNepal && nepalReferralBanner) {
+  nepalReferralBanner.removeAttribute("hidden");
+}
+
+if (searchInput) {
+  searchInput.placeholder = isNepal
+    ? "Search shops on the map by name, road or offer…"
+    : "Search products across all categories…";
+  searchInput.addEventListener("input", () => {
+    searchQuery = searchInput.value.trim();
+    render();
+  });
+}
+
 if (title) {
   title.innerHTML = isNepal
     ? "Shops on the map<span class=\"dot\">.</span>"
@@ -278,7 +330,7 @@ if (title) {
 
 if (lede) {
   lede.textContent = isNepal
-    ? "The shops that put a pin on the Hodos map, and the products they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
+    ? "The shops that put a pin on the Hodos map, and the offers they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
     : "The things that actually save a drive — a working inflator, a mount that holds, wipers that clear. Bought straight from the shop that sells them, at the shop's own price.";
 }
 
@@ -323,4 +375,3 @@ function wireListForm() {
 }
 
 wireListForm();
-mountAdSlots();

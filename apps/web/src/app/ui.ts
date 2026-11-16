@@ -1,13 +1,15 @@
+import { visitorCountry } from "../offers";
+import { loadLiveShops, type LiveShop } from "../live-shops";
 import {
-  DEFAULT_GARAGE_SLOT_ID,
-  GARAGE_SLOTS,
-  loadOffers,
-  money,
-  offerMeta,
-  wasPrice,
-  GARAGE_SLOT_STORAGE_KEY
-} from "../garage-client";
-import type { GearOffer } from "../garage-client";
+  checkedLabel,
+  loadShelf,
+  priceFor,
+  shelfFor,
+  soldLabel,
+  visitorCurrency,
+  type Product,
+  type ShelfData
+} from "../products";
 import { state, type Trip } from "./state";
 import type { LiveStats, RemoteHazard } from "./recorder";
 import {
@@ -265,67 +267,163 @@ export function renderDriveScreen(host: HTMLElement, stats: LiveStats, pending: 
  * Garage
  * ------------------------------------------------------------------ */
 
-let garageSlot = (() => {
-  try {
-    return localStorage.getItem(GARAGE_SLOT_STORAGE_KEY) ?? DEFAULT_GARAGE_SLOT_ID;
-  } catch (_) {
-    return DEFAULT_GARAGE_SLOT_ID;
-  }
-})();
+let appActiveShelf = "All";
+let appActiveCategory = "All";
+let appWorldShelf: ShelfData | null = null;
+let appNepalShops: LiveShop[] | null = null;
 
 export async function renderGarageScreen(host: HTMLElement, rerender: () => void) {
+  const country = visitorCountry();
+  const isNepal = country === "NP";
+
   host.innerHTML = `
     <div class="screen-pad">
-      ${screenHead("The Garage", "Kit worth keeping in the car, priced by the shop that sells it. Every purchase keeps the map free.")}
+      ${
+        isNepal
+          ? screenHead(
+              "Shops on the map",
+              "The local shops in Nepal that placed a pin on the Hodos map. Show the app at the counter for rider perks."
+            )
+          : screenHead(
+              "The Garage",
+              "Kit worth keeping in the car, priced by the shop that sells it. Every purchase keeps the map free."
+            )
+      }
       <div class="chip-row" role="tablist" aria-label="Garage shelves"></div>
-      <div class="panel"><p class="mono" id="garage-status">Reading the shelf…</p><div class="rows" id="garage-rows"></div></div>
+      <div class="panel">
+        <p class="mono" id="garage-status">Reading the shelf…</p>
+        <div class="rows" id="garage-rows"></div>
+      </div>
+      ${
+        isNepal
+          ? `<div class="panel">
+              <h2>Refer a shop · keep 60%</h2>
+              <p>Introduce a local garage, tyre house or parts shop to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment lands in your eSewa, Khalti or IME Pay wallet.</p>
+              <div class="btn-row">
+                <a class="app-btn" href="/referrals">Get your referral code</a>
+                <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
+              </div>
+            </div>`
+          : ""
+      }
     </div>
   `;
 
   const chips = host.querySelector(".chip-row") as HTMLElement;
-  for (const slot of GARAGE_SLOTS) {
+  const status = host.querySelector("#garage-status") as HTMLElement;
+  const rows = host.querySelector("#garage-rows") as HTMLElement;
+
+  if (isNepal) {
+    if (appNepalShops === null) {
+      appNepalShops = await loadLiveShops();
+    }
+    const shops = appNepalShops;
+    const categories = ["All", ...Array.from(new Set(shops.map((s) => s.category)))];
+    if (!categories.includes(appActiveCategory)) appActiveCategory = "All";
+
+    for (const label of categories) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.setAttribute("role", "tab");
+      chip.setAttribute("aria-selected", String(label === appActiveCategory));
+      chip.textContent = label;
+      chip.addEventListener("click", () => {
+        appActiveCategory = label;
+        rerender();
+      });
+      chips.append(chip);
+    }
+
+    const shown =
+      appActiveCategory === "All"
+        ? shops
+        : shops.filter((shop) => shop.category === appActiveCategory);
+    rows.innerHTML = "";
+    for (const shop of shown) rows.append(nepalShopRow(shop));
+    status.textContent =
+      shops.length === 0
+        ? "No shops have put a pin on the map yet"
+        : `${shown.length} shop${shown.length === 1 ? "" : "s"} on the map`;
+    return;
+  }
+
+  if (appWorldShelf === null) {
+    appWorldShelf = await loadShelf();
+  }
+  if (!appWorldShelf) {
+    status.textContent = "The shelf is unavailable right now";
+    return;
+  }
+
+  const currency = visitorCurrency();
+  const shelves = shelfFor(appWorldShelf, 24, country);
+  const labels = ["All", ...shelves.map((s) => s.shelf)];
+  if (!labels.includes(appActiveShelf)) appActiveShelf = "All";
+
+  for (const label of labels) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "chip";
     chip.setAttribute("role", "tab");
-    chip.setAttribute("aria-selected", String(slot.id === garageSlot));
-    chip.textContent = slot.label;
+    chip.setAttribute("aria-selected", String(label === appActiveShelf));
+    chip.textContent = label;
     chip.addEventListener("click", () => {
-      garageSlot = slot.id;
-      try {
-        localStorage.setItem(GARAGE_SLOT_STORAGE_KEY, slot.id);
-      } catch (_) {
-        // Private mode: the choice simply resets next visit.
-      }
+      appActiveShelf = label;
       rerender();
     });
     chips.append(chip);
   }
 
-  const status = host.querySelector("#garage-status") as HTMLElement;
-  const rows = host.querySelector("#garage-rows") as HTMLElement;
-  try {
-    const offers = await loadOffers(garageSlot);
-    status.textContent = offers.length === 0 ? "Nothing on this shelf right now" : `${offers.length} picks · prices from the shops`;
-    rows.innerHTML = "";
-    for (const offer of offers) rows.append(offerRow(offer));
-  } catch (_) {
-    status.textContent = "The shelf is unreachable right now";
+  rows.innerHTML = "";
+  let count = 0;
+  for (const shelf of shelves) {
+    if (appActiveShelf !== "All" && shelf.shelf !== appActiveShelf) continue;
+    for (const product of shelf.products) {
+      rows.append(productRow(product, shelf.shelf, currency));
+      count += 1;
+    }
   }
+  status.textContent =
+    count === 0
+      ? "Nothing on this shelf right now"
+      : `${count} picks · checked ${checkedLabel(appWorldShelf.checkedAt)}`;
 }
 
-function offerRow(offer: GearOffer): HTMLElement {
+function nepalShopRow(shop: LiveShop): HTMLElement {
   const row = document.createElement("div");
   row.className = "offer";
-  const before = wasPrice(offer);
+  const actionHref = shop.link
+    ? shop.link
+    : shop.phone
+    ? `tel:${shop.phone}`
+    : shop.email
+    ? `mailto:${shop.email}`
+    : "/map/";
+  const actionLabel = shop.link ? "Visit ↗" : shop.phone ? "Call ↗" : shop.email ? "Email ↗" : "Map ↗";
   row.innerHTML = `
-    ${offer.image ? `<img src="${escapeHtml(offer.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ""}
     <span class="grow">
-      <strong>${escapeHtml(offer.title)}</strong>
-      <small>${escapeHtml(offerMeta(offer))}</small>
+      <strong>${escapeHtml(shop.name)}</strong>
+      <small>${escapeHtml([shop.category, shop.offer || shop.address || ""].filter(Boolean).join(" · "))}</small>
     </span>
-    <span class="price">${money(offer.price, offer.currency)}${before ? ` <s style="font-weight:500;color:var(--muted);font-size:11px">${before}</s>` : ""}</span>
-    <a href="${escapeHtml(offer.url)}" target="_blank" rel="sponsored noopener noreferrer">View ↗</a>
+    <a href="${escapeHtml(actionHref)}" ${shop.link ? 'target="_blank" rel="sponsored noopener noreferrer"' : ""}>${actionLabel}</a>
+  `;
+  return row;
+}
+
+function productRow(product: Product, shelfName: string, currency: string): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "offer";
+  const price = priceFor(product, currency);
+  const bought = soldLabel(product.sold);
+  row.innerHTML = `
+    ${product.image ? `<img src="${escapeHtml(product.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ""}
+    <span class="grow">
+      <strong>${escapeHtml(product.title)}</strong>
+      <small>${escapeHtml([shelfName, bought].filter(Boolean).join(" · "))}</small>
+    </span>
+    <span class="price">${escapeHtml(price.amount)}</span>
+    <a href="${escapeHtml(product.url)}" target="_blank" rel="sponsored noopener noreferrer">View ↗</a>
   `;
   return row;
 }
@@ -472,6 +570,7 @@ export function renderInsightsScreen(host: HTMLElement, hazards: RemoteHazard[])
  * ------------------------------------------------------------------ */
 
 export function renderYouScreen(host: HTMLElement, options: { shops: string[]; installable: boolean }) {
+  const isNepal = visitorCountry() === "NP";
   const trips = state.trips;
   const totalKm = trips.reduce((sum, trip) => sum + (trip.distanceM || 0), 0) / 1000;
   const month = monthTrips(trips);
@@ -488,6 +587,18 @@ export function renderYouScreen(host: HTMLElement, options: { shops: string[]; i
   host.innerHTML = `
     <div class="screen-pad">
       ${screenHead("You", "Everything here lives in this browser. No account, no email, no identifier that follows you.")}
+      ${
+        isNepal
+          ? `<div class="panel">
+              <h2>Refer a shop · earn 60%</h2>
+              <p>Introduce a local garage, tyre house or parts shop to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment is paid to your eSewa, Khalti or IME Pay wallet, and Hodos keeps 40%.</p>
+              <div class="btn-row">
+                <a class="app-btn" href="/referrals">Open referral dashboard</a>
+                <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
+              </div>
+            </div>`
+          : ""
+      }
       <div class="panel">
         <h2>Your perks</h2>
         <p>${monthKm.toFixed(1)} km this month · ${month.length} journey${month.length === 1 ? "" : "s"}</p>
