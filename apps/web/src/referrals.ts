@@ -24,12 +24,17 @@ type Referral = {
   payoutMethod?: string;
   payoutAccount?: string;
   share?: number;
+  maturityDays?: number;
   earnedUsd?: number;
   paidUsd?: number;
   owedUsd?: number;
+  maturedUsd?: number;
+  pendingUsd?: number;
+  nextCashoutAt?: string | null;
   available?: boolean;
   minPayoutUsd?: number;
   referrals?: number;
+  amountUsd?: number;
 };
 
 const gate = document.getElementById("gate") as HTMLElement;
@@ -92,19 +97,24 @@ function paint(referral: Referral | null) {
 
   const nameEl = document.getElementById("profile-name");
   const codeEl = document.getElementById("profile-code");
+  const linkTextEl = document.getElementById("profile-link-text");
   const earnedEl = document.getElementById("stat-earned");
   const paidEl = document.getElementById("stat-paid");
   const owedEl = document.getElementById("stat-owed");
+  const maturedEl = document.getElementById("stat-matured");
   const countEl = document.getElementById("stat-count");
   const targetEl = document.getElementById("payout-target");
   const noteEl = document.getElementById("payout-note");
   const payoutButton = document.getElementById("request-payout") as HTMLButtonElement | null;
 
+  const shareUrl = `${window.location.origin}/partners?ref=${encodeURIComponent(referral?.code || "")}`;
   if (nameEl) nameEl.textContent = referral?.ownerName || "—";
   if (codeEl) codeEl.textContent = referral?.code || "—";
+  if (linkTextEl) linkTextEl.textContent = shareUrl;
   if (earnedEl) earnedEl.textContent = money(referral?.earnedUsd);
   if (paidEl) paidEl.textContent = money(referral?.paidUsd);
   if (owedEl) owedEl.textContent = money(referral?.owedUsd);
+  if (maturedEl) maturedEl.textContent = money(referral?.maturedUsd ?? referral?.owedUsd);
   if (countEl) countEl.textContent = String(referral?.referrals ?? 0);
   if (targetEl) targetEl.textContent = `${referral?.payoutMethod ?? ""} ${referral?.payoutAccount ?? ""}`.trim();
 
@@ -115,9 +125,16 @@ function paint(referral: Referral | null) {
   const nda = document.getElementById("nda-card");
   if (nda) nda.hidden = !(Number(referral?.earnedUsd) > 0);
   if (noteEl) {
-    noteEl.textContent = available
-      ? "Payouts go out to Nepali wallets daily."
-      : `Earn ${money(referral?.minPayoutUsd)} or more to request a payout.`;
+    if (available) {
+      noteEl.textContent = `Ready to cash out ${money(referral?.maturedUsd ?? referral?.owedUsd)} to your Nepali wallet.`;
+    } else if (Number(referral?.pendingUsd) > 0) {
+      const unlockDate = referral?.nextCashoutAt
+        ? new Date(referral.nextCashoutAt).toLocaleDateString(undefined, { dateStyle: "medium" })
+        : "30 days after the shop's payment";
+      noteEl.textContent = `${money(referral?.owedUsd)} is in your referral account right now. Referral commissions unlock for cashout 1 month (30 days) after each shop payment — next cashout unlocks ${unlockDate}.`;
+    } else {
+      noteEl.textContent = `When a shop you refer pays for their pin, 60% shows here immediately and unlocks for cashout after 30 days (minimum ${money(referral?.minPayoutUsd)}).`;
+    }
   }
 }
 
@@ -176,6 +193,18 @@ document.getElementById("copy-code")?.addEventListener("click", async () => {
     setGateStatus("Code copied.");
   } catch (_) {
     // Clipboard permission can be refused; the code is visible either way.
+  }
+});
+
+document.getElementById("copy-link")?.addEventListener("click", async () => {
+  const code = current?.code;
+  if (!code) return;
+  const shareUrl = `${window.location.origin}/partners?ref=${encodeURIComponent(code)}`;
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    setGateStatus("Referral link copied.");
+  } catch (_) {
+    // ignore
   }
 });
 
@@ -277,7 +306,7 @@ document.getElementById("request-payout")?.addEventListener("click", async () =>
       payoutAccount: "0000000000"
     });
     note.textContent = result.ok
-      ? `Payout requested for ${money(result.owedUsd)}. We pay Nepali wallets daily.`
+      ? `Cashout requested for ${money(result.amountUsd ?? current.maturedUsd ?? current.owedUsd)}. Matured commissions are paid to your Nepali wallet.`
       : result.error || "Could not request a payout.";
   } catch (_) {
     note.textContent = "Could not request a payout right now.";

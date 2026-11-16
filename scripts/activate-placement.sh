@@ -56,28 +56,56 @@ process.stdin.on("data",d=>s+=d).on("end",()=>{
   const r=JSON.parse(s);
   const days = Math.max(1, Number(r.days)||1);
   const until = new Date(Date.now() + days*86400000).toISOString();
+  const code = String(r.referredBy || "").trim().toLowerCase();
+  const microTotal = Number(r.amountMicro) || 0;
+  const earned = Math.round(microTotal * 0.6);
+  const platform = microTotal - earned;
+  const earningId = code ? `${code.slice(0, 8)}_${String(r.$id).slice(0, 20)}_placement`.slice(0, 36) : "";
   process.stdout.write(JSON.stringify({
     id: r.$id,
     data: JSON.stringify({
       name: r.name,
-      category: r.category || "pit-stop",
+      category: r.category || "business",
       lat: r.lat,
       lng: r.lng,
       offer: r.offer || "",
       sponsorLabel: "Local shop",
+      phone: r.phone || "",
+      email: r.email || "",
+      address: r.address || "",
+      link: r.link || "",
+      contact: r.contact || "",
       activeUntil: until
     }),
-    until
+    until,
+    earningId,
+    earningData: (code && microTotal > 0) ? JSON.stringify({
+      code,
+      placementId: String(r.$id),
+      microEarned: earned,
+      microPlatform: platform,
+      currency: "USD",
+      reason: "placement",
+      createdAt: new Date().toISOString()
+    }) : ""
   }));
 })')"
 
 data="$(echo "$payload" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).data))')"
 until="$(echo "$payload" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).until))')"
+earningId="$(echo "$payload" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).earningId))')"
+earningData="$(echo "$payload" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).earningData))')"
 
 appwrite tablesdb create-row --database-id "$DB" --table-id partners --row-id "$ID" \
   --data "$data" >/dev/null 2>&1 || \
 appwrite tablesdb update-row --database-id "$DB" --table-id partners --row-id "$ID" \
   --data "$data" >/dev/null
+
+if [[ -n "$earningId" && -n "$earningData" ]]; then
+  appwrite tablesdb create-row --database-id "$DB" --table-id referralEarnings --row-id "$earningId" \
+    --data "$earningData" >/dev/null 2>&1 || true
+  echo "  referral: 60% credited to $earningId"
+fi
 
 echo "Live: $name"
 echo "  pin id:  $ID"

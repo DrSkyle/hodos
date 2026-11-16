@@ -159,12 +159,16 @@
 
           <label class="field">
             <span class="field-label">Payment reference</span>
-            <input name="reference" type="text" maxlength="120" placeholder="Payoneer, card or PayPal reference" required />
+            <input name="reference" id="payment-reference-input" type="text" maxlength="120" placeholder="eSewa, Khalti, IME Pay, Payoneer or bank reference" required />
+            <span class="field-help" id="payment-help">
+              Email <a href="mailto:__HODOS_CONTACT__?subject=Hodos%20shop%20placement%20payment%20details">__HODOS_CONTACT__</a>
+              to get our eSewa, Khalti, IME Pay or Payoneer details (tell us your shop name and who referred you), then paste your transaction reference here.
+            </span>
           </label>
 
           <label class="field">
             <span class="field-label">Referral code (optional)</span>
-            <input name="referralCode" type="text" maxlength="24" placeholder="Who introduced you" />
+            <input name="referralCode" id="referral-code-input" type="text" maxlength="24" placeholder="Who introduced you" />
           </label>
 
           <div class="pin-row">
@@ -179,9 +183,9 @@
         </form>
 
         <p class="fine-print">
-          The pin goes live once your payment reference is in. Placements never cover the road
-          ahead and never change hazard data, and a pin comes down on its own when the days run
-          out.
+          Prefer to set up by email? Email <a href="mailto:__HODOS_CONTACT__?subject=Place%20our%20shop%20pin%20on%20Hodos">__HODOS_CONTACT__</a>
+          with your shop details and who referred you — we send you our eSewa, Khalti or IME Pay details and place the pin as soon as your software service payment is in.
+          Placements never cover the road ahead and never change hazard data, and a pin comes down on its own when the days run out.
         </p>
       </div>
 

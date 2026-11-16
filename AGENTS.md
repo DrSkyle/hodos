@@ -98,7 +98,14 @@ Shops can list themselves at https://hodos.devilabs.dev/partners.
 ## Referrals
 
 A person can introduce a shop and earn **60%** of every placement payment that
-shop makes; Hodos keeps 40%. The programme is **Nepal only for now**.
+shop makes (initial placement and every renewal/extension); Hodos keeps 40%. The
+programme is **Nepal only for now**.
+
+Hodos is a software service provider — not a bank, financial institution or
+wallet custodian. Shop placement fees are software service revenue belonging to
+Hodos, and the 60% referral share is credited immediately into the referrer's
+promotional commission account as soon as the shop's payment is recorded, and
+unlocks for cashout **30 days (1 month)** after each shop payment.
 
 The territory is decided on the server, never by the client: a claim must carry
 coordinates inside Nepal *and* a Nepali payout wallet (eSewa, Khalti or IME Pay).
@@ -109,12 +116,12 @@ payment, never from what a client sends.
 | Action | Cost | What it does |
 | --- | --- | --- |
 | `referralCreate` | free | Create a code. Needs name, wallet, and Nepal coordinates. |
-| `referralProfile` | free | Earnings, balance and payout readiness for a code. |
-| `referralRequestPayout` | free | Ask for the balance to be sent to the wallet. |
+| `referralProfile` | free | Earnings, total balance, matured 30-day cashable balance, and payout readiness for a code. |
+| `referralRequestPayout` | free | Ask for the matured balance (30 days after shop payment) to be sent to the wallet. |
 
-Payouts go out to Nepali wallets manually, once a day, and the minimum request
-is $0.10. A request is refused while another one is already being processed, and
-a refusal from outside Nepal is final — do not retry it.
+Payouts go out to Nepali wallets after the 30-day maturity window, and the
+minimum request is $0.10. A request is refused while another one is already
+being processed, and a refusal from outside Nepal is final — do not retry it.
 
 The page is https://hodos.devilabs.dev/referrals.
 

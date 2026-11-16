@@ -254,6 +254,16 @@ function validBbox(value) {
 const REFERRAL_SHARE = 0.6;
 const REFERRAL_MIN_PAYOUT_MICRO = 100_000; // $0.10
 const REFERRAL_TERRITORIES = ["NP"];
+/**
+ * 30-day maturity window on referral commissions.
+ *
+ * When a referred shop buys or renews Hodos software service, the 60%
+ * commission is credited immediately into the referrer's account so they can
+ * see every rupee/dollar they earned right away, and each credit matures for
+ * cashout 30 days (1 month) after the shop's payment is recorded.
+ */
+const REFERRAL_MATURITY_DAYS = 30;
+const REFERRAL_MATURITY_MS = REFERRAL_MATURITY_DAYS * DAY_MS;
 
 // Coarse but honest: Nepal's bounding box, then a set of exclusions for the
 // neighbouring corners of India and China that fall inside that box.
@@ -379,6 +389,17 @@ function shapeReferral(row, totals) {
   const masked = account.length > 4
     ? `${"•".repeat(Math.max(0, account.length - 4))}${account.slice(-4)}`
     : "•".repeat(account.length);
+  const earnedMicro = totals?.earnedMicro || 0;
+  const paidMicro = totals?.paidMicro || 0;
+  const owedMicro = totals?.owedMicro || 0;
+  // Backwards-compatible: if maturedMicro is not supplied explicitly by a test,
+  // treat the unpaid balance as matured unless pendingMicro was provided.
+  const maturedMicro = typeof totals?.maturedMicro === "number"
+    ? totals.maturedMicro
+    : owedMicro;
+  const pendingMicro = typeof totals?.pendingMicro === "number"
+    ? totals.pendingMicro
+    : Math.max(0, owedMicro - maturedMicro);
   return {
     code: row.code,
     ownerName: row.ownerName,
@@ -386,15 +407,23 @@ function shapeReferral(row, totals) {
     payoutMethod: row.payoutMethod,
     payoutAccount: masked,
     share: REFERRAL_SHARE,
+    maturityDays: REFERRAL_MATURITY_DAYS,
     disabled: Boolean(row.disabled),
-    earnedMicro: totals?.earnedMicro || 0,
-    earnedUsd: Number(((totals?.earnedMicro || 0) / 1_000_000).toFixed(4)),
-    paidMicro: totals?.paidMicro || 0,
-    owedMicro: totals?.owedMicro || 0,
-    owedUsd: Number(((totals?.owedMicro || 0) / 1_000_000).toFixed(4)),
-    available: (totals?.owedMicro || 0) >= REFERRAL_MIN_PAYOUT_MICRO,
+    earnedMicro,
+    earnedUsd: Number((earnedMicro / 1_000_000).toFixed(4)),
+    paidMicro,
+    paidUsd: Number((paidMicro / 1_000_000).toFixed(4)),
+    owedMicro,
+    owedUsd: Number((owedMicro / 1_000_000).toFixed(4)),
+    maturedMicro,
+    maturedUsd: Number((maturedMicro / 1_000_000).toFixed(4)),
+    pendingMicro,
+    pendingUsd: Number((pendingMicro / 1_000_000).toFixed(4)),
+    nextCashoutAt: totals?.nextCashoutAt || null,
+    available: maturedMicro >= REFERRAL_MIN_PAYOUT_MICRO,
     minPayoutUsd: REFERRAL_MIN_PAYOUT_MICRO / 1_000_000,
-    referrals: totals?.placements || 0
+    referrals: totals?.placements || 0,
+    history: Array.isArray(totals?.history) ? totals.history : []
   };
 }
 
@@ -407,17 +436,53 @@ async function referralTotals(code) {
     { method: "equal", attribute: "code", values: [code] },
     { method: "limit", values: [500] }
   ]);
-  const earnedMicro = earnings.reduce((sum, row) => sum + (Number(row.microEarned) || 0), 0);
+  const now = Date.now();
+  let earnedMicro = 0;
+  let maturedEarnedMicro = 0;
+  let nextMaturityMs = Infinity;
+  const history = [];
+
+  for (const row of earnings) {
+    const micro = Number(row.microEarned) || 0;
+    earnedMicro += micro;
+    const createdMs = Date.parse(String(row.createdAt || row.$createdAt || ""));
+    const maturesAtMs = Number.isFinite(createdMs)
+      ? createdMs + REFERRAL_MATURITY_MS
+      : now;
+    const isMatured = maturesAtMs <= now;
+    if (isMatured) {
+      maturedEarnedMicro += micro;
+    } else if (maturesAtMs < nextMaturityMs) {
+      nextMaturityMs = maturesAtMs;
+    }
+    history.push({
+      placementId: String(row.placementId || ""),
+      reason: String(row.reason || "placement"),
+      earnedUsd: Number((micro / 1_000_000).toFixed(4)),
+      createdAt: row.createdAt || row.$createdAt || null,
+      maturesAt: new Date(maturesAtMs).toISOString(),
+      matured: isMatured
+    });
+  }
+
   // Only a settled payout reduces the balance. A requested one is still owed.
   const paidMicro = payouts
     .filter((row) => row.status === "settled")
     .reduce((sum, row) => sum + (Number(row.microAmount) || 0), 0);
+  const owedMicro = Math.max(0, earnedMicro - paidMicro);
+  const maturedMicro = Math.max(0, Math.min(owedMicro, maturedEarnedMicro - paidMicro));
+  const pendingMicro = Math.max(0, owedMicro - maturedMicro);
   const placements = new Set(earnings.map((row) => row.placementId)).size;
+
   return {
     earnedMicro,
     paidMicro,
-    owedMicro: Math.max(0, earnedMicro - paidMicro),
-    placements
+    owedMicro,
+    maturedMicro,
+    pendingMicro,
+    nextCashoutAt: Number.isFinite(nextMaturityMs) ? new Date(nextMaturityMs).toISOString() : null,
+    placements,
+    history: history.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))).slice(0, 20)
   };
 }
 
@@ -558,7 +623,16 @@ async function referralRequestPayout(body) {
   if (!row) return { ok: false, error: "unknown referral" };
 
   const totals = await referralTotals(code);
-  if (totals.owedMicro < REFERRAL_MIN_PAYOUT_MICRO) {
+  if (totals.maturedMicro < REFERRAL_MIN_PAYOUT_MICRO) {
+    if (totals.pendingMicro >= REFERRAL_MIN_PAYOUT_MICRO) {
+      return {
+        ok: false,
+        error: `your earned balance ($${(totals.owedMicro / 1_000_000).toFixed(2)}) unlocks for cashout 30 days after the shop's payment`,
+        owedUsd: Number((totals.owedMicro / 1_000_000).toFixed(4)),
+        pendingUsd: Number((totals.pendingMicro / 1_000_000).toFixed(4)),
+        nextCashoutAt: totals.nextCashoutAt
+      };
+    }
     return {
       ok: false,
       error: `the minimum payout is $${(REFERRAL_MIN_PAYOUT_MICRO / 1_000_000).toFixed(2)}`,
@@ -578,7 +652,7 @@ async function referralRequestPayout(body) {
   const id = `rq${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   await writeRow("referralPayouts", id, {
     code,
-    microAmount: totals.owedMicro,
+    microAmount: totals.maturedMicro,
     payoutMethod: row.payoutMethod,
     payoutAccount: row.payoutAccount,
     status: "requested",
@@ -588,9 +662,9 @@ async function referralRequestPayout(body) {
   return {
     ok: true,
     requestId: id,
-    amountUsd: Number((totals.owedMicro / 1_000_000).toFixed(4)),
+    amountUsd: Number((totals.maturedMicro / 1_000_000).toFixed(4)),
     payoutMethod: row.payoutMethod,
-    next: "We pay Nepali wallets manually once a day. You will see this marked settled here."
+    next: "Cashout requested. Matured referral commissions are settled to your Nepali wallet."
   };
 }
 
@@ -898,11 +972,11 @@ async function partnerQuote(body) {
     tiers: Object.fromEntries(
       Object.entries(PARTNER_TIERS).map(([name, value]) => [name, value.usdPerDay])
     ),
-    // Pay with what the shop actually has. A Nepali tyre shop can pay from
-    // eSewa or a bank in a minute; asking it for a Payoneer account is asking
-    // it not to buy.
+    // Pay with what the shop actually has. We never publish our wallet IDs on a
+    // public page: the shop emails us for the eSewa, Khalti or IME Pay details,
+    // sends the payment, and submits the transaction reference here.
     settlement: country === "NP"
-      ? "Pay by eSewa, Khalti or bank transfer. Send the reference through partnerPlace; the pin goes live once it clears."
+      ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your payment reference through partnerPlace so the pin goes live immediately."
       : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
     settlementOptions: country === "NP"
       ? ["esewa", "khalti", "imepay", "bank"]
@@ -1584,6 +1658,8 @@ module.exports.testing = {
   REFERRAL_SHARE,
   REFERRAL_MIN_PAYOUT_MICRO,
   REFERRAL_TERRITORIES,
+  REFERRAL_MATURITY_DAYS,
+  REFERRAL_MATURITY_MS,
   PAYOUT_METHODS,
   isNepalCoordinate,
   normalizePayout,

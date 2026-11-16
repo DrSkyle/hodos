@@ -62,29 +62,34 @@
     <section id="app" hidden>
       <div id="profile-card" class="profile-card">
         <div class="profile-head">
-          <span class="profile-eyebrow">Your referral</span>
+          <span class="profile-eyebrow">Your referral account</span>
           <h2 id="profile-name">—</h2>
         </div>
         <div class="profile-code-row">
           <code id="profile-code">—</code>
-          <button type="button" id="copy-code" class="btn-ghost">Copy</button>
+          <button type="button" id="copy-code" class="btn-ghost">Copy code</button>
+          <button type="button" id="copy-link" class="btn-ghost">Copy referral link</button>
         </div>
         <p class="profile-code-help">
-          Give this code to a shop. When they pay for their pin, your cut lands here automatically.
+          Share your referral link <code id="profile-link-text" style="font-size:12px;">—</code> with a shop, or have them email <a href="mailto:__HODOS_CONTACT__">__HODOS_CONTACT__</a> with your code. When they buy or extend their pin, <strong>60% of what they pay shows here immediately</strong> (and the longer they stay, the more you earn).
         </p>
 
         <dl class="stat-grid">
           <div class="stat">
-            <dt>Earned</dt>
+            <dt>Earned (60%)</dt>
             <dd id="stat-earned">$0.00</dd>
+          </div>
+          <div class="stat">
+            <dt>In your account</dt>
+            <dd id="stat-owed">$0.00</dd>
+          </div>
+          <div class="stat">
+            <dt>Cashable now (30d)</dt>
+            <dd id="stat-matured">$0.00</dd>
           </div>
           <div class="stat">
             <dt>Paid out</dt>
             <dd id="stat-paid">$0.00</dd>
-          </div>
-          <div class="stat">
-            <dt>Available</dt>
-            <dd id="stat-owed">$0.00</dd>
           </div>
           <div class="stat">
             <dt>Shops referred</dt>
@@ -98,7 +103,7 @@
             <span id="payout-target">—</span>
           </div>
           <button type="button" id="request-payout" class="btn-primary" disabled>
-            Request payout
+            Cash out to wallet
           </button>
         </div>
         <p id="payout-note" class="gate-fine"></p>
@@ -107,9 +112,9 @@
           <span class="profile-eyebrow">Before we can pay you</span>
           <h3>Sign the referrer agreement</h3>
           <p>
-            We pay out only against a signed agreement, and we send it to you privately —
-            never as a link you can copy on to someone else. Reply to that email with the
-            signed copy and we mark it here.
+            We pay out referral commissions against a signed referrer agreement, sent to you
+            privately. Reply to that email with the signed copy and your matured balance (30 days
+            after each shop payment) is settled to your Nepali wallet.
           </p>
           <a class="btn-ghost" href="mailto:__HODOS_CONTACT__?subject=Hodos%20referrer%20agreement"
              >Ask for my agreement</a>

@@ -252,10 +252,14 @@ function showResult(order: {
           ? `Visible to riders and to AI assistants until ${untilText}. It comes down on its own when the days run out.`
           : `${order.amount} for ${order.days}. ${order.next}`
       }</p>
+      <div class="field" style="margin-top: 14px;">
+        <span class="field-label">Extend your pin · payment reference</span>
+        <input id="extend-reference" type="text" maxlength="120" placeholder="Transaction reference for the added days" />
+      </div>
       <div class="btn-row">
         <a class="btn btn-primary" href="/map/">See it on the map</a>
-        <button class="btn btn-ghost" type="button" data-extend="7">Keep it 7 more days</button>
-        <button class="btn btn-ghost" type="button" data-extend="30">30 days</button>
+        <button class="btn btn-ghost" type="button" data-extend="7">Add 7 paid days</button>
+        <button class="btn btn-ghost" type="button" data-extend="30">Add 30 paid days</button>
       </div>
       <p class="result-ref">Reference: ${order.placement} · billing: ${BILLING_EMAIL}</p>
     </div>
@@ -266,15 +270,24 @@ function showResult(order: {
   host.querySelectorAll<HTMLButtonElement>("[data-extend]").forEach((button) => {
     button.addEventListener("click", async () => {
       const days = Number(button.dataset.extend) || 7;
+      const refInput = host.querySelector<HTMLInputElement>("#extend-reference");
+      const reference = String(refInput?.value || "").trim();
+      if (reference.length < 4) {
+        setStatus("Enter the payment reference for the added days so we can extend the pin and credit your referrer.", "error");
+        refInput?.focus();
+        return;
+      }
       button.disabled = true;
       try {
         const result = await callApi({
           action: "partnerExtend",
           placement: order.placement,
           days,
+          reference,
           locale: browserLocale()
         });
         if (!result.ok) throw new Error(result.error || "failed");
+        setStatus("Pin extended and referral share credited.", "ok");
         showResult({
           live: Boolean(result.live),
           activeUntil: String(result.activeUntil || ""),
@@ -290,6 +303,20 @@ function showResult(order: {
       }
     });
   });
+}
+
+function prefillReferralFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ref = (params.get("ref") || params.get("referral") || params.get("code") || "").trim().toLowerCase();
+    if (!ref) return;
+    const input = document.getElementById("referral-code-input") as HTMLInputElement | null;
+    if (input && !input.value) {
+      input.value = ref;
+    }
+  } catch (_) {
+    // ignore
+  }
 }
 
 function wireForm() {
@@ -360,5 +387,6 @@ function wireForm() {
 
 buildDayChips();
 buildMap();
+prefillReferralFromUrl();
 wireForm();
 void refreshQuote();

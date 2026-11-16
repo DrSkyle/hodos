@@ -265,6 +265,29 @@ test("below the minimum balance is not payable", () => {
   assert.equal(shaped.available, false);
 });
 
+test("referral commissions show immediately in earned/owed balance and mature after 30 days", () => {
+  assert.equal(testing.REFERRAL_MATURITY_DAYS, 30);
+  const unmatured = testing.shapeReferral(
+    { code: "sitaabcd123", ownerName: "Sita", payoutMethod: "esewa",
+      payoutAccount: "9801234567", country: "NP", disabled: false },
+    {
+      earnedMicro: 1500000,
+      paidMicro: 0,
+      owedMicro: 1500000,
+      maturedMicro: 0,
+      pendingMicro: 1500000,
+      nextCashoutAt: "2026-12-16T00:00:00.000Z",
+      placements: 1
+    }
+  );
+  assert.equal(unmatured.earnedUsd, 1.5);
+  assert.equal(unmatured.owedUsd, 1.5);
+  assert.equal(unmatured.pendingUsd, 1.5);
+  assert.equal(unmatured.maturedUsd, 0);
+  assert.equal(unmatured.available, false);
+  assert.equal(unmatured.nextCashoutAt, "2026-12-16T00:00:00.000Z");
+});
+
 test("Nepali shops are offered rails they actually have", async () => {
   // The quote is async (it reads FX rates), so this exercises the real shape.
   // A Nepali shop should never be asked for a Payoneer account.

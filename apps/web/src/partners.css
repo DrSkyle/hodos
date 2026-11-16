@@ -148,6 +148,17 @@
   color: var(--muted);
 }
 
+.field-help {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.field-help a {
+  color: var(--accent-deep);
+  font-weight: 650;
+}
+
 .field input,
 .field select {
   font: inherit;
