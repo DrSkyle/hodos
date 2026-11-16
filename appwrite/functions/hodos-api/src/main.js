@@ -101,6 +101,7 @@ const ACTIONS = {
   partnerQuote: "Price a shop placement in the caller's own currency. Free.",
   partnerPlace: "Order a shop placement for N days. It goes live when a payment reference is recorded. Free.",
   partnerExtend: "Add paid days to a placement. Free.",
+  partnerStatus: "Read a placement's live status, expiry, and anonymous monthly pass count. Free.",
   referralCreate: "Create a referral code to earn 60% of shop placement payments you bring. Nepal only.",
   referralProfile: "Read a referral's earnings, balance and payout readiness. Nepal only.",
   referralRequestPayout: "Ask for the earnable balance to be paid to a Nepali wallet. Nepal only."
@@ -1156,6 +1157,59 @@ function validPartner(body) {
  * belongs to a live pin (it moves the expiry forward) or to a placement that
  * has not settled yet (it only grows the amount owed).
  */
+async function partnerStatus(body) {
+  const id = String(body.placement || "").trim();
+  if (!/^p[a-z0-9]{6,24}$/i.test(id)) return { ok: false, error: "unknown placement" };
+
+  let order;
+  try {
+    order = await readRow("partnerPlacements", id);
+  } catch (_) {
+    order = null;
+  }
+  if (!order) return { ok: false, error: "unknown placement" };
+
+  let pin = null;
+  try {
+    pin = await readRow("partners", id);
+  } catch (_) {
+    pin = null;
+  }
+
+  const activeUntil = pin && pin.activeUntil ? String(pin.activeUntil) : null;
+  const untilMs = activeUntil ? Date.parse(activeUntil) : NaN;
+  const live = Boolean(pin && (!Number.isFinite(untilMs) || untilMs >= Date.now()));
+
+  const month = new Date().toISOString().slice(0, 7);
+  let passesThisMonth = 0;
+  try {
+    const statsRows = await readRows("partnerStats", [
+      { method: "equal", attribute: "partnerId", values: [id] },
+      { method: "equal", attribute: "month", values: [month] },
+      { method: "limit", values: [1] }
+    ]);
+    if (statsRows[0]) {
+      passesThisMonth = Math.max(0, Number(statsRows[0].uniqueDevices) || 0);
+    }
+  } catch (_) {
+    passesThisMonth = 0;
+  }
+
+  return {
+    ok: true,
+    placement: id,
+    name: String(order.name || ""),
+    category: String(order.category || "business"),
+    offer: String(order.offer || ""),
+    status: String(order.status || ""),
+    days: Number(order.days) || 1,
+    live,
+    activeUntil,
+    month,
+    passesThisMonth
+  };
+}
+
 async function partnerExtend(req, body) {
   const id = String(body.placement || "").trim();
   if (!/^p[a-z0-9]{6,24}$/i.test(id)) return { ok: false, error: "unknown placement" };
@@ -1503,6 +1557,16 @@ module.exports = async function main(context) {
     }
   }
 
+  if (action === "partnerStatus") {
+    try {
+      const result = await partnerStatus(body);
+      return res.json(result, result.ok ? 200 : 404, CORS);
+    } catch (error) {
+      log(`partnerStatus: ${error}`);
+      return res.json({ ok: false, error: "could not read placement" }, 502, CORS);
+    }
+  }
+
   // Referrals: free, Nepal-only, and every amount is computed server-side.
   if (action === "referralCreate" || action === "referralProfile" || action === "referralRequestPayout") {
     try {
@@ -1668,6 +1732,7 @@ module.exports.testing = {
   ACTIONS,
   PARTNER_TIERS,
   partnerQuote,
+  partnerStatus,
   durationFactor,
   countryFor,
   tierFor,

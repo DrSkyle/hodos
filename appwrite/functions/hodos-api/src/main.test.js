@@ -317,3 +317,9 @@ test("longer placement durations reduce the daily rate progressively (1 > 3 > 7 
   assert.equal(quotes[0].discountPct, 0);
   assert.equal(quotes[quotes.length - 1].discountPct, 40);
 });
+
+test("partnerStatus rejects malformed placement ids before hitting storage", async () => {
+  const bad = await testing.partnerStatus({ placement: "not-an-id" });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.error, "unknown placement");
+});

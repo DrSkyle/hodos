@@ -196,6 +196,23 @@
       </div>
     </section>
 
+    <section class="garage-block" id="check-pin" aria-labelledby="check-pin-title">
+      <span class="garage-eyebrow">Already on the map?</span>
+      <h2 id="check-pin-title">Check your pin &amp; monthly passes</h2>
+      <p>
+        Enter your placement reference ID to see whether your pin is live, when it expires, and
+        how many distinct devices passed your shop this month.
+      </p>
+      <form id="lookup-placement-form" class="list-form" novalidate>
+        <label class="visually-hidden" for="lookup-placement-id">Placement reference ID</label>
+        <input id="lookup-placement-id" name="placement" type="text" maxlength="32"
+               placeholder="e.g. pmwg2wlpd9c6lsp" required />
+        <button type="submit">Check pin</button>
+      </form>
+      <p class="form-status" id="lookup-placement-status" role="status" aria-live="polite"></p>
+      <div id="lookup-placement-result" hidden></div>
+    </section>
+
     <footer class="garage-footer">
       <span>Hodos · Devilabs · </span>
       <a href="/map">Live map</a>

@@ -346,6 +346,76 @@ function prefillReferralFromUrl() {
   }
 }
 
+function wireLookup() {
+  const lookupForm = document.getElementById("lookup-placement-form") as HTMLFormElement | null;
+  const lookupInput = document.getElementById("lookup-placement-id") as HTMLInputElement | null;
+  const lookupStatus = document.getElementById("lookup-placement-status") as HTMLElement | null;
+  const lookupResult = document.getElementById("lookup-placement-result") as HTMLElement | null;
+  if (!lookupForm || !lookupInput || !lookupStatus || !lookupResult) return;
+
+  const runLookup = async (placementId: string) => {
+    const clean = placementId.trim();
+    if (!clean) return;
+    lookupStatus.textContent = "Checking placement…";
+    lookupStatus.dataset.tone = "idle";
+    try {
+      const res = await callApi({ action: "partnerStatus", placement: clean });
+      if (!res.ok) {
+        lookupResult.hidden = true;
+        lookupStatus.textContent = res.error || "Could not find that placement ID.";
+        lookupStatus.dataset.tone = "error";
+        return;
+      }
+      lookupStatus.textContent = "";
+      const until = res.activeUntil ? new Date(String(res.activeUntil)) : null;
+      const untilText = until && !Number.isNaN(until.getTime())
+        ? until.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+        : "";
+      const passes = Number(res.passesThisMonth) || 0;
+      const esc = (s: unknown) =>
+        String(s ?? "").replace(/[&<>"']/g, (c) =>
+          c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;"
+        );
+
+      lookupResult.innerHTML = `
+        <div class="result-card${res.live ? " is-live" : ""}">
+          <span class="result-tag">${res.live ? "Live on the map" : esc(res.status || "Not live")}</span>
+          <strong>${esc(res.name || "Your shop")} · ${esc(res.category || "Shop")}</strong>
+          <p>${
+            res.live
+              ? `Visible to riders and AI assistants until ${esc(untilText)}.`
+              : "This placement is not currently live on the map."
+          }</p>
+          <p style="margin-top:8px;color:var(--ink);font-weight:700;">
+            ${passes} distinct device${passes === 1 ? "" : "s"} passed your shop in ${esc(res.month || "this month")}
+          </p>
+          <p class="result-ref">Placement ID: ${esc(res.placement)}</p>
+        </div>
+      `;
+      lookupResult.hidden = false;
+    } catch (_) {
+      lookupResult.hidden = true;
+      lookupStatus.textContent = "Could not check that placement right now.";
+      lookupStatus.dataset.tone = "error";
+    }
+  };
+
+  lookupForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void runLookup(lookupInput.value);
+  });
+
+  try {
+    const id = new URLSearchParams(window.location.search).get("placement") || "";
+    if (id.trim()) {
+      lookupInput.value = id.trim();
+      void runLookup(id.trim());
+    }
+  } catch (_) {
+    // ignore
+  }
+}
+
 function wireForm() {
   if (!form) return;
   form.addEventListener("submit", async (event) => {
@@ -416,4 +486,5 @@ buildDayChips();
 buildMap();
 prefillReferralFromUrl();
 wireForm();
+wireLookup();
 void refreshQuote();
