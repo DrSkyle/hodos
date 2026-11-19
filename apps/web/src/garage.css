@@ -940,3 +940,31 @@
     margin-top: 48px;
   }
 }
+
+.nepal-empty-card {
+  grid-column: 1 / -1;
+  background: var(--paper-raised);
+  border-radius: var(--r-card);
+  padding: 32px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nepal-empty-card h3 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.nepal-empty-card p {
+  max-width: 58ch;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.nepal-empty-card .hero-cta-row {
+  margin-top: 8px;
+}

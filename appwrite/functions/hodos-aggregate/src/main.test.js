@@ -459,3 +459,53 @@ test("the additive wire format accepts cycling and the new optional fields", () 
   assert.equal(testing.validEvent({ ...base, repeats: -1 }, since, now), false);
   assert.equal(testing.validEvent({ ...base, repeats: "2" }, since, now), false);
 });
+
+test("live road radar alerts publish immediately when fresh and expire after TTL", () => {
+  const now = Date.parse("2026-11-18T12:00:00.000Z");
+  const since = now - 120 * 86400000;
+  const freshPolice = {
+    lat: 27.7172,
+    lng: 85.324,
+    accuracy: 25,
+    speedKph: 0,
+    magnitude: 0,
+    severity: 2,
+    confidence: 0.75,
+    kind: "police",
+    observation: "alert",
+    deviceId: "dev-np-1",
+    tripId: "alert-1",
+    recordedAt: new Date(now - 15 * 60_000).toISOString(),
+  };
+  assert.equal(testing.validEvent(freshPolice, since, now), true);
+  assert.equal(testing.isLiveAlert(freshPolice), true);
+  assert.equal(testing.isMeasuredImpact(freshPolice), false);
+
+  const freshClusters = testing.clusterEvents([freshPolice]);
+  const builtFresh = testing.buildHazard(freshClusters[0], now, [], []);
+  assert.equal(builtFresh.data.kind, "police");
+  assert.equal(builtFresh.data.published, true);
+  assert.ok(builtFresh.rowId.startsWith("poln"));
+  assert.notEqual(builtFresh.rowId, testing.rowIdFor(27.7172, 85.324, "pothole"));
+
+  // After 3 hours (> 2h TTL for police), the alert automatically unpublishes.
+  const stalePolice = {
+    ...freshPolice,
+    recordedAt: new Date(now - 3 * 3600_000).toISOString(),
+  };
+  const staleClusters = testing.clusterEvents([stalePolice]);
+  const builtStale = testing.buildHazard(staleClusters[0], now, [], []);
+  assert.equal(builtStale.data.published, false);
+
+  // Landslide/roadblock stays live for up to 24 hours.
+  const freshRoadblock = {
+    ...freshPolice,
+    kind: "roadblock",
+    recordedAt: new Date(now - 10 * 3600_000).toISOString(),
+  };
+  const rbClusters = testing.clusterEvents([freshRoadblock]);
+  const builtRb = testing.buildHazard(rbClusters[0], now, [], []);
+  assert.equal(builtRb.data.published, true);
+  assert.ok(builtRb.rowId.startsWith("blkn"));
+});
+

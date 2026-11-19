@@ -213,7 +213,23 @@ async function renderNepal() {
   for (const shop of shown) grid.append(shopCard(shop));
 
   if (shops.length === 0) {
-    setStatus("No shops have put a pin on the map yet. Be the first — or refer a shop and keep 60%.");
+    setStatus("0 paid shop pins live in Nepal right now.");
+    const empty = document.createElement("div");
+    empty.className = "nepal-empty-card";
+    empty.innerHTML = `
+      <span class="garage-eyebrow">Nepal Garage · Pin-powered</span>
+      <h3>Be the first shop on the map in Nepal.</h3>
+      <p>
+        In Nepal, the Garage shows only real local shops that placed a pin on the Hodos map —
+        never fake listings. Put your workshop, café, pharmacy or store on the map from
+        <strong>~NPR 26/day</strong>, or introduce a shop and keep <strong>60%</strong> of every payment.
+      </p>
+      <div class="hero-cta-row">
+        <a class="btn btn-primary" href="/partners">Place a shop pin</a>
+        <a class="btn btn-ghost" href="/referrals">Refer a shop · earn 60%</a>
+      </div>
+    `;
+    grid.append(empty);
   } else if (shown.length === 0) {
     setStatus("No shops on the map match that filter yet.");
   } else {

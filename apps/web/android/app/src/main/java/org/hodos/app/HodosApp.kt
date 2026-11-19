@@ -36,6 +36,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -357,9 +358,19 @@ fun HodosApp(
         }
     }
 
-    HodosTheme {
+    var themeMode by remember { mutableStateOf(prefs.getString("themeMode", "auto") ?: "auto") }
+    var radarSheetOpen by remember { mutableStateOf(false) }
+    val systemDark = isSystemInDarkTheme()
+    val darkTheme = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> systemDark
+    }
+
+    HodosTheme(darkTheme = darkTheme) {
+        val scheme = MaterialTheme.colorScheme
         Scaffold(
-            containerColor = Paper,
+            containerColor = scheme.background,
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 HodosRouteBar(
@@ -392,10 +403,10 @@ fun HodosApp(
                         scaffoldState = sheetState,
                         sheetPeekHeight = 126.dp,
                         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                        sheetContainerColor = PaperRaised,
+                        sheetContainerColor = scheme.surface,
                         sheetShadowElevation = 8.dp,
                         sheetDragHandle = {
-                            BottomSheetDefaults.DragHandle(color = Line)
+                            BottomSheetDefaults.DragHandle(color = scheme.outline)
                         },
                         sheetContent = {
                             Column(
@@ -724,6 +735,19 @@ fun HodosApp(
                             }
                             FilledIconButton(
                                 onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    radarSheetOpen = true
+                                },
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = Amber, contentColor = Color.White
+                                ),
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                                    .padding(end = 18.dp, bottom = 80.dp).size(52.dp)
+                            ) {
+                                Icon(Icons.Outlined.WarningAmber, contentDescription = "Report road alert")
+                            }
+                            FilledIconButton(
+                                onClick = {
                                     val fine = ContextCompat.checkSelfPermission(
                                         context, Manifest.permission.ACCESS_FINE_LOCATION
                                     ) == PackageManager.PERMISSION_GRANTED
@@ -742,11 +766,11 @@ fun HodosApp(
                                     }
                                 },
                                 colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = PaperRaised, contentColor = Ink
+                                    containerColor = scheme.surface, contentColor = scheme.onSurface
                                 ),
                                 modifier = Modifier.align(Alignment.BottomEnd)
                                     .padding(end = 18.dp, bottom = 18.dp).size(52.dp)
-                                    .border(1.dp, Ink, CircleShape)
+                                    .border(1.dp, scheme.outline, CircleShape)
                             ) {
                                 if (locating) {
                                     CircularProgressIndicator(
@@ -865,6 +889,11 @@ fun HodosApp(
                         savedRoadIds = savedRoadIds,
                         partners = partners,
                         latestRelease = latestRelease,
+                        themeMode = themeMode,
+                        onThemeModeChange = { next ->
+                            themeMode = next
+                            prefs.edit().putString("themeMode", next).apply()
+                        },
                         onCheckUpdates = {
                             scope.launch {
                                 when (val check = AppUpdateAndShare.checkLatestRelease(context, force = true)) {
@@ -1083,16 +1112,119 @@ fun HodosApp(
                 }
             }
         }
+        if (radarSheetOpen) {
+            ModalBottomSheet(
+                onDismissRequest = { radarSheetOpen = false },
+                containerColor = scheme.surface
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 22.dp)
+                        .padding(bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Report live road radar",
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.3).sp,
+                        color = scheme.onSurface
+                    )
+                    Text(
+                        "1-tap alert at your current spot so drivers behind you know before they arrive. Auto-expires when stale.",
+                        fontSize = 13.sp,
+                        color = scheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                    val alertOptions = listOf(
+                        Triple("police", "Police check", PoliceBlue),
+                        Triple("jam", "Traffic jam", JamOrange),
+                        Triple("roadblock", "Roadblock / Landslide", RoadblockRed),
+                        Triple("flood", "Flooded road", FloodCyan)
+                    )
+                    alertOptions.chunked(2).forEach { rowItems ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            rowItems.forEach { (kind, label, accent) ->
+                                Surface(
+                                    onClick = {
+                                        radarSheetOpen = false
+                                        val fix = lastKnownLocation
+                                        if (fix == null) {
+                                            locating = true
+                                            locateRequest++
+                                            scope.launch {
+                                                snackbar.showSnackbar("Waiting for GPS fix — tap again once located")
+                                            }
+                                        } else {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            scope.launch {
+                                                repo.sendLiveAlert(
+                                                    lat = fix.latitude,
+                                                    lng = fix.longitude,
+                                                    accuracyM = if (fix.hasAccuracy()) fix.accuracy.toDouble() else 35.0,
+                                                    kind = kind
+                                                ).onSuccess { alert ->
+                                                    hazards = listOf(alert) + hazards
+                                                    snackbar.showSnackbar("$label posted to live radar")
+                                                }.onFailure { err ->
+                                                    snackbar.showSnackbar(err.message ?: "Could not post alert")
+                                                }
+                                            }
+                                        }
+                                    },
+                                    color = scheme.surfaceVariant,
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.5.dp, accent.copy(alpha = 0.55f)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(
+                                        Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            Modifier
+                                                .size(12.dp)
+                                                .background(accent, CircleShape)
+                                        )
+                                        Text(
+                                            label,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = scheme.onSurface
+                                        )
+                                        Text(
+                                            when (kind) {
+                                                "police", "jam" -> "Live · 2h TTL"
+                                                "flood" -> "Live · 12h TTL"
+                                                else -> "Live · 24h TTL"
+                                            }.uppercase(),
+                                            fontSize = 10.sp,
+                                            fontFamily = OverpassMono,
+                                            color = scheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActive: Boolean = false) {
-    // Simple bottom navigation: three circular stops with labels. The active
-    // stop fills ink and gets an amber tick; Record pulses while recording.
-    Surface(color = PaperRaised) {
+    val scheme = MaterialTheme.colorScheme
+    // Simple bottom navigation: circular stops with labels. The active
+    // stop fills primary and gets an amber tick; Record pulses while recording.
+    Surface(color = scheme.surface) {
         Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
-            HorizontalDivider(color = Line, thickness = 1.dp)
+            HorizontalDivider(color = scheme.outline, thickness = 1.dp)
             Row(Modifier.fillMaxWidth().height(84.dp)) {
                 ROUTE_TABS.forEach { tab ->
                     val active = current == tab
@@ -1119,18 +1251,18 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                     }
                                     .background(
                                         when {
-                                            active -> Ink
+                                            active -> scheme.primary
                                             highlight -> Amber
-                                            else -> PaperRaised
+                                            else -> scheme.surface
                                         },
                                         CircleShape
                                     )
                                     .border(
                                         1.5.dp,
                                         when {
-                                            active -> Ink
+                                            active -> scheme.primary
                                             highlight -> AmberDeep
-                                            else -> Line
+                                            else -> scheme.outline
                                         },
                                         CircleShape
                                     ),
@@ -1873,6 +2005,8 @@ private fun YouScreen(
     savedRoadIds: Set<String>,
     partners: List<PartnerPoi>,
     latestRelease: AppReleaseInfo?,
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit,
     onCheckUpdates: () -> Unit,
     onSelectSavedRoad: (RoadHazard) -> Unit,
     onRemoveSavedRoad: (String) -> Unit,
@@ -1881,6 +2015,7 @@ private fun YouScreen(
     onShare: () -> Unit,
     onClearHistory: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
     val total = trips.sumOf { it.impacts }
     val context = LocalContext.current
     val currentVer = remember(context) { AppUpdateAndShare.currentVersionName(context) }
@@ -1888,7 +2023,7 @@ private fun YouScreen(
     val listState = rememberLazyListState()
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize().background(Paper),
+        modifier = Modifier.fillMaxSize().background(scheme.background),
         contentPadding = PaddingValues(22.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
@@ -1903,8 +2038,51 @@ private fun YouScreen(
                 Spacer(Modifier.height(12.dp))
                 HodosBrand()
                 Spacer(Modifier.height(16.dp))
-                Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
-                Text("Every journey makes the roads better understood.", color = Muted)
+                Text("Your Hodos", fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, color = scheme.onBackground)
+                Text("Every journey makes the roads better understood.", color = scheme.onSurfaceVariant)
+            }
+        }
+        item {
+            Surface(
+                color = scheme.surface,
+                shape = RoundedCornerShape(20.dp),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Appearance",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = scheme.onSurface
+                    )
+                    Text(
+                        "Dark mode uses warm asphalt surfaces built for night driving.",
+                        fontSize = 12.sp,
+                        color = scheme.onSurfaceVariant
+                    )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("auto" to "Auto", "light" to "Light", "dark" to "Dark").forEach { (id, label) ->
+                            val selectedMode = themeMode == id
+                            Surface(
+                                onClick = { onThemeModeChange(id) },
+                                color = if (selectedMode) scheme.primary else scheme.surfaceVariant,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    Modifier.padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        label,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (selectedMode) scheme.onPrimary else scheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         item {

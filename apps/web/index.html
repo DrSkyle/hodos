@@ -40,13 +40,15 @@
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a class="nav-garage" href="/garage">Garage</a>
-        <a href="/map">Live map</a>
+        <a href="/map">Live radar</a>
         <a href="/app/">Web app</a>
+        <a href="#fleets">For fleets</a>
         <a href="#shops">For shops</a>
         <a href="/referrals" id="nav-referrals" hidden>Earn 60%</a>
         <a href="#faq">FAQ</a>
       </nav>
       <div class="nav-actions">
+        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾ Dark</button>
         <a class="nav-cta nav-cta-garage" id="nav-primary-cta" href="/garage">Shop the Garage</a>
         <details class="nav-menu">
           <summary aria-label="Open menu">
@@ -54,8 +56,9 @@
           </summary>
           <nav class="nav-menu-panel" aria-label="Mobile navigation">
             <a href="/garage">Garage</a>
-            <a href="/map">Live map</a>
+            <a href="/map">Live radar</a>
             <a href="/app/">Web app</a>
+            <a href="#fleets">For fleets</a>
             <a href="#shops">For shops</a>
             <a href="/referrals" id="mobile-referrals" hidden>Refer a shop · earn 60%</a>
             <a href="#faq">FAQ</a>
@@ -73,58 +76,60 @@
         <div class="hero-grid">
           <div>
             <h1 id="hero-title" class="hero-headline" data-parallax="-0.05">
-              The road<br />maps itself<span class="dot">.</span>
+              Live road radar.<br />Mapped as you drive<span class="dot">.</span>
             </h1>
             <p class="hero-subhead" data-parallax="-0.03">
-              Hodos reads the road through the phone already in your pocket, and turns every
-              ordinary drive into a live map of potholes, rough stretches and speed bumps.
-              No buttons. No reporting. Free, for everyone.
+              Check police checks, traffic jams, landslides, roadblocks and flooded stretches before
+              you roll — reported in 1 tap by drivers on the road, while Hodos passively maps
+              potholes and rough pavement from the phone in your pocket.
             </p>
             <div class="hero-cta-row" data-parallax="-0.02">
               <a class="btn btn-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
-              <a class="btn btn-ghost" href="/map">Open the live map</a>
+              <a class="btn btn-ghost" href="/map">Open live radar</a>
             </div>
-            <p class="hero-note">Android · free · no account</p>
+            <div class="radar-pills" aria-label="Live road radar alert types">
+              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--police)"></span>Police check</span>
+              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--jam)"></span>Traffic jam</span>
+              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--roadblock)"></span>Roadblock / Landslide</span>
+              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--flood)"></span>Flooded road</span>
+            </div>
+            <p class="hero-note">Android &amp; web · dark mode · free · no account</p>
           </div>
 
-          <div class="hero-art" data-parallax="0.04">
-            <svg viewBox="0 0 620 540" role="img" aria-label="Illustrated map fragment: a driving route crossing a city grid with a corroborated pothole, a rough stretch, a speed bump and a repaired spot" fill="none">
-              <rect x="0.5" y="0.5" width="619" height="539" rx="22" fill="var(--paper-raised)" stroke="var(--soft-2)" />
-              <path d="M62 0V8 M124 0V8 M186 0V8 M248 0V8 M310 0V8 M372 0V8 M434 0V8 M496 0V8 M558 0V8 M62 540V532 M124 540V532 M186 540V532 M248 540V532 M310 540V532 M372 540V532 M434 540V532 M496 540V532 M558 540V532 M0 67.5H8 M0 135H8 M0 202.5H8 M0 270H8 M0 337.5H8 M0 405H8 M0 472.5H8 M620 67.5H612 M620 135H612 M620 202.5H612 M620 270H612 M620 337.5H612 M620 405H612 M620 472.5H612" stroke="#ddd6c6" stroke-width="1" class="mk-fade" style="animation-delay:1.2s" />
+          <div class="hero-art" data-parallax="0.03">
+            <div class="hero-instrument" id="hero-instrument" aria-label="Interactive road-sensing preview">
+              <div class="hero-inst-head">
+                <span class="hero-inst-region" id="hero-region-label">Live road sensor</span>
+                <a class="hero-inst-link" href="/map">Full map ↗</a>
+              </div>
 
-              <path d="M0 210H620 M452 0V540" stroke="var(--road)" stroke-width="12" class="mk-draw" pathLength="1" />
-              <path d="M0 330H620 M0 452H620 M180 210V540 M560 0V540" stroke="var(--road)" stroke-width="6" class="mk-draw" pathLength="1" style="animation-delay:0.12s" />
-              <path d="M96 0V210 M330 210V540 M96 96H560 M260 96V210" stroke="var(--road)" stroke-width="4" class="mk-draw" pathLength="1" style="animation-delay:0.24s" />
+              <div class="hero-inst-viewport">
+                <canvas id="hero-canvas" width="520" height="330"></canvas>
+              </div>
 
-              <g fill="#f0ebde" class="mk-fade" style="animation-delay:0.4s">
-                <rect x="24" y="110" width="120" height="84" rx="4" />
-                <rect x="300" y="24" width="120" height="56" rx="4" />
-                <rect x="480" y="24" width="110" height="56" rx="4" />
-                <rect x="24" y="240" width="120" height="60" rx="4" />
-                <rect x="380" y="240" width="48" height="60" rx="4" />
-                <rect x="480" y="240" width="110" height="68" rx="4" />
-                <rect x="24" y="360" width="120" height="60" rx="4" />
-                <rect x="214" y="352" width="80" height="70" rx="4" />
-                <rect x="480" y="480" width="110" height="40" rx="4" />
-                <rect x="24" y="480" width="120" height="44" rx="4" />
-              </g>
+              <div class="hero-inst-controls" role="group" aria-label="Test road impacts">
+                <span class="hero-inst-prompt">Tap to test:</span>
+                <button type="button" class="hero-trigger" data-trigger="pothole" aria-pressed="true">
+                  <span class="hero-dot hero-dot-pothole" aria-hidden="true"></span>Pothole
+                </button>
+                <button type="button" class="hero-trigger" data-trigger="speed_bump" aria-pressed="false">
+                  <span class="hero-dot hero-dot-bump" aria-hidden="true"></span>Speed bump
+                </button>
+                <button type="button" class="hero-trigger" data-trigger="rough_pavement" aria-pressed="false">
+                  <span class="hero-dot hero-dot-rough" aria-hidden="true"></span>Rough road
+                </button>
+              </div>
 
-              <path d="M180 528V210H452V102" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="mk-draw" pathLength="1" style="animation-delay:0.6s" />
-              <circle cx="180" cy="528" r="6" fill="var(--ink)" class="mk-pop" style="animation-delay:1.4s" />
-              <rect x="445" y="89" width="13" height="13" rx="3" fill="var(--ink)" class="mk-pop" style="animation-delay:1.45s" />
+              <div class="hero-inst-readout">
+                <strong id="hero-readout-title">Pothole</strong>
+                <span id="hero-readout-detail">Sharp vertical drop · severity 3 · queued for corroboration</span>
+              </div>
 
-              <line x1="100" y1="330" x2="172" y2="330" stroke="var(--rough)" stroke-width="8" stroke-linecap="round" class="mk-pop" style="animation-delay:1.2s" />
-              <circle cx="180" cy="300" r="6.5" fill="var(--pothole)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.05s" />
-              <circle cx="452" cy="150" r="6.5" fill="var(--bump)" stroke="var(--paper-raised)" stroke-width="2.5" class="mk-pop" style="animation-delay:1.15s" />
-              <circle cx="300" cy="452" r="6.5" fill="var(--paper-raised)" stroke="var(--fixed)" stroke-width="3" class="mk-pop" style="animation-delay:1.3s" />
-
-              <g font-family="var(--font-mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)" font-weight="600">
-                <text x="196" y="304" class="mk-fade" style="animation-delay:1.35s">POTHOLE</text>
-                <text x="438" y="154" text-anchor="end" class="mk-fade" style="animation-delay:1.4s">SPEED BUMP</text>
-                <text x="100" y="358" class="mk-fade" style="animation-delay:1.45s">ROUGH STRETCH</text>
-                <text x="272" y="482" class="mk-fade" style="animation-delay:1.5s">REPAIRED</text>
-              </g>
-            </svg>
+              <div class="hero-inst-foot">
+                <span id="hero-live-counts">Checking live map…</span>
+                <a href="/app/">Try in browser →</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -220,9 +225,65 @@
             <p>Your 60% share appears in your account the moment their payment is recorded, and you can cash it out to your wallet after 1 month (30 days).</p>
           </article>
         </div>
+        <div class="nepal-calc" aria-label="Nepal 60/40 earnings estimator">
+          <div class="nepal-calc-controls">
+            <label class="nepal-calc-field">
+              <span class="nepal-calc-label">Shops you introduce: <strong id="calc-shops-val">10</strong></span>
+              <input id="calc-shops" type="range" min="1" max="50" value="10" />
+            </label>
+            <div class="nepal-calc-plans" role="group" aria-label="Shop plan length">
+              <button type="button" class="calc-plan" data-days="30" aria-pressed="true">30-day plan</button>
+              <button type="button" class="calc-plan" data-days="90" aria-pressed="false">90-day plan</button>
+              <button type="button" class="calc-plan" data-days="365" aria-pressed="false">1-year plan</button>
+            </div>
+          </div>
+          <div class="nepal-calc-result">
+            <div>
+              <span class="mono-label">Your 60% share (eSewa / Khalti / IME Pay)</span>
+              <strong class="nepal-calc-amount" id="calc-earn-npr">NPR 3,925</strong>
+            </div>
+            <p class="nepal-calc-meta" id="calc-meta">Based on 10 Nepal shops on a 30-day pin (~NPR 654 each). Renewals pay you 60% again.</p>
+          </div>
+        </div>
+
         <div class="hero-cta-row" style="margin-top: 28px;">
           <a class="btn btn-primary" href="/referrals">Get your referral code</a>
           <a class="btn btn-ghost" href="/garage">Open the Nepal Garage</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-soft" id="fleets" aria-labelledby="fleets-title">
+      <div class="container">
+        <div class="section-head">
+          <span class="garage-eyebrow">For fleets · delivery · tour jeeps · logistics</span>
+          <h2 id="fleets-title">Turn your existing fleet phones into live road intelligence<span class="dot">.</span></h2>
+          <p class="lead">
+            No OBD dongles, no hardware installs. Put Hodos on the Android phones your drivers
+            already carry and get roughness exposure, harsh-impact monitoring, and live highway
+            blockage alerts across every corridor you operate.
+          </p>
+        </div>
+        <div class="fleet-grid">
+          <article class="fleet-card">
+            <span class="step-num">01 · VEHICLE HEALTH</span>
+            <h3>Roughness &amp; harsh-impact exposure</h3>
+            <p>Spot which routes punish suspension, tires and cargo the hardest — measured passively from phone motion sensors on every trip.</p>
+          </article>
+          <article class="fleet-card">
+            <span class="step-num">02 · LIVE CORRIDORS</span>
+            <h3>Highway radar for dispatch</h3>
+            <p>Drivers report roadblocks, landslides, floods, jams and police checks in 1 tap so the rest of your fleet reroutes before getting stuck.</p>
+          </article>
+          <article class="fleet-card">
+            <span class="step-num">03 · DIRECT API</span>
+            <h3>Plug into your dispatch or AI tools</h3>
+            <p>Query road quality, hazards and live alerts over our metered JSON API with prepaid credits — zero per-seat contracts or hardware lock-in.</p>
+          </article>
+        </div>
+        <div class="hero-cta-row" style="margin-top: 28px;">
+          <a class="btn btn-primary" href="mailto:__HODOS_CONTACT__?subject=Hodos%20Fleet%20Pilot">Start a fleet pilot</a>
+          <a class="btn btn-ghost" href="/AGENTS.md">Read API docs</a>
         </div>
       </div>
     </section>

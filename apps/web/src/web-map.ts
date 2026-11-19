@@ -7,11 +7,39 @@ import { CONTACT_EMAIL } from "./site-constants";
 // never triggers "Worker failed to load. Check that the worker URL is correct."
 setWorkerUrl("/maplibre-gl-worker.js");
 
+export type LiveAlertKind = "police" | "jam" | "roadblock" | "flood";
+export type HazardKind = "pothole" | "speed_bump" | "rough_pavement" | LiveAlertKind;
+
+const LIVE_ALERT_KINDS = new Set<string>(["police", "jam", "roadblock", "flood"]);
+
+export function isLiveAlertKind(kind: string): kind is LiveAlertKind {
+  return LIVE_ALERT_KINDS.has(kind);
+}
+
+export function hazardTitle(kind: HazardKind): string {
+  switch (kind) {
+    case "speed_bump":
+      return "Speed bump";
+    case "rough_pavement":
+      return "Rough road";
+    case "police":
+      return "Police check";
+    case "jam":
+      return "Traffic jam";
+    case "roadblock":
+      return "Roadblock / Landslide";
+    case "flood":
+      return "Flooded road";
+    default:
+      return "Pothole";
+  }
+}
+
 export interface WebHazard {
   id: string;
   lat: number;
   lng: number;
-  kind: "pothole" | "speed_bump" | "rough_pavement";
+  kind: HazardKind;
   severity: number;
   passes: number;
   devices: number;
@@ -38,9 +66,94 @@ export interface WebPartner {
 export interface MapInstanceHandle {
   map: Map;
   hazards: WebHazard[];
-  filterByKind: (kind: string) => void;
+  filterByKind: (kind: string, query?: string) => void;
   fitAllHazards: () => void;
   flyToHazard: (id: string) => void;
+  addOptimisticHazard: (hazard: WebHazard) => void;
+}
+
+const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT = "6ad7939a002ff135e419";
+
+function webDeviceId(): string {
+  try {
+    const existing = window.localStorage.getItem("hodos.webDeviceId");
+    if (existing && existing.length >= 8) return existing;
+    const fresh = `web_${Math.random().toString(16).slice(2, 10)}${Date.now().toString(16)}`;
+    window.localStorage.setItem("hodos.webDeviceId", fresh);
+    return fresh;
+  } catch {
+    return `web_${Date.now().toString(16)}`;
+  }
+}
+
+/**
+ * Submit a 1-tap Live Road Radar alert (police check, jam, roadblock, flood)
+ * directly to Appwrite `events` and request immediate aggregation.
+ */
+export async function reportLiveAlert(
+  lat: number,
+  lng: number,
+  kind: LiveAlertKind,
+  accuracyM = 25
+): Promise<WebHazard> {
+  const nowIso = new Date().toISOString();
+  const severity = kind === "roadblock" || kind === "flood" ? 3 : 2;
+  const rowId = `al_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const payload = {
+    deviceId: webDeviceId(),
+    tripId: `radar_${Date.now().toString(36)}`,
+    recordedAt: nowIso,
+    lat: Number(lat.toFixed(6)),
+    lng: Number(lng.toFixed(6)),
+    accuracy: Math.max(5, Math.min(100, Math.round(accuracyM))),
+    speedKph: 0,
+    magnitude: 0,
+    severity,
+    kind,
+    confidence: 0.75,
+    mode: "vehicle",
+    observation: "alert"
+  };
+
+  const res = await fetch(`${APPWRITE_ENDPOINT}/tablesdb/hodos/tables/events/rows`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Appwrite-Project": APPWRITE_PROJECT
+    },
+    body: JSON.stringify({ rowId, data: payload })
+  });
+  if (!res.ok && res.status !== 409) {
+    throw new Error(`Unable to submit alert (${res.status})`);
+  }
+
+  // Trigger async aggregation so the alert publishes immediately for other drivers.
+  fetch(`${APPWRITE_ENDPOINT}/functions/hodos-aggregate/executions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Appwrite-Project": APPWRITE_PROJECT
+    },
+    body: JSON.stringify({ async: true })
+  }).catch(() => {});
+
+  return {
+    id: rowId,
+    lat: payload.lat,
+    lng: payload.lng,
+    kind,
+    severity,
+    passes: 1,
+    devices: 1,
+    published: true,
+    fixed: false,
+    title: hazardTitle(kind),
+    locationName: `${payload.lat.toFixed(4)}, ${payload.lng.toFixed(4)}`,
+    confidence: 0.75,
+    firstSeen: nowIso,
+    lastSeen: nowIso
+  };
 }
 
 // 100% free, keyless OpenStreetMap raster style — zero API key required, zero CARTO dependency
@@ -77,8 +190,14 @@ function parseAppwriteRow(r: any): WebHazard | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return null;
   }
-  const kind =
-    r.kind === "speed_bump" || r.kind === "rough_pavement" || r.kind === "pothole"
+  const kind: HazardKind =
+    r.kind === "speed_bump" ||
+    r.kind === "rough_pavement" ||
+    r.kind === "pothole" ||
+    r.kind === "police" ||
+    r.kind === "jam" ||
+    r.kind === "roadblock" ||
+    r.kind === "flood"
       ? r.kind
       : "pothole";
   const severity = Math.max(1, Math.min(3, Number(r.severity) || 1));
@@ -87,12 +206,7 @@ function parseAppwriteRow(r: any): WebHazard | null {
   const published = Boolean(r.published);
   if (!published) return null;
   const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1) || (r.clearPasses && r.clearPasses >= 3));
-  const title =
-    kind === "speed_bump"
-      ? "Speed bump"
-      : kind === "rough_pavement"
-      ? "Rough road"
-      : "Pothole";
+  const title = hazardTitle(kind);
 
   return {
     id: String(r.$id || r.id || r.hazardId || `${lat}:${lng}`),
@@ -193,7 +307,7 @@ export function initWebMap(
       { lat: number; lng: number; hazards: number; stress: number }
     >();
     for (const h of items) {
-      if (h.fixed) continue;
+      if (h.fixed || isLiveAlertKind(h.kind)) continue;
       const latBucket = Math.floor(h.lat / CELL_DEG);
       const scale = Math.max(0.2, Math.cos((h.lat * Math.PI) / 180));
       const lngBucket = Math.floor(h.lng / (CELL_DEG / scale));
@@ -315,6 +429,8 @@ export function initWebMap(
         const matchKind =
           kind === "all"
             ? true
+            : kind === "alerts"
+            ? isLiveAlertKind(h.kind) && !h.fixed
             : kind === "fixed"
             ? h.fixed
             : h.kind === kind && !h.fixed;
@@ -340,28 +456,52 @@ export function initWebMap(
         map.flyTo({ center: [target.lng, target.lat], zoom: 15, duration: 1000 });
         showPopupForHazard(target);
       }
+    },
+    addOptimisticHazard: (hazard: WebHazard) => {
+      const byId = new globalThis.Map<string, WebHazard>();
+      for (const h of hazards) byId.set(h.id, h);
+      byId.set(hazard.id, hazard);
+      hazards = Array.from(byId.values());
+      handle.hazards = hazards;
+      updateSourceData();
+      map.flyTo({ center: [hazard.lng, hazard.lat], zoom: Math.max(map.getZoom(), 14), duration: 700 });
+      showPopupForHazard(hazard);
     }
   };
 
   function showPopupForHazard(h: WebHazard) {
+    const isAlert = isLiveAlertKind(h.kind);
     const badgeColor = h.fixed
       ? "#10b981"
+      : h.kind === "police"
+      ? "#2563eb"
+      : h.kind === "jam"
+      ? "#ea580c"
+      : h.kind === "roadblock"
+      ? "#dc2626"
+      : h.kind === "flood"
+      ? "#0891b2"
       : h.kind === "pothole"
       ? "#e11d48"
       : h.kind === "speed_bump"
       ? "#7c3aed"
       : "#d97706";
 
+    const badgeText = h.fixed ? "Repaired" : isAlert ? "Live alert" : `Level ${h.severity}`;
+    const subline = isAlert
+      ? "Reported live · auto-expires"
+      : `${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"}`;
+
     const html = `
       <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 200px; color: #1c1a17;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
           <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${h.title}</strong>
           <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
-            ${h.fixed ? "Repaired" : `Level ${h.severity}`}
+            ${badgeText}
           </span>
         </div>
         <div style="font-size: 11px; color: #736d61; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px;">
-          ${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"}
+          ${subline}
         </div>
         <div style="font-size: 11px; color: #a39b8b; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;">
           ${h.locationName}

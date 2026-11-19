@@ -286,12 +286,18 @@ fun RoadMap(
             val features = hazards.map { hazard ->
                 Feature.fromGeometry(Point.fromLngLat(hazard.lng, hazard.lat)).apply {
                     addStringProperty("id", hazard.id)
+                    addStringProperty("kind", hazard.kind)
+                    addBooleanProperty("fixed", hazard.fixed)
                     addNumberProperty("severity", hazard.severity)
                     addNumberProperty("passes", hazard.passes)
                     addStringProperty(
                         "color",
                         if (hazard.fixed) "#10B981"
                         else when (hazard.kind) {
+                            "police" -> "#2563EB"
+                            "jam" -> "#EA580C"
+                            "roadblock" -> "#DC2626"
+                            "flood" -> "#0891B2"
                             "pothole" -> "#E11D48"
                             "speed_bump" -> "#7C3AED"
                             else -> "#D97706"
@@ -307,7 +313,7 @@ fun RoadMap(
             val qualityFeatures = buildList {
                 val buckets = HashMap<String, Triple<Double, Double, DoubleArray>>()
                 for (hazard in hazards) {
-                    if (hazard.fixed) continue
+                    if (hazard.fixed || hazard.isLiveAlert) continue
                     val latBucket = kotlin.math.floor(hazard.lat / 0.0015).toInt()
                     val scale = kotlin.math.cos(Math.toRadians(hazard.lat)).coerceAtLeast(0.2)
                     val lngBucket = kotlin.math.floor(hazard.lng / (0.0015 / scale)).toInt()

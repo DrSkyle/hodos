@@ -31,10 +31,15 @@ data class RoadHazard(
     val firstSeen: String = ""
 ) {
     val title: String get() = when (kind) {
+        "police" -> "Police check"
+        "jam" -> "Traffic jam"
+        "roadblock" -> "Roadblock / Landslide"
+        "flood" -> "Flooded road"
         "speed_bump" -> "Speed bump"
         "rough_pavement" -> "Rough road"
         else -> "Pothole"
     }
+    val isLiveAlert: Boolean get() = kind in setOf("police", "jam", "roadblock", "flood")
     val severityText: String get() = when (severity) {
         3 -> "High"
         2 -> "Medium"
@@ -166,7 +171,7 @@ class HazardRepository(context: Context) {
                 val severity = row.optInt("severity", -1)
                 val kind = row.optString("kind")
                 check(id.isNotBlank() && lat in -90.0..90.0 && lng in -180.0..180.0)
-                check(kind in setOf("pothole", "speed_bump", "rough_pavement"))
+                check(kind in setOf("pothole", "speed_bump", "rough_pavement", "police", "jam", "roadblock", "flood"))
                 check(severity in 1..3 && confidence in 0.0..1.0)
                 add(RoadHazard(
                     id = id, lat = lat, lng = lng, kind = kind,
@@ -263,6 +268,79 @@ class HazardRepository(context: Context) {
                 Unit
             }
         }
+
+    internal fun liveAlertPayload(
+        lat: Double,
+        lng: Double,
+        accuracyM: Double,
+        kind: String,
+        deviceId: String,
+        timestamp: Date = Date()
+    ): JSONObject {
+        val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(timestamp)
+        val clampedAcc = accuracyM.coerceIn(5.0, 100.0)
+        val severity = when (kind) {
+            "roadblock", "flood" -> 3
+            else -> 2
+        }
+        return JSONObject()
+            .put("deviceId", deviceId)
+            .put("tripId", UUID.randomUUID().toString())
+            .put("recordedAt", date)
+            .put("lat", lat)
+            .put("lng", lng)
+            .put("accuracy", clampedAcc)
+            .put("speedKph", 0)
+            .put("magnitude", 0)
+            .put("severity", severity)
+            .put("kind", kind)
+            .put("confidence", 0.75)
+            .put("mode", "vehicle")
+            .put("observation", "alert")
+    }
+
+    /**
+     * 1-tap live road radar alert (police check, jam, roadblock/landslide, flood).
+     * Persisted to the outbox first so it survives dead zones, then synced and
+     * aggregated right away when online.
+     */
+    suspend fun sendLiveAlert(
+        lat: Double,
+        lng: Double,
+        accuracyM: Double,
+        kind: String
+    ): Result<RoadHazard> = withContext(Dispatchers.IO) {
+        runCatching {
+            check(kind in setOf("police", "jam", "roadblock", "flood")) { "Unsupported alert kind" }
+            val now = Date()
+            val payload = liveAlertPayload(lat, lng, accuracyM, kind, installationId(), now)
+            val id = UUID.randomUUID().toString()
+            EventOutbox(appContext).use { outbox ->
+                check(outbox.enqueue(id, payload.toString())) {
+                    "Could not save road alert on this device"
+                }
+            }
+            HodosSyncWorker.schedule(appContext)
+            runCatching { requestAggregation() }
+            val iso = payload.getString("recordedAt")
+            RoadHazard(
+                id = id,
+                lat = lat,
+                lng = lng,
+                kind = kind,
+                severity = payload.getInt("severity"),
+                passes = 1,
+                devices = 1,
+                confidence = 0.75,
+                clearPasses = 0,
+                fixed = false,
+                lastSeen = iso,
+                firstSeen = iso
+            )
+        }
+    }
 
     suspend fun requestAggregation() = withContext(Dispatchers.IO) {
         runCatching {

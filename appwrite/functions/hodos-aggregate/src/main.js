@@ -87,6 +87,14 @@ async function fetchEvents(sinceIso) {
   return events;
 }
 
+const LIVE_ALERT_TTL_MS = {
+  police: 2 * 3600_000,      // 2 hours
+  jam: 2 * 3600_000,         // 2 hours
+  flood: 12 * 3600_000,      // 12 hours
+  roadblock: 24 * 3600_000,  // 24 hours (landslides / closures)
+};
+const LIVE_ALERT_KINDS = Object.keys(LIVE_ALERT_TTL_MS);
+
 /** Reject malformed or out-of-window observations before spatial aggregation. */
 function validEvent(event, sinceMs, now) {
   if (!event || typeof event !== "object") return false;
@@ -96,8 +104,8 @@ function validEvent(event, sinceMs, now) {
   const time = typeof event.recordedAt === "string"
     ? Date.parse(event.recordedAt) : NaN;
   const confidence = event.confidence == null ? 0.5 : event.confidence;
-  const kinds = ["pothole", "speed_bump", "rough_pavement"];
-  const observations = ["impact", "pass", "fix"];
+  const kinds = ["pothole", "speed_bump", "rough_pavement", ...LIVE_ALERT_KINDS];
+  const observations = ["impact", "pass", "fix", "alert"];
   const observation = event.observation || "impact";
   // Additive wire format: newer clients may report `cycling`, a fused
   // `motionState`, an on-device `repeats` count, and feature extras. Older
@@ -122,7 +130,7 @@ function validEvent(event, sinceMs, now) {
     (event.motionState == null || motionStates.includes(event.motionState)) &&
     (event.repeats == null ||
       (Number.isInteger(event.repeats) && event.repeats >= 0 && event.repeats <= 1000)) &&
-    (observation === "impact" ||
+    (observation === "impact" || observation === "alert" ||
       (typeof event.hazardRef === "string" && event.hazardRef.length > 0 &&
        event.hazardRef.length <= 64));
 }
@@ -137,9 +145,22 @@ function validEvent(event, sinceMs, now) {
 function isMeasuredImpact(event) {
   // Native sensor observations predate the explicit observation field.
   return (event.observation == null || event.observation === "impact") &&
+    !LIVE_ALERT_KINDS.includes(event.kind) &&
     !event.hazardRef &&
     typeof event.magnitude === "number" && event.magnitude > 0 &&
     typeof event.accuracy === "number" && event.accuracy <= 50;
+}
+
+/**
+ * 1-tap live road & highway radar alerts (police check, traffic jam,
+ * landslide/roadblock, flooded road). Unlike passive surface defects, these are
+ * short-lived driver reports that publish immediately and auto-expire by TTL.
+ */
+function isLiveAlert(event) {
+  return event.observation === "alert" &&
+    LIVE_ALERT_KINDS.includes(event.kind) &&
+    !event.hazardRef &&
+    typeof event.accuracy === "number" && event.accuracy <= 100;
 }
 
 function isManualConfirmation(event) {
@@ -232,11 +253,19 @@ function majority(values, fallback) {
 function rowIdFor(lat, lng, kind = "pothole") {
   const ns = lat < 0 ? "s" : "n";
   const ew = lng < 0 ? "w" : "e";
-  return `${kind[0]}${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
+  const prefix =
+    kind === "police" ? "pol" :
+    kind === "jam" ? "jam" :
+    kind === "roadblock" ? "blk" :
+    kind === "flood" ? "fld" :
+    kind[0];
+  return `${prefix}${ns}${Math.abs(lat).toFixed(4)}${ew}${Math.abs(lng).toFixed(4)}`;
 }
 
 function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations = []) {
   const events = cluster.events;
+  const kind = majority(events.map((event) => String(event.kind)), "pothole");
+  const isAlert = LIVE_ALERT_KINDS.includes(kind);
   const devices = new Set(events.map((event) => event.deviceId));
   const trips = new Set(events.map((event) => `${event.deviceId}:${event.tripId}`));
   const days = new Set(events.map((event) => String(event.recordedAt).slice(0, 10)));
@@ -251,9 +280,14 @@ function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations
 
   const passFactor = Math.min(1, passCount / PUBLISH_MIN_PASSES);
   const deviceFactor = Math.min(1, deviceCount / PUBLISH_MIN_DEVICES);
-  const ageDays = Math.max(0, (now - lastSeen) / MS_PER_DAY);
-  const recency = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
-  const belief = Math.min(1, 0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
+  const ageMs = Math.max(0, now - lastSeen);
+  const ageDays = ageMs / MS_PER_DAY;
+  const recency = isAlert
+    ? Math.max(0, 1 - ageMs / (LIVE_ALERT_TTL_MS[kind] || 2 * 3600_000))
+    : Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
+  const belief = isAlert
+    ? Math.min(1, 0.55 + Math.min(0.45, (deviceCount - 1) * 0.15))
+    : Math.min(1, 0.45 * passFactor + 0.3 * deviceFactor + 0.25 * quality);
 
   const rowId = rowIdFor(cluster.centre.lat, cluster.centre.lng, String(events[0].kind));
   // Explicit feedback can weakly support an already corroborated hazard but
@@ -286,13 +320,15 @@ function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations
       .map((report) => report.deviceId),
   );
 
+  const alertFresh = isAlert && ageMs <= (LIVE_ALERT_TTL_MS[kind] || 2 * 3600_000) && fixDevices.size < 2;
+
   return {
     rowId,
     data: {
       hazardId: `${cluster.centre.lat.toFixed(4)}:${cluster.centre.lng.toFixed(4)}`,
       lat: Number(cluster.centre.lat.toFixed(6)),
       lng: Number(cluster.centre.lng.toFixed(6)),
-      kind: majority(events.map((event) => String(event.kind)), "pothole"),
+      kind,
       severity: Math.max(...events.map((event) => Number(event.severity) || 1)),
       passCount,
       deviceCount,
@@ -300,7 +336,9 @@ function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations
       confidence: Math.round(Math.min(1, (belief + feedbackBonus) * recency) * 1000) / 1000,
       firstSeen: new Date(firstSeen).toISOString(),
       lastSeen: new Date(lastSeen).toISOString(),
-      published: passCount >= PUBLISH_MIN_PASSES && deviceCount >= PUBLISH_MIN_DEVICES,
+      published: isAlert
+        ? alertFresh
+        : passCount >= PUBLISH_MIN_PASSES && deviceCount >= PUBLISH_MIN_DEVICES,
       clearPasses: clearDevices.size,
       fixedVotes: fixDevices.size,
     },
@@ -491,5 +529,5 @@ module.exports = async ({ res, log }) => {
 // Export deterministic domain helpers for the repository's regression tests.
 module.exports.testing = {
   validEvent, clusterEvents, buildHazard, rowIdFor, stalePublishedRows,
-  isMeasuredImpact, isManualConfirmation, writeHazard
+  isMeasuredImpact, isLiveAlert, isManualConfirmation, writeHazard
 };

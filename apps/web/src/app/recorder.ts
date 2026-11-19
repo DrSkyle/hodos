@@ -389,7 +389,9 @@ export async function loadHazards(): Promise<RemoteHazard[]> {
       id: String(row.$id ?? row.hazardId ?? ""),
       lat,
       lng,
-      kind: ["pothole", "speed_bump", "rough_pavement"].includes(row.kind) ? row.kind : "pothole",
+      kind: ["pothole", "speed_bump", "rough_pavement", "police", "jam", "roadblock", "flood"].includes(row.kind)
+        ? row.kind
+        : "pothole",
       severity: Math.min(3, Math.max(1, Number(row.severity) || 1)),
       passes: Number(row.passCount ?? row.passes ?? 1) || 1,
       devices: Number(row.deviceCount ?? row.devices ?? 1) || 1,

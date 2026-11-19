@@ -16,12 +16,34 @@
     :root {
       --bg: #faf8f2;
       --surface: #fffdf8;
+      --soft: #f1ede3;
+      --soft-2: #e9e4d8;
       --ink: #1c1a17;
       --muted: #736d61;
       --line: #e4dfd1;
       --accent: #d97706;
       --accent-deep: #b45309;
       --shadow: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #141311;
+        --surface: #1e1c19;
+        --soft: #26231f;
+        --soft-2: #322e28;
+        --ink: #faf8f2;
+        --muted: #a8a093;
+        --line: #322e28;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #141311;
+      --surface: #1e1c19;
+      --soft: #26231f;
+      --soft-2: #322e28;
+      --ink: #faf8f2;
+      --muted: #a8a093;
+      --line: #322e28;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -69,7 +91,7 @@
       gap: 6px;
       padding: 9px 16px;
       border-radius: 999px;
-      background: #f1ede3;
+      background: var(--soft);
       color: var(--ink);
       font-size: 12.5px;
       font-weight: 700;
@@ -78,7 +100,7 @@
       transition: background 0.15s ease;
     }
     .map-instagram:hover {
-      background: #e9e4d8;
+      background: var(--soft-2);
     }
     .map-instagram-wide {
       display: inline-flex;
@@ -90,11 +112,11 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #f1ede3;
+      background: var(--soft);
       border-radius: 999px;
       padding: 9px 16px;
-      min-width: 210px;
-      max-width: 280px;
+      min-width: 190px;
+      max-width: 260px;
       flex: 1;
     }
     .search-box svg {
@@ -123,20 +145,20 @@
       padding: 2px 0;
     }
     .filter-chip {
-      background: #f1ede3;
+      background: var(--soft);
       border: 0;
       color: var(--ink);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 650;
-      padding: 9px 16px;
+      padding: 9px 15px;
       border-radius: 999px;
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.15s ease, color 0.15s ease;
     }
     .filter-chip:hover {
-      background: #e9e4d8;
+      background: var(--soft-2);
     }
     .filter-chip.active {
       background: var(--ink);
@@ -148,20 +170,21 @@
       gap: 8px;
     }
     .btn-action {
-      background: #f1ede3;
+      background: var(--soft);
       border: 0;
       color: var(--ink);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 650;
-      padding: 9px 16px;
+      padding: 9px 15px;
       border-radius: 999px;
       cursor: pointer;
       text-decoration: none;
+      white-space: nowrap;
       transition: background 0.15s ease;
     }
     .btn-action:hover {
-      background: #e9e4d8;
+      background: var(--soft-2);
     }
     .map-wrapper {
       flex: 1;
@@ -182,7 +205,7 @@
       background: var(--surface);
       padding: 9px 16px;
       border-radius: 999px;
-      box-shadow: 0 6px 20px rgba(28, 26, 23, 0.10);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
       font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
       font-size: 10.5px;
       font-weight: 600;
@@ -198,12 +221,12 @@
       background: var(--surface);
       padding: 14px 18px 16px;
       border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(28, 26, 23, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
       color: var(--ink);
       z-index: 5;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
     .legend-title {
       font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
@@ -230,10 +253,76 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
+    .dot-police { background: #2563eb; }
+    .dot-jam { background: #ea580c; }
+    .dot-roadblock { background: #dc2626; }
+    .dot-flood { background: #0891b2; }
     .dot-pothole { background: #e11d48; }
     .dot-rough { background: #d97706; }
     .dot-bump { background: #7c3aed; }
-    .dot-fixed { background: #faf8f2; border: 3px solid #10b981; width: 12px; height: 12px; }
+    .dot-fixed { background: var(--surface); border: 3px solid #10b981; width: 12px; height: 12px; }
+    .radar-dock {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      background: var(--surface);
+      padding: 12px 14px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      color: var(--ink);
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: min(360px, calc(100vw - 32px));
+    }
+    .radar-dock-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .radar-dock-title {
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .radar-dock-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .radar-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 0;
+      background: var(--soft);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+    .radar-btn:hover:not(:disabled) {
+      background: var(--soft-2);
+      transform: translateY(-1px);
+    }
+    .radar-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .radar-feedback {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
     .btn-sponsor {
       background: var(--accent);
       border: 0;
@@ -249,6 +338,10 @@
     }
     .btn-sponsor:hover {
       background: var(--accent-deep);
+    }
+    @media (max-width: 720px) {
+      .map-legend-floating { display: none; }
+      .radar-dock { left: 12px; right: 12px; bottom: 16px; max-width: none; }
     }
   </style>
 </head>
@@ -269,6 +362,11 @@
 
     <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
       <button class="filter-chip active" data-kind="all">All</button>
+      <button class="filter-chip" data-kind="alerts">Live radar</button>
+      <button class="filter-chip" data-kind="police">Police</button>
+      <button class="filter-chip" data-kind="jam">Jam</button>
+      <button class="filter-chip" data-kind="roadblock">Blocked</button>
+      <button class="filter-chip" data-kind="flood">Flood</button>
       <button class="filter-chip" data-kind="pothole">Potholes</button>
       <button class="filter-chip" data-kind="rough_pavement">Rough road</button>
       <button class="filter-chip" data-kind="speed_bump">Speed bumps</button>
@@ -276,6 +374,7 @@
     </div>
 
     <div class="action-group">
+      <button id="theme-toggle" type="button" class="btn-action" aria-label="Toggle dark mode">☾ Dark</button>
       <a href="/partners" class="btn-sponsor">Put your shop here</a>
       <button id="btn-fit-all" class="btn-action">Fit route</button>
       <a href="/" class="btn-action">← Back</a>
@@ -285,13 +384,32 @@
   <main class="map-wrapper">
     <div id="full-map" aria-label="Interactive road hazard map"></div>
     <div id="full-map-status" class="map-status-floating">Loading road map...</div>
+
     <div class="map-legend-floating">
-      <span class="legend-title">Key</span>
+      <span class="legend-title">Live radar</span>
+      <div class="legend-row"><span class="legend-dot dot-police"></span><span>Police check</span></div>
+      <div class="legend-row"><span class="legend-dot dot-jam"></span><span>Traffic jam</span></div>
+      <div class="legend-row"><span class="legend-dot dot-roadblock"></span><span>Roadblock</span></div>
+      <div class="legend-row"><span class="legend-dot dot-flood"></span><span>Flooded</span></div>
+      <span class="legend-title" style="margin-top:4px;">Road surface</span>
       <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole</span></div>
       <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough road</span></div>
       <div class="legend-row"><span class="legend-dot dot-bump"></span><span>Speed bump</span></div>
       <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Repaired</span></div>
     </div>
+
+    <section class="radar-dock" aria-label="Report a live road alert">
+      <div class="radar-dock-head">
+        <span class="radar-dock-title">1-tap road radar</span>
+      </div>
+      <div class="radar-dock-buttons">
+        <button type="button" class="radar-btn" data-alert="police"><span class="legend-dot dot-police"></span>Police</button>
+        <button type="button" class="radar-btn" data-alert="jam"><span class="legend-dot dot-jam"></span>Jam</button>
+        <button type="button" class="radar-btn" data-alert="roadblock"><span class="legend-dot dot-roadblock"></span>Blocked</button>
+        <button type="button" class="radar-btn" data-alert="flood"><span class="legend-dot dot-flood"></span>Flood</button>
+      </div>
+      <p id="radar-feedback" class="radar-feedback">Tap to warn drivers on this road. Uses GPS if allowed, or map center.</p>
+    </section>
 
   </main>
 

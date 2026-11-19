@@ -1,9 +1,11 @@
 package org.hodos.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -21,13 +23,21 @@ import androidx.compose.ui.unit.sp
  * type — the road-signage family the website is set in.
  */
 
-// Core palette — warm paper and ink anchored by brand amber (#d97706).
+// Core light palette — warm paper and ink anchored by brand amber (#d97706).
 internal val Ink = Color(0xFF1C1A17)
 internal val Paper = Color(0xFFFAF8F2)
 internal val PaperRaised = Color(0xFFFFFDF8)
 internal val Sand = Color(0xFFF1EDE3)
 internal val Line = Color(0xFFE4DFD1)
 internal val Muted = Color(0xFF736D61)
+
+// Core dark palette — warm asphalt for night driving without glare.
+internal val AsphaltBg = Color(0xFF141311)
+internal val AsphaltSurface = Color(0xFF1E1C19)
+internal val AsphaltRaised = Color(0xFF272420)
+internal val AsphaltLine = Color(0xFF35312B)
+internal val AsphaltInk = Color(0xFFFAF8F2)
+internal val AsphaltMuted = Color(0xFFA8A295)
 
 // Legacy tinted-surface name; now the warm sand.
 internal val Mist = Sand
@@ -36,12 +46,16 @@ internal val Mist = Sand
 internal val Amber = Color(0xFFD97706)
 internal val AmberDeep = Color(0xFFB45309)
 
-// The live map's hazard language, shared with the website legend.
+// The live map's hazard & radar language, shared with the website legend.
 internal val Healed = Color(0xFF10B981)
 internal val Pothole = Color(0xFFE11D48)
 internal val Rough = Color(0xFFD97706)
 internal val Bump = Color(0xFF7C3AED)
 internal val Danger = Color(0xFFE11D48)
+internal val PoliceBlue = Color(0xFF2563EB)
+internal val JamOrange = Color(0xFFEA580C)
+internal val RoadblockRed = Color(0xFFDC2626)
+internal val FloodCyan = Color(0xFF0891B2)
 
 // Retained name for the legacy forest-green primary; now resolves to ink so
 // older call sites read as the ink-on-paper system without a sweep.
@@ -108,9 +122,22 @@ internal val HodosTypography = Typography(
 )
 
 @Composable
-internal fun HodosTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(
+internal fun HodosTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colors = if (darkTheme) {
+        darkColorScheme(
+            primary = AsphaltInk, onPrimary = AsphaltBg,
+            secondary = Amber, onSecondary = AsphaltBg,
+            background = AsphaltBg, onBackground = AsphaltInk,
+            surface = AsphaltSurface, onSurface = AsphaltInk,
+            surfaceVariant = AsphaltRaised, onSurfaceVariant = AsphaltMuted,
+            error = Danger,
+            outline = AsphaltLine
+        )
+    } else {
+        lightColorScheme(
             primary = Ink, onPrimary = Paper,
             secondary = Ink, onSecondary = Paper,
             background = Paper, onBackground = Ink,
@@ -118,7 +145,10 @@ internal fun HodosTheme(content: @Composable () -> Unit) {
             surfaceVariant = Sand, onSurfaceVariant = Muted,
             error = Danger,
             outline = Line
-        ),
+        )
+    }
+    MaterialTheme(
+        colorScheme = colors,
         typography = HodosTypography,
         shapes = Shapes(
             small = RoundedCornerShape(12.dp),
