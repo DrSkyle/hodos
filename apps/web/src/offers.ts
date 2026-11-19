@@ -264,6 +264,25 @@ function usable(offer: Offer): boolean {
 }
 
 /**
+ * A `?country=XX` override, honoured only from a local dev origin.
+ *
+ * This exists so the Nepal and India surfaces can be exercised without a VPN.
+ * It must never be honoured on the deployed site: as a public query parameter
+ * it let any visitor ask to be shown another country's region-specific content.
+ */
+function devCountryOverride(): string {
+  try {
+    const host = window.location.hostname;
+    const local = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host.endsWith(".local");
+    if (!local) return "";
+    const param = new URLSearchParams(window.location.search).get("country");
+    return param && /^[A-Za-z]{2}$/.test(param) ? param.toUpperCase() : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+/**
  * The visitor's country from the locale tag or local time zone.
  * No IP lookup, no permission prompt.
  *
@@ -273,16 +292,15 @@ function usable(offer: Offer): boolean {
  * reliably get the Nepal-personalized Garage and referral programme.
  */
 export function visitorCountry(): string {
-  try {
-    const param = new URLSearchParams(window.location.search).get("country");
-    if (param && /^[A-Za-z]{2}$/.test(param)) return param.toUpperCase();
-  } catch (_) {
-    // ignore outside browser
-  }
+  const override = devCountryOverride();
+  if (override) return override;
   const tag = (navigator.language || "en-US").replace("_", "-");
   const parts = tag.split("-");
   const last = parts[parts.length - 1] ?? "";
   const fromLocale = parts.length > 1 && last.length === 2 ? last.toUpperCase() : "";
+  // A bare `en` carries no region, so it says nothing about where someone is.
+  // Confirming Nepal from the time zone must not be skipped because the
+  // browser was left on a regionless English tag.
   if (fromLocale && fromLocale !== "US" && fromLocale !== "GB") {
     return fromLocale;
   }
@@ -304,12 +322,8 @@ const IP_COUNTRY_CACHE_KEY = "hodos.ipCountry";
  * IP geolocation is unreachable or blocked.
  */
 export async function detectVisitorCountryByIp(): Promise<string> {
-  try {
-    const param = new URLSearchParams(window.location.search).get("country");
-    if (param && /^[A-Za-z]{2}$/.test(param)) return param.toUpperCase();
-  } catch (_) {
-    // ignore outside browser
-  }
+  const override = devCountryOverride();
+  if (override) return override;
 
   try {
     const cached = window.sessionStorage.getItem(IP_COUNTRY_CACHE_KEY);

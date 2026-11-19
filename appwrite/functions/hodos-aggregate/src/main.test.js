@@ -176,6 +176,53 @@ test("native sensor impacts without an explicit observation field remain support
   assert.equal(testing.isManualConfirmation(nativeImpact), false);
 });
 
+test("whole aggregation flow publishes live radar alerts, not just surface defects", async () => {
+  const originalFetch = global.fetch;
+  const timestamp = new Date(Date.now() - 60_000).toISOString();
+  // Two independent drivers report the same police check. Radar alerts are a
+  // different observation from a sensor impact, and dropping them here is what
+  // silently kept every 1-tap alert off the map.
+  const alerts = [
+    {
+      lat: 27.7172, lng: 85.324, accuracy: 25, speedKph: 0, magnitude: 0,
+      severity: 2, confidence: 0.75, kind: "police", observation: "alert",
+      mode: "vehicle", deviceId: "driver-one", tripId: "radar-a", recordedAt: timestamp
+    },
+    {
+      lat: 27.7172, lng: 85.324, accuracy: 25, speedKph: 0, magnitude: 0,
+      severity: 2, confidence: 0.75, kind: "police", observation: "alert",
+      mode: "vehicle", deviceId: "driver-two", tripId: "radar-b", recordedAt: timestamp
+    }
+  ];
+  const writes = [];
+  global.fetch = async (url, options = {}) => {
+    if (String(url).includes("/events/rows")) {
+      return { ok: true, json: async () => ({ rows: alerts }) };
+    }
+    if (String(url).includes("/hazards/rows") && options.method === undefined) {
+      return { ok: true, json: async () => ({ rows: [] }) };
+    }
+    if (String(url).endsWith("/hazards/rows") && options.method === "POST") {
+      writes.push(JSON.parse(options.body));
+      return { ok: true, status: 201 };
+    }
+    throw new Error("Unexpected request: " + url);
+  };
+  try {
+    const result = await aggregate({
+      res: { json: (body, status = 200) => ({ body, status }) },
+      log: () => {}
+    });
+    assert.equal(result.body.ok, true);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].data.kind, "police");
+    assert.equal(writes[0].data.published, true);
+    assert.ok(String(writes[0].$id || writes[0].rowId).startsWith("poln"));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("whole aggregation flow publishes corroborated sensor evidence without network", async () => {
   const originalFetch = global.fetch;
   const timestamp = new Date(Date.now() - 60_000).toISOString();

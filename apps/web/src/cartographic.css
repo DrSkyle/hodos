@@ -578,16 +578,14 @@ svg {
 /* ---------- cards & grids ---------- */
 
 .steps,
-.plan-grid,
-.fleet-grid {
+.plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--s4);
 }
 
 .step-card,
-.plan,
-.fleet-card {
+.plan {
   background: var(--paper-raised);
   border-radius: var(--r-lg);
   padding: var(--s6);
@@ -605,8 +603,7 @@ svg {
   color: var(--accent-ink);
 }
 
-.step-card h3,
-.fleet-card h3 {
+.step-card h3 {
   margin-top: var(--s2);
   font-size: var(--t-h3);
   font-weight: 650;
@@ -614,8 +611,7 @@ svg {
   line-height: 1.25;
 }
 
-.step-card p,
-.fleet-card p {
+.step-card p {
   font-size: var(--t-small);
   line-height: 1.6;
   color: var(--muted);
@@ -1125,7 +1121,6 @@ svg {
 @media (max-width: 980px) {
   .steps,
   .plan-grid,
-  .fleet-grid,
   .feature-list {
     grid-template-columns: 1fr;
   }

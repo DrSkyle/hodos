@@ -465,12 +465,17 @@ module.exports = async ({ res, log }) => {
       log("all observations rejected; existing hazard map preserved");
       return res.json({ ok: false, error: "no valid observations" }, 503);
     }
-    const incidents = events.filter(isMeasuredImpact);
+    // Live radar alerts are short-lived driver reports, not surface defects, but
+    // they publish through exactly the same corroboration and TTL machinery.
+    // Leaving them out here meant isLiveAlert() was never consulted and a
+    // reported police check or landslide could never reach the map.
+    const incidents = events.filter((event) => isMeasuredImpact(event) || isLiveAlert(event));
     const manualConfirmations = events.filter(isManualConfirmation);
     const silentPasses = events.filter((event) => event.observation === "pass");
     const fixReports = events.filter((event) => event.observation === "fix");
+    const liveAlerts = incidents.filter(isLiveAlert).length;
     log(
-      `read ${events.length} events (${incidents.length} sensor impacts, ${manualConfirmations.length} manual confirmations, ${silentPasses.length} passes, ${fixReports.length} fix reports)`,
+      `read ${events.length} events (${incidents.length - liveAlerts} sensor impacts, ${liveAlerts} live alerts, ${manualConfirmations.length} manual confirmations, ${silentPasses.length} passes, ${fixReports.length} fix reports)`,
     );
 
     const clusters = clusterEvents(incidents);
