@@ -2,7 +2,7 @@ import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
 import { isValidEmail, subscribeEmail } from "./garage-client";
-import { visitorCountry } from "./offers";
+import { detectVisitorCountryByIp, visitorCountry } from "./offers";
 import { loadLiveShops, type LiveShop } from "./live-shops";
 import {
   checkedLabel,
@@ -41,8 +41,8 @@ const lede = document.querySelector<HTMLElement>(".garage-lede");
 const perks = document.getElementById("perks-title");
 const nepalReferralBanner = document.getElementById("nepal-referral-banner");
 
-const country = visitorCountry();
-const isNepal = country === "NP";
+let country = visitorCountry();
+let isNepal = country === "NP";
 
 const CATEGORIES: string[] = [
   "All",
@@ -329,32 +329,40 @@ if (isNepal && nepalReferralBanner) {
 }
 
 if (searchInput) {
-  searchInput.placeholder = isNepal
-    ? "Search shops on the map by name, road or offer…"
-    : "Search products across all categories…";
   searchInput.addEventListener("input", () => {
     searchQuery = searchInput.value.trim();
     render();
   });
 }
 
-if (title) {
-  title.innerHTML = isNepal
-    ? "Shops on the map<span class=\"dot\">.</span>"
-    : "Kit worth<br />keeping in the car<span class=\"dot\">.</span>";
-}
+void detectVisitorCountryByIp().then((detected) => {
+  country = detected;
+  isNepal = country === "NP";
 
-if (lede) {
-  lede.textContent = isNepal
-    ? "The shops that put a pin on the Hodos map, and the offers they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
-    : "The things that actually save a drive — a working inflator, a mount that holds, wipers that clear. Bought straight from the shop that sells them, at the shop's own price.";
-}
+  if (searchInput) {
+    searchInput.placeholder = isNepal
+      ? "Search shops on the map by name, road or offer…"
+      : "Search products across all categories…";
+  }
 
-if (perks) {
-  perks.textContent = isNepal ? "Riders earn perks, not points." : "Keep the kit, skip the guesswork.";
-}
+  if (title) {
+    title.innerHTML = isNepal
+      ? "Shops on the map<span class=\"dot\">.</span>"
+      : "Kit worth<br />keeping in the car<span class=\"dot\">.</span>";
+  }
 
-render();
+  if (lede) {
+    lede.textContent = isNepal
+      ? "The shops that put a pin on the Hodos map, and the offers they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
+      : "The things that actually save a drive — a working inflator, a mount that holds, wipers that clear. Bought straight from the shop that sells them, at the shop's own price.";
+  }
+
+  if (perks) {
+    perks.textContent = isNepal ? "Riders earn perks, not points." : "Keep the kit, skip the guesswork.";
+  }
+
+  render();
+});
 
 /* Newsletter: still the only thing a visitor is asked for. */
 function wireListForm() {

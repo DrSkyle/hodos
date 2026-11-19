@@ -2,14 +2,10 @@ import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
 import { DOWNLOAD_URL } from "./site-constants";
-import { visitorCountry } from "./offers";
-import { mountHeroInstrument } from "./hero-instrument";
+import { detectVisitorCountryByIp } from "./offers";
 import { wireThemeToggle } from "./theme";
 
 wireThemeToggle("theme-toggle");
-
-const isNepal = visitorCountry() === "NP";
-mountHeroInstrument(isNepal);
 
 // Matches appwrite/functions/hodos-api durationFactor() + Access tier ($0.19/day, ~135 NPR/USD).
 const NEPAL_BASE_USD_DAY = 0.19;
@@ -61,9 +57,11 @@ function wireNepalCalculator() {
   renderCalc();
 }
 
-// The referral programme and Nepal-personalized hero/nav are revealed when the
-// visitor is in Nepal. The page and API also enforce the territory server-side.
-if (isNepal) {
+// The referral programme and Nepal-specific nav are revealed ONLY when the
+// visitor's IP resolves to Nepal. The referral page and API also enforce Nepal
+// server-side.
+void detectVisitorCountryByIp().then((country) => {
+  if (country !== "NP") return;
   document.getElementById("footer-referrals")?.removeAttribute("hidden");
   document.getElementById("nav-referrals")?.removeAttribute("hidden");
   document.getElementById("mobile-referrals")?.removeAttribute("hidden");
@@ -78,7 +76,7 @@ if (isNepal) {
     navCta.href = DOWNLOAD_URL;
   }
   document.querySelector(".nav-links .nav-garage")?.classList.remove("nav-garage");
-}
+});
 
 document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
   link.addEventListener("click", () => {

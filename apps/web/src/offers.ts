@@ -296,6 +296,72 @@ export function visitorCountry(): string {
   return fromLocale;
 }
 
+const IP_COUNTRY_CACHE_KEY = "hodos.ipCountry";
+
+/**
+ * Resolve the visitor's 2-letter ISO country code from their IP address
+ * (cached per browser session). Falls back to `visitorCountry()` only if
+ * IP geolocation is unreachable or blocked.
+ */
+export async function detectVisitorCountryByIp(): Promise<string> {
+  try {
+    const param = new URLSearchParams(window.location.search).get("country");
+    if (param && /^[A-Za-z]{2}$/.test(param)) return param.toUpperCase();
+  } catch (_) {
+    // ignore outside browser
+  }
+
+  try {
+    const cached = window.sessionStorage.getItem(IP_COUNTRY_CACHE_KEY);
+    if (cached && /^[A-Z]{2}$/.test(cached)) return cached;
+  } catch (_) {
+    // ignore storage errors
+  }
+
+  const save = (code: string) => {
+    const upper = code.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(upper)) return "";
+    try {
+      window.sessionStorage.setItem(IP_COUNTRY_CACHE_KEY, upper);
+    } catch (_) {
+      // ignore
+    }
+    return upper;
+  };
+
+  // Primary: api.country.is (HTTPS, CORS *, zero-key, fast edge lookup)
+  try {
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch("https://api.country.is/", { signal: ctrl.signal });
+    window.clearTimeout(timer);
+    if (res.ok) {
+      const data = (await res.json()) as { country?: string };
+      const code = save(String(data.country || ""));
+      if (code) return code;
+    }
+  } catch (_) {
+    // fall through to secondary IP lookup
+  }
+
+  // Secondary: ipwho.is (HTTPS, CORS *, zero-key)
+  try {
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
+    window.clearTimeout(timer);
+    if (res.ok) {
+      const data = (await res.json()) as { country_code?: string };
+      const code = save(String(data.country_code || ""));
+      if (code) return code;
+    }
+  } catch (_) {
+    // fall through to local fallback
+  }
+
+  return visitorCountry();
+}
+
 /**
  * Everything showable right now, ordered for this visitor.
  *

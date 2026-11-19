@@ -375,14 +375,13 @@ a {
 /* ---------- hero ---------- */
 
 .hero {
-  padding: 76px 0 0;
+  padding: 76px 0 32px;
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 64px;
-  align-items: center;
+  grid-template-columns: 1fr;
+  max-width: 780px;
 }
 
 .hero-headline {
