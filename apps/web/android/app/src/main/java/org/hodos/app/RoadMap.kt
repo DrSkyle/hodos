@@ -39,14 +39,24 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Typeface
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.layers.PropertyFactory.circleColor
 import org.maplibre.android.style.layers.PropertyFactory.circleOpacity
 import org.maplibre.android.style.layers.PropertyFactory.circleRadius
 import org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor
 import org.maplibre.android.style.layers.PropertyFactory.circleStrokeOpacity
 import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
+import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
+import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
+import org.maplibre.android.style.layers.PropertyFactory.iconImage
+import org.maplibre.android.style.layers.PropertyFactory.iconSize
 import org.maplibre.android.style.layers.PropertyValue
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -242,10 +252,25 @@ fun RoadMap(
                 if (spec != null) {
                     addHazardLayersFromSpec(style, spec)
                 }
+                // Momentary Live Road Radar alerts (police, jam, roadblock, flood)
+                // render as distinct symbol badges above surface hazard dots so
+                // drivers never confuse a temporary check/blockage with a pothole.
+                addLiveRadarBadgeImages(style)
+                style.addSource(GeoJsonSource(
+                    "hodos-alerts", FeatureCollection.fromFeatures(emptyArray<Feature>())
+                ))
+                style.addLayer(
+                    SymbolLayer("hodos-alert-symbols", "hodos-alerts").withProperties(
+                        iconImage(Expression.get("icon")),
+                        iconSize(0.62f),
+                        iconAllowOverlap(true),
+                        iconIgnorePlacement(true)
+                    )
+                )
                 ready = true
                 result.addOnMapClickListener { point ->
                     val screen = result.projection.toScreenLocation(point)
-                    val hits = result.queryRenderedFeatures(screen, "hodos-hazard-point")
+                    val hits = result.queryRenderedFeatures(screen, "hodos-alert-symbols", "hodos-hazard-point")
                     val id = hits.firstOrNull()?.getStringProperty("id")
                     val hazard = latestHazards.firstOrNull { it.id == id }
                     if (hazard != null) {
@@ -283,30 +308,40 @@ fun RoadMap(
 
     LaunchedEffect(hazards, ready) {
         if (ready) {
-            val features = hazards.map { hazard ->
-                Feature.fromGeometry(Point.fromLngLat(hazard.lng, hazard.lat)).apply {
-                    addStringProperty("id", hazard.id)
-                    addStringProperty("kind", hazard.kind)
-                    addBooleanProperty("fixed", hazard.fixed)
-                    addNumberProperty("severity", hazard.severity)
-                    addNumberProperty("passes", hazard.passes)
-                    addStringProperty(
-                        "color",
-                        if (hazard.fixed) "#10B981"
-                        else when (hazard.kind) {
-                            "police" -> "#2563EB"
-                            "jam" -> "#EA580C"
-                            "roadblock" -> "#DC2626"
-                            "flood" -> "#0891B2"
-                            "pothole" -> "#E11D48"
-                            "speed_bump" -> "#7C3AED"
-                            else -> "#D97706"
-                        }
-                    )
+            val surfaceFeatures = hazards
+                .filter { !it.isLiveAlert }
+                .map { hazard ->
+                    Feature.fromGeometry(Point.fromLngLat(hazard.lng, hazard.lat)).apply {
+                        addStringProperty("id", hazard.id)
+                        addStringProperty("kind", hazard.kind)
+                        addBooleanProperty("fixed", hazard.fixed)
+                        addNumberProperty("severity", hazard.severity)
+                        addNumberProperty("passes", hazard.passes)
+                        addStringProperty(
+                            "color",
+                            if (hazard.fixed) "#10B981"
+                            else when (hazard.kind) {
+                                "pothole" -> "#E11D48"
+                                "speed_bump" -> "#7C3AED"
+                                else -> "#D97706"
+                            }
+                        )
+                    }
                 }
-            }
             map?.style?.getSourceAs<GeoJsonSource>("hodos-hazards")
-                ?.setGeoJson(FeatureCollection.fromFeatures(features))
+                ?.setGeoJson(FeatureCollection.fromFeatures(surfaceFeatures))
+
+            val alertFeatures = hazards
+                .filter { it.isLiveAlert && !it.fixed }
+                .map { alert ->
+                    Feature.fromGeometry(Point.fromLngLat(alert.lng, alert.lat)).apply {
+                        addStringProperty("id", alert.id)
+                        addStringProperty("kind", alert.kind)
+                        addStringProperty("icon", "radar-${alert.kind}")
+                    }
+                }
+            map?.style?.getSourceAs<GeoJsonSource>("hodos-alerts")
+                ?.setGeoJson(FeatureCollection.fromFeatures(alertFeatures))
 
             // Quality cells from the same hazard set, bucketed on the grid in
             // the shared layer spec.
@@ -659,4 +694,82 @@ private fun addHazardLayersFromSpec(style: Style, specJson: String) {
             }
         }
     }
+}
+
+private fun addLiveRadarBadgeImages(style: Style) {
+    runCatching {
+        style.addImage("radar-police", drawRadarBadge(0xFF2563EB.toInt(), "P", shape = "shield"))
+        style.addImage("radar-jam", drawRadarBadge(0xFFEA580C.toInt(), "!", shape = "diamond"))
+        style.addImage("radar-roadblock", drawRadarBadge(0xFFDC2626.toInt(), "✕", shape = "octagon"))
+        style.addImage("radar-flood", drawRadarBadge(0xFF0891B2.toInt(), "≈", shape = "circle"))
+    }
+}
+
+private fun drawRadarBadge(fillColor: Int, glyph: String, shape: String): Bitmap {
+    val size = 76
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val cx = size / 2f
+    val cy = size / 2f
+    val r = size * 0.40f
+
+    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = fillColor
+        style = Paint.Style.FILL
+    }
+    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+        strokeJoin = Paint.Join.ROUND
+    }
+
+    val path = Path()
+    when (shape) {
+        "shield" -> {
+            path.moveTo(cx, cy - r)
+            path.lineTo(cx + r * 0.88f, cy - r * 0.55f)
+            path.lineTo(cx + r * 0.80f, cy + r * 0.18f)
+            path.quadTo(cx + r * 0.52f, cy + r * 0.78f, cx, cy + r)
+            path.quadTo(cx - r * 0.52f, cy + r * 0.78f, cx - r * 0.80f, cy + r * 0.18f)
+            path.lineTo(cx - r * 0.88f, cy - r * 0.55f)
+            path.close()
+        }
+        "diamond" -> {
+            path.moveTo(cx, cy - r)
+            path.lineTo(cx + r, cy)
+            path.lineTo(cx, cy + r)
+            path.lineTo(cx - r, cy)
+            path.close()
+        }
+        "octagon" -> {
+            val d = r * 0.44f
+            path.moveTo(cx - d, cy - r)
+            path.lineTo(cx + d, cy - r)
+            path.lineTo(cx + r, cy - d)
+            path.lineTo(cx + r, cy + d)
+            path.lineTo(cx + d, cy + r)
+            path.lineTo(cx - d, cy + r)
+            path.lineTo(cx - r, cy + d)
+            path.lineTo(cx - r, cy - d)
+            path.close()
+        }
+        else -> {
+            path.addCircle(cx, cy, r, Path.Direction.CW)
+        }
+    }
+
+    canvas.drawPath(path, fillPaint)
+    canvas.drawPath(path, strokePaint)
+
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textSize = 31f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textAlign = Paint.Align.CENTER
+    }
+    val fm = textPaint.fontMetrics
+    val baseline = cy - (fm.ascent + fm.descent) / 2f
+    canvas.drawText(glyph, cx, baseline, textPaint)
+    return bmp
 }

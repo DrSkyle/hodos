@@ -332,6 +332,24 @@ fun HodosApp(
         )
     }
 
+    val liveAlerts = remember(visibleHazards) {
+        visibleHazards.filter { it.isLiveAlert && !it.fixed }
+    }
+    val surfaceHazards = remember(visibleHazards) {
+        visibleHazards.filter { !it.isLiveAlert }
+    }
+    val nearestLiveAlert = remember(liveAlerts, lastKnownLocation) {
+        val fix = lastKnownLocation ?: return@remember null
+        liveAlerts
+            .map { it to distanceTo(it, fix) }
+            .filter { it.second <= 3_000f }
+            .minByOrNull { it.second }
+    }
+
+    LaunchedEffect(liveAlerts, lastKnownLocation) {
+        RadarNotifier.notifyNearby(context, liveAlerts, lastKnownLocation)
+    }
+
     // Re-check the backend after internet connectivity returns or the
     // activity resumes. An API failure is NOT proof the phone is offline.
     LaunchedEffect(refreshSignal, internetConnected) {
@@ -419,19 +437,92 @@ fun HodosApp(
                                     DoodleIcon(DoodleSymbol.MAP, Modifier.size(24.dp), Ink)
                                     Spacer(Modifier.width(10.dp))
                                     Column(Modifier.weight(1f)) {
-                                        Text("Nearby hazards", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp)
+                                        Text("Road feed & hazards", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp)
                                         Text(
-                                            (if (visibleHazards.isEmpty()) "No matching road hazards"
-                                            else "${visibleHazards.size} on the shared map").uppercase(),
+                                            ("${liveAlerts.size} live alert${if (liveAlerts.size == 1) "" else "s"} · ${surfaceHazards.size} road hazard${if (surfaceHazards.size == 1) "" else "s"}").uppercase(),
                                             color = Muted, fontSize = 10.sp,
                                             fontFamily = OverpassMono,
                                             fontWeight = FontWeight.SemiBold,
                                             letterSpacing = 0.8.sp
                                         )
                                     }
+                                    Surface(
+                                        onClick = { radarSheetOpen = true },
+                                        color = Amber,
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text(
+                                            "+ REPORT",
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = OverpassMono,
+                                            letterSpacing = 0.7.sp,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
                                     IconButton(onClick = onRefresh, enabled = !loading) {
                                         if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = AmberDeep)
                                         else Icon(Icons.Outlined.Refresh, contentDescription = "Refresh hazards", tint = Ink)
+                                    }
+                                }
+                                if (liveAlerts.isNotEmpty()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    Text(
+                                        "LIVE ROAD RADAR · AUTO-EXPIRES",
+                                        color = Muted,
+                                        fontSize = 9.5.sp,
+                                        fontFamily = OverpassMono,
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.9.sp
+                                    )
+                                    Spacer(Modifier.height(6.dp))
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        liveAlerts.take(4).forEach { alert ->
+                                            val badgeColor = when (alert.kind) {
+                                                "police" -> PoliceBlue
+                                                "jam" -> JamOrange
+                                                "roadblock" -> RoadblockRed
+                                                else -> FloodCyan
+                                            }
+                                            val symbol = when (alert.kind) {
+                                                "police" -> "P"
+                                                "jam" -> "!"
+                                                "roadblock" -> "✕"
+                                                else -> "≈"
+                                            }
+                                            val distM = lastKnownLocation?.let { distanceTo(alert, it) }
+                                            val distText = distM?.let {
+                                                if (it < 1000f) "${it.roundToInt()} m away"
+                                                else String.format(Locale.US, "%.1f km away", it / 1000f)
+                                            } ?: "Active now"
+                                            Surface(
+                                                onClick = { selected = alert },
+                                                color = Sand,
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Row(
+                                                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Box(
+                                                        Modifier.size(30.dp).background(badgeColor, RoundedCornerShape(9.dp)),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(symbol, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                                                    }
+                                                    Spacer(Modifier.width(10.dp))
+                                                    Column(Modifier.weight(1f)) {
+                                                        Text(alert.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink)
+                                                        Text(
+                                                            "$distText · Temporary radar alert",
+                                                            fontSize = 11.sp,
+                                                            color = Muted
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 if (trips.isEmpty()) {
@@ -475,7 +566,7 @@ fun HodosApp(
                                     }
                                 }
                                 Spacer(Modifier.height(14.dp))
-                                if (visibleHazards.isEmpty()) {
+                                if (surfaceHazards.isEmpty()) {
                                     Row(verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp)) {
                                         Surface(
@@ -492,20 +583,20 @@ fun HodosApp(
                                         Column {
                                             Text(
                                                 if (hazards.isEmpty()) "A blank map is a beginning."
-                                                else "Nothing matched just yet.",
+                                                else "No surface hazards here yet.",
                                                 fontWeight = FontWeight.Bold, color = Ink,
                                                 fontSize = 15.sp
                                             )
                                             Text(
                                                 if (hazards.isEmpty()) "As independent journeys confirm bumps, you'll see them here."
-                                                else "Try clearing your search or changing the severity filter.",
+                                                else "Potholes and rough stretches appear here once confirmed.",
                                                 color = Muted, fontSize = 12.sp, lineHeight = 18.sp
                                             )
                                         }
                                     }
                                 } else {
-                                    LazyColumn(Modifier.heightIn(max = 260.dp)) {
-                                        items(visibleHazards, key = { it.id }) { hazard ->
+                                    LazyColumn(Modifier.heightIn(max = 240.dp)) {
+                                        items(surfaceHazards, key = { it.id }) { hazard ->
                                             Box(Modifier.animateItem()) {
                                                 HazardRow(hazard, lastKnownLocation?.let { distanceTo(hazard, it) }) { selected = hazard }
                                             }
@@ -660,6 +751,55 @@ fun HodosApp(
                                                 contentDescription = "Filter hazards",
                                                 tint = if (filterVisible) Paper else Ink
                                             )
+                                        }
+                                    }
+                                }
+                                if (nearestLiveAlert != null) {
+                                    val (alert, distM) = nearestLiveAlert
+                                    val badgeColor = when (alert.kind) {
+                                        "police" -> PoliceBlue
+                                        "jam" -> JamOrange
+                                        "roadblock" -> RoadblockRed
+                                        else -> FloodCyan
+                                    }
+                                    val symbol = when (alert.kind) {
+                                        "police" -> "P"
+                                        "jam" -> "!"
+                                        "roadblock" -> "✕"
+                                        else -> "≈"
+                                    }
+                                    val distLabel = if (distM < 1000f) "${distM.roundToInt()} m away"
+                                    else String.format(Locale.US, "%.1f km away", distM / 1000f)
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(
+                                        onClick = { selected = alert },
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = badgeColor
+                                    ) {
+                                        Row(
+                                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                Modifier.size(26.dp).background(Color.White.copy(alpha = 0.22f), CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(symbol, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                                            }
+                                            Spacer(Modifier.width(10.dp))
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    "${alert.title} · $distLabel",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                )
+                                                Text(
+                                                    "Live radar alert · tap for details",
+                                                    color = Color.White.copy(alpha = 0.85f),
+                                                    fontSize = 11.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }

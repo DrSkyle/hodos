@@ -341,24 +341,45 @@ export function initWebMap(
 
   const buildGeoJSON = (items: WebHazard[]): FeatureCollection => ({
     type: "FeatureCollection",
-    features: items.map((h) => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [h.lng, h.lat]
-      },
-      properties: {
-        id: h.id,
-        title: h.title,
-        kind: h.kind,
-        severity: h.severity,
-        passes: h.passes,
-        devices: h.devices,
-        published: h.published,
-        fixed: h.fixed,
-        locationName: h.locationName
-      }
-    }))
+    features: items
+      .filter((h) => !isLiveAlertKind(h.kind))
+      .map((h) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [h.lng, h.lat]
+        },
+        properties: {
+          id: h.id,
+          title: h.title,
+          kind: h.kind,
+          severity: h.severity,
+          passes: h.passes,
+          devices: h.devices,
+          published: h.published,
+          fixed: h.fixed,
+          locationName: h.locationName
+        }
+      }))
+  });
+
+  const buildAlertsGeoJSON = (items: WebHazard[]): FeatureCollection => ({
+    type: "FeatureCollection",
+    features: items
+      .filter((h) => isLiveAlertKind(h.kind) && !h.fixed)
+      .map((h) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [h.lng, h.lat]
+        },
+        properties: {
+          id: h.id,
+          title: h.title,
+          kind: h.kind,
+          icon: `radar-${h.kind}`
+        }
+      }))
   });
 
   const buildPartnerGeoJSON = (items: WebPartner[]): FeatureCollection => ({
@@ -405,14 +426,20 @@ export function initWebMap(
     if (src) {
       src.setData(buildGeoJSON(hazards));
     }
+    const alertsSrc = map.getSource("hodos-alerts") as any;
+    if (alertsSrc) {
+      alertsSrc.setData(buildAlertsGeoJSON(hazards));
+    }
     const qualitySrc = map.getSource("hodos-quality") as any;
     if (qualitySrc) {
       qualitySrc.setData(buildQualityGeoJSON(hazards));
     }
     if (statusEl) {
+      const alertCount = hazards.filter((h) => isLiveAlertKind(h.kind) && !h.fixed).length;
+      const surfaceCount = hazards.filter((h) => !isLiveAlertKind(h.kind)).length;
       statusEl.textContent = hazards.length === 0
         ? "No published road observations yet"
-        : `${hazards.length} road observations`;
+        : `${alertCount} live alert${alertCount === 1 ? "" : "s"} · ${surfaceCount} road hazard${surfaceCount === 1 ? "" : "s"}`;
     }
     onHazardsUpdated?.(hazards);
   };
@@ -422,6 +449,7 @@ export function initWebMap(
     hazards,
     filterByKind: (kind: string, query = "") => {
       const src = map.getSource("hodos-hazards") as any;
+      const alertsSrc = map.getSource("hodos-alerts") as any;
       if (!src) return;
 
       const q = query.trim().toLowerCase();
@@ -443,10 +471,13 @@ export function initWebMap(
       });
 
       src.setData(buildGeoJSON(filtered));
+      if (alertsSrc) {
+        alertsSrc.setData(buildAlertsGeoJSON(filtered));
+      }
       if (statusEl) {
         statusEl.textContent = filtered.length === 0
           ? "No road observations match this filter"
-          : `${filtered.length} road observations`;
+          : `${filtered.length} matching report${filtered.length === 1 ? "" : "s"}`;
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards, true),
@@ -600,9 +631,76 @@ export function initWebMap(
       map.getCanvas().style.cursor = "";
     });
 
+    const registerRadarBadges = () => {
+      const defs: Array<{ id: string; color: string; glyph: string; shape: "shield" | "diamond" | "octagon" | "circle" }> = [
+        { id: "radar-police", color: "#2563eb", glyph: "P", shape: "shield" },
+        { id: "radar-jam", color: "#ea580c", glyph: "!", shape: "diamond" },
+        { id: "radar-roadblock", color: "#dc2626", glyph: "✕", shape: "octagon" },
+        { id: "radar-flood", color: "#0891b2", glyph: "≈", shape: "circle" }
+      ];
+      for (const def of defs) {
+        if (map.hasImage(def.id)) continue;
+        const size = 64;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        const cx = size / 2;
+        const cy = size / 2;
+        const r = size * 0.4;
+        ctx.beginPath();
+        if (def.shape === "shield") {
+          ctx.moveTo(cx, cy - r);
+          ctx.lineTo(cx + r * 0.88, cy - r * 0.55);
+          ctx.lineTo(cx + r * 0.8, cy + r * 0.18);
+          ctx.quadraticCurveTo(cx + r * 0.52, cy + r * 0.78, cx, cy + r);
+          ctx.quadraticCurveTo(cx - r * 0.52, cy + r * 0.78, cx - r * 0.8, cy + r * 0.18);
+          ctx.lineTo(cx - r * 0.88, cy - r * 0.55);
+          ctx.closePath();
+        } else if (def.shape === "diamond") {
+          ctx.moveTo(cx, cy - r);
+          ctx.lineTo(cx + r, cy);
+          ctx.lineTo(cx, cy + r);
+          ctx.lineTo(cx - r, cy);
+          ctx.closePath();
+        } else if (def.shape === "octagon") {
+          const d = r * 0.44;
+          ctx.moveTo(cx - d, cy - r);
+          ctx.lineTo(cx + d, cy - r);
+          ctx.lineTo(cx + r, cy - d);
+          ctx.lineTo(cx + r, cy + d);
+          ctx.lineTo(cx + d, cy + r);
+          ctx.lineTo(cx - d, cy + r);
+          ctx.lineTo(cx - r, cy + d);
+          ctx.lineTo(cx - r, cy - d);
+          ctx.closePath();
+        } else {
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = def.color;
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "800 26px system-ui, -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(def.glyph, cx, cy + 1);
+        const img = ctx.getImageData(0, 0, size, size);
+        map.addImage(def.id, { width: size, height: size, data: img.data }, { pixelRatio: 2 });
+      }
+    };
+
     map.addSource("hodos-hazards", {
       type: "geojson",
       data: buildGeoJSON(hazards)
+    });
+    map.addSource("hodos-alerts", {
+      type: "geojson",
+      data: buildAlertsGeoJSON(hazards)
     });
     map.addSource("hodos-quality", {
       type: "geojson",
@@ -625,6 +723,32 @@ export function initWebMap(
             paint: layer.paint
           });
         }
+        registerRadarBadges();
+        if (!map.getLayer("hodos-alert-symbols")) {
+          map.addLayer({
+            id: "hodos-alert-symbols",
+            type: "symbol",
+            source: "hodos-alerts",
+            layout: {
+              "icon-image": ["get", "icon"],
+              "icon-size": 1,
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true
+            }
+          });
+        }
+        map.on("click", "hodos-alert-symbols", (e: MapLayerMouseEvent) => {
+          const feat = e.features?.[0];
+          if (!feat || !feat.properties) return;
+          const target = hazards.find((h) => h.id === feat.properties?.id);
+          if (target) showPopupForHazard(target);
+        });
+        map.on("mouseenter", "hodos-alert-symbols", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "hodos-alert-symbols", () => {
+          map.getCanvas().style.cursor = "";
+        });
         map.on("click", "hodos-hazard-point", (e: MapLayerMouseEvent) => {
           const feat = e.features?.[0];
           if (!feat || !feat.properties) return;

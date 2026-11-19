@@ -344,6 +344,67 @@
       color: var(--muted);
       line-height: 1.35;
     }
+    .radar-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+    }
+    .radar-feed:empty {
+      display: none;
+    }
+    .radar-feed-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 12px;
+      border: 0;
+      background: var(--soft);
+      color: var(--ink);
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+    .radar-feed-item:hover {
+      background: var(--soft-2);
+    }
+    .radar-symbol {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .sym-police { background: #2563eb; }
+    .sym-jam { background: #ea580c; }
+    .sym-roadblock { background: #dc2626; }
+    .sym-flood { background: #0891b2; }
+    .radar-feed-meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .radar-feed-meta strong {
+      font-size: 12.5px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .radar-feed-meta span {
+      font-size: 10.5px;
+      color: var(--muted);
+      font-family: "Overpass Mono Variable", "Overpass Mono", ui-monospace, monospace;
+    }
     .btn-sponsor {
       background: var(--accent);
       border: 0;
@@ -400,11 +461,11 @@
     <div id="full-map-status" class="map-status-floating">Loading road map...</div>
 
     <div class="map-legend-floating">
-      <span class="legend-title">Live radar</span>
-      <div class="legend-row"><span class="legend-dot dot-police"></span><span>Police check</span></div>
-      <div class="legend-row"><span class="legend-dot dot-jam"></span><span>Traffic jam</span></div>
-      <div class="legend-row"><span class="legend-dot dot-roadblock"></span><span>Roadblock</span></div>
-      <div class="legend-row"><span class="legend-dot dot-flood"></span><span>Flooded</span></div>
+      <span class="legend-title">Live radar (temporary)</span>
+      <div class="legend-row"><span class="radar-symbol sym-police" style="width:16px;height:16px;font-size:9px;border-radius:4px;">P</span><span>Police check</span></div>
+      <div class="legend-row"><span class="radar-symbol sym-jam" style="width:16px;height:16px;font-size:9px;border-radius:4px;">!</span><span>Traffic jam</span></div>
+      <div class="legend-row"><span class="radar-symbol sym-roadblock" style="width:16px;height:16px;font-size:9px;border-radius:4px;">✕</span><span>Roadblock</span></div>
+      <div class="legend-row"><span class="radar-symbol sym-flood" style="width:16px;height:16px;font-size:9px;border-radius:4px;">≈</span><span>Flooded</span></div>
       <span class="legend-title" style="margin-top:4px;">Road surface</span>
       <div class="legend-row"><span class="legend-dot dot-pothole"></span><span>Pothole</span></div>
       <div class="legend-row"><span class="legend-dot dot-rough"></span><span>Rough road</span></div>
@@ -412,17 +473,18 @@
       <div class="legend-row"><span class="legend-dot dot-fixed"></span><span>Repaired</span></div>
     </div>
 
-    <section class="radar-dock" aria-label="Report a live road alert">
+    <section class="radar-dock" aria-label="Live road radar feed and 1-tap reporting">
       <div class="radar-dock-head">
-        <span class="radar-dock-title">1-tap road radar</span>
+        <span class="radar-dock-title">Live road feed · 1-tap report</span>
       </div>
       <div class="radar-dock-buttons">
-        <button type="button" class="radar-btn" data-alert="police"><span class="legend-dot dot-police"></span>Police</button>
-        <button type="button" class="radar-btn" data-alert="jam"><span class="legend-dot dot-jam"></span>Jam</button>
-        <button type="button" class="radar-btn" data-alert="roadblock"><span class="legend-dot dot-roadblock"></span>Blocked</button>
-        <button type="button" class="radar-btn" data-alert="flood"><span class="legend-dot dot-flood"></span>Flood</button>
+        <button type="button" class="radar-btn" data-alert="police"><span class="radar-symbol sym-police" style="width:18px;height:18px;font-size:10px;border-radius:5px;">P</span>Police</button>
+        <button type="button" class="radar-btn" data-alert="jam"><span class="radar-symbol sym-jam" style="width:18px;height:18px;font-size:10px;border-radius:5px;">!</span>Jam</button>
+        <button type="button" class="radar-btn" data-alert="roadblock"><span class="radar-symbol sym-roadblock" style="width:18px;height:18px;font-size:10px;border-radius:5px;">✕</span>Blocked</button>
+        <button type="button" class="radar-btn" data-alert="flood"><span class="radar-symbol sym-flood" style="width:18px;height:18px;font-size:10px;border-radius:5px;">≈</span>Flood</button>
       </div>
-      <p id="radar-feedback" class="radar-feedback">Tap to warn drivers on this road. Uses GPS if allowed, or map center.</p>
+      <p id="radar-feedback" class="radar-feedback">Tap to warn drivers on this road. Temporary alerts auto-expire.</p>
+      <div id="radar-feed" class="radar-feed" aria-label="Active temporary road alerts"></div>
     </section>
 
   </main>
