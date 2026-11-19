@@ -7,8 +7,7 @@
     ]
   },
   "include": [
-    "src/landing.ts",
-    "src/app.ts",
+    "src/**/*.ts",
     "vite.config.ts"
   ]
 }

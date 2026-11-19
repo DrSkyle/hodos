@@ -131,7 +131,7 @@ internal fun RoadsScreen(
                         Spacer(Modifier.weight(1f))
                         Text(
                             wear.vehicleLabel.uppercase(),
-                            color = AmberDeep,
+                            color = AccentInk,
                             fontSize = 10.sp,
                             fontFamily = OverpassMono,
                             fontWeight = FontWeight.SemiBold,
@@ -271,12 +271,11 @@ internal fun StatTile(value: String, label: String, modifier: Modifier = Modifie
     ) {
         Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Ink)
         Text(
-            label.uppercase(),
+            label,
             color = Muted,
-            fontSize = 9.sp,
-            fontFamily = OverpassMono,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.8.sp
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.sp
         )
     }
 }

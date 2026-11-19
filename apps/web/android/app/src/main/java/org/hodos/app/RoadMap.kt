@@ -76,6 +76,12 @@ enum class LocationIssue {
     Permission, Disabled, Timeout
 }
 
+// OpenFreeMap's paired day and night vector styles. Both are licence-clean and
+// keyless, and the night one is built for this purpose rather than being a
+// filter over the day map.
+private const val LIGHT_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty"
+private const val DARK_MAP_STYLE = "https://tiles.openfreemap.org/styles/dark"
+
 /**
  * Remembers the last camera position across app restarts so reopening the map
  * returns to where the rider left off instead of snapping to the same overview.
@@ -150,6 +156,92 @@ fun RoadMap(
     var partnerSelected by remember { mutableStateOf<PartnerPoi?>(null) }
     val savedCamera = remember(context) { MapCameraStore.load(context) }
 
+    // OpenFreeMap ships a purpose-built night style. Follow the app theme with
+    // it instead of leaving a fully lit map around a dark UI.
+    val darkMap = isDarkTheme
+    fun mapStyleUrl(dark: Boolean): String =
+        if (dark) DARK_MAP_STYLE else LIGHT_MAP_STYLE
+
+    // Registers the Hodos sources and layers on a freshly loaded style. Shared
+    // by the first load and by theme changes, so hazard rendering is defined
+    // exactly once.
+    fun applyHodosLayers(style: Style) {
+        style.addSource(GeoJsonSource(
+            "hodos-hazards", FeatureCollection.fromFeatures(emptyArray<Feature>())
+        ))
+        // Road-quality cells share the hazard grid so the heat band
+        // matches the website's layer exactly.
+        style.addSource(GeoJsonSource(
+            "hodos-quality", FeatureCollection.fromFeatures(emptyArray<Feature>())
+        ))
+        style.addSource(GeoJsonSource(
+            "hodos-user-location", FeatureCollection.fromFeatures(emptyArray<Feature>())
+        ))
+        style.addLayer(
+            CircleLayer("hodos-user-halo", "hodos-user-location").withProperties(
+                circleColor("#2878DB"),
+                circleRadius(19f),
+                circleOpacity(0.18f),
+                circleStrokeWidth(0f)
+            )
+        )
+        style.addLayer(
+            CircleLayer("hodos-user-dot", "hodos-user-location").withProperties(
+                circleColor("#2878DB"),
+                circleRadius(6.5f),
+                circleOpacity(1f),
+                circleStrokeColor(android.graphics.Color.WHITE),
+                circleStrokeWidth(2.5f)
+            )
+        )
+        // Sponsored pins sit under the hazard layer so safety data always wins.
+        style.addSource(GeoJsonSource(
+            "hodos-partners", FeatureCollection.fromFeatures(emptyArray<Feature>())
+        ))
+        style.addLayer(
+            CircleLayer("hodos-partner-halo", "hodos-partners").withProperties(
+                circleColor(0x24D97706),
+                circleRadius(16f),
+                circleOpacity(0.14f)
+            )
+        )
+        style.addLayer(
+            CircleLayer("hodos-partner-dots", "hodos-partners").withProperties(
+                // Inverted against hazard dots (white fill + amber ring vs
+                // colored fill + white ring) so sponsorship reads at a glance.
+                circleColor(0xFFFFFDF7.toInt()),
+                circleRadius(9f),
+                circleStrokeColor(0xFFD97706.toInt()),
+                circleStrokeWidth(4f)
+            )
+        )
+        // The hazard rendering is defined once in the website's
+        // public/map/hodos-layers.json, bundled into assets at build
+        // time, so both platforms draw hazards from a single spec.
+        val spec = runCatching {
+            context.assets.open("map/hodos-layers.json")
+                .bufferedReader().use { it.readText() }
+        }.getOrNull()
+        if (spec != null) {
+            addHazardLayersFromSpec(style, spec)
+        }
+        // Momentary Live Road Radar alerts (police, jam, roadblock, flood)
+        // render as distinct symbol badges above surface hazard dots so
+        // drivers never confuse a temporary check/blockage with a pothole.
+        addLiveRadarBadgeImages(style)
+        style.addSource(GeoJsonSource(
+            "hodos-alerts", FeatureCollection.fromFeatures(emptyArray<Feature>())
+        ))
+        style.addLayer(
+            SymbolLayer("hodos-alert-symbols", "hodos-alerts").withProperties(
+                iconImage(Expression.get("icon")),
+                iconSize(0.62f),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true)
+            )
+        )
+    }
+
     DisposableEffect(mapView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -190,83 +282,10 @@ fun RoadMap(
             result.uiSettings.isRotateGesturesEnabled = false
             result.uiSettings.setAttributionMargins(12, 0, 12, 170)
             result.setStyle(
-                Style.Builder().fromUri("https://tiles.openfreemap.org/styles/liberty")
+                Style.Builder().fromUri(mapStyleUrl(darkMap))
             ) { style ->
                 try {
-                style.addSource(GeoJsonSource(
-                    "hodos-hazards", FeatureCollection.fromFeatures(emptyArray<Feature>())
-                ))
-                // Road-quality cells share the hazard grid so the heat band
-                // matches the website's layer exactly.
-                style.addSource(GeoJsonSource(
-                    "hodos-quality", FeatureCollection.fromFeatures(emptyArray<Feature>())
-                ))
-                style.addSource(GeoJsonSource(
-                    "hodos-user-location", FeatureCollection.fromFeatures(emptyArray<Feature>())
-                ))
-                style.addLayer(
-                    CircleLayer("hodos-user-halo", "hodos-user-location").withProperties(
-                        circleColor("#2878DB"),
-                        circleRadius(19f),
-                        circleOpacity(0.18f),
-                        circleStrokeWidth(0f)
-                    )
-                )
-                style.addLayer(
-                    CircleLayer("hodos-user-dot", "hodos-user-location").withProperties(
-                        circleColor("#2878DB"),
-                        circleRadius(6.5f),
-                        circleOpacity(1f),
-                        circleStrokeColor(android.graphics.Color.WHITE),
-                        circleStrokeWidth(2.5f)
-                    )
-                )
-                // Sponsored pins sit under the hazard layer so safety data always wins.
-                style.addSource(GeoJsonSource(
-                    "hodos-partners", FeatureCollection.fromFeatures(emptyArray<Feature>())
-                ))
-                style.addLayer(
-                    CircleLayer("hodos-partner-halo", "hodos-partners").withProperties(
-                        circleColor(0x24D97706),
-                        circleRadius(16f),
-                        circleOpacity(0.14f)
-                    )
-                )
-                style.addLayer(
-                    CircleLayer("hodos-partner-dots", "hodos-partners").withProperties(
-                        // Inverted against hazard dots (white fill + amber ring vs
-                        // colored fill + white ring) so sponsorship reads at a glance.
-                        circleColor(0xFFFFFDF7.toInt()),
-                        circleRadius(9f),
-                        circleStrokeColor(0xFFD97706.toInt()),
-                        circleStrokeWidth(4f)
-                    )
-                )
-                // The hazard rendering is defined once in the website's
-                // public/map/hodos-layers.json, bundled into assets at build
-                // time, so both platforms draw hazards from a single spec.
-                val spec = runCatching {
-                    context.assets.open("map/hodos-layers.json")
-                        .bufferedReader().use { it.readText() }
-                }.getOrNull()
-                if (spec != null) {
-                    addHazardLayersFromSpec(style, spec)
-                }
-                // Momentary Live Road Radar alerts (police, jam, roadblock, flood)
-                // render as distinct symbol badges above surface hazard dots so
-                // drivers never confuse a temporary check/blockage with a pothole.
-                addLiveRadarBadgeImages(style)
-                style.addSource(GeoJsonSource(
-                    "hodos-alerts", FeatureCollection.fromFeatures(emptyArray<Feature>())
-                ))
-                style.addLayer(
-                    SymbolLayer("hodos-alert-symbols", "hodos-alerts").withProperties(
-                        iconImage(Expression.get("icon")),
-                        iconSize(0.62f),
-                        iconAllowOverlap(true),
-                        iconIgnorePlacement(true)
-                    )
-                )
+                applyHodosLayers(style)
                 ready = true
                 result.addOnMapClickListener { point ->
                     val screen = result.projection.toScreenLocation(point)
@@ -305,6 +324,26 @@ fun RoadMap(
     }
 
     var initialFitDone by remember { mutableStateOf(false) }
+
+    // Follow the app theme: swap the day map for the night one when the user
+    // changes appearance, keeping the camera and re-arming the layers. `ready`
+    // flips false for the swap so the hazard effects repopulate the new style.
+    var styleIsDark by remember { mutableStateOf(darkMap) }
+    LaunchedEffect(darkMap) {
+        if (darkMap == styleIsDark) return@LaunchedEffect
+        styleIsDark = darkMap
+        val current = map ?: return@LaunchedEffect
+        ready = false
+        current.setStyle(Style.Builder().fromUri(mapStyleUrl(darkMap))) { style ->
+            try {
+                applyHodosLayers(style)
+                ready = true
+            } catch (error: Throwable) {
+                rendererFailed = true
+                Log.e("HodosRoadMap", "Map style swap failed", error)
+            }
+        }
+    }
 
     LaunchedEffect(hazards, ready) {
         if (ready) {

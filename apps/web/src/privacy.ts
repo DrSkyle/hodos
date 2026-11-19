@@ -1,3 +1,5 @@
-import "@fontsource-variable/overpass";
-import "@fontsource-variable/overpass-mono";
+import "./cartographic.css";
 import "./pwa";
+import { wireThemeToggle } from "./theme";
+
+wireThemeToggle("theme-toggle");

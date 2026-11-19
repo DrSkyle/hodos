@@ -1,0 +1,433 @@
+/*
+ * Live map page. The map fills the viewport; everything else floats on top of it
+ * with one shared elevation and one shared radius language.
+ */
+
+.map-body {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- header ---------- */
+
+.map-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.map-nav-inner {
+  gap: var(--s3);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.map-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: var(--soft);
+  border-radius: var(--r-full);
+  padding: 9px 14px;
+  flex: 1 1 200px;
+  max-width: 320px;
+  min-width: 0;
+}
+
+.map-search svg {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.map-search input {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  width: 100%;
+  outline: none;
+}
+
+.map-search input::placeholder {
+  color: var(--muted);
+}
+
+.map-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+}
+
+.btn-compact {
+  padding: 9px 14px;
+  font-size: 13px;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding: 0 var(--gutter) 10px;
+  max-width: var(--container);
+  margin: 0 auto;
+  width: 100%;
+  scrollbar-width: none;
+}
+
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  padding: 8px 15px;
+  border-radius: var(--r-full);
+  border: 0;
+  background: var(--soft);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover {
+  background: var(--soft-2);
+}
+
+.chip[aria-pressed="true"],
+.chip[aria-selected="true"],
+.chip.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.chip.is-active:hover,
+.chip[aria-pressed="true"]:hover {
+  background: var(--ink);
+  opacity: 0.9;
+}
+
+/* ---------- map ---------- */
+
+.map-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+#full-map {
+  position: absolute;
+  inset: 0;
+}
+
+.map-status {
+  position: absolute;
+  top: var(--s4);
+  left: var(--s4);
+  z-index: 5;
+  background: var(--paper-raised);
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  box-shadow: var(--shadow-1);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.maplibregl-popup-content {
+  background: var(--paper-raised) !important;
+  color: var(--ink) !important;
+  border-radius: var(--r-md) !important;
+  padding: 12px 14px !important;
+  box-shadow: var(--shadow-2) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--muted) !important;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--paper-raised) !important; }
+
+/* ---------- floating panels ---------- */
+
+.map-legend,
+.radar-dock {
+  position: absolute;
+  z-index: 5;
+  background: var(--paper-raised);
+  border-radius: var(--r-md);
+  padding: var(--s4);
+  box-shadow: var(--shadow-2);
+}
+
+.map-legend {
+  left: var(--s4);
+  bottom: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map-legend > summary {
+  list-style: none;
+  cursor: pointer;
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.map-legend > summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-legend-title {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-police { background: var(--police); }
+.dot-jam { background: var(--jam); }
+.dot-roadblock { background: var(--roadblock); }
+.dot-flood { background: var(--flood); }
+.dot-pothole { background: var(--pothole); }
+.dot-rough { background: var(--rough); }
+.dot-bump { background: var(--bump); }
+.dot-fixed { background: var(--paper-raised); box-shadow: inset 0 0 0 2.5px var(--fixed); }
+
+.radar-symbol {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sym-police { background: var(--police); }
+.sym-jam { background: var(--jam); }
+.sym-roadblock { background: var(--roadblock); }
+.sym-flood { background: var(--flood); }
+
+.radar-dock {
+  right: var(--s4);
+  bottom: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.radar-dock-title {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.radar-dock-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.radar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.radar-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.radar-feedback {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.radar-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+
+.radar-feed:empty {
+  display: none;
+}
+
+.radar-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 0;
+  background: var(--soft);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.radar-feed-item:hover {
+  background: var(--soft-2);
+}
+
+.radar-feed-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.radar-feed-meta strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.radar-feed-meta span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ---------- dark mode ---------- */
+
+/*
+ * The live map is keyless raster OpenStreetMap. Rather than swap in a tile
+ * provider (and a dependency) just for night, tone the canvas down and pull it
+ * toward the warm asphalt palette. Popups, legend and controls are DOM and stay
+ * untouched, so text and buttons keep their real contrast.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #full-map canvas {
+    filter: invert(1) hue-rotate(180deg) brightness(0.86) contrast(0.92) saturate(0.6);
+  }
+}
+
+:root[data-theme="dark"] #full-map canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.86) contrast(0.92) saturate(0.6);
+}
+
+.maplibregl-map {
+  background: var(--paper);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .map-search {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .map-nav-inner {
+    flex-wrap: nowrap;
+    gap: var(--s2);
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .map-actions {
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .btn-compact {
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
+
+  .map-home {
+    display: none;
+  }
+
+  .nav-brand span {
+    display: none;
+  }
+
+  .map-legend {
+    display: flex;
+    left: var(--s3);
+    top: 56px;
+    bottom: auto;
+    padding: var(--s2) var(--s3);
+    border-radius: var(--r-full);
+    box-shadow: var(--shadow-1);
+  }
+
+  .map-legend > summary {
+    display: block;
+  }
+
+  .map-legend:not([open]) > :not(summary) {
+    display: none;
+  }
+
+  .map-legend[open] {
+    border-radius: var(--r-md);
+    padding: var(--s3);
+    top: 56px;
+  }
+
+  .radar-dock {
+    left: var(--s3);
+    right: var(--s3);
+    bottom: var(--s3);
+    max-width: none;
+  }
+}

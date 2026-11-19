@@ -24,6 +24,7 @@
       </a>
       <div class="garage-header-spacer"></div>
       <a class="ig-pill" href="/partners">List a shop</a>
+      <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
       <a class="ig-pill ig-pill-secondary" href="/map">Live map</a>
     </div>
   </header>
@@ -42,7 +43,7 @@
         <p id="gate-status" role="status" aria-live="polite">
           Checking whether this programme is available where you are…
         </p>
-        <button type="button" id="gate-locate" class="btn-primary">Use my location</button>
+        <button type="button" id="gate-locate" class="btn btn-primary">Use my location</button>
         <p class="gate-fine">
           Right now this is open in Nepal only, and it pays to a Nepali wallet. We'll open more
           countries later, one at a time, when the payout rails are ready.
@@ -67,8 +68,8 @@
         </div>
         <div class="profile-code-row">
           <code id="profile-code">—</code>
-          <button type="button" id="copy-code" class="btn-ghost">Copy code</button>
-          <button type="button" id="copy-link" class="btn-ghost">Copy referral link</button>
+          <button type="button" id="copy-code" class="btn btn-ghost">Copy code</button>
+          <button type="button" id="copy-link" class="btn btn-ghost">Copy referral link</button>
         </div>
         <p class="profile-code-help">
           Share your referral link <code id="profile-link-text" style="font-size:12px;">—</code> with a shop, or have them email <a href="mailto:__HODOS_CONTACT__">__HODOS_CONTACT__</a> with your code. When they buy or extend their pin, <strong>60% of what they pay shows here immediately</strong> (and the longer they stay, the more you earn).
@@ -102,7 +103,7 @@
             <span class="payout-label">Paying to</span>
             <span id="payout-target">—</span>
           </div>
-          <button type="button" id="request-payout" class="btn-primary">
+          <button type="button" id="request-payout" class="btn btn-primary">
             Request payout
           </button>
         </div>
@@ -116,7 +117,7 @@
             privately. Reply to that email with the signed copy and your matured balance (30 days
             after each shop payment) is settled to your Nepali wallet.
           </p>
-          <a class="btn-ghost" href="mailto:__HODOS_CONTACT__?subject=Hodos%20referrer%20agreement"
+          <a class="btn btn-ghost" href="mailto:__HODOS_CONTACT__?subject=Hodos%20referrer%20agreement"
              >Ask for my agreement</a>
           <p class="gate-fine">
             Do not forward or screenshot the agreement. If anyone claiming to be Hodos asks you
@@ -148,7 +149,7 @@
             <input name="payoutAccount" type="text" maxlength="120" inputmode="numeric"
                    placeholder="The number we send money to" required />
           </label>
-          <button type="submit" class="btn-primary">Create my code</button>
+          <button type="submit" class="btn btn-primary">Create my code</button>
           <p id="create-status" class="form-status" role="status" aria-live="polite"></p>
         </form>
       </div>
@@ -163,7 +164,7 @@
             <span class="field-label">Your code</span>
             <input name="code" type="text" maxlength="24" placeholder="e.g. sita4k2m9x" required />
           </label>
-          <button type="submit" class="btn-ghost">Open</button>
+          <button type="submit" class="btn btn-ghost">Open</button>
           <p id="lookup-status" class="form-status" role="status" aria-live="polite"></p>
         </form>
       </div>

@@ -1,65 +1,83 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="theme-color" content="#faf8f2"/>
-  <meta name="description" content="How Hodos handles location, motion readings and road observations."/>
-  <link rel="canonical" href="__HODOS_SITE__/privacy.html"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="How Hodos handles location, motion readings and road observations." />
+  <link rel="canonical" href="__HODOS_SITE__/privacy.html" />
   <!--HODOS-ICONS-->
-
   <title>Privacy · Hodos</title>
-  <style>
-    :root{--bg:#faf8f2;--surface:#fffdf8;--ink:#1c1a17;--body:#4a463f;--muted:#736d61;--line:#e4dfd1;--accent:#b45309;font-family:"Overpass Variable","Overpass",-apple-system,"Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
-    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141311;--surface:#1e1c19;--ink:#faf8f2;--body:#d4cfc4;--muted:#a8a093;--line:#322e28;--accent:#f59e0b}}
-    :root[data-theme="dark"]{--bg:#141311;--surface:#1e1c19;--ink:#faf8f2;--body:#d4cfc4;--muted:#a8a093;--line:#322e28;--accent:#f59e0b}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}
-    a{color:var(--accent)}header{border-bottom:1px solid var(--line);background:var(--surface)}
-    header div{max-width:840px;margin:auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
-    header a{text-decoration:none;color:var(--ink);font-weight:800}
-    .brand{display:flex;align-items:center;gap:11px;font-size:20px;letter-spacing:-.02em}
-    .brand img{height:30px;width:30px;object-fit:contain;border-radius:7px;flex-shrink:0}
-    main{max-width:760px;margin:72px auto 100px;padding:0 24px}
-    h1{font-size:clamp(38px,6vw,54px);letter-spacing:-.025em;line-height:1.05;margin:0 0 10px}
-    h2{font-size:21px;letter-spacing:-.015em;margin:40px 0 12px}
-    p{font-size:16px;line-height:1.75;color:var(--body);margin:12px 0}
-    .date{font-family:"Overpass Mono Variable","Overpass Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:38px}
-    footer{border-top:1px solid var(--line);padding:22px 24px;color:var(--muted);text-align:center;font-size:12px}
-    a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-  </style>
 </head>
 <body>
-<header><div><a class="brand" href="/"><img alt="Hodos" src="/hodos-icon.png?v=__HODOS_VERSION__" width="30" height="30"/>hodos<span style="color:#d97706">.</span></a><a href="/">Back to Hodos →</a></div></header>
-<main>
-<h1>Privacy</h1><p class="date">Updated 14 November 2026</p>
-<p>Hodos uses your phone's motion sensors and location to identify possible road defects. You can view the hazard map without enabling automatic mapping.</p>
-<h2>Location and motion</h2>
-<p>When automatic mapping is enabled, Hodos reads motion and location signals to recognize journeys and detect unusual road impacts. Analysis runs on your phone. Raw accelerometer samples and complete GPS routes are not uploaded.</p>
-<p>While a journey is recorded, Hodos measures sustained vibration energy at each location fix to infer road surface type (asphalt, gravel, cobbles) and road quality. Those measurements, surface labels and quality scores stay on your phone and are not submitted.</p>
-<p>Each road observation may include a location, time, GPS accuracy, estimated speed, hazard type, severity and detection score. Repair and clear-road reports can reference an existing hazard.</p>
-<h2>Derived insights</h2>
-<p>Road score, ride insights, surface shares, vehicle-wear estimates, deterioration rankings and smooth-route scores are computed on your phone from your own journeys. They are stored in local app storage, are never uploaded, and are erased when you clear app data or uninstall Hodos.</p>
-<h2>Identifiers</h2>
-<p>The app creates a random installation identifier and a separate identifier for each journey. The installation identifier persists in local app data and accompanies observations so repeated reports can be compared. It is not derived from your name, phone number or advertising ID. It is not proof of a unique physical device.</p>
-<h2>Storage</h2>
-<p>Observations are stored in Appwrite and are not publicly readable through the app. The aggregated hazard map is public.</p>
-<p>Your phone holds a cache of map hazards, up to 50 journey summaries, journey trails with their recorded fixes and vibration readings, and any observations queued for upload in app-private SQLite storage. That queue does not currently use separate application-level encryption. Permanently rejected submissions are retained separately in private app storage until you clear them or remove app data. Observations queued before you turn mapping off can continue uploading in the background when network access returns.</p>
-<p>The aggregation service examines the last 120 days of events. This is not a deletion schedule; older server observations are not currently deleted automatically.</p>
-<h2>Your controls</h2>
-<p>Turn off automatic mapping in Hodos or revoke location and activity-recognition permissions in Android settings. In the Mapping screen, after switching mapping off and finishing a journey, you can delete road observations that remain queued locally; requests already accepted by the server cannot be recalled. You can separately clear rejected reports and local journey history. Clearing local app data or uninstalling Hodos removes local information but does not erase observations already submitted to the server.</p>
-<h2>Promotions on the website</h2>
-<p>The website shows promotions for Hodos itself: the Garage, shop placements and the app. They are rendered from our own pages, so there is no third-party advertising script, no third-party cookie and no ad-network request. Choosing one takes you to a normal Hodos page, and from there the rest of this notice applies as usual.</p>
-<p>Some shop links are affiliate links. If you allow it, a click on one is passed through our server to the affiliate network so the shop can credit Hodos. That shares your IP address, browser/user-agent string and the page you came from with that network; it does not include your journeys, your road data or your installation identifier. If you decline, the link still works and simply is not enriched. You can change your choice by clearing this site's storage.</p>
-<p>Nothing is ever placed over the live map, and no promotion appears inside the web app at <a href="/app/">/app</a> or in the Android app. The apps contain no advertising or analytics SDKs. If a third-party advertising network is ever used, this page will say so before it runs.</p>
-<p>Hosting providers may process technical connection data necessary to operate the service.</p>
-<h2>The Garage and the email list</h2>
-<p>The Garage shows product offers fetched from a product catalogue through our own server, so no catalogue key and no personal identifier is sent from your phone or browser to look things up. Opening an offer leaves Hodos and goes to the retailer, whose own privacy policy applies from that point on.</p>
-<p>Shop placements are pins on the map. A shop supplies its own name, one line of text and its location; no driver data is shown to a shop, and pass counts are shown only as anonymous totals.</p>
-<p>If you leave an email address for road notes, we store the address, the page or screen it came from and the date, so we can send occasional updates and so the same address is not stored twice. Nothing connects that address to your journeys, your installation identifier or the map. Ask us to delete it and it is removed.</p>
-<h2>Contact</h2>
-<p>For data questions or deletion requests, contact the maintainers through the <a href="__HODOS_REPO__">Hodos repository</a>. Please don't share precise location details in a public issue.</p>
-</main>
-<footer>Hodos · Devilabs · <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">@minerva__corporation</a></footer>
-<script type="module" src="/src/privacy.ts"></script>
+  <header class="site-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/" aria-label="Hodos home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="26" height="26" />
+        <span>hodos<span class="dot">.</span></span>
+      </a>
+      <div class="nav-actions" style="margin-left: auto">
+        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
+        <a class="nav-cta" href="/">Back to Hodos</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container prose">
+    <h1>Privacy</h1>
+    <p class="mono-label">Updated 14 November 2026</p>
+
+    <p>Hodos uses your phone’s motion sensors and location to identify possible road defects. You can view the hazard map without enabling automatic mapping.</p>
+
+    <h2>Location and motion</h2>
+    <p>When automatic mapping is enabled, Hodos reads motion and location signals to recognize journeys and detect unusual road impacts. Analysis runs on your phone. Raw accelerometer samples and complete GPS routes are not uploaded.</p>
+    <p>While a journey is recorded, Hodos measures sustained vibration energy at each location fix to infer road surface type (asphalt, gravel, cobbles) and road quality. Those measurements, surface labels and quality scores stay on your phone and are not submitted.</p>
+    <p>Each road observation may include a location, time, GPS accuracy, estimated speed, hazard type, severity and detection score. Repair and clear-road reports can reference an existing hazard.</p>
+
+    <h2>Derived insights</h2>
+    <p>Road score, ride insights, surface shares, vehicle-wear estimates, deterioration rankings and smooth-route scores are computed on your phone from your own journeys. They are stored in local app storage, are never uploaded, and are erased when you clear app data or uninstall Hodos.</p>
+
+    <h2>Identifiers</h2>
+    <p>The app creates a random installation identifier and a separate identifier for each journey. The installation identifier persists in local app data and accompanies observations so repeated reports can be compared. It is not derived from your name, phone number or advertising ID. It is not proof of a unique physical device.</p>
+
+    <h2>Storage</h2>
+    <p>Observations are stored in Appwrite and are not publicly readable through the app. The aggregated hazard map is public.</p>
+    <p>Your phone holds a cache of map hazards, up to 50 journey summaries, journey trails with their recorded fixes and vibration readings, and any observations queued for upload in app-private SQLite storage. That queue does not currently use separate application-level encryption. Permanently rejected submissions are retained separately in private app storage until you clear them or remove app data. Observations queued before you turn mapping off can continue uploading in the background when network access returns.</p>
+    <p>The aggregation service examines the last 120 days of events. This is not a deletion schedule; older server observations are not currently deleted automatically.</p>
+
+    <h2>Your controls</h2>
+    <p>Turn off automatic mapping in Hodos or revoke location and activity-recognition permissions in Android settings. In the Mapping screen, after switching mapping off and finishing a journey, you can delete road observations that remain queued locally; requests already accepted by the server cannot be recalled. You can separately clear rejected reports and local journey history. Clearing local app data or uninstalling Hodos removes local information but does not erase observations already submitted to the server.</p>
+
+    <h2>Promotions on the website</h2>
+    <p>The website shows promotions for Hodos itself: the Garage, shop placements and the app. They are rendered from our own pages, so there is no third-party advertising script, no third-party cookie and no ad-network request. Choosing one takes you to a normal Hodos page, and from there the rest of this notice applies as usual.</p>
+    <p>Some shop links are affiliate links. If you allow it, a click on one is passed through our server to the affiliate network so the shop can credit Hodos. That shares your IP address, browser/user-agent string and the page you came from with that network; it does not include your journeys, your road data or your installation identifier. If you decline, the link still works and simply is not enriched. You can change your choice by clearing this site’s storage.</p>
+    <p>Nothing is ever placed over the live map, and no promotion appears inside the web app at <a href="/app/">/app</a> or in the Android app. The apps contain no advertising or analytics SDKs. If a third-party advertising network is ever used, this page will say so before it runs.</p>
+    <p>Hosting providers may process technical connection data necessary to operate the service.</p>
+
+    <h2>The Garage and the email list</h2>
+    <p>The Garage shows product offers fetched from a product catalogue through our own server, so no catalogue key and no personal identifier is sent from your phone or browser to look things up. Opening an offer leaves Hodos and goes to the retailer, whose own privacy policy applies from that point on.</p>
+    <p>Shop placements are pins on the map. A shop supplies its own name, one line of text and its location; no driver data is shown to a shop, and pass counts are shown only as anonymous totals.</p>
+    <p>If you leave an email address for road notes, we store the address, the page or screen it came from and the date, so we can send occasional updates and so the same address is not stored twice. Nothing connects that address to your journeys, your installation identifier or the map. Ask us to delete it and it is removed.</p>
+
+    <h2>Contact</h2>
+    <p>For data questions or deletion requests, contact the maintainers through the <a href="__HODOS_REPO__">Hodos repository</a>. Please don’t share precise location details in a public issue.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="20" height="20" />
+        <span>hodos<span class="dot">.</span></span>
+      </div>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/map">Live map</a>
+        <a href="/garage">Garage</a>
+        <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">@minerva__corporation</a>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/privacy.ts"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import "./pwa";
 import { initWebMap } from "./web-map";
 import { installPromptAvailable, promptInstall } from "./pwa";
 import { state } from "./app/state";
+import { wireThemeToggle } from "./theme";
 import {
   currentStats,
   finish,
@@ -54,6 +55,7 @@ import {
 
 const railNav = document.getElementById("rail-nav") as HTMLElement;
 const routeNav = document.getElementById("app-route") as HTMLElement;
+wireThemeToggle("theme-toggle");
 const installButton = document.getElementById("rail-install") as HTMLButtonElement;
 const toastHost = document.getElementById("app-toast") as HTMLElement;
 const screens: Record<ScreenId, HTMLElement> = {

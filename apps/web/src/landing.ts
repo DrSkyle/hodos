@@ -78,43 +78,17 @@ void detectVisitorCountryByIp().then((country) => {
   document.querySelector(".nav-links .nav-garage")?.classList.remove("nav-garage");
 });
 
-document.querySelectorAll<HTMLAnchorElement>(".nav-menu-panel a").forEach((link) => {
-  link.addEventListener("click", () => {
-    link.closest("details")?.removeAttribute("open");
+// Close the mobile menu after a choice, and on Escape.
+for (const menu of document.querySelectorAll<HTMLDetailsElement>("details.nav-menu")) {
+  menu.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => menu.removeAttribute("open"));
   });
-});
-
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-if (!prefersReducedMotion) {
-  const parallaxElements = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
-  let ticking = false;
-
-  const updateParallax = () => {
-    const viewportCenter = window.innerHeight / 2;
-    for (const el of parallaxElements) {
-      const speed = parseFloat(el.dataset.parallax || "0");
-      if (!speed || window.innerWidth <= 900) {
-        el.style.transform = "";
-        continue;
-      }
-      const rect = el.getBoundingClientRect();
-      const elementCenter = rect.top + rect.height / 2;
-      const offset = (elementCenter - viewportCenter) * speed;
-      el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
-    }
-    ticking = false;
-  };
-
-  window.addEventListener(
-    "scroll",
-    () => {
-      if (!ticking) {
-        window.requestAnimationFrame(updateParallax);
-        ticking = true;
-      }
-    },
-    { passive: true }
-  );
-  window.addEventListener("resize", updateParallax, { passive: true });
-  updateParallax();
 }
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  for (const menu of document.querySelectorAll<HTMLDetailsElement>("details.nav-menu[open]")) {
+    menu.removeAttribute("open");
+    menu.querySelector("summary")?.focus();
+  }
+});

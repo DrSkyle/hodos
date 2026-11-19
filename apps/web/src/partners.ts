@@ -9,10 +9,12 @@ import {
 } from "./site-constants";
 import { setWorkerUrl, Map, Marker, NavigationControl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { wireThemeToggle } from "./theme";
 
 // Same self-hosted worker as the live map, so Vite's asset hashing cannot
 // break the placement map.
 setWorkerUrl("/maplibre-gl-worker.js");
+wireThemeToggle("theme-toggle");
 
 /**
  * Self-serve shop placement.

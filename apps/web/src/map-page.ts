@@ -1,4 +1,5 @@
 import "./cartographic.css";
+import "./map.css";
 import "./pwa";
 import { wireThemeToggle } from "./theme";
 import {
@@ -43,6 +44,13 @@ function symbolFor(kind: LiveAlertKind): { glyph: string; cls: string } {
   }
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (ch) => (ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch === '"' ? "&quot;" : "&#39;")
+  );
+}
+
 function renderRadarFeed(allHazards: WebHazard[]) {
   if (!feedEl) return;
   const alerts = allHazards
@@ -58,8 +66,8 @@ function renderRadarFeed(allHazards: WebHazard[]) {
     btn.innerHTML = `
       <span class="radar-symbol ${sym.cls}" aria-hidden="true">${sym.glyph}</span>
       <span class="radar-feed-meta">
-        <strong>${alert.title}</strong>
-        <span>${relativeAge(alert.lastSeen)} · ${alert.locationName}</span>
+        <strong>${escapeHtml(alert.title)}</strong>
+        <span>${escapeHtml(relativeAge(alert.lastSeen))} · ${escapeHtml(alert.locationName)}</span>
       </span>
     `;
     btn.addEventListener("click", () => {
@@ -85,10 +93,14 @@ function applyFilters() {
   handle?.filterByKind(activeKind, searchInput?.value || "");
 }
 
-document.querySelectorAll(".filter-chip").forEach((btn) => {
+document.querySelectorAll(".filter-chip, .chip[data-kind]").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".filter-chip").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
+    document.querySelectorAll(".filter-chip, .chip[data-kind]").forEach((b) => {
+      b.classList.remove("active", "is-active");
+      b.setAttribute("aria-pressed", "false");
+    });
+    btn.classList.add("is-active");
+    btn.setAttribute("aria-pressed", "true");
     activeKind = btn.getAttribute("data-kind") || "all";
     applyFilters();
   });

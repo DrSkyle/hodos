@@ -2,6 +2,7 @@ import "./cartographic.css";
 import "./garage.css";
 import "./partners.css";
 import { APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID } from "./site-constants";
+import { wireThemeToggle } from "./theme";
 
 /**
  * Referral earnings, Nepal only.
@@ -12,6 +13,8 @@ import { APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID } from "./site-constants";
  * programme. A script that calls the API directly gets the same refusal, so the
  * browser check is a convenience, not the gate.
  */
+
+wireThemeToggle("theme-toggle");
 
 const ENDPOINT = `${APPWRITE_ENDPOINT}/functions/hodos-api/executions`;
 

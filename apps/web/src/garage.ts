@@ -14,6 +14,7 @@ import {
   type Product,
   type ShelfData
 } from "./products";
+import { wireThemeToggle } from "./theme";
 
 /**
  * The Garage.
@@ -31,6 +32,8 @@ import {
  * A shop with no working link does not appear at all, rather than as a dead
  * card, and nothing here is invented to fill a grid.
  */
+
+wireThemeToggle("theme-toggle");
 
 const grid = document.getElementById("shop-grid");
 const status = document.getElementById("shelf-status");

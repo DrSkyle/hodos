@@ -184,6 +184,27 @@ const OSM_CLEAN_STYLE: any = {
   ]
 };
 
+/**
+ * Popups interpolate backend-supplied strings (partner names, offers, links,
+ * reported locations) straight into HTML. Escape them, and accept only http(s)
+ * links so a stored `javascript:` URL cannot run.
+ */
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (ch) => (ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch === '"' ? "&quot;" : "&#39;")
+  );
+}
+
+function safeHttpUrl(value: unknown): string | null {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseAppwriteRow(r: any): WebHazard | null {
   const lat = Number(r.lat);
   const lng = Number(r.lng);
@@ -526,16 +547,16 @@ export function initWebMap(
     const html = `
       <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 200px; color: var(--ink, #1c1a17);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
-          <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${h.title}</strong>
+          <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${escapeHtml(h.title)}</strong>
           <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
-            ${badgeText}
+            ${escapeHtml(badgeText)}
           </span>
         </div>
         <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px;">
-          ${subline}
+          ${escapeHtml(subline)}
         </div>
         <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;">
-          ${h.locationName}
+          ${escapeHtml(h.locationName)}
         </div>
       </div>
     `;
@@ -547,16 +568,17 @@ export function initWebMap(
   }
 
   function showPopupForPartner(p: WebPartner) {
+    const href = safeHttpUrl(p.link);
     const html = `
       <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 200px; color: var(--ink, #1c1a17);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-          <strong style="font-size: 14px; font-weight: 700;">${p.name}</strong>
+          <strong style="font-size: 14px; font-weight: 700;">${escapeHtml(p.name)}</strong>
           <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">
             Local shop
           </span>
         </div>
-        ${p.offer ? `<div style="font-size: 12.5px; color: var(--muted, #57534e); margin-bottom: 6px;">${p.offer}</div>` : ""}
-        ${p.link ? `<a href="${p.link}" target="_blank" rel="noopener noreferrer nofollow" style="font-size: 12px; font-weight: 600; color: var(--accent, #b45309); text-decoration: none; display:block; margin-bottom:6px;">Visit →</a>` : ""}
+        ${p.offer ? `<div style="font-size: 12.5px; color: var(--muted, #57534e); margin-bottom: 6px;">${escapeHtml(p.offer)}</div>` : ""}
+        ${href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" style="font-size: 12px; font-weight: 600; color: var(--accent, #b45309); text-decoration: none; display:block; margin-bottom:6px;">Visit →</a>` : ""}
         <a href="/partners" style="font-size: 12px; font-weight: 600; color: var(--accent, #b45309); text-decoration: none;">Put your shop here →</a>
       </div>
     `;

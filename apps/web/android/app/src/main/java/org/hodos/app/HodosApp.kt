@@ -1450,11 +1450,10 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                             Spacer(Modifier.height(3.dp))
                         }
                         Text(
-                            tab.label.uppercase(),
-                            fontSize = 9.5.sp,
+                            tab.label,
+                            fontSize = 10.5.sp,
                             fontWeight = if (highlight) FontWeight.Bold else FontWeight.SemiBold,
-                            fontFamily = OverpassMono,
-                            letterSpacing = 1.1.sp,
+                            letterSpacing = 0.sp,
                             color = if (active || highlight) Ink else Muted
                         )
                     }
@@ -1473,12 +1472,11 @@ private fun DetailStat(value: String, title: String, modifier: Modifier = Modifi
     ) {
         Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 23.sp, color = Ink)
         Text(
-            title.uppercase(),
+            title,
             color = Muted,
-            fontSize = 9.5.sp,
-            fontFamily = OverpassMono,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.9.sp
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.sp
         )
     }
 }
@@ -1498,9 +1496,9 @@ private fun HazardRow(hazard: RoadHazard, distanceMeters: Float?, onClick: () ->
         Surface(
             shape = RoundedCornerShape(10.dp),
             color = when {
-                hazard.fixed -> Color(0xFFE7F6EF)
-                hazard.severity >= 3 -> Color(0xFFFBE9EC)
-                else -> Color(0xFFF9EEDD)
+                hazard.fixed -> wash(Healed)
+                hazard.severity >= 3 -> wash(Pothole)
+                else -> wash(Rough)
             }
         ) {
             DoodleIcon(
@@ -1973,7 +1971,7 @@ private fun MappingScreen(
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Spacer(Modifier.height(2.dp))
-                            Text("Details & Export", color = AmberDeep, fontSize = 10.sp,
+                            Text("Details & Export", color = AccentInk, fontSize = 10.sp,
                                 fontFamily = OverpassMono, fontWeight = FontWeight.SemiBold, letterSpacing = 0.4.sp)
                         }
                     }
@@ -2778,7 +2776,7 @@ private fun PerksCard(trips: List<RoadTrip>, partners: List<PartnerPoi>) {
                             "Unlocked now",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = AmberDeep,
+                            color = AccentInk,
                             fontFamily = OverpassMono,
                             letterSpacing = 1.sp
                         )
@@ -2810,7 +2808,7 @@ private fun PerksCard(trips: List<RoadTrip>, partners: List<PartnerPoi>) {
                                 "Show code at the shop: $code",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AmberDeep
+                                color = AccentInk
                             )
                         }
                     }

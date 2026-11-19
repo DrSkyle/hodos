@@ -8,19 +8,6 @@ export const SITE_URL = "https://hodos.devilabs.dev";
 export const INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/";
 
 /**
- * Advertising is configured in exactly one place.
- *
- * Paste the ad code from the Mitgo product you connect this ad space to
- * (Mitgo ID → Ad spaces → connect a product). Verification alone does not
- * produce a tag — the product does.
- *
- * While this is empty, no ad element is rendered anywhere on the site: there is
- * no placeholder box, no reserved gap and no request to any ad server. Ads also
- * never run in the web app or over the live map.
- */
-export const AD_TAG_HTML = "";
-
-/**
  * Affiliate links, one per joined program.
  *
  * In Admitad: Programs → the program → "Banners and Links" → the main

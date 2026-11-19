@@ -132,7 +132,6 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         map: resolve(__dirname, "map/index.html"),
-        legacyMap: resolve(__dirname, "map.html"),
         garage: resolve(__dirname, "garage/index.html"),
         partners: resolve(__dirname, "partners/index.html"),
         referrals: resolve(__dirname, "referrals/index.html"),
