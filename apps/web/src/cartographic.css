@@ -19,6 +19,9 @@
   --line-strong: #1c1a17;
   --asphalt: #171614;
   --asphalt-text: #b5afa2;
+  --surface-invert: #1c1a17;
+  --ink-invert: #faf8f2;
+  --muted-invert: #b5afa2;
   --accent: #d97706;
   --accent-deep: #b45309;
   --pothole: #e11d48;
@@ -53,6 +56,9 @@
     --line-strong: #faf8f2;
     --asphalt: #0c0b0a;
     --asphalt-text: #a8a093;
+    --surface-invert: #25221e;
+    --ink-invert: #faf8f2;
+    --muted-invert: #b5afa2;
     --accent: #f59e0b;
     --accent-deep: #fbbf24;
     --road: #2c2823;
@@ -71,6 +77,9 @@
   --line-strong: #faf8f2;
   --asphalt: #0c0b0a;
   --asphalt-text: #a8a093;
+  --surface-invert: #25221e;
+  --ink-invert: #faf8f2;
+  --muted-invert: #b5afa2;
   --accent: #f59e0b;
   --accent-deep: #fbbf24;
   --road: #2c2823;
@@ -353,23 +362,23 @@ a {
 }
 
 .btn-invert {
-  background: var(--paper);
-  color: var(--ink);
+  background: #faf8f2;
+  color: #1c1a17;
 }
 
 .btn-invert:hover {
   background: var(--accent);
-  color: #fff;
+  color: #1c1a17;
 }
 
 .btn-ghost-invert {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--paper);
+  background: rgba(250, 248, 242, 0.12);
+  color: #faf8f2;
 }
 
 .btn-ghost-invert:hover {
-  background: var(--paper);
-  color: var(--ink);
+  background: #faf8f2;
+  color: #1c1a17;
 }
 
 /* ---------- hero ---------- */
@@ -696,12 +705,12 @@ a {
 
 .section-dark {
   background: var(--asphalt);
-  color: var(--paper);
+  color: var(--ink-invert);
 }
 
 .section-dark .lead,
 .section-dark p {
-  color: var(--asphalt-text);
+  color: var(--muted-invert);
 }
 
 .section-soft {
@@ -820,8 +829,9 @@ a {
 }
 
 .plan-featured {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--surface-invert);
+  color: var(--ink-invert);
+  border: 1px solid var(--line);
 }
 
 .plan-tier {
@@ -855,7 +865,7 @@ a {
 }
 
 .plan-featured .plan-price small {
-  color: var(--asphalt-text);
+  color: var(--muted-invert);
 }
 
 .plan-who {
@@ -866,7 +876,7 @@ a {
 }
 
 .plan-featured .plan-who {
-  color: var(--asphalt-text);
+  color: var(--muted-invert);
 }
 
 .plan-list {
@@ -893,8 +903,8 @@ a {
 /* ---------- dark closing ---------- */
 
 .site-closing {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--surface-invert);
+  color: var(--ink-invert);
   padding: clamp(80px, 10vw, 132px) 0;
   text-align: center;
 }
@@ -908,7 +918,7 @@ a {
 }
 
 .site-closing p {
-  color: var(--asphalt-text);
+  color: var(--muted-invert);
   font-size: 17px;
   margin: 0 auto 34px;
   max-width: 48ch;

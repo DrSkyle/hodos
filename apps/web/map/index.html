@@ -58,11 +58,12 @@
     }
     .map-header {
       background: var(--bg);
-      padding: 12px 24px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 10px;
       z-index: 10;
       flex-wrap: wrap;
     }
@@ -203,6 +204,7 @@
       top: 16px;
       left: 16px;
       background: var(--surface);
+      border: 1px solid var(--line);
       padding: 9px 16px;
       border-radius: 999px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
@@ -219,6 +221,7 @@
       bottom: 24px;
       left: 16px;
       background: var(--surface);
+      border: 1px solid var(--line);
       padding: 14px 18px 16px;
       border-radius: 18px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
@@ -266,6 +269,7 @@
       bottom: 24px;
       right: 16px;
       background: var(--surface);
+      border: 1px solid var(--line);
       padding: 12px 14px;
       border-radius: 18px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
@@ -276,6 +280,23 @@
       gap: 8px;
       max-width: min(360px, calc(100vw - 32px));
     }
+    .maplibregl-popup-content {
+      background: var(--surface) !important;
+      color: var(--ink) !important;
+      border: 1px solid var(--line);
+      border-radius: 14px !important;
+      padding: 12px 14px !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+    }
+    .maplibregl-popup-close-button {
+      color: var(--muted) !important;
+      font-size: 16px;
+      padding: 4px 8px;
+    }
+    .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--surface) !important; }
+    .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--surface) !important; }
+    .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--surface) !important; }
+    .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--surface) !important; }
     .radar-dock-head {
       display: flex;
       align-items: center;
@@ -351,9 +372,6 @@
       <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="Hodos" width="32" height="32" />
       <span class="brand-title">hodos<span class="brand-stop">.</span></span>
     </a>
-    <a href="/app/" class="map-instagram">Web app</a>
-    <a href="/garage" class="map-instagram">Garage</a>
-    <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer" class="map-instagram map-instagram-wide" aria-label="Follow @minerva__corporation on Instagram">Follow @minerva__corporation</a>
 
     <label class="search-box" aria-label="Filter observations">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -363,10 +381,6 @@
     <div class="nav-chips" role="toolbar" aria-label="Hazard category filters">
       <button class="filter-chip active" data-kind="all">All</button>
       <button class="filter-chip" data-kind="alerts">Live radar</button>
-      <button class="filter-chip" data-kind="police">Police</button>
-      <button class="filter-chip" data-kind="jam">Jam</button>
-      <button class="filter-chip" data-kind="roadblock">Blocked</button>
-      <button class="filter-chip" data-kind="flood">Flood</button>
       <button class="filter-chip" data-kind="pothole">Potholes</button>
       <button class="filter-chip" data-kind="rough_pavement">Rough road</button>
       <button class="filter-chip" data-kind="speed_bump">Speed bumps</button>
@@ -375,9 +389,9 @@
 
     <div class="action-group">
       <button id="theme-toggle" type="button" class="btn-action" aria-label="Toggle dark mode">☾ Dark</button>
-      <a href="/partners" class="btn-sponsor">Put your shop here</a>
-      <button id="btn-fit-all" class="btn-action">Fit route</button>
-      <a href="/" class="btn-action">← Back</a>
+      <a href="/partners" class="btn-sponsor">List shop</a>
+      <button id="btn-fit-all" class="btn-action">Fit</button>
+      <a href="/" class="btn-action">← Home</a>
     </div>
   </header>
 

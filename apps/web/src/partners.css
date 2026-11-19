@@ -371,7 +371,7 @@
   border: 1px solid var(--line, #e4dfd1);
   border-radius: 14px;
   padding: 22px;
-  background: #faf8f2;
+  background: var(--paper-raised);
 }
 
 .gate-check p {
@@ -390,7 +390,7 @@
   border: 1px solid var(--line, #e4dfd1);
   border-radius: 14px;
   padding: 22px;
-  background: #faf8f2;
+  background: var(--paper-raised);
 }
 
 .gate-denied h2 {
@@ -404,7 +404,7 @@
   border: 1px solid var(--line, #e4dfd1);
   border-radius: 16px;
   padding: 26px;
-  background: #fffdf8;
+  background: var(--paper-raised);
 }
 
 .profile-card[hidden] {
@@ -447,7 +447,8 @@
   padding: 12px 16px;
   border: 1px solid var(--line, #e4dfd1);
   border-radius: 10px;
-  background: #faf8f2;
+  background: var(--soft);
+  color: var(--ink);
   overflow-x: auto;
 }
 

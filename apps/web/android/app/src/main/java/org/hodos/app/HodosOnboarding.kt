@@ -115,8 +115,8 @@ fun HodosOnboarding(
     val mutedColor by animateColorAsState(steps[page].muted, tween(320), label = "onboarding muted")
     val accentColor by animateColorAsState(steps[page].accent, tween(320), label = "onboarding accent")
     val onDark = steps[page].onDark
-    val buttonBackground = if (onDark) Cream else Forest
-    val buttonForeground = if (onDark) Ink else Color.White
+    val buttonBackground = if (onDark) Cream else LightInk
+    val buttonForeground = if (onDark) LightInk else Color.White
 
     HodosTheme {
         Surface(Modifier.fillMaxSize(), color = bgColor) {

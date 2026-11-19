@@ -8,6 +8,9 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -23,15 +26,15 @@ import androidx.compose.ui.unit.sp
  * type — the road-signage family the website is set in.
  */
 
-// Core light palette — warm paper and ink anchored by brand amber (#d97706).
-internal val Ink = Color(0xFF1C1A17)
-internal val Paper = Color(0xFFFAF8F2)
-internal val PaperRaised = Color(0xFFFFFDF8)
-internal val Sand = Color(0xFFF1EDE3)
-internal val Line = Color(0xFFE4DFD1)
-internal val Muted = Color(0xFF736D61)
+// Fixed light palette — warm paper and ink anchored by brand amber (#d97706).
+internal val LightInk = Color(0xFF1C1A17)
+internal val LightPaper = Color(0xFFFAF8F2)
+internal val LightPaperRaised = Color(0xFFFFFDF8)
+internal val LightSand = Color(0xFFF1EDE3)
+internal val LightLine = Color(0xFFE4DFD1)
+internal val LightMuted = Color(0xFF736D61)
 
-// Core dark palette — warm asphalt for night driving without glare.
+// Fixed dark palette — warm asphalt for night driving without glare.
 internal val AsphaltBg = Color(0xFF141311)
 internal val AsphaltSurface = Color(0xFF1E1C19)
 internal val AsphaltRaised = Color(0xFF272420)
@@ -39,8 +42,19 @@ internal val AsphaltLine = Color(0xFF35312B)
 internal val AsphaltInk = Color(0xFFFAF8F2)
 internal val AsphaltMuted = Color(0xFFA8A295)
 
-// Legacy tinted-surface name; now the warm sand.
-internal val Mist = Sand
+private var isDarkThemeState by mutableStateOf(false)
+
+// Theme-reactive palette tokens so every card, surface, and label across the
+// app stays high-contrast in both light and dark mode (zero white-on-white).
+internal val Ink: Color get() = if (isDarkThemeState) AsphaltInk else LightInk
+internal val Paper: Color get() = if (isDarkThemeState) AsphaltBg else LightPaper
+internal val PaperRaised: Color get() = if (isDarkThemeState) AsphaltSurface else LightPaperRaised
+internal val Sand: Color get() = if (isDarkThemeState) AsphaltRaised else LightSand
+internal val Line: Color get() = if (isDarkThemeState) AsphaltLine else LightLine
+internal val Muted: Color get() = if (isDarkThemeState) AsphaltMuted else LightMuted
+
+// Legacy tinted-surface name; now the active warm sand / asphalt raised surface.
+internal val Mist: Color get() = Sand
 
 // Brand amber — the same #d97706 the website uses as --accent.
 internal val Amber = Color(0xFFD97706)
@@ -57,9 +71,8 @@ internal val JamOrange = Color(0xFFEA580C)
 internal val RoadblockRed = Color(0xFFDC2626)
 internal val FloodCyan = Color(0xFF0891B2)
 
-// Retained name for the legacy forest-green primary; now resolves to ink so
-// older call sites read as the ink-on-paper system without a sweep.
-internal val Forest = Ink
+// Retained name for the legacy forest-green primary; resolves to active ink.
+internal val Forest: Color get() = Ink
 internal val Orange = AmberDeep
 
 private val Overpass = FontFamily(
@@ -126,6 +139,7 @@ internal fun HodosTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    isDarkThemeState = darkTheme
     val colors = if (darkTheme) {
         darkColorScheme(
             primary = AsphaltInk, onPrimary = AsphaltBg,
@@ -138,13 +152,13 @@ internal fun HodosTheme(
         )
     } else {
         lightColorScheme(
-            primary = Ink, onPrimary = Paper,
-            secondary = Ink, onSecondary = Paper,
-            background = Paper, onBackground = Ink,
-            surface = PaperRaised, onSurface = Ink,
-            surfaceVariant = Sand, onSurfaceVariant = Muted,
+            primary = LightInk, onPrimary = LightPaper,
+            secondary = LightInk, onSecondary = LightPaper,
+            background = LightPaper, onBackground = LightInk,
+            surface = LightPaperRaised, onSurface = LightInk,
+            surfaceVariant = LightSand, onSurfaceVariant = LightMuted,
             error = Danger,
-            outline = Line
+            outline = LightLine
         )
     }
     MaterialTheme(
