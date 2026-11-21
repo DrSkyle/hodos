@@ -1746,8 +1746,8 @@ body.hodos-v2 {
   --v2-r-pill: 9999px;
   --v2-container: 1200px;
   --v2-margin: 24px;
-  --v2-pad-top: 128px;
-  --v2-pad-bottom: 85px;
+  --v2-pad-top: 168px;
+  --v2-pad-bottom: 140px;
 
   font-family: "Host Grotesk", var(--font-sans);
   font-size: 16px;
@@ -1948,7 +1948,8 @@ body.hodos-v2 .nav-menu-panel {
 
 /* 3. Hero */
 .v2-hero {
-  padding-top: 84px;
+  padding-top: 120px;
+  padding-bottom: 140px;
 }
 
 .v2-hero-copy {
@@ -1961,7 +1962,7 @@ body.hodos-v2 .nav-menu-panel {
   line-height: 0.96;
   letter-spacing: -0.04em;
   color: var(--v2-ink);
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .v2-lead {
@@ -1969,18 +1970,18 @@ body.hodos-v2 .nav-menu-panel {
   line-height: 1.55;
   color: var(--v2-ink-2);
   max-width: 52ch;
-  margin-bottom: 32px;
+  margin-bottom: 38px;
 }
 
 .v2-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
 }
 
 .v2-trust {
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 14px;
   color: var(--v2-muted);
 }
@@ -1993,16 +1994,16 @@ body.hodos-v2 .nav-menu-panel {
 }
 
 .v2-key-numbers {
-  margin-top: 56px;
+  margin-top: 80px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .v2-stat {
   background: var(--v2-alt);
   border-radius: var(--v2-r-surface);
-  padding: 24px;
+  padding: 28px 24px;
 }
 
 .v2-stat dt {
@@ -2010,7 +2011,7 @@ body.hodos-v2 .nav-menu-panel {
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--v2-ink);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .v2-stat dd {
@@ -2021,7 +2022,7 @@ body.hodos-v2 .nav-menu-panel {
 
 /* Hero UI Mockup */
 .v2-hero-mockup {
-  margin-top: 40px;
+  margin-top: 64px;
   background: var(--v2-alt);
   border: 1px solid var(--v2-hairline);
   border-radius: var(--v2-r-surface);
@@ -2120,7 +2121,7 @@ body.hodos-v2 .nav-menu-panel {
 /* Section Headings */
 .v2-section-head {
   max-width: 640px;
-  margin-bottom: 56px;
+  margin-bottom: 72px;
 }
 
 .v2-section-head h2 {
@@ -2128,7 +2129,7 @@ body.hodos-v2 .nav-menu-panel {
   font-weight: 700;
   line-height: 1.06;
   letter-spacing: -0.035em;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .v2-section-head p {
@@ -2144,7 +2145,7 @@ body.hodos-v2 .nav-menu-panel {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--v2-accent-ink);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .v2-text-link {
@@ -2168,13 +2169,13 @@ body.hodos-v2 .nav-menu-panel {
 .v2-feature-rows {
   display: flex;
   flex-direction: column;
-  gap: 64px;
+  gap: 96px;
 }
 
 .v2-feature-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 48px;
+  gap: 56px;
   align-items: center;
 }
 
@@ -2191,14 +2192,14 @@ body.hodos-v2 .nav-menu-panel {
   font-weight: 700;
   line-height: 1.14;
   letter-spacing: -0.025em;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .v2-feature-copy p {
   font-size: 16px;
   line-height: 1.65;
   color: var(--v2-ink-2);
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .v2-feature-copy p a {
@@ -2212,7 +2213,7 @@ body.hodos-v2 .nav-menu-panel {
   background: var(--v2-surface-card);
   border: 1px solid var(--v2-hairline);
   border-radius: var(--v2-r-surface);
-  padding: 24px;
+  padding: 28px;
 }
 
 .v2-ui-card-head {
@@ -2220,14 +2221,14 @@ body.hodos-v2 .nav-menu-panel {
   font-weight: 700;
   color: var(--v2-ink);
   padding-bottom: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--v2-hairline);
 }
 
 .v2-ui-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .v2-ui-item {
@@ -2235,7 +2236,7 @@ body.hodos-v2 .nav-menu-panel {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--v2-alt);
   border-radius: 12px;
   font-size: 14.5px;
@@ -2251,7 +2252,7 @@ body.hodos-v2 .nav-menu-panel {
 .v2-quote-rows {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 36px;
 }
 
 .v2-quote-row {
@@ -2259,7 +2260,7 @@ body.hodos-v2 .nav-menu-panel {
   grid-template-columns: minmax(0, 1.5fr) minmax(240px, 0.8fr);
   gap: 32px;
   align-items: center;
-  padding: 32px;
+  padding: 36px;
   background: var(--v2-alt);
   border-radius: var(--v2-r-surface);
 }
@@ -2313,18 +2314,18 @@ body.hodos-v2 .nav-menu-panel {
 .v2-platform-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 28px;
 }
 
 .v2-platform-card {
   background: var(--v2-surface-card);
   border: 1px solid var(--v2-hairline);
   border-radius: var(--v2-r-surface);
-  padding: 32px;
+  padding: 36px 32px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
 }
 
 .v2-platform-card h3 {
@@ -2336,7 +2337,7 @@ body.hodos-v2 .nav-menu-panel {
 .v2-platform-card p {
   font-size: 15px;
   color: var(--v2-ink-2);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .v2-platform-card .v2-pill-btn,
@@ -2345,14 +2346,14 @@ body.hodos-v2 .nav-menu-panel {
 }
 
 .v2-command-box {
-  margin-top: 28px;
+  margin-top: 44px;
   background: var(--v2-inverse-bg);
   color: var(--v2-inverse-ink);
   border-radius: var(--v2-r-surface);
-  padding: 20px 24px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
 }
 
@@ -2376,14 +2377,14 @@ body.hodos-v2 .nav-menu-panel {
 .v2-faq-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px 48px;
+  gap: 48px 56px;
 }
 
 .v2-faq-item h3 {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.35;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--v2-ink);
 }
 
@@ -2403,20 +2404,20 @@ body.hodos-v2 .nav-menu-panel {
 /* 8. Footer */
 .v2-footer {
   background: var(--v2-alt);
-  padding: 85px 0 48px;
+  padding: 128px 0 64px;
 }
 
 .v2-footer-cols {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px;
-  margin-bottom: 56px;
+  gap: 36px;
+  margin-bottom: 84px;
 }
 
 .v2-footer-cols h4 {
   font-size: 14px;
   font-weight: 700;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   color: var(--v2-ink);
 }
 
@@ -2424,7 +2425,7 @@ body.hodos-v2 .nav-menu-panel {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .v2-footer-cols a {
@@ -2444,7 +2445,7 @@ body.hodos-v2 .nav-menu-panel {
   line-height: 0.9;
   letter-spacing: -0.05em;
   color: var(--v2-ink);
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .v2-footer-bottom {
@@ -2494,12 +2495,13 @@ body.hodos-v2 .nav-menu-panel {
 
 @media (max-width: 640px) {
   body.hodos-v2 {
-    --v2-pad-top: 85px;
-    --v2-pad-bottom: 64px;
+    --v2-pad-top: 112px;
+    --v2-pad-bottom: 96px;
   }
 
   .v2-hero {
-    padding-top: 48px;
+    padding-top: 72px;
+    padding-bottom: 96px;
   }
 
   .v2-display {
