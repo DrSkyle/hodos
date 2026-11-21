@@ -4,7 +4,7 @@
  */
 
 .page-shell {
-  max-width: 900px;
+  max-width: var(--container);
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
@@ -26,7 +26,7 @@
   align-items: center;
   gap: var(--s2);
   padding: 12px var(--gutter);
-  max-width: 900px;
+  max-width: var(--container);
   margin: 0 auto;
 }
 

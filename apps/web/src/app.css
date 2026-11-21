@@ -119,7 +119,7 @@
 
 .screen-pad {
   padding: var(--s6) var(--s6) var(--s7);
-  max-width: 1040px;
+  max-width: var(--container);
   margin: 0 auto;
 }
 

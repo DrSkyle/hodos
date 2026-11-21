@@ -254,7 +254,7 @@ svg {
 
 .container {
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--container);
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
