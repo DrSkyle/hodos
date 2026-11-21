@@ -345,20 +345,21 @@
 
 .map-sheet {
   position: absolute;
-  left: var(--s4);
   right: var(--s4);
+  left: auto;
   bottom: var(--s4);
+  width: min(340px, calc(100% - 32px));
   z-index: 6;
   background: var(--paper-raised);
-  border-radius: var(--r-lg);
-  padding: var(--s5);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
   box-shadow: var(--shadow-2);
-  max-height: 46vh;
+  max-height: 36vh;
   overflow: auto;
 }
 
 .map-sheet h2 {
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 700;
 }
 
@@ -733,8 +734,9 @@
     bottom: calc(var(--s9) + env(safe-area-inset-bottom, 0px));
     left: var(--s3);
     right: var(--s3);
-    max-height: 40vh;
-    padding: var(--s4);
+    width: auto;
+    max-height: 32vh;
+    padding: 12px 14px;
   }
 
   .map-legend {
