@@ -191,7 +191,7 @@ export function renderNearby(host: HTMLElement, hazards: RemoteHazard[], onSelec
       ? "var(--rough)"
       : "var(--pothole)";
     const sub = isAlert
-      ? "Reported live · auto-expires"
+      ? `${formatShortAge(hazard.lastSeen)} · ${hazard.devices} confirmed`
       : `${hazard.passes} pass${hazard.passes === 1 ? "" : "es"} · ${hazard.devices} device${hazard.devices === 1 ? "" : "s"}`;
     const badge = hazard.fixed ? "repaired" : isAlert ? "LIVE" : `L${hazard.severity}`;
     row.innerHTML = `
@@ -205,6 +205,17 @@ export function renderNearby(host: HTMLElement, hazards: RemoteHazard[], onSelec
     }
     rows.append(row);
   }
+}
+
+function formatShortAge(iso?: string): string {
+  if (!iso) return "Reported live";
+  const ts = Date.parse(iso);
+  if (!Number.isFinite(ts)) return "Reported live";
+  const clock = new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const mins = Math.max(0, Math.round((Date.now() - ts) / 60_000));
+  if (mins < 1) return `Just now (${clock})`;
+  if (mins < 60) return `${mins}m ago (${clock})`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m ago (${clock})`;
 }
 
 function title(hazard: RemoteHazard): string {

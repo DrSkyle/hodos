@@ -513,6 +513,104 @@ export function initWebMap(
     }
   };
 
+  function formatAlertTime(iso?: string): string {
+    if (!iso) return "Reported just now";
+    const ts = Date.parse(iso);
+    if (!Number.isFinite(ts)) return "Reported live";
+    const clock = new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const mins = Math.max(0, Math.round((Date.now() - ts) / 60_000));
+    const ago =
+      mins < 1
+        ? "just now"
+        : mins < 60
+        ? `${mins}m ago`
+        : `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+    return `Reported ${ago} (${clock})`;
+  }
+
+  async function voteOnHazard(h: WebHazard, vote: "still_there" | "cleared"): Promise<void> {
+    const isAlert = isLiveAlertKind(h.kind);
+    const nowIso = new Date().toISOString();
+    const rowId = `vt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const payload: Record<string, unknown> =
+      vote === "still_there"
+        ? isAlert
+          ? {
+              deviceId: webDeviceId(),
+              tripId: `confirm_${Date.now().toString(36)}`,
+              recordedAt: nowIso,
+              lat: Number(h.lat.toFixed(6)),
+              lng: Number(h.lng.toFixed(6)),
+              accuracy: 25,
+              speedKph: 0,
+              magnitude: 0,
+              severity: h.severity || 2,
+              kind: h.kind,
+              confidence: 0.75,
+              mode: "vehicle",
+              observation: "alert"
+            }
+          : {
+              deviceId: webDeviceId(),
+              tripId: `confirm_${Date.now().toString(36)}`,
+              recordedAt: nowIso,
+              lat: Number(h.lat.toFixed(6)),
+              lng: Number(h.lng.toFixed(6)),
+              accuracy: 100,
+              speedKph: 0,
+              magnitude: 0,
+              severity: h.severity || 1,
+              kind: h.kind,
+              confidence: 0.3,
+              mode: "vehicle",
+              observation: "impact",
+              hazardRef: h.id
+            }
+        : {
+            deviceId: webDeviceId(),
+            tripId: `fix_${Date.now().toString(36)}`,
+            recordedAt: nowIso,
+            lat: Number(h.lat.toFixed(6)),
+            lng: Number(h.lng.toFixed(6)),
+            accuracy: 25,
+            speedKph: 0,
+            magnitude: 0,
+            severity: h.severity || 1,
+            kind: h.kind,
+            confidence: 0.75,
+            mode: "vehicle",
+            observation: "fix",
+            hazardRef: h.id
+          };
+
+    await fetch(`${APPWRITE_ENDPOINT}/tablesdb/hodos/tables/events/rows`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-Project": APPWRITE_PROJECT
+      },
+      body: JSON.stringify({ rowId, data: payload })
+    });
+
+    fetch(`${APPWRITE_ENDPOINT}/functions/hodos-aggregate/executions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-Project": APPWRITE_PROJECT
+      },
+      body: JSON.stringify({ async: true })
+    }).catch(() => {});
+
+    if (vote === "still_there") {
+      h.devices = (h.devices || 1) + 1;
+      h.passes = (h.passes || 1) + 1;
+      h.lastSeen = nowIso;
+    } else {
+      h.fixed = true;
+    }
+    updateSourceData();
+  }
+
   function showPopupForHazard(h: WebHazard) {
     const isAlert = isLiveAlertKind(h.kind);
     const badgeColor = h.fixed
@@ -531,31 +629,75 @@ export function initWebMap(
       ? "#7c3aed"
       : "#d97706";
 
-    const badgeText = h.fixed ? "Repaired" : isAlert ? "Live alert" : `Level ${h.severity}`;
+    const badgeText = h.fixed ? "Cleared" : isAlert ? "Live alert" : `Level ${h.severity}`;
+    const timeLine = formatAlertTime(h.lastSeen || h.firstSeen);
     const subline = isAlert
-      ? "Reported live · auto-expires"
-      : `${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"}`;
+      ? `${timeLine} · ${h.devices} confirmed`
+      : `${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"} · ${timeLine}`;
 
-    const html = `
-      <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 200px; color: var(--ink, #1c1a17);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
-          <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${escapeHtml(h.title)}</strong>
-          <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
-            ${escapeHtml(badgeText)}
-          </span>
-        </div>
-        <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px;">
-          ${escapeHtml(subline)}
-        </div>
-        <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;">
-          ${escapeHtml(h.locationName)}
-        </div>
+    const container = document.createElement("div");
+    container.style.cssText =
+      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 225px; color: var(--ink, #1c1a17);";
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
+        <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${escapeHtml(h.title)}</strong>
+        <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
+          ${escapeHtml(badgeText)}
+        </span>
       </div>
+      <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.03em; margin-bottom: 3px;">
+        ${escapeHtml(subline)}
+      </div>
+      <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; margin-bottom: 8px;">
+        ${escapeHtml(h.locationName)}
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <button type="button" data-vote="still_there" style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
+          👍 Still there (${h.devices})
+        </button>
+        <button type="button" data-vote="cleared" style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
+          ✓ ${isAlert ? "Not there" : "Repaired"}
+        </button>
+      </div>
+      <div data-vote-status style="font-size: 11px; color: var(--muted, #736d61); margin-top: 5px; display: none;"></div>
     `;
+
+    const statusNode = container.querySelector("[data-vote-status]") as HTMLElement | null;
+    container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const vote = btn.dataset.vote as "still_there" | "cleared";
+        container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((b) => {
+          b.disabled = true;
+        });
+        if (statusNode) {
+          statusNode.style.display = "block";
+          statusNode.textContent = "Recording your confirmation…";
+        }
+        try {
+          await voteOnHazard(h, vote);
+          if (statusNode) {
+            statusNode.textContent =
+              vote === "still_there"
+                ? `Confirmed (${h.devices} driver${h.devices === 1 ? "" : "s"} reported this)`
+                : isAlert
+                ? "Marked as cleared — thank you!"
+                : "Marked as repaired — thank you!";
+          }
+          if (vote === "still_there") {
+            btn.textContent = `👍 Still there (${h.devices})`;
+          }
+        } catch (_) {
+          if (statusNode) statusNode.textContent = "Could not send confirmation — try again.";
+          container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((b) => {
+            b.disabled = false;
+          });
+        }
+      });
+    });
 
     new Popup({ offset: 10, closeButton: true })
       .setLngLat([h.lng, h.lat])
-      .setHTML(html)
+      .setDOMContent(container)
       .addTo(map);
   }
 
