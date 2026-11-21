@@ -1,20 +1,44 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./partners.css";
+import { isValidEmail, subscribeEmail } from "./garage-client";
 import { APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID } from "./site-constants";
 import { wireThemeToggle } from "./theme";
 
-/**
- * Referral earnings, Nepal only.
- *
- * Nothing here decides whether someone qualifies. The page asks the browser for
- * a position, sends it to the backend, and the backend decides — using Nepal's
- * coordinates AND a Nepali payout wallet. A refused answer hides the whole
- * programme. A script that calls the API directly gets the same refusal, so the
- * browser check is a convenience, not the gate.
- */
-
 wireThemeToggle("theme-toggle");
+
+const newsletterForm = document.getElementById("newsletter-form") as HTMLFormElement | null;
+const newsletterEmail = document.getElementById("newsletter-email") as HTMLInputElement | null;
+const newsletterStatus = document.getElementById("newsletter-status") as HTMLElement | null;
+
+newsletterForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = (newsletterEmail?.value || "").trim();
+  if (!isValidEmail(email)) {
+    if (newsletterStatus) {
+      newsletterStatus.textContent = "Enter a valid email address.";
+      newsletterStatus.dataset.tone = "error";
+    }
+    return;
+  }
+  if (newsletterStatus) {
+    newsletterStatus.textContent = "Subscribing…";
+    newsletterStatus.dataset.tone = "idle";
+  }
+  try {
+    await subscribeEmail(email, "web-referrals-waitlist");
+    if (newsletterStatus) {
+      newsletterStatus.textContent = "Subscribed — we'll email you when referrals come back online.";
+      newsletterStatus.dataset.tone = "ok";
+    }
+    newsletterForm.reset();
+  } catch {
+    if (newsletterStatus) {
+      newsletterStatus.textContent = "Could not subscribe right now. Please try again.";
+      newsletterStatus.dataset.tone = "error";
+    }
+  }
+});
 
 const ENDPOINT = `${APPWRITE_ENDPOINT}/functions/hodos-api/executions`;
 

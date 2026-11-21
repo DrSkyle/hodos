@@ -95,30 +95,29 @@ void detectVisitorCountryByIp().then((country) => {
     const ann = document.querySelector("#top-announcement p");
     if (ann) {
       ann.innerHTML =
-        'India 60 / 40 referral programme is live — earn 60% of every shop pin via UPI or IMPS. <a href="/referrals">Get your referral code →</a>';
+        'Shop pins in India are free initially · 289 people earned ₹2,00,000+ through Hodos (referrals paused). <a href="/partners">Place a free pin →</a>';
     }
-    document.getElementById("nepal-earn")?.removeAttribute("hidden");
-    document.getElementById("footer-referrals")?.removeAttribute("hidden");
-    document.getElementById("nav-referrals")?.removeAttribute("hidden");
-    document.getElementById("mobile-referrals")?.removeAttribute("hidden");
-    wireCountryCalculator("IN");
-
-    const step1Title = document.querySelector("#nepal-earn .step-card:first-child h3");
-    const step1Desc = document.querySelector("#nepal-earn .step-card:first-child p");
-    const calcLabel = document.querySelector("#nepal-earn .nepal-calc-result .mono-label");
-    const ctas = document.querySelector("#nepal-earn .section-cta") as HTMLElement | null;
-    if (step1Title) step1Title.textContent = "One code, tied to your UPI or IMPS account";
-    if (step1Desc) step1Desc.textContent = "Confirm your location in India and link your UPI ID or bank account in thirty seconds.";
-    if (calcLabel) calcLabel.textContent = "Your 60% share (UPI / IMPS)";
+    const earnSection = document.getElementById("nepal-earn");
+    earnSection?.removeAttribute("hidden");
+    const eyebrow = earnSection?.querySelector(".v2-kicker");
+    const title = earnSection?.querySelector("h2");
+    const lead = earnSection?.querySelector("p.lead");
+    const ctas = earnSection?.querySelector(".section-cta") as HTMLElement | null;
+    if (eyebrow) eyebrow.textContent = "India · Referrals paused";
+    if (title) title.innerHTML = '289 people earned ₹2,00,000+ through Hodos<span class="v2-dot">.</span>';
+    if (lead) {
+      lead.textContent =
+        "We have helped 289 people earn 2 lakh+ (₹2,00,000+) through Hodos. We are pausing referrals for now and making the entire shop pin system completely free for all shops across India and Nepal. Want to be notified when referrals come back online? Subscribe to our newsletter.";
+    }
     if (ctas) {
       ctas.innerHTML = `
-        <a class="v2-pill-btn v2-pill-primary" href="/referrals">Get your referral code</a>
-        <a class="v2-pill-btn v2-pill-secondary" href="/garage">Open the India Garage</a>
+        <a class="v2-pill-btn v2-pill-primary" href="/referrals">Subscribe for referral updates</a>
+        <a class="v2-pill-btn v2-pill-secondary" href="/partners">Place a free shop pin</a>
       `;
     }
 
     const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
-    if (accessItem) accessItem.textContent = "₹16 / day (UPI / IMPS)";
+    if (accessItem) accessItem.textContent = "Free initially (₹0)";
   }
 });
 

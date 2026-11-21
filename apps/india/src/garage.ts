@@ -22,10 +22,10 @@ function renderShops() {
     grid.innerHTML = `
       <div class="nepal-empty-card">
         <h3>No live shops in this view yet</h3>
-        <p>Be the first shop on Hodos India from ₹16/day — or refer a shop near you and earn 60% via UPI.</p>
+        <p>Shop pins in India are completely free initially. (289 people earned ₹2,00,000+ through Hodos — referrals are paused while pins are free for all shops.)</p>
         <div class="hero-actions" style="margin-top: 12px;">
-          <a class="btn btn-primary" href="/partners">Place a shop pin</a>
-          <a class="btn btn-ghost" href="/referrals">Refer a shop (60%)</a>
+          <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
+          <a class="btn btn-ghost" href="/referrals">Referral updates &amp; newsletter</a>
         </div>
       </div>
     `;

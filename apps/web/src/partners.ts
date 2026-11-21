@@ -171,11 +171,15 @@ function renderQuote() {
     priceHost.textContent = "…";
     return;
   }
+  const isIndia = quote.country === "IN" || browserLocale() === "en-IN";
   const isNepal = quote.country === "NP" || browserLocale() === "ne-NP";
-  if (isNepal) {
-    priceHost.textContent = "Free initially (NPR 0)";
+  const isFreeLaunch = isNepal || isIndia;
+  if (isFreeLaunch) {
+    priceHost.textContent = isIndia ? "Free initially (₹0)" : "Free initially (NPR 0)";
     if (priceNote) {
-      priceNote.textContent = "Shop pins in Nepal are completely free initially — no payment or wallet transfer needed.";
+      priceNote.textContent = isIndia
+        ? "Shop pins in India are completely free initially — no payment or UPI transfer needed."
+        : "Shop pins in Nepal are completely free initially — no payment or wallet transfer needed.";
     }
   } else {
     const hasDiscount = Number(quote.discountPct) > 0 && quote.baseLocalPerDay && quote.baseLocalPerDay > quote.localPerDay;
@@ -203,7 +207,7 @@ function renderQuote() {
   const refCodeInput = document.getElementById("referral-code-input") as HTMLInputElement | null;
   const submitBtn = document.getElementById("placement-submit-btn") as HTMLButtonElement | null;
   const mailHref = buildMailtoHref();
-  if (isNepal) {
+  if (isFreeLaunch) {
     if (refInput) {
       refInput.required = false;
       const field = refInput.closest(".field") as HTMLElement | null;

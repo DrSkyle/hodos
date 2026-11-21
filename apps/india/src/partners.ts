@@ -59,14 +59,12 @@ function localQuote(d: number) {
 }
 
 function renderPricing() {
-  const q = localQuote(days);
   const span = days === 365 ? "1 year" : `${days} day${days === 1 ? "" : "s"}`;
   if (priceHost) {
-    priceHost.textContent = days === 1 ? `₹${inrFmt.format(q.totalInr)} / day` : `₹${inrFmt.format(q.totalInr)} for ${span}`;
+    priceHost.textContent = `Free initially · ${span}`;
   }
   if (priceNote) {
-    const discountText = q.discountPct > 0 ? ` (${q.discountPct}% longer-plan discount · ~₹${q.perDayInr}/day)` : "";
-    priceNote.textContent = `Quoted in INR (₹)${discountText}. Pay via UPI or IMPS.`;
+    priceNote.textContent = "Shop pins in India are completely free initially — no payment or UPI transfer needed.";
   }
   if (dayRow) {
     dayRow.innerHTML = "";
@@ -274,9 +272,9 @@ form?.addEventListener("submit", async (e) => {
     return;
   }
 
-  setStatus("Sending placement request…", "idle");
+  setStatus("Publishing your free shop pin…", "idle");
   try {
-    await fetch(ENDPOINT, {
+    const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -296,15 +294,28 @@ form?.addEventListener("submit", async (e) => {
           lat: point.lat,
           lng: point.lng,
           days,
+          countryCode: "IN",
           locale: "en-IN",
           currency: "INR"
         }),
         method: "POST",
         path: "/"
       })
-    }).catch(() => null);
-  } finally {
-    window.location.href = buildMailtoHref();
-    setStatus("Opening your email client with UPI / IMPS payment details.", "ok");
+    });
+    const exec = await res.json();
+    const inner = typeof exec?.responseBody === "string" ? JSON.parse(exec.responseBody) : null;
+    if (inner?.ok && inner?.live) {
+      setStatus("Your free shop pin is live on the Hodos India map!", "ok");
+      form.reset();
+      return;
+    }
+    if (inner?.error) {
+      setStatus(String(inner.error), "error");
+      return;
+    }
+  } catch {
+    // fallback below
   }
+  window.location.href = buildMailtoHref();
+  setStatus("Opening your email client to confirm your free pin.", "ok");
 });

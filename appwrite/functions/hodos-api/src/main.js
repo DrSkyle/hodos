@@ -1340,10 +1340,9 @@ async function partnerPlace(req, body) {
     };
   }
 
-  // The pin goes live only when the money is in. No free day, no trial, no
-  // unpaid "reserved" pin on the public map: a shop that has not paid has no
-  // placement to extend either.
-  const paid = reference.length > 0;
+  const isFreeLaunch = quote.country === "NP" || quote.country === "IN";
+  const paid = isFreeLaunch || reference.length > 0;
+  const effectiveRef = isFreeLaunch && !reference ? "free-launch" : reference;
 
   // A shop is referred exactly once, by the first person who brings it. A
   // later submission inherits the original referrer and never re-attributes.
@@ -1354,7 +1353,7 @@ async function partnerPlace(req, body) {
       .catch((error) => { log(`shop claim failed: ${error}`); return null; });
     referredBy = claim ? claim.code : "";
   }
-  const amountMicro = Math.round(quote.usdPerDay * 1_000_000) * quote.days;
+  const amountMicro = isFreeLaunch ? 0 : Math.round(quote.usdPerDay * 1_000_000) * quote.days;
 
   await writeRow("partnerPlacements", id, {
     name: shop.name,
@@ -1367,11 +1366,11 @@ async function partnerPlace(req, body) {
     days: quote.days,
     amountMicro,
     currency: quote.currency,
-    localTotal: Number(quote.totalLocal) || 0,
+    localTotal: isFreeLaunch ? 0 : Number(quote.totalLocal) || 0,
     tier: quote.tier,
     country: quote.country || "",
-    reference,
-    status: paid ? "pending" : "awaiting-payment",
+    reference: effectiveRef,
+    status: paid ? (isFreeLaunch ? "active" : "pending") : "awaiting-payment",
     referredBy,
     paidAt: paid ? nowIso() : "",
     at: nowIso()

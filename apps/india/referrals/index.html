@@ -28,23 +28,26 @@
   <main class="page-shell">
     <section id="gate" class="referral-gate">
       <div id="gate-check">
-        <span class="garage-eyebrow">India referral programme</span>
-        <h1>Checking you're in India<span class="dot">.</span></h1>
+        <span class="garage-eyebrow">India · Referrals paused</span>
+        <h1>289 people earned ₹2,00,000+ through Hodos<span class="dot">.</span></h1>
         <p class="garage-lede">
-          This programme is open in India and settles to an Indian UPI ID or IMPS bank account.
-          Allow location once so the server can confirm you're in India.
+          We have helped <strong>289 people earn 2 lakh+ (₹2,00,000+)</strong> through Hodos.
+          We are pausing referrals for now and making the whole shop pin system
+          <strong>completely free for all shops</strong> across India and Nepal.
         </p>
-        <p id="gate-status" class="gate-status"></p>
-        <button type="button" id="gate-locate" class="btn btn-primary">Confirm my location</button>
-      </div>
-
-      <div id="gate-denied" hidden>
-        <span class="garage-eyebrow">Not available here</span>
-        <h1>India only<span class="dot">.</span></h1>
-        <p id="gate-denied-text" class="garage-lede">
-          Hodos India referrals are only available inside India with an Indian UPI or IMPS payout account.
-        </p>
-        <a class="btn btn-ghost" href="/partners">Place a shop pin instead</a>
+        <form id="newsletter-form" class="placement-form" style="max-width:460px;margin:20px 0;" novalidate>
+          <label class="field">
+            <span class="field-label">Want to be notified when referrals come back online? Subscribe to our newsletter:</span>
+            <input id="newsletter-email" name="email" type="email" placeholder="you@example.com" required />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Notify me when referrals return</button>
+            <span id="newsletter-status" class="form-status"></span>
+          </div>
+        </form>
+        <div class="hero-cta-row">
+          <a class="btn btn-ghost" href="/partners">Place a free shop pin in India</a>
+        </div>
       </div>
     </section>
 

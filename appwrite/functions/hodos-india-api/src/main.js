@@ -564,43 +564,10 @@ function referralGate(body) {
 }
 
 async function referralCreate(body) {
-  const gate = referralGate(body);
-  if (!gate.ok) return gate;
-
-  const ownerName = String(body.ownerName || "").trim();
-  if (ownerName.length < 2 || ownerName.length > 80) {
-    return { ok: false, error: "include the name to show on the referral" };
-  }
-
-  let code = makeReferralCode(ownerName);
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const taken = await readRows("referrals", [
-      { method: "equal", attribute: "code", values: [code] },
-      { method: "limit", values: [1] }
-    ]).catch(() => []);
-    if (taken.length === 0) break;
-    code = makeReferralCode(ownerName);
-  }
-
-  await writeRow("referrals", code, {
-    code,
-    ownerName,
-    payoutMethod: gate.payout.method,
-    payoutAccount: gate.payout.account,
-    country: gate.payout.country,
-    createdAt: nowIso(),
-    disabled: false
-  });
-
   return {
-    ok: true,
-    ...shapeReferral({
-      code, ownerName,
-      payoutMethod: gate.payout.method,
-      payoutAccount: gate.payout.account,
-      country: gate.payout.country,
-      disabled: false
-    }, { earnedMicro: 0, paidMicro: 0, owedMicro: 0, placements: 0 })
+    ok: false,
+    paused: true,
+    error: "We have helped 289 people earn ₹2,00,000+ (2 lakh+) through Hodos. Referrals are paused while we make the entire shop pin system free for all shops. Subscribe to our newsletter to be notified when referrals return."
   };
 }
 
@@ -985,17 +952,19 @@ async function partnerQuote(body) {
   const rates = await usdRates();
   const rate = Number(rates[currency]) || 1;
   const days = clampDays(body.days);
-  const baseUsdPerDay = PARTNER_TIERS[tier].usdPerDay;
+  const isFree = country === "IN";
+  const baseUsdPerDay = isFree ? 0 : PARTNER_TIERS[tier].usdPerDay;
   const factor = durationFactor(days);
-  const discountPct = Math.round((1 - factor) * 100);
-  const usdPerDay = roundMoney(baseUsdPerDay * factor, "USD");
-  const baseLocalPerDay = roundMoney(baseUsdPerDay * rate, currency);
-  const perDay = roundMoney(baseUsdPerDay * rate * factor, currency);
-  const week = roundMoney(baseUsdPerDay * rate * durationFactor(7) * 7, currency);
+  const discountPct = isFree ? 0 : Math.round((1 - factor) * 100);
+  const usdPerDay = isFree ? 0 : roundMoney(baseUsdPerDay * factor, "USD");
+  const baseLocalPerDay = isFree ? 0 : roundMoney(baseUsdPerDay * rate, currency);
+  const perDay = isFree ? 0 : roundMoney(baseUsdPerDay * rate * factor, currency);
+  const week = isFree ? 0 : roundMoney(baseUsdPerDay * rate * durationFactor(7) * 7, currency);
   return {
     country: country || null,
     tier,
     currency,
+    free: isFree,
     baseUsdPerDay,
     usdPerDay,
     baseLocalPerDay,
@@ -1003,18 +972,19 @@ async function partnerQuote(body) {
     discountPct,
     weeksFrom: week,
     days,
-    totalLocal: roundMoney(perDay * days, currency),
-    totalUsd: roundMoney(usdPerDay * days, "USD"),
+    totalLocal: isFree ? 0 : roundMoney(perDay * days, currency),
+    totalUsd: isFree ? 0 : roundMoney(usdPerDay * days, "USD"),
     tiers: Object.fromEntries(
       Object.entries(PARTNER_TIERS).map(([name, value]) => [name, value.usdPerDay])
     ),
-    // Pay with what the shop actually has. We never publish our wallet IDs on a
-    // public page: the shop emails us for the eSewa, Khalti or IME Pay details,
-    // sends the payment, and submits the transaction reference here.
-    settlement: country === "NP"
+    settlement: isFree
+      ? "Shop pins in India are completely free initially — no payment or UPI transfer needed."
+      : country === "NP"
       ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
       : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
-    settlementOptions: country === "NP"
+    settlementOptions: isFree
+      ? ["free"]
+      : country === "NP"
       ? ["esewa", "khalti", "imepay", "bank"]
       : ["payoneer", "card", "paypal"],
     note: "One shop, one pin, one line of text. Never over the route ahead."
@@ -1353,10 +1323,9 @@ async function partnerPlace(req, body) {
     };
   }
 
-  // The pin goes live only when the money is in. No free day, no trial, no
-  // unpaid "reserved" pin on the public map: a shop that has not paid has no
-  // placement to extend either.
-  const paid = reference.length > 0;
+  const isFree = Boolean(quote.free || quote.totalLocal === 0);
+  const paid = isFree || reference.length > 0;
+  const effectiveRef = isFree && !reference ? "free-launch" : reference;
 
   // A shop is referred exactly once, by the first person who brings it. A
   // later submission inherits the original referrer and never re-attributes.
@@ -1367,7 +1336,7 @@ async function partnerPlace(req, body) {
       .catch((error) => { log(`shop claim failed: ${error}`); return null; });
     referredBy = claim ? claim.code : "";
   }
-  const amountMicro = Math.round(quote.usdPerDay * 1_000_000) * quote.days;
+  const amountMicro = isFree ? 0 : Math.round(quote.usdPerDay * 1_000_000) * quote.days;
 
   await writeRow("partnerPlacements", id, {
     name: shop.name,
@@ -1380,11 +1349,11 @@ async function partnerPlace(req, body) {
     days: quote.days,
     amountMicro,
     currency: quote.currency,
-    localTotal: Number(quote.totalLocal) || 0,
+    localTotal: isFree ? 0 : Number(quote.totalLocal) || 0,
     tier: quote.tier,
     country: quote.country || "",
-    reference,
-    status: paid ? "pending" : "awaiting-payment",
+    reference: effectiveRef,
+    status: paid ? (isFree ? "active" : "pending") : "awaiting-payment",
     referredBy,
     paidAt: paid ? nowIso() : "",
     at: nowIso()
