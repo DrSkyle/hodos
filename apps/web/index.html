@@ -4,11 +4,11 @@
   <meta name="mitgo-verification" content="6c1a3f7b-a1a8-4b49-b250-a45842338e3e" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#faf8f2" />
-  <meta name="description" content="Hodos maps the road through the phone you already drive with. Free for everyone. The Garage keeps it free, and local shops can put a pin on the map from $0.19 a day." />
+  <meta name="theme-color" content="#141311" />
+  <meta name="description" content="Hodos maps road hazards through the phone you already drive with. Free for everyone, corroborated across independent trips, with free initial shop pins in Nepal." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hodos — the road maps itself" />
-  <meta property="og:description" content="A live map of potholes, rough stretches and speed bumps, built by the phones already driving. Free, forever." />
+  <meta property="og:description" content="Your phone detects road hazards as you drive, and independent trips confirm them before they appear on the public map." />
   <meta property="og:url" content="__HODOS_SITE__/" />
   <meta property="og:image" content="__HODOS_SITE__/hodos-icon.png?v=__HODOS_VERSION__" />
   <link rel="canonical" href="__HODOS_SITE__/" />
@@ -19,7 +19,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Hodos",
-    "operatingSystem": "Android",
+    "operatingSystem": "Android, Web",
     "applicationCategory": "NavigationApplication",
     "description": "Passive, crowdsourced road-hazard mapping, and a garage of kit for the roads you drive.",
     "url": "__HODOS_SITE__/",
@@ -29,38 +29,39 @@
   }
   </script>
 </head>
-<body>
+<body class="field-guide">
   <a class="skip-link" href="#content">Skip to content</a>
 
   <header class="site-nav">
     <div class="nav-inner">
       <a class="nav-brand" href="/" aria-label="Hodos home">
-        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="26" height="26" />
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="24" height="24" />
         <span>hodos<span class="dot">.</span></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a class="nav-garage" href="/garage">Garage</a>
-        <a href="/map">Live radar</a>
+        <a href="/map">Live map</a>
         <a href="/app/">Web app</a>
+        <a class="nav-garage" href="/garage">Garage</a>
         <a href="#shops">For shops</a>
         <a href="/referrals" id="nav-referrals" hidden>Earn 60%</a>
+        <a href="#faq">FAQ</a>
       </nav>
       <div class="nav-actions">
-        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
-        <a class="nav-cta nav-cta-garage" id="nav-primary-cta" href="/garage">Shop the Garage</a>
+        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle color theme">☾</button>
+        <a class="nav-cta" id="nav-primary-cta" href="/map">Explore live map</a>
         <details class="nav-menu">
           <summary aria-label="Open menu">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14"/></svg>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14"/></svg>
           </summary>
           <nav class="nav-menu-panel" aria-label="Mobile navigation">
+            <a href="/map">Explore live map</a>
+            <a href="/app/">Open web app</a>
             <a href="/garage">Garage</a>
-            <a href="/map">Live radar</a>
-            <a href="/app/">Web app</a>
-                <a href="#shops">For shops</a>
+            <a href="#shops">For shops</a>
             <a href="/referrals" id="mobile-referrals" hidden>Refer a shop · earn 60%</a>
             <a href="#faq">FAQ</a>
-            <a href="__HODOS_INSTAGRAM__" target="_blank" rel="noopener noreferrer">Instagram</a>
-            <a href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download the app</a>
+            <a href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get Android app</a>
+            <a href="/privacy.html">Privacy</a>
           </nav>
         </details>
       </div>
@@ -68,114 +69,160 @@
   </header>
 
   <main id="content">
+    <!-- 1. HERO -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="container">
-        <div class="hero-editorial">
+        <div class="hero-copy">
           <h1 id="hero-title" class="hero-headline">
-            The road<br />maps itself<span class="dot">.</span>
+            The road <br />maps itself<span class="dot">.</span>
           </h1>
           <p class="hero-subhead">
-            Drive with Hodos in your pocket and your phone quietly finds potholes, rough
-            pavement and speed bumps. Independent trips agree on a defect before it ever
-            reaches the map.
+            Your phone detects road hazards as you drive, and independent trips confirm them before they appear on the public map.
           </p>
           <div class="hero-cta-row">
-            <a class="btn btn-primary" href="/app/">Open web app</a>
-            <a class="btn btn-ghost" href="/map">Live road map</a>
-            <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download Android APK</a>
+            <a class="btn btn-primary" id="hero-cta-map" href="/map">Explore live map</a>
+            <a class="btn btn-ghost" id="hero-cta-app" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
+          </div>
+          <p class="hero-footnote">
+            Also runs in your browser at <a href="/app/">hodos.devilabs.dev/app</a> · Free · No account
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. HORIZONTAL SCROLL SECTION -->
+    <section class="road-scene-section" id="how" aria-labelledby="how-title">
+      <div class="road-scene-pin">
+        <div class="container road-scene-top">
+          <div class="road-scene-heading">
+            <span class="eyebrow">How it works</span>
+            <h2 id="how-title">From a single jolt in a pocket to a verified pin on the map<span class="dot">.</span></h2>
+          </div>
+          <div class="road-scene-meter" aria-hidden="true">
+            <span class="road-scene-stage-readout" id="road-scene-readout">01 / 03</span>
+            <div class="road-scene-bar"><i id="road-scene-fill"></i></div>
+          </div>
+        </div>
+
+        <div class="road-camera-viewport" id="road-camera-viewport">
+          <div class="road-world" id="road-world" data-stage="1">
+
+            <!-- Three field-guide annotations anchored to the three stations along the road -->
+            <div class="road-Stops">
+              <article class="road-stop" data-stop="1">
+                <span class="road-stop-num">01 · SENSE ON DEVICE</span>
+                <h3>A phone in a pocket feels the impact</h3>
+                <p>
+                  While you drive, the on-device detector separates sharp vertical road impacts from engine
+                  vibration and logs the coordinates locally. A single jolt never reaches the public map alone.
+                </p>
+              </article>
+
+              <article class="road-stop" data-stop="2">
+                <span class="road-stop-num">02 · CORROBORATE BY TRIP</span>
+                <h3>Independent vehicles confirm the same spot</h3>
+                <p>
+                  When multiple distinct devices and trips record an impact within the same 15-metre
+                  cell, Hodos confirms the defect is in the road—not a dropped phone or random bump.
+                </p>
+              </article>
+
+              <article class="road-stop" data-stop="3">
+                <span class="road-stop-num">03 · PUBLISH &amp; HEAL</span>
+                <h3>The pin goes live, and retires once fixed</h3>
+                <p>
+                  Verified hazards appear on the public map and API. Later, when three vehicles pass
+                  over that spot smoothly without an impact, the hazard marks itself repaired.
+                </p>
+              </article>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="hscroll-section" id="how" aria-labelledby="how-title">
-      <div class="hscroll-pin">
-        <div class="container hscroll-header">
-          <div class="hscroll-title-row">
-            <div>
-              <span class="eyebrow">How Hodos works</span>
-              <h2 id="how-title">Turn it on once. The drive does the rest<span class="dot">.</span></h2>
-            </div>
-            <div class="hscroll-progress-wrap" aria-hidden="true">
-              <div class="hscroll-progress-bar"><i id="hscroll-progress-fill"></i></div>
-            </div>
-          </div>
+    <!-- 3. BACK TO NORMAL SCROLLING: The Real Product -->
+    <section class="section" id="product" aria-labelledby="product-title">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">FIELD INSTRUMENTS · TWO CLIENTS, ONE ENGINE</span>
+          <h2 id="product-title">Built for the drive you already make<span class="dot">.</span></h2>
+          <p class="lead">
+            Run Hodos natively on Android or directly in your mobile browser. Both run the same
+            on-device detector, the same severity grading, and feed the same public map.
+          </p>
         </div>
 
-        <div class="hscroll-viewport">
-          <div class="hscroll-track" id="hscroll-track">
-            <article class="hscroll-panel">
-              <span class="hscroll-index">01</span>
-              <h3>It listens for the road, not for you</h3>
+        <div class="instrument-ledger">
+          <article class="instrument-row">
+            <div class="instrument-meta">
+              <span class="instrument-index">01 · PUBLIC MAP</span>
+              <h3>Live hazard map &amp; offline regions</h3>
+            </div>
+            <div class="instrument-body">
               <p>
-                Phone motion and GPS separate a real road impact from engine vibration, then
-                tag potholes, rough pavement and speed bumps automatically while you drive.
+                Open the live map in any browser to inspect corroborated potholes, rough stretches,
+                speed bumps, and GPS-gated live road alerts before you set out. On Android, cache your
+                region over Wi-Fi once so the map keeps working through mountain dead zones and highway tunnels.
               </p>
-            </article>
+              <a class="text-link" href="/map">Explore the live map →</a>
+            </div>
+          </article>
 
-            <article class="hscroll-panel">
-              <span class="hscroll-index">02</span>
-              <h3>One jolt is never published alone</h3>
+          <article class="instrument-row">
+            <div class="instrument-meta">
+              <span class="instrument-index">02 · ANDROID &amp; WEB APP</span>
+              <h3>Hands-free sensing &amp; distance perks</h3>
+            </div>
+            <div class="instrument-body">
               <p>
-                Only spots that independent trips agree on reach the public map, so a single
-                bad bump or dropped phone never creates a false alarm on your street.
+                The Android app senses in the background alongside your navigation or ride-hailing app;
+                the web app at <a href="/app/">hodos.devilabs.dev/app</a> runs in an open browser tab with
+                individual controls for location, motion, notifications, and screen wake. Driving unlocks
+                monthly maintenance perks—a free tire pressure check at 20 km, chain lube at 50 km, and
+                alignment check at 100 km—redeemable at partner shops on the map.
               </p>
-            </article>
+              <div class="inline-actions">
+                <a class="text-link" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download Android APK →</a>
+                <a class="text-link" href="/app/">Open browser app →</a>
+              </div>
+            </div>
+          </article>
 
-            <article class="hscroll-panel">
-              <span class="hscroll-index">03</span>
-              <h3>Maps that outlast the signal</h3>
+          <article class="instrument-row">
+            <div class="instrument-meta">
+              <span class="instrument-index">03 · PRIVACY BY ARCHITECTURE</span>
+              <h3>Routes stay on your phone</h3>
+            </div>
+            <div class="instrument-body">
               <p>
-                Cache a nearby region over Wi-Fi once and the map keeps working through
-                mountain dead zones, tunnels and back roads.
+                No user accounts, no email sign-up, and no advertising IDs. Your trip history and route
+                trails stay in local storage on your device. Only quantised hazard observations are uploaded,
+                with the first and last 250 metres of every journey trimmed on Android so your home and
+                workplace are never revealed.
               </p>
-            </article>
-
-            <article class="hscroll-panel">
-              <span class="hscroll-index">04</span>
-              <h3>Hands-free alongside any nav app</h3>
-              <p>
-                Journeys start and end on their own while you navigate, ride or deliver in
-                whatever app you already use.
-              </p>
-            </article>
-
-            <article class="hscroll-panel">
-              <span class="hscroll-index">05</span>
-              <h3>Perks unlocked by distance</h3>
-              <p>
-                Free tire checks, chain lube and alignment checks at local partner shops,
-                unlocked simply by the kilometres you already cover each month.
-              </p>
-            </article>
-
-            <article class="hscroll-panel">
-              <span class="hscroll-index">06</span>
-              <h3>Private by design</h3>
-              <p>
-                Your route stays on your phone. Only anonymous hazard observations leave the
-                device, trimmed at both ends of every journey.
-              </p>
-            </article>
-          </div>
+              <a class="text-link" href="/privacy.html">Read the privacy architecture →</a>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
+    <!-- Country-specific referral / launch banner (revealed by landing.ts for NP / IN) -->
     <section class="section section-soft" id="nepal-earn" aria-labelledby="nepal-earn-title" hidden>
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">Nepal · 60 / 40 revenue share</span>
-          <h2 id="nepal-earn-title">Refer any shop on your road. Keep 60%<span class="dot">.</span></h2>
+          <span class="eyebrow">Nepal · Free initial launch</span>
+          <h2 id="nepal-earn-title">Shop pins in Nepal are free initially<span class="dot">.</span></h2>
           <p class="lead">
-            Introduce any business that sells or offers something our drivers and riders might need — cafés, hotels, pharmacies, electronics, general stores, garages or tyre shops. Whenever they buy or renew a pin on the map, <strong>60% of their payment shows immediately in your referral account</strong> and unlocks for cashout to your eSewa, Khalti or IME Pay wallet after 30 days, while Hodos keeps 40%.
+            Placing a shop pin on Hodos in Nepal is completely free right now — no payment or wallet transfer needed. Because pins are free, the Nepal referral programme has been stopped for now.
           </p>
         </div>
-        <div class="steps">
+        <div class="steps" hidden>
           <article class="step-card">
             <span class="step-num">01 · Get your code</span>
-            <h3>One code, tied to your Nepali wallet</h3>
-            <p>Confirm your location in Nepal and link your eSewa, Khalti or IME Pay number in thirty seconds.</p>
+            <h3>One code, tied to your payout account</h3>
+            <p>Confirm your location and link your payout account in thirty seconds.</p>
           </article>
           <article class="step-card">
             <span class="step-num">02 · Introduce any shop</span>
@@ -188,7 +235,7 @@
             <p>Your share appears the moment their payment is recorded and unlocks for cashout after 30 days.</p>
           </article>
         </div>
-        <div class="nepal-calc" aria-label="Nepal 60/40 earnings estimator">
+        <div class="nepal-calc" aria-label="60/40 earnings estimator" hidden>
           <div class="nepal-calc-controls">
             <label class="nepal-calc-field">
               <span class="nepal-calc-label">Shops you introduce: <strong id="calc-shops-val">10</strong></span>
@@ -202,40 +249,45 @@
           </div>
           <div class="nepal-calc-result">
             <div>
-              <span class="mono-label">Your 60% share (eSewa / Khalti / IME Pay)</span>
-              <strong class="nepal-calc-amount" id="calc-earn-npr">NPR 3,925</strong>
+              <span class="mono-label">Your 60% share</span>
+              <strong class="nepal-calc-amount" id="calc-earn-npr">NPR 0</strong>
             </div>
-            <p class="nepal-calc-meta" id="calc-meta">Based on 10 Nepal shops on a 30-day pin (~NPR 654 each). Renewals pay you 60% again.</p>
+            <p class="nepal-calc-meta" id="calc-meta"></p>
           </div>
         </div>
         <div class="hero-cta-row section-cta">
-          <a class="btn btn-primary" href="/referrals">Get your referral code</a>
-          <a class="btn btn-ghost" href="/garage">Open the Nepal Garage</a>
+          <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
+          <a class="btn btn-ghost" href="/garage">Open the Garage</a>
         </div>
       </div>
     </section>
 
+    <!-- 4. PUT YOUR SHOP ON THE MAP -->
     <section class="section section-soft" id="shops" aria-labelledby="shops-title">
       <div class="container">
         <div class="section-head">
+          <span class="eyebrow">LOCAL WORKSHOPS &amp; ROADSIDE STOPS · THE GARAGE</span>
           <h2 id="shops-title">Put your shop on the map<span class="dot">.</span></h2>
           <p class="lead">
-            If your shop sells or offers anything that drivers and riders might need, put a pin on the map or <a href="mailto:__HODOS_CONTACT__">contact us</a>. The price follows your country’s economy, and longer plans cost less per day.
+            If your shop sells or repairs anything drivers and riders need along the road — tyre
+            shops, garages, cafés, pharmacies, hotels, or EV chargers — place a pin where drivers
+            already look, or <a href="mailto:__HODOS_CONTACT__">contact us</a>. In Nepal, shop pins
+            are <strong>completely free initially</strong>.
           </p>
         </div>
 
         <div class="plan-grid">
           <article class="plan">
-            <span class="plan-tier">Access</span>
-            <div class="plan-price">$0.19<small>a day · India and similar markets (free initially in Nepal)</small></div>
-            <p class="plan-who">Priced to be an easy yes for any local shop, café, hotel, pharmacy or garage.</p>
+            <span class="plan-tier">Nepal Launch · Access</span>
+            <div class="plan-price">Free<small>initially in Nepal · $0.19/day in India &amp; similar markets</small></div>
+            <p class="plan-who">Zero setup fee, no contract, and 0% commission on anything you sell at the counter.</p>
             <ul class="plan-list">
-              <li>A pin on the live map</li>
-              <li>Your own line of text</li>
-              <li>Listed to AI assistants too</li>
-              <li>In the rider perk list</li>
+              <li>A live pin on the road map</li>
+              <li>Your own one-line offer &amp; phone</li>
+              <li>Served to AI assistants via Hodos API</li>
+              <li>Listed in rider monthly perks</li>
             </ul>
-            <div class="plan-cta"><a class="btn btn-ghost" href="/partners">Reserve a pin</a></div>
+            <div class="plan-cta"><a class="btn btn-primary" href="/partners">Place a shop pin</a></div>
           </article>
 
           <article class="plan plan-featured">
@@ -245,9 +297,9 @@
             <ul class="plan-list">
               <li>Everything in Access</li>
               <li>Category shown on the pin</li>
-              <li>Anonymous pass count each month</li>
+              <li>Anonymous monthly device pass count</li>
             </ul>
-            <div class="plan-cta"><a class="btn btn-invert" href="/partners">Reserve a pin</a></div>
+            <div class="plan-cta"><a class="btn btn-ghost" href="/partners">Reserve a pin</a></div>
           </article>
 
           <article class="plan">
@@ -257,43 +309,45 @@
             <ul class="plan-list">
               <li>Everything in Local</li>
               <li>Front-of-mind for drivers on your road</li>
-              <li>No contract, stop anytime</li>
+              <li>No contract, expires automatically</li>
             </ul>
             <div class="plan-cta"><a class="btn btn-ghost" href="/partners">Reserve a pin</a></div>
           </article>
         </div>
 
         <p class="hero-note plan-note">
-          Every live pin is served to AI assistants, so a question like “where can I fix a puncture near me” can find your shop by name.
+          Every live pin is attached to Hodos road data, so when someone asks an AI assistant “where can I fix a puncture near me”, active shops are returned by name.
         </p>
       </div>
     </section>
 
+    <!-- 5. FAQ & PRIVACY -->
     <section class="section" id="faq" aria-labelledby="faq-title">
       <div class="container">
         <div class="section-head">
+          <span class="eyebrow">REFERENCE NOTES · FAQ &amp; PRIVACY</span>
           <h2 id="faq-title">Good to know<span class="dot">.</span></h2>
         </div>
         <div class="faq-list">
           <details>
-            <summary>Does it cost anything?</summary>
-            <p>No. The app, the map and the data on your phone are free. The Garage and shop placements pay for it.</p>
+            <summary>Does it cost anything for drivers?</summary>
+            <p>No. The app, the public map, and your on-device road history are free. The Garage catalogue and shop placements fund the infrastructure.</p>
           </details>
           <details>
             <summary>Can I run Hodos alongside my navigation or ride app?</summary>
-            <p>Yes. Turn automatic mapping on once and it runs quietly in the background while you navigate, accept rides or follow directions in whatever app you use.</p>
+            <p>Yes. On Android, turn automatic mapping on once and it runs quietly in the background while you navigate or take rides. In the web app (<a href="/app/">/app</a>), keep the tab open while driving—browsers pause motion sensors when a tab is hidden or the screen locks.</p>
           </details>
           <details>
             <summary>Where does my data go?</summary>
-            <p>Route traces stay on your phone. Only anonymous hazard reports are published, and the first and last 250 metres of every journey are trimmed before anything leaves the device.</p>
+            <p>Route traces stay on your phone. Only anonymous, quantised hazard observations are sent, with no account and no advertising ID. On Android, the first and last 250 metres of every journey are trimmed before anything leaves the device. Full details live in the <a href="/privacy.html">privacy notice</a>.</p>
           </details>
           <details>
-            <summary>I run a shop. How much is a pin?</summary>
-            <p>From $0.19 a day for much of the world, $0.79 for middle-income markets and $1.99 where advertising costs more. You pay in your own currency, there is no contract, and the pin comes down when the days run out.</p>
+            <summary>I run a shop in Nepal. Is placing a pin really free right now?</summary>
+            <p>Yes. Shop pins in Nepal are completely free initially so local garages, tyre shops, cafés, and pharmacies can get on the map and welcome riders redeeming monthly perks. Elsewhere, daily rates start at $0.19 in local currency with no contract.</p>
           </details>
           <details>
-            <summary>Does a placement change the map?</summary>
-            <p>Never. It is a pin next to the road, not an ad over it, and hazard data is never for sale.</p>
+            <summary>Does a shop placement ever alter hazard data or cover the road?</summary>
+            <p>Never. A shop placement is a quiet pin alongside the road, never a pop-up over navigation, and road-hazard corroboration cannot be bought or edited.</p>
           </details>
         </div>
       </div>
@@ -302,11 +356,11 @@
     <section class="site-closing">
       <div class="container">
         <h2 class="closing-head">The road maps itself<span class="dot">.</span></h2>
-        <p>Free for everyone, everywhere. Install it, drive, and the map gets sharper for the next person through.</p>
+        <p>Free for everyone. Open the live map or carry Hodos on your next drive.</p>
         <div class="hero-cta-row">
-          <a class="btn btn-invert" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
-          <a class="btn btn-ghost-invert" href="/map">Open the live map</a>
-          <a class="btn btn-ghost-invert" href="/partners">List your shop</a>
+          <a class="btn btn-primary" href="/map">Explore live map</a>
+          <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
+          <a class="btn btn-ghost" href="/partners">Place a shop pin</a>
         </div>
       </div>
     </section>
@@ -317,14 +371,13 @@
       <div class="footer-brand">
         <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="20" height="20" />
         <span>hodos<span class="dot">.</span></span>
-        <span class="footer-meta">Open source · free</span>
+        <span class="footer-meta">Open source · MIT</span>
       </div>
       <div class="footer-links">
-        <a href="/garage">Garage</a>
         <a href="/map">Live map</a>
         <a href="/app/">Web app</a>
+        <a href="/garage">Garage</a>
         <a href="/partners">For shops</a>
-        <!-- Shown only where the referral programme is open; the page itself also enforces it. -->
         <a href="/referrals" id="footer-referrals" hidden>Earn from a referral</a>
         <a href="/AGENTS.md">For AI agents</a>
         <a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>

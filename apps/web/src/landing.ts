@@ -1,7 +1,6 @@
 import "./cartographic.css";
 import "./garage.css";
 import "./pwa";
-import { DOWNLOAD_URL } from "./site-constants";
 import { detectVisitorCountryByIp } from "./offers";
 import { wireThemeToggle } from "./theme";
 
@@ -9,7 +8,7 @@ wireThemeToggle("theme-toggle");
 
 // Matches appwrite/functions/hodos-api durationFactor() + Access tier ($0.19/day, ~135 NPR/USD).
 const NEPAL_BASE_USD_DAY = 0.19;
-const NEPAL_FX_NPR = 135;
+
 function durationFactor(days: number): number {
   if (days >= 365) return 0.6;
   if (days >= 180) return 0.7;
@@ -36,15 +35,19 @@ function wireCountryCalculator(country: "NP" | "IN") {
   if (!slider || !earnEl) return;
 
   if (country === "IN") {
-    const eyebrow = document.querySelector("#nepal-earn .garage-eyebrow");
+    const eyebrow = document.querySelector("#nepal-earn .eyebrow, #nepal-earn .garage-eyebrow");
     const title = document.querySelector("#nepal-earn h2");
-    const desc = document.querySelector("#nepal-earn p");
-    if (eyebrow) eyebrow.textContent = "India · 60 / 40";
+    const desc = document.querySelector("#nepal-earn p.lead, #nepal-earn p");
+    const steps = document.querySelector("#nepal-earn .steps") as HTMLElement | null;
+    const calc = document.querySelector("#nepal-earn .nepal-calc") as HTMLElement | null;
+    if (eyebrow) eyebrow.textContent = "India · 60 / 40 revenue share";
     if (title) title.textContent = "Introduce a shop. Earn 60% via UPI or IMPS.";
     if (desc) {
       desc.textContent =
         "Know a tyre & puncture shop, garage, EV charger, dhaba, hotel, or pharmacy along the road? Every time they buy or extend a pin on Hodos, 60% of their payment is credited to your account and unlocks for UPI / IMPS cashout 30 days after payment clears.";
     }
+    if (steps) steps.hidden = false;
+    if (calc) calc.hidden = false;
   }
 
   let planDays = 30;
@@ -76,48 +79,26 @@ function wireCountryCalculator(country: "NP" | "IN") {
   renderCalc();
 }
 
-// The referral programme and country-specific nav are revealed ONLY when the
-// visitor's IP resolves to Nepal or India.
+// Country-specific launch & referral personalization for Nepal and India.
 void detectVisitorCountryByIp().then((country) => {
   if (country !== "NP" && country !== "IN") return;
-  document.getElementById("nepal-earn")?.removeAttribute("hidden");
 
   if (country === "NP") {
-    const eyebrow = document.querySelector("#nepal-earn .eyebrow, #nepal-earn .garage-eyebrow");
-    const title = document.querySelector("#nepal-earn h2");
-    const desc = document.querySelector("#nepal-earn p.lead, #nepal-earn p");
-    const steps = document.querySelector("#nepal-earn .steps") as HTMLElement | null;
-    const calc = document.querySelector("#nepal-earn .nepal-calc") as HTMLElement | null;
-    const ctas = document.querySelector("#nepal-earn .section-cta") as HTMLElement | null;
-    if (eyebrow) eyebrow.textContent = "Nepal · Free launch";
-    if (title) title.textContent = "Shop pins in Nepal are free initially.";
-    if (desc) {
-      desc.textContent =
-        "Placing a shop pin on Hodos in Nepal is completely free right now — no payment or wallet transfer needed. Because pins are free, the Nepal referral programme has been stopped for now.";
-    }
-    if (steps) steps.hidden = true;
-    if (calc) calc.hidden = true;
-    if (ctas) {
-      ctas.innerHTML = `
-        <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
-        <a class="btn btn-ghost" href="/garage">Open the Nepal Garage</a>
-      `;
-    }
-
     const shopsLead = document.querySelector("#shops .lead");
     const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
     const accessCta = document.querySelector("#shops .plan:first-child .plan-cta a");
     if (shopsLead) {
       shopsLead.textContent =
-        "Shop pins in Nepal are completely free initially. If your shop sells or offers anything that drivers and riders might need, put a pin on the map at no cost.";
+        "Shop pins in Nepal are completely free initially. If your shop sells or repairs anything drivers and riders need along the road, put a pin on the map at no cost.";
     }
-    if (accessPrice) accessPrice.innerHTML = "Free<small>initially in Nepal · NPR 0</small>";
+    if (accessPrice) accessPrice.innerHTML = "Free<small>initially in Nepal · NPR 0 (no payment needed)</small>";
     if (accessCta) accessCta.textContent = "Place a free pin";
-  } else {
+  } else if (country === "IN") {
+    document.getElementById("nepal-earn")?.removeAttribute("hidden");
     document.getElementById("footer-referrals")?.removeAttribute("hidden");
     document.getElementById("nav-referrals")?.removeAttribute("hidden");
     document.getElementById("mobile-referrals")?.removeAttribute("hidden");
-    wireCountryCalculator(country);
+    wireCountryCalculator("IN");
 
     const step1Title = document.querySelector("#nepal-earn .step-card:first-child h3");
     const step1Desc = document.querySelector("#nepal-earn .step-card:first-child p");
@@ -136,36 +117,51 @@ void detectVisitorCountryByIp().then((country) => {
     const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
     if (accessPrice) accessPrice.innerHTML = "₹16<small>a day · India (UPI / IMPS)</small>";
   }
-
-  const navCta = document.getElementById("nav-primary-cta") as HTMLAnchorElement | null;
-  if (navCta) {
-    navCta.textContent = "Download the app";
-    navCta.href = DOWNLOAD_URL;
-  }
-  document.querySelector(".nav-links .nav-garage")?.classList.remove("nav-garage");
 });
 
-function wireHorizontalScroll() {
-  const section = document.querySelector<HTMLElement>(".hscroll-section");
-  const track = document.getElementById("hscroll-track");
-  const fill = document.getElementById("hscroll-progress-fill");
-  if (!section || !track) return;
+/**
+ * Signature scroll-driven continuous road scene.
+ *
+ * Translates one continuous 2400px SVG road landscape sideways as the visitor
+ * scrolls vertically through `.road-scene-section`. Automatically disables
+ * horizontal camera translation on mobile viewports (<= 900px) and when
+ * `prefers-reduced-motion: reduce` is enabled so the story reads vertically.
+ */
+function wireContinuousRoadScene() {
+  const section = document.querySelector<HTMLElement>(".road-scene-section");
+  const viewport = document.getElementById("road-camera-viewport");
+  const world = document.getElementById("road-world");
+  const fill = document.getElementById("road-scene-fill");
+  const readout = document.getElementById("road-scene-readout");
+  if (!section || !viewport || !world) return;
 
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let rafId = 0;
+
   const update = () => {
     rafId = 0;
-    if (window.innerWidth <= 820) {
-      track.style.transform = "";
+    if (window.innerWidth <= 900 || reducedMotion.matches) {
+      world.style.transform = "";
+      world.dataset.stage = "all";
       return;
     }
+
     const rect = section.getBoundingClientRect();
     const scrollable = Math.max(1, section.offsetHeight - window.innerHeight);
     const scrolled = Math.min(Math.max(0, -rect.top), scrollable);
     const progress = scrolled / scrollable;
-    const maxShift = Math.max(0, track.scrollWidth - track.parentElement!.clientWidth + 48);
-    track.style.transform = `translate3d(${-progress * maxShift}px, 0, 0)`;
+
+    const maxShift = Math.max(0, world.scrollWidth - viewport.clientWidth);
+    world.style.transform = `translate3d(${(-progress * maxShift).toFixed(1)}px, 0, 0)`;
+
+    const stage = progress < 0.34 ? "1" : progress < 0.68 ? "2" : "3";
+    world.dataset.stage = stage;
+
     if (fill) {
       fill.style.width = `${Math.round(progress * 100)}%`;
+    }
+    if (readout) {
+      readout.textContent = `0${stage} / 03`;
     }
   };
 
@@ -175,10 +171,11 @@ function wireHorizontalScroll() {
 
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
+  reducedMotion.addEventListener?.("change", onScroll);
   update();
 }
 
-wireHorizontalScroll();
+wireContinuousRoadScene();
 
 // Close the mobile menu after a choice, and on Escape.
 for (const menu of document.querySelectorAll<HTMLDetailsElement>("details.nav-menu")) {

@@ -22,6 +22,9 @@ export function getSavedTheme(): ThemeMode {
 export function resolveDark(mode: ThemeMode): boolean {
   if (mode === "dark") return true;
   if (mode === "light") return false;
+  if (typeof document !== "undefined" && document.body?.classList.contains("field-guide")) {
+    return true;
+  }
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
