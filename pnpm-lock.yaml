@@ -182,6 +182,40 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@26.6.6)(vite@6.4.5(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0))
 
+  apps/india:
+    dependencies:
+      '@fontsource-variable/overpass':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/overpass-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@hodos/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      maplibre-gl:
+        specifier: ^6.16.0
+        version: 6.16.0
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@6.4.5(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0))
+      '@types/geojson':
+        specifier: ^7946.0.16
+        version: 7946.0.16
+      lucide:
+        specifier: ^1.66.0
+        version: 1.66.0
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.3
+        version: 6.4.5(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0)
+
   apps/web:
     dependencies:
       '@fontsource-variable/overpass':

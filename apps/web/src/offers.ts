@@ -307,7 +307,10 @@ export function visitorCountry(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     if (/^Asia\/Kath?mandu$/i.test(tz)) return "NP";
-    if (new Date().getTimezoneOffset() === -345) return "NP";
+    if (/^Asia\/(Kolkata|Calcutta)$/i.test(tz)) return "IN";
+    const offset = new Date().getTimezoneOffset();
+    if (offset === -345) return "NP";
+    if (offset === -330) return "IN";
   } catch (_) {
     // ignore
   }

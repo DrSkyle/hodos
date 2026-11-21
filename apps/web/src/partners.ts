@@ -129,18 +129,15 @@ function buildMailtoHref(): string {
     ? [
         "Namaste Hodos team,",
         "",
-        "Please send us your eSewa / Khalti / IME Pay payment details so we can put our shop pin on the Hodos map.",
+        "Please place our shop pin on the Hodos Nepal map (free initial launch).",
         "",
         `Shop name: ${shopName || ""}`,
         `One line / offer: ${offer || ""}`,
         `Category: ${category || ""}`,
         `Address: ${address || ""}`,
         `Phone: ${phone || ""}`,
-        `Plan: ${planLine}`,
-        `Map location: ${coordsLine}`,
-        `Referred by (code): ${referralCode || "none"}`,
-        "",
-        "We will reply with our transaction ID once paid."
+        `Plan: ${spanLabel} (Free — NPR 0)`,
+        `Map location: ${coordsLine}`
       ]
     : [
         "Hi Hodos team,",
@@ -174,34 +171,44 @@ function renderQuote() {
     priceHost.textContent = "…";
     return;
   }
-  const hasDiscount = Number(quote.discountPct) > 0 && quote.baseLocalPerDay && quote.baseLocalPerDay > quote.localPerDay;
-  if (hasDiscount && quote.baseLocalPerDay) {
-    priceHost.innerHTML = `${money(quote.localPerDay, quote.currency)} a day <s style="font-size:0.52em;font-weight:600;color:var(--muted);margin-left:8px;">${money(quote.baseLocalPerDay, quote.currency)}</s>`;
-  } else {
-    priceHost.textContent = `${money(quote.localPerDay, quote.currency)} a day`;
-  }
-
-  if (priceNote) {
-    const total = money(quote.totalLocal, quote.currency);
-    const tierName = quote.tier === "low" ? "Access" : quote.tier === "mid" ? "Local" : "Standard";
-    const saveTag = Number(quote.discountPct) > 0 ? `save ${quote.discountPct}%` : "longer plans cost less per day";
-    const spanLabel = quote.days === 365 ? "1 year" : `${quote.days} days`;
-    priceNote.textContent =
-      quote.days === 1
-        ? `Base 1-day rate · ${saveTag} when you pick 3 days to 1 year · ${tierName} tier`
-        : `${total} for ${spanLabel} · ${saveTag} · ${tierName} tier`;
-  }
-
   const isNepal = quote.country === "NP" || browserLocale() === "ne-NP";
+  if (isNepal) {
+    priceHost.textContent = "Free initially (NPR 0)";
+    if (priceNote) {
+      priceNote.textContent = "Shop pins in Nepal are completely free initially — no payment or wallet transfer needed.";
+    }
+  } else {
+    const hasDiscount = Number(quote.discountPct) > 0 && quote.baseLocalPerDay && quote.baseLocalPerDay > quote.localPerDay;
+    if (hasDiscount && quote.baseLocalPerDay) {
+      priceHost.innerHTML = `${money(quote.localPerDay, quote.currency)} a day <s style="font-size:0.52em;font-weight:600;color:var(--muted);margin-left:8px;">${money(quote.baseLocalPerDay, quote.currency)}</s>`;
+    } else {
+      priceHost.textContent = `${money(quote.localPerDay, quote.currency)} a day`;
+    }
+
+    if (priceNote) {
+      const total = money(quote.totalLocal, quote.currency);
+      const tierName = quote.tier === "low" ? "Access" : quote.tier === "mid" ? "Local" : "Standard";
+      const saveTag = Number(quote.discountPct) > 0 ? `save ${quote.discountPct}%` : "longer plans cost less per day";
+      const spanLabel = quote.days === 365 ? "1 year" : `${quote.days} days`;
+      priceNote.textContent =
+        quote.days === 1
+          ? `Base 1-day rate · ${saveTag} when you pick 3 days to 1 year · ${tierName} tier`
+          : `${total} for ${spanLabel} · ${saveTag} · ${tierName} tier`;
+    }
+  }
+
   const refLabel = document.getElementById("payment-reference-label");
   const refInput = document.getElementById("payment-reference-input") as HTMLInputElement | null;
   const refHelp = document.getElementById("payment-help");
   const mailHref = buildMailtoHref();
   if (isNepal) {
-    if (refLabel) refLabel.textContent = "eSewa / Khalti / IME Pay transaction ID";
-    if (refInput) refInput.placeholder = "Your eSewa, Khalti or IME Pay transaction ID";
+    if (refLabel) refLabel.textContent = "Payment reference (not required in Nepal)";
+    if (refInput) {
+      refInput.placeholder = "Free launch — leave blank";
+      refInput.required = false;
+    }
     if (refHelp) {
-      refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> (opens your mail app with a ready-made message — just hit send) to get our eSewa, Khalti or IME Pay details, then paste your transaction ID here.`;
+      refHelp.innerHTML = `Nepal pins are free initially. Email <a href="${mailHref}">${BILLING_EMAIL}</a> (opens your mail app with your shop details) or submit below to place your free pin.`;
     }
   } else {
     if (refLabel) refLabel.textContent = "Payment reference";

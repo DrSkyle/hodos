@@ -1,0 +1,62 @@
+{
+  "id": "/",
+  "name": "Hodos — the road maps itself",
+  "short_name": "Hodos",
+  "description": "A live map of potholes, rough stretches and speed bumps, built by the phones already driving. Free, everywhere.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#faf8f2",
+  "background_color": "#faf8f2",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["navigation", "travel", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png?v=__HODOS_VERSION__",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png?v=__HODOS_VERSION__",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png?v=__HODOS_VERSION__",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live map",
+      "short_name": "Map",
+      "url": "/map/",
+      "description": "See the roads near you"
+    },
+    {
+      "name": "Hodos Web app",
+      "short_name": "Web app",
+      "url": "/app/",
+      "description": "The same road-sensing app, in your browser"
+    },
+    {
+      "name": "The Garage",
+      "short_name": "Garage",
+      "url": "/garage/",
+      "description": "Kit for the roads you drive"
+    },
+    {
+      "name": "For shops",
+      "short_name": "Shops",
+      "url": "/partners/",
+      "description": "Put your shop on the map"
+    }
+  ]
+}

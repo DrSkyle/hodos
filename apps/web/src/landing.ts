@@ -21,7 +21,13 @@ function durationFactor(days: number): number {
   return 1;
 }
 
-function wireNepalCalculator() {
+const FX_BY_COUNTRY: Record<"NP" | "IN", { currency: string; fx: number; locale: string; label: string; payout: string }> = {
+  NP: { currency: "NPR", fx: 135, locale: "en-NP", label: "Nepal", payout: "eSewa, Khalti or IME Pay" },
+  IN: { currency: "₹", fx: 84, locale: "en-IN", label: "India", payout: "UPI or IMPS" }
+};
+
+function wireCountryCalculator(country: "NP" | "IN") {
+  const cfg = FX_BY_COUNTRY[country];
   const slider = document.getElementById("calc-shops") as HTMLInputElement | null;
   const shopsVal = document.getElementById("calc-shops-val");
   const earnEl = document.getElementById("calc-earn-npr");
@@ -29,18 +35,31 @@ function wireNepalCalculator() {
   const planButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".calc-plan"));
   if (!slider || !earnEl) return;
 
+  if (country === "IN") {
+    const eyebrow = document.querySelector("#nepal-earn .garage-eyebrow");
+    const title = document.querySelector("#nepal-earn h2");
+    const desc = document.querySelector("#nepal-earn p");
+    if (eyebrow) eyebrow.textContent = "India · 60 / 40";
+    if (title) title.textContent = "Introduce a shop. Earn 60% via UPI or IMPS.";
+    if (desc) {
+      desc.textContent =
+        "Know a tyre & puncture shop, garage, EV charger, dhaba, hotel, or pharmacy along the road? Every time they buy or extend a pin on Hodos, 60% of their payment is credited to your account and unlocks for UPI / IMPS cashout 30 days after payment clears.";
+    }
+  }
+
   let planDays = 30;
-  const fmt = new Intl.NumberFormat("en-NP", { maximumFractionDigits: 0 });
+  const fmt = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 0 });
 
   const renderCalc = () => {
     const shops = Math.max(1, Number(slider.value) || 10);
-    const perShopNpr = NEPAL_BASE_USD_DAY * durationFactor(planDays) * planDays * NEPAL_FX_NPR;
-    const shareNpr = perShopNpr * shops * 0.6;
+    const perShop = NEPAL_BASE_USD_DAY * durationFactor(planDays) * planDays * cfg.fx;
+    const share = perShop * shops * 0.6;
     if (shopsVal) shopsVal.textContent = String(shops);
-    earnEl.textContent = `NPR ${fmt.format(Math.round(shareNpr))}`;
+    const prefix = cfg.currency === "₹" ? "₹" : `${cfg.currency} `;
+    earnEl.textContent = `${prefix}${fmt.format(Math.round(share))}`;
     if (metaEl) {
       const span = planDays === 365 ? "1-year" : `${planDays}-day`;
-      metaEl.textContent = `Based on ${shops} Nepal shop${shops === 1 ? "" : "s"} on a ${span} pin (~NPR ${fmt.format(Math.round(perShopNpr))} each). Renewals pay you 60% again.`;
+      metaEl.textContent = `Based on ${shops} ${cfg.label} shop${shops === 1 ? "" : "s"} on a ${span} pin (~${prefix}${fmt.format(Math.round(perShop))} each). Renewals pay you 60% again (${cfg.payout}).`;
     }
     for (const btn of planButtons) {
       btn.setAttribute("aria-pressed", String(Number(btn.dataset.days) === planDays));
@@ -57,19 +76,31 @@ function wireNepalCalculator() {
   renderCalc();
 }
 
-// The referral programme and Nepal-specific nav are revealed ONLY when the
-// visitor's IP resolves to Nepal. The referral page and API also enforce Nepal
-// server-side.
+// The referral programme and country-specific nav are revealed ONLY when the
+// visitor's IP resolves to Nepal or India.
 void detectVisitorCountryByIp().then((country) => {
-  if (country !== "NP") return;
-  document.getElementById("footer-referrals")?.removeAttribute("hidden");
-  document.getElementById("nav-referrals")?.removeAttribute("hidden");
-  document.getElementById("mobile-referrals")?.removeAttribute("hidden");
+  if (country !== "NP" && country !== "IN") return;
   document.getElementById("nepal-earn")?.removeAttribute("hidden");
-  wireNepalCalculator();
 
-  // In Nepal, the primary highlighted CTA is downloading the app directly
-  // rather than "Shop the Garage" (Nepal's Garage is local map-pin shops).
+  if (country === "NP") {
+    const eyebrow = document.querySelector("#nepal-earn .garage-eyebrow");
+    const title = document.querySelector("#nepal-earn h2");
+    const desc = document.querySelector("#nepal-earn p");
+    const calc = document.querySelector("#nepal-earn .nepal-calc") as HTMLElement | null;
+    if (eyebrow) eyebrow.textContent = "Nepal · Free launch";
+    if (title) title.textContent = "Shop pins in Nepal are free initially.";
+    if (desc) {
+      desc.textContent =
+        "Placing a shop pin on Hodos in Nepal is completely free right now — no payment needed. Because pins are free, the Nepal referral programme has been stopped for now.";
+    }
+    if (calc) calc.hidden = true;
+  } else {
+    document.getElementById("footer-referrals")?.removeAttribute("hidden");
+    document.getElementById("nav-referrals")?.removeAttribute("hidden");
+    document.getElementById("mobile-referrals")?.removeAttribute("hidden");
+    wireCountryCalculator(country);
+  }
+
   const navCta = document.getElementById("nav-primary-cta") as HTMLAnchorElement | null;
   if (navCta) {
     navCta.textContent = "Download the app";

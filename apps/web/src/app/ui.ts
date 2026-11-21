@@ -275,14 +275,16 @@ let appNepalShops: LiveShop[] | null = null;
 export async function renderGarageScreen(host: HTMLElement, rerender: () => void) {
   const country = visitorCountry();
   const isNepal = country === "NP";
+  const isIndia = country === "IN";
+  const isLocalShopMarket = isNepal || isIndia;
 
   host.innerHTML = `
     <div class="screen-pad">
       ${
-        isNepal
+        isLocalShopMarket
           ? screenHead(
               "Shops on the map",
-              "The local shops in Nepal that placed a pin on the Hodos map. Show the app at the counter for rider perks."
+              `The local shops in ${isIndia ? "India" : "Nepal"} that placed a pin on the Hodos map. Show the app at the counter for rider perks.`
             )
           : screenHead(
               "The Garage",
@@ -295,13 +297,21 @@ export async function renderGarageScreen(host: HTMLElement, rerender: () => void
         <div class="rows" id="garage-rows"></div>
       </div>
       ${
-        isNepal
+        isIndia
           ? `<div class="panel">
               <h2>Refer any shop · keep 60%</h2>
-              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your eSewa, Khalti or IME Pay wallet after 1 month.</p>
+              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your UPI ID or IMPS bank account after 1 month.</p>
               <div class="btn-row">
                 <a class="app-btn" href="/referrals">Get your referral code</a>
                 <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
+              </div>
+            </div>`
+          : isNepal
+          ? `<div class="panel">
+              <h2>Free shop pins · Referrals paused</h2>
+              <p>Placing a shop pin in Nepal is completely free initially. Because pins are free, the Nepal referral programme has been stopped for now.</p>
+              <div class="btn-row">
+                <a class="app-btn" href="/partners">Place a free shop pin</a>
               </div>
             </div>`
           : ""
@@ -313,7 +323,7 @@ export async function renderGarageScreen(host: HTMLElement, rerender: () => void
   const status = host.querySelector("#garage-status") as HTMLElement;
   const rows = host.querySelector("#garage-rows") as HTMLElement;
 
-  if (isNepal) {
+  if (isLocalShopMarket) {
     if (appNepalShops === null) {
       appNepalShops = await loadLiveShops();
     }

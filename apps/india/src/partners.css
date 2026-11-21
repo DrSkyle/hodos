@@ -1,0 +1,468 @@
+/*
+ * Shop placement and referral pages. One calm column, soft fields, a real map.
+ * All colors and spacing come from cartographic.css.
+ */
+
+.partners-hero {
+  padding: clamp(64px, 9vw, 110px) 0 var(--s2);
+}
+
+.price-block {
+  margin-top: var(--s6);
+  padding: var(--s6);
+  border-radius: var(--r-lg);
+  background: var(--paper-raised);
+  max-width: 560px;
+}
+
+.price-main {
+  font-size: clamp(32px, 4.4vw, 46px);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.price-note {
+  margin-top: var(--s2);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.day-row {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding: var(--s4) 0 var(--s1);
+  scrollbar-width: none;
+}
+
+.day-row::-webkit-scrollbar {
+  display: none;
+}
+
+.day-chip {
+  flex: 0 0 auto;
+  border: 0;
+  background: var(--soft);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--ink);
+  padding: 9px 17px;
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.day-chip:hover {
+  background: var(--soft-2);
+}
+
+.day-chip[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- benefits ---------- */
+
+.benefits {
+  padding: var(--s7) 0 var(--s2);
+}
+
+.benefits-head {
+  max-width: 58ch;
+  margin-bottom: var(--s5);
+}
+
+.partners-sub {
+  font-size: var(--t-h2);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.benefits-head p {
+  margin-top: var(--s3);
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.benefit-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.benefit-list li {
+  background: var(--paper-raised);
+  border-radius: var(--r-lg);
+  padding: var(--s5);
+}
+
+.benefit-list h3 {
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--s2);
+}
+
+.benefit-list p {
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--muted);
+}
+
+/* ---------- form + map ---------- */
+
+.partners-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s7);
+  padding: var(--s7) 0 var(--s6);
+}
+
+.placement-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s5);
+}
+
+.pin-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.pin-value {
+  font-size: 14.5px;
+  color: var(--muted);
+  padding: 13px 16px;
+  border-radius: var(--r-md);
+  background: var(--soft);
+}
+
+.pin-value[data-tone="ok"] {
+  color: var(--ink);
+  background: var(--paper-raised);
+}
+
+.pin-locate {
+  align-self: flex-start;
+  border: 0;
+  background: var(--soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 9px 15px;
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.pin-locate:hover {
+  background: var(--soft-2);
+}
+
+.submit-btn {
+  margin-top: var(--s2);
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 650;
+  padding: 15px 22px;
+  border-radius: var(--r-full);
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.submit-btn:hover {
+  opacity: 0.85;
+}
+
+.submit-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.result-card {
+  margin-top: var(--s4);
+  padding: var(--s5);
+  border-radius: var(--r-md);
+  background: var(--soft);
+}
+
+.result-card.is-live {
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-1);
+}
+
+.result-tag {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.result-card strong {
+  display: block;
+  margin-top: var(--s2);
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.result-card p {
+  margin-top: var(--s2);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.result-ref {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.fine-print {
+  margin-top: var(--s5);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.fine-print a {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.pin-map {
+  height: 480px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--soft);
+}
+
+.map-caption {
+  margin-top: var(--s3);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ---------- referrals ---------- */
+
+.referral-gate {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s7) 0 var(--s5);
+}
+
+.referral-gate h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 750;
+  margin-bottom: var(--s4);
+}
+
+.gate-lede {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: var(--s6);
+}
+
+.gate-check,
+.gate-denied,
+.profile-card {
+  background: var(--paper-raised);
+  border-radius: var(--r-lg);
+  padding: var(--s5);
+}
+
+.gate-check p {
+  margin-bottom: var(--s3);
+  line-height: 1.55;
+}
+
+.gate-fine {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin-top: var(--s3);
+}
+
+.gate-denied h2 {
+  margin-bottom: var(--s2);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.profile-card {
+  max-width: 720px;
+  margin: 0 auto var(--s4);
+}
+
+.profile-card[hidden] {
+  display: none;
+}
+
+.profile-head {
+  margin-bottom: var(--s4);
+}
+
+.profile-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--s1);
+}
+
+.profile-head h2 {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.profile-code-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
+  flex-wrap: wrap;
+}
+
+.profile-code-row code {
+  flex: 1 1 200px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--soft);
+  color: var(--ink);
+  overflow-x: auto;
+}
+
+.profile-code-help {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin-bottom: var(--s5);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+
+.stat {
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s4);
+  background: var(--soft);
+}
+
+.stat dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.stat dd {
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.payout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.payout-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--s1);
+}
+
+.referral-form .field {
+  margin-bottom: var(--s3);
+}
+
+/* ---------- referral agreement step ---------- */
+
+.nda-card {
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.nda-card[hidden] {
+  display: none;
+}
+
+.nda-card h3 {
+  margin-bottom: var(--s2);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.nda-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: var(--s3);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .partners-grid {
+    grid-template-columns: 1fr;
+    gap: var(--s5);
+  }
+
+  .partners-map-col {
+    order: -1;
+  }
+
+  .pin-map {
+    height: 320px;
+  }
+
+  .partners-hero {
+    padding-top: var(--s7);
+  }
+
+  .benefit-list {
+    grid-template-columns: 1fr;
+  }
+}

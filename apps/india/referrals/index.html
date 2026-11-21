@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="Bring a shop to Hodos India and earn 60% of what they pay. Paid via UPI or IMPS/Bank." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Referrals · Hodos India" />
+  <meta property="og:description" content="60% of every shop placement you bring in India. Paid to UPI or IMPS/Bank." />
+  <!--HODOS-ICONS-->
+  <title>Referrals · Hodos India</title>
+</head>
+<body>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <a class="garage-brand" href="/" aria-label="Hodos India home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span>india</span>
+      </a>
+      <div class="garage-header-spacer"></div>
+      <a class="ig-pill" href="/partners">For shops</a>
+      <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
+      <a class="ig-pill ig-pill-secondary" href="/garage">Garage</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section id="gate" class="referral-gate">
+      <div id="gate-check">
+        <span class="garage-eyebrow">India referral programme</span>
+        <h1>Checking you're in India<span class="dot">.</span></h1>
+        <p class="garage-lede">
+          This programme is open in India and settles to an Indian UPI ID or IMPS bank account.
+          Allow location once so the server can confirm you're in India.
+        </p>
+        <p id="gate-status" class="gate-status"></p>
+        <button type="button" id="gate-locate" class="btn btn-primary">Confirm my location</button>
+      </div>
+
+      <div id="gate-denied" hidden>
+        <span class="garage-eyebrow">Not available here</span>
+        <h1>India only<span class="dot">.</span></h1>
+        <p id="gate-denied-text" class="garage-lede">
+          Hodos India referrals are only available inside India with an Indian UPI or IMPS payout account.
+        </p>
+        <a class="btn btn-ghost" href="/partners">Place a shop pin instead</a>
+      </div>
+    </section>
+
+    <div id="app" hidden>
+      <section class="partners-hero" aria-labelledby="referrals-title">
+        <span class="garage-eyebrow">India · 60% referral share</span>
+        <h1 class="garage-title" id="referrals-title">Bring a shop.<br />Earn 60% via UPI<span class="dot">.</span></h1>
+        <p class="garage-lede">
+          Introduce any road-side shop in India — tyre &amp; puncture shop, garage, EV charger,
+          dhaba, hotel, pharmacy, or parts store. When they buy or extend a pin on Hodos India,
+          <strong>60% of their payment</strong> is credited to your account right away and unlocks
+          for UPI / IMPS cashout 30 days after payment clears.
+        </p>
+      </section>
+
+      <section id="create-card" class="referral-card">
+        <h2>Get your referral code</h2>
+        <form id="create-form" class="placement-form" novalidate>
+          <label class="field">
+            <span class="field-label">Your name</span>
+            <input name="ownerName" type="text" maxlength="80" placeholder="e.g. Aarav Sharma" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Payout method</span>
+            <select name="payoutMethod" id="payout-method" required>
+              <option value="upi">UPI (Instant — GPay, PhonePe, Paytm, BHIM)</option>
+              <option value="imps">IMPS / Bank Transfer</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label" id="payout-account-label">UPI ID</span>
+            <input name="payoutAccount" id="payout-account-input" type="text" maxlength="120"
+                   placeholder="yourname@okicici or 9876543210@ybl" required />
+            <span class="field-hint" id="payout-account-hint">
+              Enter your active UPI ID (VPA) with @handle.
+            </span>
+          </label>
+
+          <label class="field referral-agree">
+            <input type="checkbox" name="agreeTerms" required />
+            <span>
+              I understand Hodos is a software service provider (not a bank or wallet custodian).
+              My 60% promotional commission is credited when a referred shop's payment clears and
+              unlocks for cashout 30 days after each payment (min ₹9 / $0.10).
+            </span>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create my referral code</button>
+            <span id="create-status" class="form-status"></span>
+          </div>
+        </form>
+
+        <div class="lookup-box">
+          <h3>Already have a code?</h3>
+          <form id="lookup-form" class="lookup-row" novalidate>
+            <input name="code" type="text" maxlength="24" placeholder="Enter your referral code" required />
+            <button type="submit" class="btn btn-ghost">Open profile</button>
+          </form>
+          <span id="lookup-status" class="form-status"></span>
+        </div>
+      </section>
+
+      <section id="profile-card" class="referral-card" hidden>
+        <div class="profile-head">
+          <div>
+            <span class="profile-eyebrow">Your India referral account</span>
+            <h2 id="profile-name">—</h2>
+            <p class="profile-code-line">Code: <strong id="profile-code">—</strong></p>
+          </div>
+          <button type="button" id="copy-link" class="btn btn-ghost">Copy referral link</button>
+        </div>
+
+        <p class="profile-share-link" id="profile-link-text"></p>
+
+        <div class="stat-grid">
+          <div class="stat-box">
+            <span class="stat-label">Total earned (60%)</span>
+            <strong id="stat-earned">₹0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Paid out</span>
+            <strong id="stat-paid">₹0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Pending (30d lock)</span>
+            <strong id="stat-owed">₹0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Ready for UPI/IMPS</span>
+            <strong id="stat-matured">₹0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Shop payments</span>
+            <strong id="stat-count">0</strong>
+          </div>
+        </div>
+
+        <div class="payout-bar">
+          <div>
+            <p class="payout-target" id="payout-target">Payout account: —</p>
+            <p class="payout-note" id="payout-note"></p>
+          </div>
+          <button type="button" id="request-payout" class="btn btn-primary" disabled>Request cashout</button>
+        </div>
+        <p id="payout-status" class="form-status"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="compact-footer">
+    <div class="compact-footer-inner">
+      <span>Hodos India · Software service by Devilabs</span>
+      <nav aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="/partners">For shops</a>
+        <a href="/garage">Garage</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/referrals.ts"></script>
+</body>
+</html>

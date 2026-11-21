@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8f2" />
+  <meta name="description" content="Put your shop on the Hodos India road map from ₹16/day. Seen by drivers, riders, and AI assistants. Zero commission." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Put your shop on the map · Hodos India" />
+  <meta property="og:description" content="A shop pin on the live Indian road map from ₹16/day. Pay via UPI or IMPS, zero commission." />
+  <!--HODOS-ICONS-->
+  <title>Put your shop on the map · Hodos India</title>
+</head>
+<body>
+  <header class="garage-header">
+    <div class="garage-header-inner">
+      <a class="garage-brand" href="/" aria-label="Hodos India home">
+        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="28" height="28" />
+        <span>hodos<span class="dot">.</span>india</span>
+      </a>
+      <div class="garage-header-spacer"></div>
+      <a class="ig-pill" href="/referrals">Referrals (60%)</a>
+      <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
+      <a class="ig-pill ig-pill-secondary" href="/garage">Garage</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="partners-hero" aria-labelledby="partners-title">
+      <span class="garage-eyebrow">India shop placement</span>
+      <h1 class="garage-title" id="partners-title">Put your shop<br />on the map<span class="dot">.</span></h1>
+      <p class="garage-lede">
+        If your shop serves drivers or riders along the road — tyre &amp; puncture, garage, EV charging,
+        dhaba, hotel, pharmacy, parts, or general store — put a pin where drivers already look.
+        Seen by riders and by the AI assistants they ask for help. Longer plans cost less per day.
+      </p>
+
+      <div class="price-block">
+        <div class="price-main" id="price-line">₹16 / day</div>
+        <div class="price-note" id="price-note">Quoted in INR (₹). Pay via UPI or IMPS.</div>
+      </div>
+
+      <div class="day-row" id="day-row" role="tablist" aria-label="How many days"></div>
+    </section>
+
+    <section class="benefits" aria-labelledby="benefits-title">
+      <div class="benefits-head">
+        <h2 class="partners-sub" id="benefits-title">What a placement includes</h2>
+        <p>
+          Everything below is included in ₹16/day. No setup fee, no app account,
+          no contract, and <strong>0% commission</strong> on anything you sell.
+        </p>
+      </div>
+
+      <ul class="benefit-list">
+        <li>
+          <h3>A pin on the live road map</h3>
+          <p>Your shop sits on the same map riders open to avoid potholes and rough roads — seen at the exact moment they are on the road.</p>
+        </li>
+        <li>
+          <h3>Your offer, in your words</h3>
+          <p>One line of text on the pin — a service, a rate, opening hours. Updated whenever you ask, at no extra cost.</p>
+        </li>
+        <li>
+          <h3>Visible to AI assistants</h3>
+          <p>Every live pin is served by the Hodos API. When someone asks their AI assistant "where can I fix a puncture near me", active pins are what it finds and recommends.</p>
+        </li>
+        <li>
+          <h3>Rider perks that point at you</h3>
+          <p>Riders earn a free tyre check, chain lube, or alignment check each month and redeem them at active partner shops.</p>
+        </li>
+        <li>
+          <h3>Real pass numbers</h3>
+          <p>Anonymous count of how many distinct rider devices passed your shop this month, so you can see the real traffic.</p>
+        </li>
+        <li>
+          <h3>Pay via UPI / IMPS, zero lock-in</h3>
+          <p>Start with 1 day, 7 days, or 30 days. Renew only if it works for your shop.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="partners-grid" aria-labelledby="form-title">
+      <div class="partners-form-col">
+        <h2 id="form-title" class="partners-sub">Your pin</h2>
+        <form id="placement-form" class="placement-form" novalidate>
+          <label class="field">
+            <span class="field-label">Shop name</span>
+            <input name="name" type="text" maxlength="80" placeholder="e.g. Sharma Tyre &amp; Puncture Works" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">One line on the pin</span>
+            <input name="offer" type="text" maxlength="160" placeholder="e.g. Tubeless puncture in 10 mins · 7am–10pm" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Category</span>
+            <input name="category" type="text" maxlength="32" list="category-options"
+                   placeholder="Tyres &amp; Puncture, Garage, EV Charging, Dhaba…" />
+            <datalist id="category-options">
+              <option value="Tyres &amp; Puncture"></option>
+              <option value="Garage &amp; Mechanic"></option>
+              <option value="EV Charging"></option>
+              <option value="Fuel"></option>
+              <option value="Parts &amp; Accessories"></option>
+              <option value="Wash &amp; Detailing"></option>
+              <option value="Dhaba / Cafe"></option>
+              <option value="Restaurant"></option>
+              <option value="Hotel / Lodge"></option>
+              <option value="Pharmacy / Medical"></option>
+              <option value="Store"></option>
+              <option value="Parking"></option>
+            </datalist>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Street address</span>
+            <input name="address" type="text" maxlength="160" placeholder="Shop no, road/highway, city &amp; state" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Phone / WhatsApp number</span>
+            <input name="phone" type="tel" maxlength="20" inputmode="tel" placeholder="+91 98xxxxxxxx" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Email (optional)</span>
+            <input name="email" type="email" maxlength="254" placeholder="Optional" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Link on your pin (optional)</span>
+            <input name="link" type="url" maxlength="200" inputmode="url" placeholder="https://" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Referral code (optional)</span>
+            <input name="referralCode" id="referral-code-input" type="text" maxlength="24" placeholder="If someone introduced you" />
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submit-btn">Request UPI / IMPS payment details</button>
+            <span id="form-status" class="form-status"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="partners-map-col">
+        <div class="map-toolbar">
+          <span id="pin-label" class="pin-label">Click the map to drop your shop pin</span>
+          <button type="button" id="locate-me" class="btn btn-ghost">Use my location</button>
+        </div>
+        <div id="partner-map" class="partner-map" style="height: 420px; border-radius: 12px; overflow: hidden;"></div>
+        <div class="day-row" style="margin-top: 10px;" aria-label="Jump to Indian city">
+          <button type="button" class="city-jump" data-lat="28.6139" data-lng="77.2090">Delhi NCR</button>
+          <button type="button" class="city-jump" data-lat="19.0760" data-lng="72.8777">Mumbai</button>
+          <button type="button" class="city-jump" data-lat="12.9716" data-lng="77.5946">Bengaluru</button>
+          <button type="button" class="city-jump" data-lat="17.3850" data-lng="78.4867">Hyderabad</button>
+          <button type="button" class="city-jump" data-lat="13.0827" data-lng="80.2707">Chennai</button>
+          <button type="button" class="city-jump" data-lat="18.5204" data-lng="73.8567">Pune</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="compact-footer">
+    <div class="compact-footer-inner">
+      <span>Hodos India · Software service by Devilabs</span>
+      <nav aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="/referrals">Referrals</a>
+        <a href="/garage">Garage</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/partners.ts"></script>
+</body>
+</html>

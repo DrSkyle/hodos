@@ -1,0 +1,10 @@
+# Hodos lets anyone read, index and quote it — including AI agents.
+# The agent-facing guide is served as plain text below.
+
+User-agent: *
+Allow: /
+
+# LLM / agent discovery
+# https://llmstxt.org
+
+Sitemap: https://hodos.devilabs.dev/sitemap.xml

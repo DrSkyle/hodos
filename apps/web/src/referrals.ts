@@ -166,7 +166,7 @@ async function useLocation() {
     deny("This browser cannot read a location, so we cannot confirm the programme is open where you are.");
     return;
   }
-  gateLocate.disabled = true;
+  if (gateLocate) gateLocate.disabled = true;
   setGateStatus("Checking your location…");
   navigator.geolocation.getCurrentPosition(
     async (result) => {
@@ -180,14 +180,14 @@ async function useLocation() {
       }
     },
     () => {
-      gateLocate.disabled = false;
+      if (gateLocate) gateLocate.disabled = false;
       setGateStatus("We need your location to check whether the programme is open where you are.");
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
-gateLocate.addEventListener("click", () => void useLocation());
+gateLocate?.addEventListener("click", () => void useLocation());
 
 document.getElementById("copy-code")?.addEventListener("click", async () => {
   const code = current?.code;
@@ -342,4 +342,6 @@ document.getElementById("request-payout")?.addEventListener("click", async () =>
   }
 });
 
-setGateStatus("Tap the button so we can check whether the programme is open where you are.");
+if (gateLocate) {
+  setGateStatus("Tap the button so we can check whether the programme is open where you are.");
+}
