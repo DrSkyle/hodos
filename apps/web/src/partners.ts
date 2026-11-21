@@ -270,6 +270,7 @@ function buildMap() {
           type: "raster",
           tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
           tileSize: 256,
+          maxzoom: 18,
           attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
         }
@@ -279,7 +280,7 @@ function buildMap() {
     center: [10, 24],
     zoom: 1.8,
     minZoom: 1.5,
-    maxZoom: 19,
+    maxZoom: 21,
     renderWorldCopies: false,
     attributionControl: { compact: true }
   });

@@ -164,12 +164,11 @@ const OSM_CLEAN_STYLE: any = {
       type: "raster",
       tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
-      // OpenStreetMap serves no tiles past z19: asking for z20+ returns HTTP
-      // 400 and MapLibre renders nothing, which is the blank map you get when
-      // you zoom in too far. Declaring the source ceiling makes MapLibre
-      // upscale the last good tiles instead of requesting tiles that cannot
-      // exist.
-      maxzoom: 19,
+      // Cap tile fetches at z18 and omit `maxzoom` on the layer below so
+      // MapLibre overzooms z18 tiles cleanly up to z22 without hiding the
+      // layer (in MapLibre, a layer `maxzoom: 19` is exclusive — at zoom >= 19
+      // the layer is hidden completely!).
+      maxzoom: 18,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     }
   },
@@ -178,8 +177,7 @@ const OSM_CLEAN_STYLE: any = {
       id: "osm-tiles-layer",
       type: "raster",
       source: "osm-tiles",
-      minzoom: 0,
-      maxzoom: 19
+      minzoom: 0
     }
   ]
 };
@@ -270,9 +268,7 @@ export function initWebMap(
     center: [0, 20],
     zoom: 2,
     minZoom: 2,
-    // The raster source stops at z19; panning beyond it would render blank
-    // tiles, so the camera stops where the data does.
-    maxZoom: 19,
+    maxZoom: 21,
     // Without this the world repeats sideways forever as you drag.
     renderWorldCopies: false,
     attributionControl: false
@@ -284,12 +280,8 @@ export function initWebMap(
 
   /**
    * Restore or clamp the camera from the URL hash, once the style is live.
-   *
-   * `#<zoom>/<lat>/<lng>` is the format the site has always used. A zoom past
-   * what OpenStreetMap serves (z19) is clamped rather than honoured, because
-   * the tiles cannot exist and the map would render blank.
    */
-  const MAX_ZOOM = 19;
+  const MAX_ZOOM = 21;
   const applyHashCamera = () => {
     const match = /^#([\d.]+)\/(-?[\d.]+)\/(-?[\d.]+)/.exec(window.location.hash);
     if (!match) return false;
