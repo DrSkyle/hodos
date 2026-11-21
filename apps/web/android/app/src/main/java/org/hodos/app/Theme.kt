@@ -30,23 +30,24 @@ import androidx.core.view.WindowCompat
  * type — the road-signage family the website is set in.
  */
 
-// Fixed light palette — warm paper and ink anchored by brand amber (#d97706).
-internal val LightInk = Color(0xFF1C1A17)
-internal val LightPaper = Color(0xFFFAF8F2)
-internal val LightPaperRaised = Color(0xFFFFFDF8)
-internal val LightSand = Color(0xFFF1EDE3)
-internal val LightLine = Color(0xFFE4DFD1)
-internal val LightMuted = Color(0xFF6A6459)
-internal val LightAccentInk = Color(0xFF92400E)
+// Fixed light palette — blush ground (#fdf1f3), alternate (#f4e8ea), crisp ink (#000000),
+// berry primary action (#be185d), and brand amber (#d58400), consistent with the website.
+internal val LightInk = Color(0xFF000000)
+internal val LightPaper = Color(0xFFFDF1F3)
+internal val LightPaperRaised = Color(0xFFFFFFFF)
+internal val LightSand = Color(0xFFF4E8EA)
+internal val LightLine = Color(0xFFDED2D4)
+internal val LightMuted = Color(0xFF50504F)
+internal val LightAccentInk = Color(0xFF8A5300)
 
-// Fixed dark palette — warm asphalt for night driving without glare.
-internal val AsphaltBg = Color(0xFF121110)
-internal val AsphaltSurface = Color(0xFF1B1A17)
-internal val AsphaltRaised = Color(0xFF23211D)
-internal val AsphaltLine = Color(0xFF2E2B26)
-internal val AsphaltInk = Color(0xFFF7F5F0)
-internal val AsphaltMuted = Color(0xFFA29C90)
-internal val AsphaltAccentInk = Color(0xFFFBBF24)
+// Fixed dark palette — deep neutral (#141314) for night driving without glare.
+internal val AsphaltBg = Color(0xFF141314)
+internal val AsphaltSurface = Color(0xFF1D1B1D)
+internal val AsphaltRaised = Color(0xFF252225)
+internal val AsphaltLine = Color(0xFF343034)
+internal val AsphaltInk = Color(0xFFFCFCFD)
+internal val AsphaltMuted = Color(0xFFA6A0A4)
+internal val AsphaltAccentInk = Color(0xFFF59E0B)
 
 private var isDarkThemeState by mutableStateOf(false)
 
@@ -54,7 +55,7 @@ private var isDarkThemeState by mutableStateOf(false)
 internal val isDarkTheme: Boolean get() = isDarkThemeState
 
 // Theme-reactive palette tokens so every card, surface, and label across the
-// app stays high-contrast in both light and dark mode (zero white-on-white).
+// app stays WCAG AA high-contrast in both light and dark mode.
 internal val Ink: Color get() = if (isDarkThemeState) AsphaltInk else LightInk
 internal val Paper: Color get() = if (isDarkThemeState) AsphaltBg else LightPaper
 internal val PaperRaised: Color get() = if (isDarkThemeState) AsphaltSurface else LightPaperRaised
@@ -62,21 +63,24 @@ internal val Sand: Color get() = if (isDarkThemeState) AsphaltRaised else LightS
 internal val Line: Color get() = if (isDarkThemeState) AsphaltLine else LightLine
 internal val Muted: Color get() = if (isDarkThemeState) AsphaltMuted else LightMuted
 
-// The accent used for small text and labels. Amber itself is too light on
-// paper to meet contrast, so text uses the deep tone in light mode.
+// Accessible amber text token for small labels.
 internal val AccentInk: Color get() = if (isDarkThemeState) AsphaltAccentInk else LightAccentInk
 
-// Legacy tinted-surface name; now the active warm sand / asphalt raised surface.
+// Legacy tinted-surface name; resolves to active alternate ground.
 internal val Mist: Color get() = Sand
 
-// Brand amber — the same #d97706 the website uses as --accent.
-internal val Amber = Color(0xFFD97706)
-internal val AmberDeep = Color(0xFFB45309)
+// Brand amber (#d58400) and primary action berry (#be185d / #db2777).
+internal val Amber = Color(0xFFD58400)
+internal val AmberDeep = Color(0xFF8A5300)
+internal val Berry = Color(0xFFBE185D)
+internal val BerryDark = Color(0xFFDB2777)
+internal val OnBerry = Color(0xFFFCFCFD)
+internal val ActionFill: Color get() = if (isDarkThemeState) BerryDark else Berry
 
 // The live map's hazard & radar language, shared with the website legend.
 internal val Healed = Color(0xFF10B981)
 internal val Pothole = Color(0xFFE11D48)
-internal val Rough = Color(0xFFD97706)
+internal val Rough = Color(0xFFD58400)
 internal val Bump = Color(0xFF7C3AED)
 internal val Danger = Color(0xFFE11D48)
 internal val PoliceBlue = Color(0xFF2563EB)
@@ -84,8 +88,8 @@ internal val JamOrange = Color(0xFFEA580C)
 internal val RoadblockRed = Color(0xFFDC2626)
 internal val FloodCyan = Color(0xFF0891B2)
 
-// Retained name for the legacy forest-green primary; resolves to active ink.
-internal val Forest: Color get() = Ink
+// Retained name for primary ink/action references.
+internal val Forest: Color get() = ActionFill
 internal val Orange = AmberDeep
 
 /**
@@ -196,16 +200,16 @@ internal fun HodosTheme(
     isDarkThemeState = darkTheme
     val colors = if (darkTheme) {
         darkColorScheme(
-            primary = AsphaltInk,
-            onPrimary = AsphaltBg,
+            primary = BerryDark,
+            onPrimary = OnBerry,
             primaryContainer = AsphaltRaised,
             onPrimaryContainer = AsphaltInk,
-            inversePrimary = LightInk,
-            secondary = Amber,
+            inversePrimary = Berry,
+            secondary = AsphaltAccentInk,
             onSecondary = AsphaltBg,
-            secondaryContainer = Amber.copy(alpha = 0.18f),
-            onSecondaryContainer = Amber,
-            tertiary = Amber,
+            secondaryContainer = AsphaltAccentInk.copy(alpha = 0.18f),
+            onSecondaryContainer = AsphaltAccentInk,
+            tertiary = AsphaltAccentInk,
             onTertiary = AsphaltBg,
             background = AsphaltBg,
             onBackground = AsphaltInk,
@@ -213,18 +217,18 @@ internal fun HodosTheme(
             onSurface = AsphaltInk,
             surfaceVariant = AsphaltRaised,
             onSurfaceVariant = AsphaltMuted,
-            surfaceTint = Amber,
-            surfaceContainerLowest = Color(0xFF0D0C0B),
+            surfaceTint = BerryDark,
+            surfaceContainerLowest = Color(0xFF0E0D0E),
             surfaceContainerLow = AsphaltBg,
             surfaceContainer = AsphaltSurface,
             surfaceContainerHigh = AsphaltRaised,
-            surfaceContainerHighest = Color(0xFF2A2723),
-            surfaceBright = Color(0xFF2A2723),
+            surfaceContainerHighest = Color(0xFF2E2A2E),
+            surfaceBright = Color(0xFF2E2A2E),
             surfaceDim = AsphaltBg,
             inverseSurface = AsphaltInk,
             inverseOnSurface = AsphaltBg,
             error = Danger,
-            onError = AsphaltInk,
+            onError = OnBerry,
             errorContainer = Danger.copy(alpha = 0.18f),
             onErrorContainer = Danger,
             outline = AsphaltLine,
@@ -233,35 +237,35 @@ internal fun HodosTheme(
         )
     } else {
         lightColorScheme(
-            primary = LightInk,
-            onPrimary = LightPaper,
+            primary = Berry,
+            onPrimary = OnBerry,
             primaryContainer = LightSand,
             onPrimaryContainer = LightInk,
-            inversePrimary = AsphaltInk,
+            inversePrimary = BerryDark,
             secondary = AmberDeep,
-            onSecondary = LightPaper,
+            onSecondary = OnBerry,
             secondaryContainer = LightSand,
             onSecondaryContainer = LightInk,
             tertiary = AmberDeep,
-            onTertiary = LightPaper,
+            onTertiary = OnBerry,
             background = LightPaper,
             onBackground = LightInk,
             surface = LightPaperRaised,
             onSurface = LightInk,
             surfaceVariant = LightSand,
             onSurfaceVariant = LightMuted,
-            surfaceTint = Amber,
+            surfaceTint = Berry,
             surfaceContainerLowest = Color(0xFFFFFFFF),
             surfaceContainerLow = LightPaper,
             surfaceContainer = LightPaperRaised,
             surfaceContainerHigh = LightSand,
-            surfaceContainerHighest = Color(0xFFEDE8DC),
+            surfaceContainerHighest = Color(0xFFEBDDE0),
             surfaceBright = LightPaperRaised,
             surfaceDim = LightSand,
-            inverseSurface = LightInk,
-            inverseOnSurface = LightPaper,
+            inverseSurface = AsphaltBg,
+            inverseOnSurface = AsphaltInk,
             error = Danger,
-            onError = LightPaper,
+            onError = OnBerry,
             errorContainer = Danger.copy(alpha = 0.12f),
             onErrorContainer = Pothole,
             outline = LightLine,
@@ -290,8 +294,8 @@ internal fun HodosTheme(
         typography = HodosTypography,
         shapes = Shapes(
             small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(18.dp),
-            large = RoundedCornerShape(22.dp)
+            medium = RoundedCornerShape(16.dp),
+            large = RoundedCornerShape(24.dp)
         ),
         content = content
     )

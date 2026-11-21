@@ -94,11 +94,9 @@ private enum class Screen(val label: String) {
     GARAGE("Garage")
 }
 
-/** The route bar's stops. The Garage sits in the middle and is the one stop
- *  that draws in amber: it is the product's earning surface and the shelf
- *  people actually open, so it must never be buried behind a menu. */
+/** The route bar's 5 primary stops: Map, Drive, Garage, Roads (+ Insights), and You. */
 private val ROUTE_TABS = listOf(
-    Screen.MAP, Screen.MAPPING, Screen.GARAGE, Screen.ROADS, Screen.INSIGHTS, Screen.YOU
+    Screen.MAP, Screen.MAPPING, Screen.GARAGE, Screen.ROADS, Screen.YOU
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1010,16 +1008,55 @@ fun HodosApp(
                         onStartJourney = onStartJourney,
                         onFinishJourney = onFinishJourney
                     )
-                    Screen.ROADS -> RoadsScreen(
-                        trails = trails,
-                        travelProfile = travelProfile,
-                        onBack = { screen = Screen.MAP }
-                    )
-                    Screen.INSIGHTS -> InsightsScreen(
-                        trails = trails,
-                        hazards = hazards,
-                        onBack = { screen = Screen.MAP }
-                    )
+                    Screen.ROADS, Screen.INSIGHTS -> {
+                        var roadsTab by remember(current) {
+                            mutableStateOf(if (current == Screen.INSIGHTS) 1 else 0)
+                        }
+                        Column(Modifier.fillMaxSize().background(Paper)) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(Sand)
+                                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("Surface & wear", "Ride insights").forEachIndexed { idx, title ->
+                                    val selected = roadsTab == idx
+                                    Surface(
+                                        onClick = { roadsTab = idx },
+                                        shape = RoundedCornerShape(999.dp),
+                                        color = if (selected) ActionFill else PaperRaised,
+                                        border = if (selected) null else BorderStroke(1.dp, Line),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            title,
+                                            modifier = Modifier.padding(vertical = 10.dp),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            fontSize = 13.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (selected) OnBerry else Ink
+                                        )
+                                    }
+                                }
+                            }
+                            Box(Modifier.weight(1f).fillMaxWidth()) {
+                                if (roadsTab == 0) {
+                                    RoadsScreen(
+                                        trails = trails,
+                                        travelProfile = travelProfile,
+                                        onBack = { screen = Screen.MAP }
+                                    )
+                                } else {
+                                    InsightsScreen(
+                                        trails = trails,
+                                        hazards = hazards,
+                                        onBack = { screen = Screen.MAP }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Screen.GARAGE -> GarageScreen(
                         onBack = { screen = Screen.YOU }
                     )
@@ -1359,52 +1396,48 @@ fun HodosApp(
 
 @Composable
 private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActive: Boolean = false) {
-    val scheme = MaterialTheme.colorScheme
-    // Simple bottom navigation: circular stops with labels. The active
-    // stop fills primary and gets an amber tick; Record pulses while recording.
-    Surface(color = scheme.surface) {
+    Surface(color = Sand) {
         Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)) {
-            HorizontalDivider(color = scheme.outline, thickness = 1.dp)
-            Row(Modifier.fillMaxWidth().height(84.dp)) {
+            HorizontalDivider(color = Line, thickness = 1.dp)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(74.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 ROUTE_TABS.forEach { tab ->
-                    val active = current == tab
-                    val highlight = tab == Screen.GARAGE
-                    val nodeScale by animateFloatAsState(
-                        targetValue = if (active) 1.07f else 0.94f,
-                        animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
-                        label = "route node"
+                    val active = current == tab || (tab == Screen.ROADS && current == Screen.INSIGHTS)
+                    val isGarage = tab == Screen.GARAGE
+                    val pillScale by animateFloatAsState(
+                        targetValue = if (active) 1f else 0.92f,
+                        animationSpec = spring(dampingRatio = 0.65f, stiffness = 420f),
+                        label = "route pill"
                     )
                     Column(
                         Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable { onSelect(tab) }
-                            .padding(top = 14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Box {
+                        Box(contentAlignment = Alignment.Center) {
                             Box(
-                                Modifier.size(44.dp)
+                                Modifier
+                                    .size(width = 56.dp, height = 32.dp)
                                     .graphicsLayer {
-                                        scaleX = nodeScale
-                                        scaleY = nodeScale
+                                        scaleX = pillScale
+                                        scaleY = pillScale
                                     }
                                     .background(
-                                        when {
-                                            active -> scheme.primary
-                                            highlight -> Amber
-                                            else -> scheme.surface
+                                        color = when {
+                                            active -> ActionFill
+                                            isGarage -> Amber.copy(alpha = 0.16f)
+                                            else -> Color.Transparent
                                         },
-                                        CircleShape
-                                    )
-                                    .border(
-                                        1.5.dp,
-                                        when {
-                                            active -> scheme.primary
-                                            highlight -> AmberDeep
-                                            else -> scheme.outline
-                                        },
-                                        CircleShape
+                                        shape = RoundedCornerShape(999.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1417,8 +1450,12 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                         Screen.GARAGE -> DoodleSymbol.CAR
                                         else -> DoodleSymbol.PERSON
                                     },
-                                    tint = if (active) Paper else if (highlight) Paper else Muted,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = when {
+                                        active -> OnBerry
+                                        isGarage -> AccentInk
+                                        else -> Muted
+                                    },
+                                    modifier = Modifier.size(19.dp)
                                 )
                             }
                             if (tab == Screen.MAPPING && tripActive) {
@@ -1434,27 +1471,25 @@ private fun HodosRouteBar(current: Screen, onSelect: (Screen) -> Unit, tripActiv
                                 )
                                 Box(
                                     Modifier.align(Alignment.TopEnd)
+                                        .offset(x = (-6).dp, y = 2.dp)
                                         .graphicsLayer { alpha = badgeAlpha }
-                                        .size(11.dp)
+                                        .size(9.dp)
                                         .background(Amber, CircleShape)
-                                        .border(1.5.dp, PaperRaised, CircleShape)
+                                        .border(1.5.dp, Sand, CircleShape)
                                 )
                             }
                         }
-                        Spacer(Modifier.height(5.dp))
-                        if (active) {
-                            Box(
-                                Modifier.size(width = 18.dp, height = 3.dp)
-                                    .background(Amber, RoundedCornerShape(1.5.dp))
-                            )
-                            Spacer(Modifier.height(3.dp))
-                        }
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             tab.label,
-                            fontSize = 10.5.sp,
-                            fontWeight = if (highlight) FontWeight.Bold else FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            fontWeight = if (active || isGarage) FontWeight.Bold else FontWeight.Medium,
                             letterSpacing = 0.sp,
-                            color = if (active || highlight) Ink else Muted
+                            color = when {
+                                active -> Ink
+                                isGarage -> AccentInk
+                                else -> Muted
+                            }
                         )
                     }
                 }
