@@ -154,7 +154,7 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
   `;
 }
 
-export function renderNearby(host: HTMLElement, hazards: RemoteHazard[]) {
+export function renderNearby(host: HTMLElement, hazards: RemoteHazard[], onSelect?: (id: string) => void) {
   const rows = host.querySelector("#app-map-rows");
   const count = host.querySelector("#app-map-count");
   if (!rows || !count) return;
@@ -174,19 +174,35 @@ export function renderNearby(host: HTMLElement, hazards: RemoteHazard[]) {
     const row = document.createElement("button");
     row.type = "button";
     row.className = "hazard-line";
+    const isAlert = ["police", "jam", "roadblock", "flood"].includes(hazard.kind);
     const colour = hazard.fixed
       ? "var(--fixed)"
+      : hazard.kind === "police"
+      ? "#2563eb"
+      : hazard.kind === "jam"
+      ? "#ea580c"
+      : hazard.kind === "roadblock"
+      ? "#dc2626"
+      : hazard.kind === "flood"
+      ? "#0891b2"
       : hazard.kind === "speed_bump"
       ? "var(--bump)"
       : hazard.kind === "rough_pavement"
       ? "var(--rough)"
       : "var(--pothole)";
+    const sub = isAlert
+      ? "Reported live · auto-expires"
+      : `${hazard.passes} pass${hazard.passes === 1 ? "" : "es"} · ${hazard.devices} device${hazard.devices === 1 ? "" : "s"}`;
+    const badge = hazard.fixed ? "repaired" : isAlert ? "LIVE" : `L${hazard.severity}`;
     row.innerHTML = `
       <span class="dot" style="background:${hazard.fixed ? "transparent" : colour};box-shadow:inset 0 0 0 2px ${colour}"></span>
       <span class="grow"><strong>${escapeHtml(title(hazard))}</strong>
-      <small>${hazard.passes} pass${hazard.passes === 1 ? "" : "es"} · ${hazard.devices} device${hazard.devices === 1 ? "" : "s"}</small></span>
-      <span class="right">${hazard.fixed ? "repaired" : `L${hazard.severity}`}</span>
+      <small>${escapeHtml(sub)}</small></span>
+      <span class="right">${badge}</span>
     `;
+    if (onSelect && hazard.id) {
+      row.addEventListener("click", () => onSelect(hazard.id));
+    }
     rows.append(row);
   }
 }
@@ -195,6 +211,10 @@ function title(hazard: RemoteHazard): string {
   if (hazard.fixed) return "Repaired stretch";
   if (hazard.kind === "speed_bump") return "Speed bump";
   if (hazard.kind === "rough_pavement") return "Rough stretch";
+  if (hazard.kind === "police") return "Police check";
+  if (hazard.kind === "jam") return "Traffic jam";
+  if (hazard.kind === "roadblock") return "Roadblock / Landslide";
+  if (hazard.kind === "flood") return "Flooded road";
   return "Pothole";
 }
 
@@ -580,7 +600,9 @@ export function renderInsightsScreen(host: HTMLElement, hazards: RemoteHazard[])
  * ------------------------------------------------------------------ */
 
 export function renderYouScreen(host: HTMLElement, options: { shops: string[]; installable: boolean }) {
-  const isNepal = visitorCountry() === "NP";
+  const country = visitorCountry();
+  const isNepal = country === "NP";
+  const isIndia = country === "IN";
   const trips = state.trips;
   const totalKm = trips.reduce((sum, trip) => sum + (trip.distanceM || 0), 0) / 1000;
   const month = monthTrips(trips);
@@ -598,13 +620,21 @@ export function renderYouScreen(host: HTMLElement, options: { shops: string[]; i
     <div class="screen-pad">
       ${screenHead("You", "Everything here lives in this browser. No account, no email, no identifier that follows you.")}
       ${
-        isNepal
+        isIndia
           ? `<div class="panel">
               <h2>Refer any shop · earn 60%</h2>
-              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your eSewa, Khalti or IME Pay wallet after 1 month.</p>
+              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your UPI ID or IMPS bank account after 1 month.</p>
               <div class="btn-row">
                 <a class="app-btn" href="/referrals">Open referral dashboard</a>
                 <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
+              </div>
+            </div>`
+          : isNepal
+          ? `<div class="panel">
+              <h2>Free shop pins · Referrals paused</h2>
+              <p>Placing a shop pin in Nepal is completely free initially. Because pins are free, the Nepal referral programme has been stopped for now.</p>
+              <div class="btn-row">
+                <a class="app-btn" href="/partners">Place a free shop pin</a>
               </div>
             </div>`
           : ""

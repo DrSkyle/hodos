@@ -71,6 +71,7 @@ let active: ScreenId = "map";
 let hazards: RemoteHazard[] = [];
 let shops: string[] = [];
 let mapStarted = false;
+let appMapHandle: ReturnType<typeof initWebMap> = null;
 let ticking = false;
 
 function show(id: ScreenId) {
@@ -90,12 +91,13 @@ function render() {
     renderMapScreen(screens.map, stats);
     if (!mapStarted) {
       mapStarted = true;
-      initWebMap("app-map", "app-map-status", () => {
+      appMapHandle = initWebMap("app-map", "app-map-status", (h) => {
+        appMapHandle = h;
         // The shared map owns its own hazard rendering; the sheet is ours.
         void refreshHazards();
       });
     }
-    renderNearby(screens.map, hazards);
+    renderNearby(screens.map, hazards, (id) => appMapHandle?.flyToHazard(id));
     return;
   }
   if (active === "drive") {
@@ -239,7 +241,7 @@ async function refreshHazards() {
   } catch (_) {
     hazards = [];
   }
-  if (active === "map") renderNearby(screens.map, hazards);
+  if (active === "map") renderNearby(screens.map, hazards, (id) => appMapHandle?.flyToHazard(id));
   if (active === "insights") renderInsightsScreen(screens.insights, hazards);
 }
 
