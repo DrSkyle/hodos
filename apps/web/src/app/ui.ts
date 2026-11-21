@@ -89,7 +89,7 @@ export function updateDriveStats(host: HTMLElement, stats: LiveStats, pending: n
   set("drive-speed", stats.speedKph > 0 ? String(Math.round(stats.speedKph)) : "—");
   set("drive-accuracy", stats.accuracyM != null ? `±${Math.round(stats.accuracyM)}` : "—");
   set("drive-counters", counterText(stats));
-  const queued = host.querySelector(".record-pill + .mono");
+  const queued = host.querySelector("#drive-queued");
   if (queued) queued.textContent = `${pending} queued`;
 }
 
@@ -116,15 +116,11 @@ export function toast(host: HTMLElement, message: string, ms = 3200) {
 
 export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
   if (host.dataset.ready === "true") {
-    const pill = host.querySelector(".map-pill");
-    if (pill) {
-      pill.classList.toggle("is-recording", stats.recording);
-      const text = pill.querySelector("span");
-      if (text) {
-        text.textContent = stats.recording
-          ? `Recording · ${(stats.distanceM / 1000).toFixed(1)} km · ${stats.impacts} found`
-          : "Road map";
-      }
+    const text = host.querySelector("#app-map-live-label");
+    if (text) {
+      text.textContent = stats.recording
+        ? `Recording · ${(stats.distanceM / 1000).toFixed(1)} km · ${stats.impacts} found`
+        : "";
     }
     return;
   }
@@ -132,13 +128,7 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
   host.innerHTML = `
     <div class="map-screen">
       <div id="app-map"></div>
-      <div class="map-floating">
-        <div class="map-pill${stats.recording ? " is-recording" : ""}">
-          <span class="dot-live" aria-hidden="true"></span>
-          <span>${stats.recording ? "Recording" : "Road map"}</span>
-        </div>
-        <span class="visually-hidden" id="app-map-status"></span>
-      </div>
+      <span class="visually-hidden" id="app-map-status"></span>
       <div class="map-legend" aria-hidden="true">
         <div class="legend-line"><span class="legend-dot" style="background:var(--pothole)"></span>Pothole</div>
         <div class="legend-line"><span class="legend-dot" style="background:var(--rough)"></span>Rough road</div>
@@ -146,7 +136,7 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
         <div class="legend-line"><span class="legend-dot" style="background:var(--fixed)"></span>Repaired</div>
       </div>
       <div class="map-sheet" id="app-map-sheet">
-        <h2>Nearby</h2>
+        <h2>Nearby <span class="mono" id="app-map-live-label"></span></h2>
         <p class="mono" id="app-map-count">Reading the map…</p>
         <div class="rows" id="app-map-rows"></div>
       </div>
@@ -259,13 +249,7 @@ export function renderDriveScreen(host: HTMLElement, stats: LiveStats, pending: 
     <div class="screen-pad">
       ${screenHead("Drive", "Hodos reads the road while you drive. Same engine as the Android app, running in this tab.")}
       <div class="panel">
-        <div class="chip-row" style="padding-bottom:0">
-          <span class="record-pill" ${stats.recording ? "" : 'style="background:var(--soft);color:var(--ink)"'}>
-            ${stats.recording ? '<span class="dot-live" aria-hidden="true"></span>' : ""}
-            ${stats.recording ? "Recording" : "Idle"}
-          </span>
-          <span class="mono" style="align-self:center">${pending} queued</span>
-        </div>
+        <p class="mono" id="drive-state-line">${stats.recording ? "Recording live" : "Idle"} · <span id="drive-queued">${pending} queued</span></p>
         <div class="stat-row">
           <div class="stat"><strong id="drive-km">${(stats.distanceM / 1000).toFixed(1)}</strong><span>km this journey</span></div>
           <div class="stat"><strong id="drive-impacts">${stats.impacts}</strong><span>impacts found</span></div>

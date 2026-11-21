@@ -57,17 +57,17 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 15px;
-  border-radius: var(--r-full);
-  background: var(--soft);
-  font-size: 13px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13.5px;
   font-weight: 550;
   white-space: nowrap;
-  transition: background 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .ig-pill:hover {
-  background: var(--soft-2);
+  color: var(--ink);
 }
 
 /* ---------- page hero ---------- */

@@ -70,154 +70,95 @@
   <main id="content">
     <section class="hero" aria-labelledby="hero-title">
       <div class="container">
-        <div class="hero-split">
-          <div class="hero-copy">
-            <span class="hero-kicker">
-              <span class="hero-kicker-dot" aria-hidden="true"></span>
-              Passive road telemetry &amp; live radar
-            </span>
-            <h1 id="hero-title" class="hero-headline">
-              The road<br />maps itself<span class="dot">.</span>
-            </h1>
-            <p class="hero-subhead">
-              Drive with Hodos in your pocket and your phone quietly maps potholes, rough
-              pavement and speed bumps — corroborated across independent trips before anything
-              reaches the public map.
-            </p>
-            <div class="hero-cta-row">
-              <a class="btn btn-primary" href="/app/">Launch web app</a>
-              <a class="btn btn-ghost" href="/map">Explore live map</a>
-              <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Android APK</a>
+        <div class="hero-editorial">
+          <h1 id="hero-title" class="hero-headline">
+            The road<br />maps itself<span class="dot">.</span>
+          </h1>
+          <p class="hero-subhead">
+            Drive with Hodos in your pocket and your phone quietly finds potholes, rough
+            pavement and speed bumps. Independent trips agree on a defect before it ever
+            reaches the map.
+          </p>
+          <div class="hero-cta-row">
+            <a class="btn btn-primary" href="/app/">Open web app</a>
+            <a class="btn btn-ghost" href="/map">Live road map</a>
+            <a class="btn btn-ghost" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download Android APK</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hscroll-section" id="how" aria-labelledby="how-title">
+      <div class="hscroll-pin">
+        <div class="container hscroll-header">
+          <div class="hscroll-title-row">
+            <div>
+              <span class="eyebrow">How Hodos works</span>
+              <h2 id="how-title">Turn it on once. The drive does the rest<span class="dot">.</span></h2>
             </div>
-            <div class="radar-pills" aria-label="Tracked road signals">
-              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--pothole)"></span>Potholes</span>
-              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--rough)"></span>Rough stretches</span>
-              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--bump)"></span>Speed bumps</span>
-              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--police)"></span>Live radar alerts</span>
-              <span class="radar-pill"><span class="radar-pill-dot" style="background:var(--fixed)"></span>Verified repairs</span>
+            <div class="hscroll-progress-wrap" aria-hidden="true">
+              <div class="hscroll-progress-bar"><i id="hscroll-progress-fill"></i></div>
             </div>
           </div>
+        </div>
 
-          <aside class="hero-showcase" aria-label="Live telemetry preview">
-            <div class="showcase-head">
-              <span class="showcase-badge"><span class="showcase-pulse"></span>LIVE CORROBORATION ENGINE</span>
-              <span class="showcase-ver">v__HODOS_VERSION__</span>
-            </div>
-            <div class="showcase-map-viz">
-              <svg viewBox="0 0 360 156" fill="none" aria-hidden="true">
-                <path d="M-10 128 C 75 118, 110 46, 195 58 C 265 68, 300 28, 370 22" stroke="currentColor" stroke-opacity="0.16" stroke-width="18" stroke-linecap="round"/>
-                <path d="M-10 128 C 75 118, 110 46, 195 58 C 265 68, 300 28, 370 22" stroke="#d97706" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round"/>
-                <circle cx="106" cy="75" r="14" fill="#e11d48" fill-opacity="0.18"/>
-                <circle cx="106" cy="75" r="6" fill="#e11d48" stroke="#ffffff" stroke-width="2"/>
-                <circle cx="204" cy="59" r="13" fill="#d97706" fill-opacity="0.18"/>
-                <circle cx="204" cy="59" r="5.5" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
-                <circle cx="294" cy="36" r="13" fill="#10b981" fill-opacity="0.18"/>
-                <circle cx="294" cy="36" r="5.5" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
-              </svg>
-              <div class="showcase-caption">
-                <span>Corridor IRI &amp; impact residual stream</span>
-                <strong>&lt; 1 ms / 100 samples</strong>
-              </div>
-            </div>
-            <div class="showcase-rows">
-              <div class="showcase-row">
-                <span class="showcase-dot" style="background:var(--pothole)"></span>
-                <div class="showcase-row-copy">
-                  <strong>Severe impact · L3 pothole</strong>
-                  <small>Corroborated by 4 independent vehicles</small>
-                </div>
-                <span class="showcase-tag">PUBLISHED</span>
-              </div>
-              <div class="showcase-row">
-                <span class="showcase-dot" style="background:var(--police)"></span>
-                <div class="showcase-row-copy">
-                  <strong>Live highway radar · GPS gated</strong>
-                  <small>Requires on-road GPS fix &amp; nearby driver vote</small>
-                </div>
-                <span class="showcase-tag">VERIFIED</span>
-              </div>
-              <div class="showcase-row">
-                <span class="showcase-dot" style="background:var(--fixed)"></span>
-                <div class="showcase-row-copy">
-                  <strong>Repaired corridor auto-clears</strong>
-                  <small>3 silent passes retire fixed potholes</small>
-                </div>
-                <span class="showcase-tag">HEALED</span>
-              </div>
-            </div>
-            <div class="showcase-foot">
-              <span>Zero accounts · SHA-256 privacy</span>
-              <a href="/map">Open live radar →</a>
-            </div>
-          </aside>
-        </div>
-      </div>
-    </section>
+        <div class="hscroll-viewport">
+          <div class="hscroll-track" id="hscroll-track">
+            <article class="hscroll-panel">
+              <span class="hscroll-index">01</span>
+              <h3>It listens for the road, not for you</h3>
+              <p>
+                Phone motion and GPS separate a real road impact from engine vibration, then
+                tag potholes, rough pavement and speed bumps automatically while you drive.
+              </p>
+            </article>
 
-    <section class="section section-soft" id="how" aria-labelledby="how-title">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">01 · How it works</span>
-          <h2 id="how-title">Turn it on once<span class="dot">.</span></h2>
-          <p class="lead">That is the whole setup. No tapping while driving, no manual logging, no extra hardware.</p>
-        </div>
-        <div class="steps">
-          <article class="step-card">
-            <span class="step-num">01 · Sense</span>
-            <h3>It listens for the road, not for you</h3>
-            <p>Phone motion and GPS separate a real road impact from engine vibration, then tag potholes, rough pavement and speed bumps as you drive.</p>
-          </article>
-          <article class="step-card">
-            <span class="step-num">02 · Corroborate</span>
-            <h3>One jolt is never published alone</h3>
-            <p>Only spots that independent trips agree on reach the public map, so a single bad bump or dropped phone never creates a false alarm.</p>
-          </article>
-          <article class="step-card">
-            <span class="step-num">03 · Keep going</span>
-            <h3>Maps that outlast the signal</h3>
-            <p>Cache a nearby region over Wi-Fi once and the map keeps working through mountain dead zones, tunnels and back roads.</p>
-          </article>
-        </div>
-      </div>
-    </section>
+            <article class="hscroll-panel">
+              <span class="hscroll-index">02</span>
+              <h3>One jolt is never published alone</h3>
+              <p>
+                Only spots that independent trips agree on reach the public map, so a single
+                bad bump or dropped phone never creates a false alarm on your street.
+              </p>
+            </article>
 
-    <section class="section" id="app" aria-labelledby="app-title">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">02 · Two clients, one engine</span>
-          <h2 id="app-title">Made for the drive you already make<span class="dot">.</span></h2>
-          <p class="lead">On Android, or right in your browser at <a href="/app/">hodos.devilabs.dev/app</a>. Same detector, same permissions, nothing to set up.</p>
-        </div>
-        <ul class="feature-list">
-          <li class="feature">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 15.5a5 5 0 0 1 0-7"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M5.6 18.4a9 9 0 0 1 0-12.8"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg>
-            <div>
-              <h3>Hands-free by default</h3>
-              <p>Journeys start and end on their own while you navigate, ride or deliver in any other app.</p>
-            </div>
-          </li>
-          <li class="feature">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.8l5-.7z"/></svg>
-            <div>
-              <h3>Perks as you drive</h3>
-              <p>Free tire check, chain lube and alignment check, unlocked by the distance you already cover each month.</p>
-            </div>
-          </li>
-          <li class="feature">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1 1 13 0C18.5 15.7 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/></svg>
-            <div>
-              <h3>Saved roads</h3>
-              <p>Pin the routes you repeat and watch them heal as verified repairs land on the map.</p>
-            </div>
-          </li>
-          <li class="feature">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v9"/><path d="M8.5 9.5L12 13l3.5-3.5"/><path d="M4.5 16.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
-            <div>
+            <article class="hscroll-panel">
+              <span class="hscroll-index">03</span>
+              <h3>Maps that outlast the signal</h3>
+              <p>
+                Cache a nearby region over Wi-Fi once and the map keeps working through
+                mountain dead zones, tunnels and back roads.
+              </p>
+            </article>
+
+            <article class="hscroll-panel">
+              <span class="hscroll-index">04</span>
+              <h3>Hands-free alongside any nav app</h3>
+              <p>
+                Journeys start and end on their own while you navigate, ride or deliver in
+                whatever app you already use.
+              </p>
+            </article>
+
+            <article class="hscroll-panel">
+              <span class="hscroll-index">05</span>
+              <h3>Perks unlocked by distance</h3>
+              <p>
+                Free tire checks, chain lube and alignment checks at local partner shops,
+                unlocked simply by the kilometres you already cover each month.
+              </p>
+            </article>
+
+            <article class="hscroll-panel">
+              <span class="hscroll-index">06</span>
               <h3>Private by design</h3>
-              <p>Routes stay on your phone. Only anonymous hazard reports are published, trimmed at both ends of every journey.</p>
-            </div>
-          </li>
-        </ul>
+              <p>
+                Your route stays on your phone. Only anonymous hazard observations leave the
+                device, trimmed at both ends of every journey.
+              </p>
+            </article>
+          </div>
+        </div>
       </div>
     </section>
 

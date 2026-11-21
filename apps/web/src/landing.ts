@@ -145,6 +145,41 @@ void detectVisitorCountryByIp().then((country) => {
   document.querySelector(".nav-links .nav-garage")?.classList.remove("nav-garage");
 });
 
+function wireHorizontalScroll() {
+  const section = document.querySelector<HTMLElement>(".hscroll-section");
+  const track = document.getElementById("hscroll-track");
+  const fill = document.getElementById("hscroll-progress-fill");
+  if (!section || !track) return;
+
+  let rafId = 0;
+  const update = () => {
+    rafId = 0;
+    if (window.innerWidth <= 820) {
+      track.style.transform = "";
+      return;
+    }
+    const rect = section.getBoundingClientRect();
+    const scrollable = Math.max(1, section.offsetHeight - window.innerHeight);
+    const scrolled = Math.min(Math.max(0, -rect.top), scrollable);
+    const progress = scrolled / scrollable;
+    const maxShift = Math.max(0, track.scrollWidth - track.parentElement!.clientWidth + 48);
+    track.style.transform = `translate3d(${-progress * maxShift}px, 0, 0)`;
+    if (fill) {
+      fill.style.width = `${Math.round(progress * 100)}%`;
+    }
+  };
+
+  const onScroll = () => {
+    if (!rafId) rafId = window.requestAnimationFrame(update);
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  update();
+}
+
+wireHorizontalScroll();
+
 // Close the mobile menu after a choice, and on Escape.
 for (const menu of document.querySelectorAll<HTMLDetailsElement>("details.nav-menu")) {
   menu.querySelectorAll("a").forEach((link) => {
