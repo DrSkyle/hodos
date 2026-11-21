@@ -156,31 +156,21 @@ export async function reportLiveAlert(
   };
 }
 
-// 100% free, keyless OpenStreetMap raster style — zero API key required, zero CARTO dependency
-const OSM_CLEAN_STYLE: any = {
-  version: 8,
-  sources: {
-    "osm-tiles": {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      // Cap tile fetches at z18 and omit `maxzoom` on the layer below so
-      // MapLibre overzooms z18 tiles cleanly up to z22 without hiding the
-      // layer (in MapLibre, a layer `maxzoom: 19` is exclusive — at zoom >= 19
-      // the layer is hidden completely!).
-      maxzoom: 18,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-    }
-  },
-  layers: [
-    {
-      id: "osm-tiles-layer",
-      type: "raster",
-      source: "osm-tiles",
-      minzoom: 0
-    }
-  ]
-};
+// 100% open-source, keyless OpenFreeMap vector tiles (Cloudflare-backed).
+// Unlike old 256x256 PNG raster tiles, vector tiles render roads, labels, POIs
+// and 3D buildings natively on the GPU at Retina resolution and never blur or
+// disappear at high zoom levels.
+export const VECTOR_STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty";
+export const VECTOR_STYLE_DARK = "https://tiles.openfreemap.org/styles/dark";
+
+export function activeVectorMapStyle(): string {
+  const rootTheme = document.documentElement.getAttribute("data-theme");
+  if (rootTheme === "dark") return VECTOR_STYLE_DARK;
+  if (rootTheme === "light") return VECTOR_STYLE_LIGHT;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? VECTOR_STYLE_DARK
+    : VECTOR_STYLE_LIGHT;
+}
 
 /**
  * Popups interpolate backend-supplied strings (partner names, offers, links,
@@ -264,11 +254,11 @@ export function initWebMap(
 
   const map = new Map({
     container,
-    style: OSM_CLEAN_STYLE,
+    style: activeVectorMapStyle(),
     center: [0, 20],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 21,
+    maxZoom: 22,
     // Without this the world repeats sideways forever as you drag.
     renderWorldCopies: false,
     attributionControl: false
