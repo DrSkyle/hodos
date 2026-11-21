@@ -199,7 +199,7 @@ svg {
 }
 
 .section {
-  padding: clamp(80px, 10vw, 140px) 0;
+  padding: clamp(44px, 5.5vw, 72px) 0;
 }
 
 .section-soft {
@@ -208,7 +208,7 @@ svg {
 
 .section-head {
   max-width: 60ch;
-  margin-bottom: clamp(40px, 5vw, 64px);
+  margin-bottom: clamp(24px, 3vw, 36px);
 }
 
 .section-head h2 {
@@ -219,7 +219,7 @@ svg {
 }
 
 .section-head .lead {
-  margin-top: var(--s4);
+  margin-top: var(--s3);
   color: var(--muted);
   font-size: 18px;
   line-height: 1.6;
@@ -506,7 +506,7 @@ svg {
 /* ---------- hero ---------- */
 
 .hero {
-  padding: clamp(72px, 10vw, 128px) 0 var(--s6);
+  padding: clamp(40px, 5vw, 68px) 0 var(--s5);
 }
 
 .hero-grid {
@@ -520,15 +520,15 @@ svg {
   line-height: 0.98;
   font-weight: 750;
   letter-spacing: -0.035em;
-  margin-bottom: var(--s5);
+  margin-bottom: var(--s4);
 }
 
 .hero-subhead {
   max-width: 46ch;
-  font-size: clamp(18px, 1.8vw, 21px);
+  font-size: clamp(17.5px, 1.8vw, 20px);
   line-height: 1.5;
   color: var(--muted);
-  margin-bottom: var(--s6);
+  margin-bottom: var(--s5);
 }
 
 .hero-cta-row {
@@ -539,7 +539,7 @@ svg {
 }
 
 .hero-note {
-  margin-top: var(--s5);
+  margin-top: var(--s4);
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -553,7 +553,7 @@ svg {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s2);
-  margin-top: var(--s5);
+  margin-top: var(--s4);
 }
 
 .radar-pill {
@@ -726,27 +726,27 @@ svg {
 
 .plan-cta {
   margin-top: auto;
-  padding-top: var(--s5);
+  padding-top: var(--s4);
 }
 
 .plan-note {
-  margin-top: var(--s6);
+  margin-top: var(--s4);
 }
 
 .section-cta {
-  margin-top: var(--s6);
+  margin-top: var(--s4);
 }
 
 /* ---------- nepal 60/40 estimator ---------- */
 
 .nepal-calc {
-  margin-top: var(--s5);
-  padding: var(--s6);
+  margin-top: var(--s4);
+  padding: var(--s5);
   border-radius: var(--r-lg);
   background: var(--paper-raised);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--s6);
+  gap: var(--s5);
   align-items: center;
 }
 
@@ -840,7 +840,7 @@ svg {
 .site-closing {
   background: var(--surface-invert);
   color: var(--ink-invert);
-  padding: clamp(88px, 11vw, 148px) 0;
+  padding: clamp(52px, 6.5vw, 84px) 0;
   text-align: center;
 }
 
@@ -849,13 +849,13 @@ svg {
   line-height: 1.03;
   font-weight: 750;
   letter-spacing: -0.035em;
-  margin-bottom: var(--s4);
+  margin-bottom: var(--s3);
 }
 
 .site-closing p {
   color: var(--muted-invert);
-  font-size: 18px;
-  margin: 0 auto var(--s6);
+  font-size: 17.5px;
+  margin: 0 auto var(--s5);
   max-width: 46ch;
 }
 
@@ -1050,7 +1050,7 @@ svg {
 /* ---------- footer ---------- */
 
 .site-footer {
-  padding: var(--s7) 0 var(--s8);
+  padding: var(--s5) 0 var(--s6);
   border-top: 1px solid var(--line);
 }
 
@@ -1115,6 +1115,26 @@ svg {
 .garage-footer a:hover {
   color: var(--ink);
 }
+
+/* ---------- MapLibre popups (shared across /, /map, /app, /partners) ---------- */
+.maplibregl-popup-content {
+  background: var(--paper-raised, #ffffff) !important;
+  color: var(--ink, #1c1a17) !important;
+  border-radius: var(--r-md) !important;
+  padding: 12px 14px !important;
+  box-shadow: var(--shadow-2) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--muted) !important;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--paper-raised) !important; }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--paper-raised) !important; }
 
 /* ---------- responsive ---------- */
 
