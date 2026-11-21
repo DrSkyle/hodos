@@ -85,15 +85,18 @@ void detectVisitorCountryByIp().then((country) => {
 
   if (country === "NP") {
     const shopsLead = document.querySelector("#shops .lead");
-    const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
-    const accessCta = document.querySelector("#shops .plan:first-child .plan-cta a");
+    const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
     if (shopsLead) {
       shopsLead.textContent =
         "Shop pins in Nepal are completely free initially. If your shop sells or repairs anything drivers and riders need along the road, put a pin on the map at no cost.";
     }
-    if (accessPrice) accessPrice.innerHTML = "Free<small>initially in Nepal · NPR 0 (no payment needed)</small>";
-    if (accessCta) accessCta.textContent = "Place a free pin";
+    if (accessItem) accessItem.textContent = "Free initially (NPR 0)";
   } else if (country === "IN") {
+    const ann = document.querySelector("#top-announcement p");
+    if (ann) {
+      ann.innerHTML =
+        'India 60 / 40 referral programme is live — earn 60% of every shop pin via UPI or IMPS. <a href="/referrals">Get your referral code →</a>';
+    }
     document.getElementById("nepal-earn")?.removeAttribute("hidden");
     document.getElementById("footer-referrals")?.removeAttribute("hidden");
     document.getElementById("nav-referrals")?.removeAttribute("hidden");
@@ -109,73 +112,39 @@ void detectVisitorCountryByIp().then((country) => {
     if (calcLabel) calcLabel.textContent = "Your 60% share (UPI / IMPS)";
     if (ctas) {
       ctas.innerHTML = `
-        <a class="btn btn-primary" href="/referrals">Get your referral code</a>
-        <a class="btn btn-ghost" href="/garage">Open the India Garage</a>
+        <a class="v2-pill-btn v2-pill-primary" href="/referrals">Get your referral code</a>
+        <a class="v2-pill-btn v2-pill-secondary" href="/garage">Open the India Garage</a>
       `;
     }
 
-    const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
-    if (accessPrice) accessPrice.innerHTML = "₹16<small>a day · India (UPI / IMPS)</small>";
+    const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
+    if (accessItem) accessItem.textContent = "₹16 / day (UPI / IMPS)";
   }
 });
 
 /**
- * Signature scroll-driven continuous road scene.
- *
- * Translates one continuous 2400px SVG road landscape sideways as the visitor
- * scrolls vertically through `.road-scene-section`. Automatically disables
- * horizontal camera translation on mobile viewports (<= 900px) and when
- * `prefers-reduced-motion: reduce` is enabled so the story reads vertically.
+ * Interactive tabs inside the Hero UI mockup.
  */
-function wireContinuousRoadScene() {
-  const section = document.querySelector<HTMLElement>(".road-scene-section");
-  const viewport = document.getElementById("road-camera-viewport");
-  const world = document.getElementById("road-world");
-  const fill = document.getElementById("road-scene-fill");
-  const readout = document.getElementById("road-scene-readout");
-  if (!section || !viewport || !world) return;
+function wireHeroMockupTabs() {
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".v2-tab[data-preview]"));
+  const panels = Array.from(document.querySelectorAll<HTMLElement>(".v2-mockup-panel[data-panel]"));
+  if (!tabs.length || !panels.length) return;
 
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let rafId = 0;
-
-  const update = () => {
-    rafId = 0;
-    if (window.innerWidth <= 900 || reducedMotion.matches) {
-      world.style.transform = "";
-      world.dataset.stage = "all";
-      return;
-    }
-
-    const rect = section.getBoundingClientRect();
-    const scrollable = Math.max(1, section.offsetHeight - window.innerHeight);
-    const scrolled = Math.min(Math.max(0, -rect.top), scrollable);
-    const progress = scrolled / scrollable;
-
-    const maxShift = Math.max(0, world.scrollWidth - viewport.clientWidth);
-    world.style.transform = `translate3d(${(-progress * maxShift).toFixed(1)}px, 0, 0)`;
-
-    const stage = progress < 0.34 ? "1" : progress < 0.68 ? "2" : "3";
-    world.dataset.stage = stage;
-
-    if (fill) {
-      fill.style.width = `${Math.round(progress * 100)}%`;
-    }
-    if (readout) {
-      readout.textContent = `0${stage} / 03`;
-    }
-  };
-
-  const onScroll = () => {
-    if (!rafId) rafId = window.requestAnimationFrame(update);
-  };
-
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll, { passive: true });
-  reducedMotion.addEventListener?.("change", onScroll);
-  update();
+  for (const tab of tabs) {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.preview;
+      if (!target) return;
+      for (const t of tabs) {
+        t.setAttribute("aria-selected", String(t === tab));
+      }
+      for (const panel of panels) {
+        panel.hidden = panel.dataset.panel !== target;
+      }
+    });
+  }
 }
 
-wireContinuousRoadScene();
+wireHeroMockupTabs();
 
 // Close the mobile menu after a choice, and on Escape.
 for (const menu of document.querySelectorAll<HTMLDetailsElement>("details.nav-menu")) {

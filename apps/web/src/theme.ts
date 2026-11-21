@@ -1,8 +1,8 @@
 export type ThemeMode = "auto" | "light" | "dark";
 
 const STORAGE_KEY = "hodos.theme";
-const LIGHT_META = "#faf8f2";
-const DARK_META = "#121110";
+const LIGHT_META = "#fdf1f3";
+const DARK_META = "#141314";
 
 const SUN =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>';
@@ -22,8 +22,8 @@ export function getSavedTheme(): ThemeMode {
 export function resolveDark(mode: ThemeMode): boolean {
   if (mode === "dark") return true;
   if (mode === "light") return false;
-  if (typeof document !== "undefined" && document.body?.classList.contains("field-guide")) {
-    return true;
+  if (typeof document !== "undefined" && document.body?.classList.contains("hodos-v2")) {
+    return false;
   }
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
