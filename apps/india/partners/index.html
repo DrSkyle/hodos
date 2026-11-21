@@ -147,8 +147,15 @@
       </div>
 
       <div class="partners-map-col">
+        <div class="map-search-box">
+          <div class="map-search-row">
+            <input id="pin-search-input" type="search" placeholder="Search place, road, area or paste lat, lng…" autocomplete="off" />
+            <button type="button" id="pin-search-btn" class="pin-locate">Search</button>
+          </div>
+          <div id="pin-search-results" class="map-search-results" hidden></div>
+        </div>
         <div class="map-toolbar">
-          <span id="pin-label" class="pin-label">Click the map to drop your shop pin</span>
+          <span id="pin-label" class="pin-label">Click the map or search above to drop your shop pin</span>
           <button type="button" id="locate-me" class="btn btn-ghost">Use my location</button>
         </div>
         <div id="partner-map" class="partner-map" style="height: 420px; border-radius: 12px; overflow: hidden;"></div>

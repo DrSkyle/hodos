@@ -181,10 +181,82 @@ for (const btn of document.querySelectorAll<HTMLButtonElement>(".city-jump")) {
     const lat = Number(btn.dataset.lat);
     const lng = Number(btn.dataset.lng);
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      map?.flyTo({ center: [lng, lat], zoom: 12 });
+      setPin(lat, lng);
+      map?.flyTo({ center: [lng, lat], zoom: 13 });
     }
   });
 }
+
+const searchInput = document.getElementById("pin-search-input") as HTMLInputElement | null;
+const searchBtn = document.getElementById("pin-search-btn") as HTMLButtonElement | null;
+const resultsHost = document.getElementById("pin-search-results") as HTMLElement | null;
+const addressInput = form?.querySelector<HTMLInputElement>('input[name="address"]') ?? null;
+
+async function runIndiaSearch() {
+  const q = (searchInput?.value || "").trim();
+  if (!q || !resultsHost) return;
+  const coordMatch = /^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/.exec(q);
+  if (coordMatch) {
+    const lat = Number(coordMatch[1]);
+    const lng = Number(coordMatch[2]);
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      resultsHost.hidden = true;
+      setPin(lat, lng);
+      map?.flyTo({ center: [lng, lat], zoom: 16 });
+      return;
+    }
+  }
+  resultsHost.hidden = false;
+  resultsHost.innerHTML = `<div class="map-search-item"><small>Searching…</small></div>`;
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&q=${encodeURIComponent(q)}`,
+      { headers: { Accept: "application/json" } }
+    );
+    const items = (await res.json()) as Array<{ display_name: string; name?: string; lat: string; lon: string }>;
+    if (!Array.isArray(items) || items.length === 0) {
+      resultsHost.innerHTML = `<div class="map-search-item"><small>No places found — try a nearby road, landmark or city.</small></div>`;
+      return;
+    }
+    resultsHost.innerHTML = "";
+    for (const item of items) {
+      const lat = Number(item.lat);
+      const lng = Number(item.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "map-search-item";
+      const parts = item.display_name.split(",");
+      const titleText = (item.name || parts[0] || "Location").trim();
+      const subText = parts.slice(1, 4).join(",").trim();
+      const strong = document.createElement("strong");
+      strong.textContent = titleText;
+      const small = document.createElement("small");
+      small.textContent = subText || item.display_name;
+      btn.append(strong, small);
+      btn.addEventListener("click", () => {
+        resultsHost.hidden = true;
+        if (searchInput) searchInput.value = titleText;
+        setPin(lat, lng);
+        map?.flyTo({ center: [lng, lat], zoom: 16 });
+        if (addressInput && !addressInput.value.trim()) {
+          addressInput.value = [titleText, subText].filter(Boolean).join(", ").slice(0, 160);
+        }
+      });
+      resultsHost.append(btn);
+    }
+  } catch (_) {
+    resultsHost.innerHTML = `<div class="map-search-item"><small>Search unavailable right now.</small></div>`;
+  }
+}
+
+searchBtn?.addEventListener("click", () => void runIndiaSearch());
+searchInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    void runIndiaSearch();
+  }
+});
 
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();

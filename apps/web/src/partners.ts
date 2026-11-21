@@ -275,6 +275,16 @@ function buildDayChips() {
 function buildMap() {
   const host = document.getElementById("pin-map");
   if (!host) return;
+  const loc = browserLocale();
+  const isNp = /^ne/i.test(loc);
+  const isIn = /[-_]IN$/i.test(loc);
+  const initialCenter: [number, number] = isNp
+    ? [85.324, 27.7172]
+    : isIn
+    ? [78.9629, 20.5937]
+    : [85.324, 27.7172];
+  const initialZoom = isNp ? 11.5 : isIn ? 4.5 : 6.5;
+
   const map = new Map({
     container: host,
     style: {
@@ -291,8 +301,8 @@ function buildMap() {
       },
       layers: [{ id: "osm", type: "raster", source: "osm" }]
     },
-    center: [10, 24],
-    zoom: 1.8,
+    center: initialCenter,
+    zoom: initialZoom,
     minZoom: 1.5,
     maxZoom: 21,
     renderWorldCopies: false,
@@ -301,41 +311,137 @@ function buildMap() {
   map.addControl(new NavigationControl({ showCompass: false }), "top-right");
 
   let marker: Marker | null = null;
-  map.on("click", (event) => {
-    point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
-    if (marker) marker.remove();
-    marker = new Marker({ color: "#d97706" })
-      .setLngLat(event.lngLat)
-      .addTo(map);
+  const addressInput = form?.querySelector<HTMLInputElement>('input[name="address"]') ?? null;
+
+  const dropPin = (lat: number, lng: number, flyZoom?: number, autoAddress?: string) => {
+    point = { lat, lng };
+    if (!marker) {
+      marker = new Marker({ color: "#d97706", draggable: true })
+        .setLngLat([lng, lat])
+        .addTo(map);
+      marker.on("dragend", () => {
+        const pos = marker?.getLngLat();
+        if (pos) dropPin(pos.lat, pos.lng);
+      });
+    } else {
+      marker.setLngLat([lng, lat]);
+    }
+    if (flyZoom) {
+      map.flyTo({ center: [lng, lat], zoom: flyZoom, duration: 750 });
+    }
     if (pinLabel) {
-      pinLabel.textContent = `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}`;
+      pinLabel.textContent = `Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)} (drag pin to adjust)`;
       pinLabel.dataset.tone = "ok";
+    }
+    if (autoAddress && addressInput && !addressInput.value.trim()) {
+      addressInput.value = autoAddress.slice(0, 160);
+    }
+  };
+
+  map.on("click", (event) => {
+    dropPin(event.lngLat.lat, event.lngLat.lng);
+  });
+
+  // City quick-jumps
+  document.querySelectorAll<HTMLButtonElement>(".city-jump").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lat = Number(btn.dataset.lat);
+      const lng = Number(btn.dataset.lng);
+      const z = Number(btn.dataset.z) || 13;
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        dropPin(lat, lng, z);
+      }
+    });
+  });
+
+  // Place & coordinate search (OpenStreetMap Nominatim + raw "lat, lng")
+  const searchInput = document.getElementById("pin-search-input") as HTMLInputElement | null;
+  const searchBtn = document.getElementById("pin-search-btn") as HTMLButtonElement | null;
+  const resultsHost = document.getElementById("pin-search-results") as HTMLElement | null;
+
+  const runSearch = async () => {
+    const q = (searchInput?.value || "").trim();
+    if (!q || !resultsHost) return;
+
+    // 1. Direct coordinates: e.g. "27.7172, 85.3240"
+    const coordMatch = /^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/.exec(q);
+    if (coordMatch) {
+      const lat = Number(coordMatch[1]);
+      const lng = Number(coordMatch[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        resultsHost.hidden = true;
+        dropPin(lat, lng, 16);
+        return;
+      }
+    }
+
+    resultsHost.hidden = false;
+    resultsHost.innerHTML = `<div class="map-search-item"><small>Searching "${q.replace(/[<>&]/g, "")}"…</small></div>`;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(q)}`,
+        { headers: { Accept: "application/json" } }
+      );
+      const items = (await res.json()) as Array<{ display_name: string; name?: string; lat: string; lon: string }>;
+      if (!Array.isArray(items) || items.length === 0) {
+        resultsHost.innerHTML = `<div class="map-search-item"><small>No places found — try a nearby road, landmark or city name.</small></div>`;
+        return;
+      }
+      resultsHost.innerHTML = "";
+      for (const item of items) {
+        const lat = Number(item.lat);
+        const lng = Number(item.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "map-search-item";
+        const parts = item.display_name.split(",");
+        const titleText = (item.name || parts[0] || "Location").trim();
+        const subText = parts.slice(1, 4).join(",").trim();
+        const strong = document.createElement("strong");
+        strong.textContent = titleText;
+        const small = document.createElement("small");
+        small.textContent = subText || item.display_name;
+        btn.append(strong, small);
+        btn.addEventListener("click", () => {
+          resultsHost.hidden = true;
+          if (searchInput) searchInput.value = titleText;
+          dropPin(lat, lng, 16, [titleText, subText].filter(Boolean).join(", "));
+        });
+        resultsHost.append(btn);
+      }
+    } catch (_) {
+      resultsHost.innerHTML = `<div class="map-search-item"><small>Search unavailable right now — tap the map or use your location.</small></div>`;
+    }
+  };
+
+  searchBtn?.addEventListener("click", () => void runSearch());
+  searchInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void runSearch();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (resultsHost && !resultsHost.hidden && !resultsHost.parentElement?.contains(e.target as Node)) {
+      resultsHost.hidden = true;
     }
   });
 
   const locate = document.getElementById("use-my-location");
   locate?.addEventListener("click", () => {
     if (!("geolocation" in navigator)) {
-      setStatus("This browser has no location support — tap the map instead.", "error");
+      setStatus("This browser has no location support — search or tap the map instead.", "error");
       return;
     }
     setStatus("Finding your shop…");
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        point = { lat: latitude, lng: longitude };
-        if (marker) marker.remove();
-        marker = new Marker({ color: "#d97706" })
-          .setLngLat([longitude, latitude])
-          .addTo(map);
-        map.flyTo({ center: [longitude, latitude], zoom: 14 });
-        if (pinLabel) {
-          pinLabel.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-          pinLabel.dataset.tone = "ok";
-        }
-        setStatus("Pin placed. Adjust it by tapping the map.");
+        dropPin(latitude, longitude, 16);
+        setStatus("Pin placed at your location. Drag the pin or tap the map to fine-tune.");
       },
-      () => setStatus("Couldn't read your location — tap the map instead.", "error"),
+      () => setStatus("Couldn't read your location — search your area above or tap the map.", "error"),
       { enableHighAccuracy: true, timeout: 10000 }
     );
   });

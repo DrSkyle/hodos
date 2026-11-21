@@ -191,8 +191,23 @@
       </div>
 
       <div class="partners-map-col">
+        <div class="map-search-box">
+          <div class="map-search-row">
+            <input id="pin-search-input" type="search" placeholder="Search place, road, area or paste lat, lng…" autocomplete="off" />
+            <button type="button" id="pin-search-btn" class="pin-locate">Search</button>
+          </div>
+          <div id="pin-search-results" class="map-search-results" hidden></div>
+        </div>
         <div id="pin-map" class="pin-map" aria-label="Map to place your shop"></div>
-        <p class="map-caption">Drop the pin on your door. Drivers see it near the roads they already drive.</p>
+        <div class="day-row" id="city-jumps" style="margin-top: 10px;" aria-label="Jump to city">
+          <button type="button" class="day-chip city-jump" data-lat="27.7172" data-lng="85.3240" data-z="13">Kathmandu</button>
+          <button type="button" class="day-chip city-jump" data-lat="27.6710" data-lng="85.3238" data-z="13">Lalitpur</button>
+          <button type="button" class="day-chip city-jump" data-lat="28.2096" data-lng="83.9856" data-z="13">Pokhara</button>
+          <button type="button" class="day-chip city-jump" data-lat="27.6833" data-lng="84.4333" data-z="13">Chitwan</button>
+          <button type="button" class="day-chip city-jump" data-lat="26.4525" data-lng="87.2718" data-z="13">Biratnagar</button>
+          <button type="button" class="day-chip city-jump" data-lat="27.7006" data-lng="83.4484" data-z="13">Butwal</button>
+        </div>
+        <p class="map-caption">Search your area above, tap a city, or tap "Use my location", then click or drag the pin to your shop door.</p>
       </div>
     </section>
 
