@@ -11,49 +11,52 @@
  */
 
 :root {
-  /* Surface */
-  --paper: #faf8f2;
-  --paper-raised: #fffdf8;
-  --soft: #f3efe6;
-  --soft-2: #e9e4d8;
-  --line: #e7e2d6;
+  /* Surface (aligned across /, /map, /app, /garage, /partners, /referrals, /privacy) */
+  --paper: #fdf1f3;
+  --paper-raised: #ffffff;
+  --soft: #f4e8ea;
+  --soft-2: #eadce0;
+  --line: #ded2d4;
 
   /* Text */
-  --ink: #1c1a17;
-  --ink-hover: #3a362f;
-  --muted: #6a6459;
+  --ink: #000000;
+  --ink-hover: #373737;
+  --muted: #50504f;
 
   /* Inverted (dark bands) */
-  --surface-invert: #1c1a17;
-  --ink-invert: #faf8f2;
-  --muted-invert: #a8a093;
+  --surface-invert: #141314;
+  --ink-invert: #fcfcfd;
+  --muted-invert: #a6a0a4;
 
-  /* Accent: fills use --accent, small text uses --accent-ink for contrast. */
-  --accent: #d97706;
+  /* Brand amber & primary action berry */
+  --accent: #d58400;
   --accent-deep: #b45309;
-  --accent-ink: #92400e;
+  --accent-ink: #8a5300;
+  --action: #be185d;
+  --action-hover: #9d174d;
+  --on-action: #fcfcfd;
 
   /* Hazard language (shared with the map's hodos-layers.json) */
   --pothole: #e11d48;
-  --rough: #d97706;
+  --rough: #d58400;
   --bump: #7c3aed;
   --fixed: #10b981;
   --police: #2563eb;
   --jam: #ea580c;
   --roadblock: #dc2626;
   --flood: #0891b2;
-  --road: #e3dcc8;
+  --road: #e3d6d8;
 
   /* Type */
-  --font-sans: "Overpass Variable", "Overpass", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Host Grotesk", "Overpass Variable", "Overpass", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Overpass Mono Variable", "Overpass Mono", ui-monospace, "SF Mono", monospace;
 
   /* Scale */
-  --t-display: clamp(44px, 7vw, 84px);
+  --t-display: clamp(48px, 6.5vw, 83px);
   --t-h1: clamp(32px, 4.4vw, 56px);
   --t-h2: clamp(26px, 3.2vw, 40px);
   --t-h3: 20px;
-  --t-body: 17px;
+  --t-body: 16px;
   --t-small: 15px;
   --t-caption: 13px;
 
@@ -67,23 +70,23 @@
   --s8: 64px;
   --s9: 96px;
 
-  --r-sm: 4px;
-  --r-md: 6px;
-  --r-lg: 8px;
-  --r-full: 6px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 16px;
+  --r-full: 9999px;
 
-  --shadow-1: 0 1px 2px rgba(28, 26, 23, 0.06), 0 8px 24px rgba(28, 26, 23, 0.08);
-  --shadow-2: 0 2px 6px rgba(28, 26, 23, 0.08), 0 18px 48px rgba(28, 26, 23, 0.16);
+  --shadow-1: 0 1px 2px rgba(20, 19, 20, 0.04), 0 8px 24px rgba(20, 19, 20, 0.06);
+  --shadow-2: 0 2px 6px rgba(20, 19, 20, 0.08), 0 18px 48px rgba(20, 19, 20, 0.14);
 
-  --container: 1080px;
+  --container: 1200px;
   --gutter: 24px;
 
   /* Legacy aliases still read by older page sheets. */
   --bg: var(--paper);
   --surface: var(--paper-raised);
   --line-strong: var(--ink);
-  --asphalt: #171614;
-  --asphalt-text: #b5afa2;
+  --asphalt: #141314;
+  --asphalt-text: #a6a0a4;
   --r-ctl: var(--r-full);
   --r-card: var(--r-lg);
   --shadow: none;
@@ -92,21 +95,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #121110;
-    --paper-raised: #1b1a17;
-    --soft: #23211d;
-    --soft-2: #2e2b26;
-    --line: #2e2b26;
-    --ink: #f7f5f0;
-    --ink-hover: #e5e0d4;
-    --muted: #a29c90;
-    --surface-invert: #f7f5f0;
-    --ink-invert: #121110;
-    --muted-invert: #6a6459;
+    --paper: #141314;
+    --paper-raised: #252225;
+    --soft: #1d1b1d;
+    --soft-2: #2d292d;
+    --line: #343034;
+    --ink: #fcfcfd;
+    --ink-hover: #e5e0e3;
+    --muted: #a6a0a4;
+    --surface-invert: #fcfcfd;
+    --ink-invert: #141314;
+    --muted-invert: #50504f;
     --accent: #f59e0b;
     --accent-deep: #fbbf24;
-    --accent-ink: #fbbf24;
-    --road: #2c2823;
+    --accent-ink: #f59e0b;
+    --action: #db2777;
+    --action-hover: #be185d;
+    --on-action: #fcfcfd;
+    --road: #2c282c;
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.34);
     --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.44), 0 18px 48px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -114,21 +120,24 @@
 }
 
 :root[data-theme="dark"] {
-  --paper: #121110;
-  --paper-raised: #1b1a17;
-  --soft: #23211d;
-  --soft-2: #2e2b26;
-  --line: #2e2b26;
-  --ink: #f7f5f0;
-  --ink-hover: #e5e0d4;
-  --muted: #a29c90;
-  --surface-invert: #f7f5f0;
-  --ink-invert: #121110;
-  --muted-invert: #6a6459;
+  --paper: #141314;
+  --paper-raised: #252225;
+  --soft: #1d1b1d;
+  --soft-2: #2d292d;
+  --line: #343034;
+  --ink: #fcfcfd;
+  --ink-hover: #e5e0e3;
+  --muted: #a6a0a4;
+  --surface-invert: #fcfcfd;
+  --ink-invert: #141314;
+  --muted-invert: #50504f;
   --accent: #f59e0b;
   --accent-deep: #fbbf24;
-  --accent-ink: #fbbf24;
-  --road: #2c2823;
+  --accent-ink: #f59e0b;
+  --action: #db2777;
+  --action-hover: #be185d;
+  --on-action: #fcfcfd;
+  --road: #2c282c;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.34);
   --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.44), 0 18px 48px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
@@ -429,8 +438,13 @@ svg {
 }
 
 .btn-primary {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--action);
+  color: var(--on-action);
+}
+
+.btn-primary:hover {
+  background: var(--action-hover);
+  opacity: 1;
 }
 
 .btn-accent {
@@ -473,15 +487,16 @@ svg {
   align-items: center;
   padding: 9px 16px;
   border-radius: var(--r-full);
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--action);
+  color: var(--on-action);
   font-size: 14px;
   font-weight: 600;
-  transition: opacity 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .nav-cta:hover {
-  opacity: 0.85;
+  background: var(--action-hover);
+  opacity: 1;
 }
 
 .nav-cta-garage {

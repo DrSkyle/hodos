@@ -39,13 +39,13 @@
   <div class="v2-announcement" id="top-announcement">
     <div class="v2-container v2-announcement-inner">
       <p>
-        Shop pins in Nepal are completely free initially — no contract or setup fee.
-        <a href="/partners" id="announcement-link">Place a shop pin →</a>
+        Shop pins in Nepal are free initially.
+        <a href="/partners" id="announcement-link">Place a pin →</a>
       </p>
     </div>
   </div>
 
-  <!-- 2. SITE HEADER (inset solid bar on alternate ground) -->
+  <!-- 2. SITE HEADER -->
   <div class="v2-header-wrap">
     <header class="v2-header">
       <a class="v2-brand" href="/" aria-label="Hodos home">
@@ -82,7 +82,7 @@
   </div>
 
   <main id="content">
-    <!-- 3. HERO: Heading, two actions, trust caption, key numbers, and interactive UI mockup -->
+    <!-- 3. HERO -->
     <section class="v2-band v2-hero" aria-labelledby="hero-title">
       <div class="v2-container">
         <div class="v2-hero-copy">
@@ -95,111 +95,89 @@
             <a class="v2-pill-btn v2-pill-secondary" id="hero-cta-app" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Get the app</a>
           </div>
           <p class="v2-trust">
-            Also runs in your browser at <a href="/app/">hodos.devilabs.dev/app</a> · Free · No account required
+            Runs in your browser at <a href="/app/">/app</a> · Free · No account
           </p>
         </div>
 
         <dl class="v2-key-numbers" aria-label="How Hodos verifies road hazards">
           <div class="v2-stat">
             <dt>15 m</dt>
-            <dd>Spatial cluster cell for multi-trip confirmation</dd>
+            <dd>Cluster cell for multi-trip confirmation</dd>
           </div>
           <div class="v2-stat">
             <dt>3 passes</dt>
-            <dd>Smooth drives retire a repaired hazard automatically</dd>
+            <dd>Smooth drives retire a fixed pothole</dd>
           </div>
           <div class="v2-stat">
             <dt>250 m</dt>
-            <dd>Start &amp; end of every Android trip trimmed on device</dd>
+            <dd>Start &amp; end trimmed on Android</dd>
           </div>
           <div class="v2-stat">
             <dt>0</dt>
-            <dd>User accounts, emails, or advertising IDs</dd>
+            <dd>Accounts or advertising IDs</dd>
           </div>
         </dl>
 
-        <!-- Interactive UI mockup built with real HTML/CSS elements -->
-        <div class="v2-hero-mockup" role="region" aria-label="Hodos road detector and live map preview">
+        <div class="v2-hero-mockup" role="region" aria-label="Hodos road detector preview">
           <div class="v2-mockup-bar">
-            <span class="v2-mockup-brand">hodos<span class="v2-dot">.</span> detector</span>
+            <span class="v2-mockup-brand">hodos<span class="v2-dot">.</span></span>
             <div class="v2-mockup-tabs" role="tablist" aria-label="Preview mode">
-              <button type="button" class="v2-tab" role="tab" aria-selected="true" data-preview="hazards">Corroborated hazards</button>
-              <button type="button" class="v2-tab" role="tab" aria-selected="false" data-preview="sensing">On-device sensing</button>
-              <button type="button" class="v2-tab" role="tab" aria-selected="false" data-preview="shops">Nearby shops</button>
+              <button type="button" class="v2-tab" role="tab" aria-selected="true" data-preview="hazards">Hazards</button>
+              <button type="button" class="v2-tab" role="tab" aria-selected="false" data-preview="sensing">Sensing</button>
+              <button type="button" class="v2-tab" role="tab" aria-selected="false" data-preview="shops">Shops</button>
             </div>
-            <a class="v2-mockup-link" href="/map">Open live map →</a>
+            <a class="v2-mockup-link" href="/map">Live map →</a>
           </div>
 
-          <div class="v2-mockup-body" data-active-panel="hazards">
+          <div class="v2-mockup-body">
             <div class="v2-mockup-panel" data-panel="hazards">
               <div class="v2-ui-row">
                 <div>
-                  <strong>Severity L3 pothole · 15 m cell</strong>
-                  <span>Confirmed by independent trips · Auto-heals after 3 smooth passes</span>
+                  <strong>Potholes &amp; rough corridors</strong>
+                  <span>Confirmed by independent devices within 15 m</span>
                 </div>
-                <span class="v2-ui-state">Published</span>
+                <span class="v2-ui-state">Live</span>
               </div>
               <div class="v2-ui-row">
                 <div>
-                  <strong>Rough corridor · Vertical impact stream</strong>
-                  <span>Measured by @hodos/core on Android and web browser clients</span>
+                  <strong>GPS-gated road alerts</strong>
+                  <span>Posted and verified only by drivers at the location</span>
                 </div>
-                <span class="v2-ui-state">Active</span>
-              </div>
-              <div class="v2-ui-row">
-                <div>
-                  <strong>Live road alert · GPS-gated</strong>
-                  <span>Only drivers near the coordinate can post or confirm on-site status</span>
-                </div>
-                <span class="v2-ui-state">Verified</span>
+                <span class="v2-ui-state">On-site</span>
               </div>
             </div>
 
             <div class="v2-mockup-panel" data-panel="sensing" hidden>
               <div class="v2-ui-row">
                 <div>
-                  <strong>Location &amp; motion sensors</strong>
-                  <span>Separate vertical road jolts from engine vibration in real time</span>
+                  <strong>On-device detector</strong>
+                  <span>Separates vertical impacts from engine vibration</span>
                 </div>
-                <span class="v2-ui-state">On device</span>
-              </div>
-              <div class="v2-ui-row">
-                <div>
-                  <strong>Route privacy trim</strong>
-                  <span>First and last 250 m of each Android trip stay off any upload</span>
-                </div>
-                <span class="v2-ui-state">Enabled</span>
+                <span class="v2-ui-state">Local</span>
               </div>
               <div class="v2-ui-row">
                 <div>
                   <strong>Offline map cache</strong>
-                  <span>Cache your region over Wi-Fi for mountain dead zones and tunnels</span>
+                  <span>Save regions over Wi-Fi for dead zones and tunnels</span>
                 </div>
-                <span class="v2-ui-state">Ready</span>
+                <span class="v2-ui-state">Android</span>
               </div>
             </div>
 
             <div class="v2-mockup-panel" data-panel="shops" hidden>
               <div class="v2-ui-row">
                 <div>
-                  <strong>Tyre &amp; puncture repair · Partner pin</strong>
-                  <span>Visible on the public map and returned by the Hodos API</span>
+                  <strong>Partner shop pins</strong>
+                  <span>Tyre shops, garages, cafés, pharmacies, and EV chargers</span>
                 </div>
                 <span class="v2-ui-state">Nepal: Free</span>
               </div>
               <div class="v2-ui-row">
                 <div>
                   <strong>Monthly rider perks</strong>
-                  <span>20 km tire check · 50 km chain lube · 100 km alignment check</span>
+                  <span>Free checks at 20 km, 50 km, and 100 km</span>
                 </div>
                 <span class="v2-ui-state">0% fee</span>
-              </div>
-              <div class="v2-ui-row">
-                <div>
-                  <strong>Never alters road data</strong>
-                  <span>Quiet pin beside the road — hazard data cannot be bought or edited</span>
-                </div>
-                <span class="v2-ui-state">Guaranteed</span>
               </div>
             </div>
           </div>
@@ -207,103 +185,67 @@
       </div>
     </section>
 
-    <!-- 4. FEATURES: 3 alternating rows with UI mockups -->
+    <!-- 4. FEATURES: 3 crisp rows -->
     <section class="v2-band v2-band-alt" id="how" aria-labelledby="features-title">
       <div class="v2-container">
         <div class="v2-section-head">
           <h2 id="features-title">Built for the drive you already make<span class="v2-dot">.</span></h2>
-          <p>
-            One passive detector across Android and web, paired with local shop pins that fund the open map.
-          </p>
         </div>
 
         <div class="v2-feature-rows">
-          <!-- Row 1: Text left, UI mockup right -->
           <article class="v2-feature-row">
             <div class="v2-feature-copy">
-              <span class="v2-kicker">01 · Sense on device</span>
-              <h3>A phone in a pocket feels the impact</h3>
+              <span class="v2-kicker">01 · Sense</span>
+              <h3>A phone in a pocket feels the road</h3>
               <p>
-                While you drive, the @hodos/core detector separates sharp vertical road impacts from engine vibration and logs the coordinates locally. A single jolt never reaches the public map alone.
+                The detector logs vertical jolts locally—one bump never reaches the public map alone.
               </p>
               <a class="v2-text-link" href="/app/">Open web app →</a>
             </div>
-            <div class="v2-ui-card" aria-label="On-device sensor permissions preview">
-              <div class="v2-ui-card-head">Web &amp; Android Permissions</div>
+            <div class="v2-ui-card">
+              <div class="v2-ui-card-head">Sensors</div>
               <div class="v2-ui-list">
-                <div class="v2-ui-item">
-                  <span>Location</span>
-                  <span>Quantised cell only</span>
-                </div>
-                <div class="v2-ui-item">
-                  <span>Motion</span>
-                  <span>Vertical residual</span>
-                </div>
-                <div class="v2-ui-item">
-                  <span>Screen wake</span>
-                  <span>Keep tab active</span>
-                </div>
+                <div class="v2-ui-item"><span>Location</span><span>15 m cell</span></div>
+                <div class="v2-ui-item"><span>Motion</span><span>Impact residual</span></div>
               </div>
             </div>
           </article>
 
-          <!-- Row 2: UI mockup left, Text right (swaps sides) -->
           <article class="v2-feature-row v2-feature-reverse">
             <div class="v2-feature-copy">
-              <span class="v2-kicker">02 · Corroborate &amp; heal</span>
-              <h3>Independent vehicles confirm the same spot</h3>
+              <span class="v2-kicker">02 · Confirm</span>
+              <h3>Independent trips verify the pin</h3>
               <p>
-                When multiple distinct devices record an impact within the same 15-metre cell, Hodos confirms the defect is in the road. Later, three smooth passes without an impact retire the pin automatically.
+                Multiple trips confirm real defects, and three smooth passes mark repaired roads healed.
               </p>
               <a class="v2-text-link" href="/map">Explore live map →</a>
             </div>
-            <div class="v2-ui-card" aria-label="Corroboration lifecycle preview">
-              <div class="v2-ui-card-head">Corroboration Pipeline</div>
+            <div class="v2-ui-card">
+              <div class="v2-ui-card-head">Lifecycle</div>
               <div class="v2-ui-list">
-                <div class="v2-ui-item">
-                  <span>Trip 01</span>
-                  <span>Local log only</span>
-                </div>
-                <div class="v2-ui-item">
-                  <span>15 m match</span>
-                  <span>Published to map</span>
-                </div>
-                <div class="v2-ui-item">
-                  <span>3 smooth passes</span>
-                  <span>Marked repaired</span>
-                </div>
+                <div class="v2-ui-item"><span>15 m match</span><span>Published</span></div>
+                <div class="v2-ui-item"><span>3 smooth passes</span><span>Retired</span></div>
               </div>
             </div>
           </article>
 
-          <!-- Row 3: Text left, UI mockup right -->
           <article class="v2-feature-row" id="shops">
             <div class="v2-feature-copy">
-              <span class="v2-kicker">03 · Local shops &amp; perks</span>
+              <span class="v2-kicker">03 · Shops</span>
               <h3>Put your shop on the map</h3>
               <p class="lead">
-                If your shop sells or repairs anything drivers and riders need along the road — tyre shops, garages, cafés, pharmacies, hotels, or EV chargers — place a pin where drivers already look, or <a href="mailto:__HODOS_CONTACT__">contact us</a>. In Nepal, shop pins are <strong>completely free initially</strong>.
+                Tyre shops, garages, cafés, and pharmacies place a pin where riders look, or <a href="mailto:__HODOS_CONTACT__">contact us</a>. Free initially in Nepal.
               </p>
               <div class="v2-inline-links">
-                <a class="v2-text-link" href="/partners">Place a shop pin →</a>
-                <a class="v2-text-link" href="/garage">Open the Garage →</a>
+                <a class="v2-text-link" href="/partners">Place a pin →</a>
+                <a class="v2-text-link" href="/garage">Garage →</a>
               </div>
             </div>
-            <div class="v2-ui-card" aria-label="Shop placement tiers preview">
-              <div class="v2-ui-card-head">Shop Pin Tiers · 0% Commission</div>
+            <div class="v2-ui-card">
+              <div class="v2-ui-card-head">Shop Pins · 0% Commission</div>
               <div class="v2-ui-list">
-                <div class="v2-ui-item">
-                  <span>Nepal Launch · Access</span>
-                  <strong>Free initially</strong>
-                </div>
-                <div class="v2-ui-item">
-                  <span>Local · Middle-income</span>
-                  <strong>$0.79 / day</strong>
-                </div>
-                <div class="v2-ui-item">
-                  <span>Standard · US, UK, EU</span>
-                  <strong>$1.99 / day</strong>
-                </div>
+                <div class="v2-ui-item"><span>Nepal Launch</span><strong>Free initially</strong></div>
+                <div class="v2-ui-item"><span>Local / Standard</span><strong>$0.79 – $1.99 / day</strong></div>
               </div>
             </div>
           </article>
@@ -318,7 +260,7 @@
           <span class="v2-kicker">Nepal · Free initial launch</span>
           <h2 id="nepal-earn-title">Shop pins in Nepal are free initially<span class="v2-dot">.</span></h2>
           <p class="lead">
-            Placing a shop pin on Hodos in Nepal is completely free right now — no payment or wallet transfer needed.
+            Placing a shop pin on Hodos in Nepal is completely free right now.
           </p>
         </div>
         <div class="steps" hidden>
@@ -330,12 +272,12 @@
           <article class="step-card">
             <span class="step-num">02 · Introduce any shop</span>
             <h3>They click your link or email us your code</h3>
-            <p>That business is permanently attributed to you — every first placement and every renewal they ever make.</p>
+            <p>That business is permanently attributed to you.</p>
           </article>
           <article class="step-card">
             <span class="step-num">03 · Earn 60%</span>
             <h3>60% to you, 40% to Hodos</h3>
-            <p>Your share appears the moment their payment is recorded and unlocks for cashout after 30 days.</p>
+            <p>Unlocks for cashout after 30 days.</p>
           </article>
         </div>
         <div class="nepal-calc" aria-label="60/40 earnings estimator" hidden>
@@ -365,50 +307,49 @@
       </div>
     </section>
 
-    <!-- 5. ARCHITECTURE & AUDIENCE NOTES (mapped to 3-row quote/author layout without inventing fake people) -->
+    <!-- 5. COMMITMENTS -->
     <section class="v2-band" id="privacy" aria-labelledby="notes-title">
       <div class="v2-container">
         <div class="v2-section-head">
-          <h2 id="notes-title">How Hodos stays honest<span class="v2-dot">.</span></h2>
-          <p>Three commitments built into the detector, the shop model, and the API.</p>
+          <h2 id="notes-title">Private by architecture<span class="v2-dot">.</span></h2>
         </div>
 
         <div class="v2-quote-rows">
           <article class="v2-quote-row">
             <blockquote class="v2-quote-text">
-              “Route traces stay on your phone. Only anonymous, quantised hazard observations leave the device, with the first and last 250 metres trimmed on Android.”
+              “Route traces stay on your phone. Android trims the first and last 250 m of every journey.”
             </blockquote>
             <div class="v2-quote-author">
               <span class="v2-avatar" aria-hidden="true">DR</span>
               <div>
                 <strong>For drivers</strong>
-                <span>Privacy by architecture · <a href="/privacy.html">Privacy notice</a></span>
+                <span><a href="/privacy.html">Privacy notice</a></span>
               </div>
             </div>
           </article>
 
           <article class="v2-quote-row">
             <blockquote class="v2-quote-text">
-              “Driving unlocks monthly maintenance perks—a free tire pressure check at 20 km, chain lube at 50 km, and alignment check at 100 km—redeemable at partner shops.”
+              “Shop pins never alter hazard data and carry 0% counter commission on monthly rider perks.”
             </blockquote>
             <div class="v2-quote-author">
               <span class="v2-avatar" aria-hidden="true">SH</span>
               <div>
-                <strong>For riders &amp; local shops</strong>
-                <span>0% counter commission · <a href="/partners">Place a shop pin</a></span>
+                <strong>For shops &amp; riders</strong>
+                <span><a href="/partners">Place a shop pin</a></span>
               </div>
             </div>
           </article>
 
           <article class="v2-quote-row">
             <blockquote class="v2-quote-text">
-              “Every live shop pin rides alongside Hodos road data, so when someone asks an AI assistant where to fix a puncture nearby, active shops are returned by name.”
+              “Live hazards and nearby shops are queryable by AI assistants through the metered Hodos API.”
             </blockquote>
             <div class="v2-quote-author">
               <span class="v2-avatar" aria-hidden="true">AI</span>
               <div>
-                <strong>For AI agents &amp; developers</strong>
-                <span>Metered API · <a href="/AGENTS.md">Read AGENTS.md</a></span>
+                <strong>For AI agents</strong>
+                <span><a href="/AGENTS.md">AGENTS.md</a></span>
               </div>
             </div>
           </article>
@@ -416,26 +357,25 @@
       </div>
     </section>
 
-    <!-- 6. DOWNLOAD / PLATFORMS (3 platforms + API endpoint command + Shop plans) -->
+    <!-- 6. DOWNLOAD / PLATFORMS -->
     <section class="v2-band v2-band-alt" id="download" aria-labelledby="download-title">
       <div class="v2-container">
         <div class="v2-section-head">
           <h2 id="download-title">Run Hodos anywhere<span class="v2-dot">.</span></h2>
-          <p>Native Android app, instant browser client, or direct API access.</p>
         </div>
 
         <div class="v2-platform-grid">
           <article class="v2-platform-card">
             <span class="v2-kicker">Android</span>
-            <h3>Native background app</h3>
-            <p>Runs quietly alongside your navigation or ride-hailing app, with offline region caching over Wi-Fi.</p>
+            <h3>Native app</h3>
+            <p>Background sensing + offline map regions.</p>
             <a class="v2-pill-btn v2-pill-primary" href="__HODOS_DOWNLOAD__" target="_blank" rel="noopener noreferrer">Download APK</a>
           </article>
 
           <article class="v2-platform-card">
-            <span class="v2-kicker">Mobile &amp; Desktop Web</span>
-            <h3>Open in your browser</h3>
-            <p>No install required. Keep the tab open while driving to contribute observations or inspect the live radar.</p>
+            <span class="v2-kicker">Browser</span>
+            <h3>Web app</h3>
+            <p>Instant access with no install.</p>
             <div class="v2-inline-links">
               <a class="v2-pill-btn v2-pill-secondary" href="/app/">Open web app</a>
               <a class="v2-text-link" href="/map">Live map →</a>
@@ -443,10 +383,10 @@
           </article>
 
           <article class="v2-platform-card">
-            <span class="v2-kicker">AI Agents &amp; API</span>
-            <h3>Metered road data</h3>
-            <p>Query corroborated hazards, road roughness, Garage items, and live partner shops from $0.00008 per call.</p>
-            <a class="v2-pill-btn v2-pill-secondary" href="/AGENTS.md">Read AGENTS.md</a>
+            <span class="v2-kicker">API</span>
+            <h3>For AI agents</h3>
+            <p>Hazards, roads, and shops from $0.00008.</p>
+            <a class="v2-pill-btn v2-pill-secondary" href="/AGENTS.md">AGENTS.md</a>
           </article>
         </div>
 
@@ -457,50 +397,39 @@
       </div>
     </section>
 
-    <!-- 7. FAQ: 6 questions in two columns, all visible at once -->
+    <!-- 7. FAQ: 4 concise items in 2 columns -->
     <section class="v2-band" id="faq" aria-labelledby="faq-title">
       <div class="v2-container">
         <div class="v2-section-head">
           <h2 id="faq-title">Good to know<span class="v2-dot">.</span></h2>
-          <p>Clear answers on cost, sensors, privacy, and shop pins.</p>
         </div>
 
         <div class="v2-faq-grid">
           <article class="v2-faq-item">
             <h3>Does it cost anything for drivers?</h3>
-            <p>No. The app, the public map, and your on-device road history are free. The Garage catalogue and shop placements fund the infrastructure.</p>
+            <p>No. The app, map, and on-device road history are free.</p>
           </article>
 
           <article class="v2-faq-item">
-            <h3>Can I run Hodos alongside my navigation or ride app?</h3>
-            <p>Yes. On Android, turn automatic mapping on once and it runs quietly in the background while you navigate or take rides. In the <a href="/app/">web app</a>, keep the tab open while driving—browsers pause motion sensors when a tab is hidden.</p>
+            <h3>Can it run alongside navigation?</h3>
+            <p>Yes. Android runs in the background; the <a href="/app/">web app</a> senses while the tab stays open.</p>
           </article>
 
           <article class="v2-faq-item">
             <h3>Where does my data go?</h3>
-            <p>Route traces stay on your phone. Only anonymous, quantised hazard observations are sent, with no account and no advertising ID. On Android, the first and last 250 metres of every journey are trimmed. Full details live in the <a href="/privacy.html">privacy notice</a>.</p>
+            <p>Routes stay on your phone. Only anonymous hazard cells are uploaded. <a href="/privacy.html">Privacy notice</a>.</p>
           </article>
 
           <article class="v2-faq-item">
-            <h3>I run a shop in Nepal. Is placing a pin really free right now?</h3>
-            <p>Yes. Shop pins in Nepal are completely free initially so local garages, tyre shops, cafés, and pharmacies can get on the map and welcome riders redeeming monthly perks. Elsewhere, daily rates start at $0.19 in local currency with no contract.</p>
-          </article>
-
-          <article class="v2-faq-item">
-            <h3>Does a shop placement ever alter hazard data or cover the road?</h3>
-            <p>Never. A shop placement is a quiet pin alongside the road, never a pop-up over navigation, and road-hazard corroboration cannot be bought or edited.</p>
-          </article>
-
-          <article class="v2-faq-item">
-            <h3>How do AI assistants query Hodos road data?</h3>
-            <p>AI agents follow <a href="/AGENTS.md">AGENTS.md</a> to provision a key and call the metered Appwrite endpoint for <code>hazards</code>, <code>roads</code>, <code>partners</code>, or <code>garage</code>—no personal user data is ever exposed.</p>
+            <h3>Are shop pins in Nepal really free?</h3>
+            <p>Yes, free initially in Nepal. Elsewhere, daily rates start at $0.19 with no contract.</p>
           </article>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 8. FOOTER: 3 link columns above, full-width brand name, social links, copyright & MIT note below -->
+  <!-- 8. FOOTER -->
   <footer class="v2-footer">
     <div class="v2-container">
       <div class="v2-footer-cols">
@@ -527,7 +456,7 @@
           <ul>
             <li><a href="/privacy.html">Privacy notice</a></li>
             <li><a href="/legal/partner-agreement.html">Partner agreement</a></li>
-            <li><a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub source</a></li>
+            <li><a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub</a></li>
             <li><a href="__HODOS_REPO__/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></li>
           </ul>
         </div>
@@ -536,7 +465,7 @@
       <div class="v2-footer-wordmark" aria-hidden="true">hodos<span class="v2-dot">.</span></div>
 
       <div class="v2-footer-bottom">
-        <p>© Hodos · Open source under MIT · Passive road-hazard mapping</p>
+        <p>© Hodos · MIT License</p>
         <div class="v2-footer-social">
           <a href="__HODOS_REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="https://www.instagram.com/minerva__corporation/" target="_blank" rel="noopener noreferrer">Instagram</a>
