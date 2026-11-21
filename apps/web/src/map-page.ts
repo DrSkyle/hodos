@@ -114,35 +114,35 @@ document.getElementById("btn-fit-all")?.addEventListener("click", () => {
   handle?.fitAllHazards();
 });
 
-function resolveReportPosition(): Promise<{ lat: number; lng: number; accuracyM: number; source: "gps" | "map" }> {
-  return new Promise((resolve) => {
-    const fallback = () => {
-      const center = handle?.map.getCenter();
-      resolve({
-        lat: center ? center.lat : 27.7172,
-        lng: center ? center.lng : 85.324,
-        accuracyM: 80,
-        source: "map"
-      });
-    };
+function resolveReportPosition(): Promise<{ lat: number; lng: number; accuracyM: number }> {
+  return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) {
-      fallback();
+      reject(new Error("Location access is required to report a live road alert."));
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const acc = pos.coords.accuracy || 50;
+        if (acc > 200) {
+          reject(new Error(`GPS accuracy is too low (±${Math.round(acc)}m). Step outside or enable precise location.`));
+          return;
+        }
         resolve({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          accuracyM: pos.coords.accuracy || 25,
-          source: "gps"
+          accuracyM: Math.min(100, Math.max(5, Math.round(acc)))
         });
       },
-      () => fallback(),
-      { enableHighAccuracy: true, timeout: 4500, maximumAge: 60_000 }
+      () => {
+        reject(new Error("Allow GPS location to report a live alert — reports can only be sent from the road you are on."));
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 }
     );
   });
 }
+
+const ALERT_COOLDOWN_MS = 90_000;
+let lastAlertSentAt = 0;
 
 const radarButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".radar-btn"));
 
@@ -151,22 +151,31 @@ for (const btn of radarButtons) {
     const kind = btn.dataset.alert || "";
     if (!isLiveAlertKind(kind)) return;
 
+    const now = Date.now();
+    if (now - lastAlertSentAt < ALERT_COOLDOWN_MS) {
+      const waitSec = Math.ceil((ALERT_COOLDOWN_MS - (now - lastAlertSentAt)) / 1000);
+      if (feedbackEl) {
+        feedbackEl.textContent = `Please wait ${waitSec}s before sending another alert.`;
+      }
+      return;
+    }
+
     radarButtons.forEach((b) => (b.disabled = true));
-    if (feedbackEl) feedbackEl.textContent = "Locating and publishing live alert…";
+    if (feedbackEl) feedbackEl.textContent = "Verifying your GPS position on the road…";
 
     try {
       const pos = await resolveReportPosition();
       const created = await reportLiveAlert(pos.lat, pos.lng, kind as LiveAlertKind, pos.accuracyM);
+      lastAlertSentAt = Date.now();
       handle?.addOptimisticHazard(created);
       if (feedbackEl) {
-        const where = pos.source === "gps" ? "at your GPS location" : "at the map center";
-        feedbackEl.textContent = `${created.title} reported ${where}. Added to the live feed.`;
+        feedbackEl.textContent = `${created.title} reported at your GPS position (±${pos.accuracyM}m). Needs 1 confirmation from another driver to show as Verified.`;
       }
     } catch (err) {
       if (feedbackEl) {
         feedbackEl.textContent =
           err instanceof Error
-            ? `Could not send alert: ${err.message}`
+            ? err.message
             : "Could not send alert right now. Check connection and try again.";
       }
     } finally {

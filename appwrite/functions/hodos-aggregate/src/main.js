@@ -320,7 +320,13 @@ function buildHazard(cluster, now, silentPasses, fixReports, manualConfirmations
       .map((report) => report.deviceId),
   );
 
-  const alertFresh = isAlert && ageMs <= (LIVE_ALERT_TTL_MS[kind] || 2 * 3600_000) && fixDevices.size < 2;
+  // Anti-spam / anti-fake rule for live alerts:
+  // - If only 1 device reported an alert (unverified), a single independent
+  //   "Not there" (`fix`) report from another device near that spot clears it.
+  // - Once >= 2 distinct devices corroborate the alert, it requires >= 2
+  //   distinct devices reporting "Not there" to clear before its TTL.
+  const minClearVotes = deviceCount >= 2 ? 2 : 1;
+  const alertFresh = isAlert && ageMs <= (LIVE_ALERT_TTL_MS[kind] || 2 * 3600_000) && fixDevices.size < minClearVotes;
 
   return {
     rowId,

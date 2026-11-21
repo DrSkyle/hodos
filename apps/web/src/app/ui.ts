@@ -190,10 +190,11 @@ export function renderNearby(host: HTMLElement, hazards: RemoteHazard[], onSelec
       : hazard.kind === "rough_pavement"
       ? "var(--rough)"
       : "var(--pothole)";
+    const isVerified = hazard.devices >= 2;
     const sub = isAlert
-      ? `${formatShortAge(hazard.lastSeen)} · ${hazard.devices} confirmed`
+      ? `${formatShortAge(hazard.lastSeen)} · ${isVerified ? `Verified (${hazard.devices} drivers)` : "Unverified (1 report)"}`
       : `${hazard.passes} pass${hazard.passes === 1 ? "" : "es"} · ${hazard.devices} device${hazard.devices === 1 ? "" : "s"}`;
-    const badge = hazard.fixed ? "repaired" : isAlert ? "LIVE" : `L${hazard.severity}`;
+    const badge = hazard.fixed ? "repaired" : isAlert ? (isVerified ? "VERIFIED" : "1 REPORT") : `L${hazard.severity}`;
     row.innerHTML = `
       <span class="dot" style="background:${hazard.fixed ? "transparent" : colour};box-shadow:inset 0 0 0 2px ${colour}"></span>
       <span class="grow"><strong>${escapeHtml(title(hazard))}</strong>

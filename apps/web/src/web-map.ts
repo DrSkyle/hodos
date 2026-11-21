@@ -528,7 +528,57 @@ export function initWebMap(
     return `Reported ${ago} (${clock})`;
   }
 
+  function hasVotedOn(id: string): string | null {
+    try {
+      return window.localStorage.getItem(`hodos.vote.${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  function recordVotedOn(id: string, vote: string) {
+    try {
+      window.localStorage.setItem(`hodos.vote.${id}`, vote);
+    } catch {
+      // ignore
+    }
+  }
+
+  function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+
+  async function verifyVoterNearby(targetLat: number, targetLng: number): Promise<void> {
+    if (!("geolocation" in navigator)) {
+      throw new Error("Location access is required to confirm road alerts.");
+    }
+    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 7000,
+        maximumAge: 60_000
+      });
+    }).catch(() => {
+      throw new Error("Allow GPS location to confirm — only drivers near this spot can vote.");
+    });
+    const dist = distanceKm(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
+    if (dist > 2.0) {
+      throw new Error(`You are ${dist.toFixed(1)} km away. Only drivers within 2 km can confirm or clear this alert.`);
+    }
+  }
+
   async function voteOnHazard(h: WebHazard, vote: "still_there" | "cleared"): Promise<void> {
+    if (hasVotedOn(h.id)) {
+      throw new Error("You have already voted on this report from this device.");
+    }
+    await verifyVoterNearby(h.lat, h.lng);
+
     const isAlert = isLiveAlertKind(h.kind);
     const nowIso = new Date().toISOString();
     const rowId = `vt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -601,6 +651,7 @@ export function initWebMap(
       body: JSON.stringify({ async: true })
     }).catch(() => {});
 
+    recordVotedOn(h.id, vote);
     if (vote === "still_there") {
       h.devices = (h.devices || 1) + 1;
       h.passes = (h.passes || 1) + 1;
@@ -613,6 +664,7 @@ export function initWebMap(
 
   function showPopupForHazard(h: WebHazard) {
     const isAlert = isLiveAlertKind(h.kind);
+    const isVerified = h.devices >= 2;
     const badgeColor = h.fixed
       ? "#10b981"
       : h.kind === "police"
@@ -629,19 +681,26 @@ export function initWebMap(
       ? "#7c3aed"
       : "#d97706";
 
-    const badgeText = h.fixed ? "Cleared" : isAlert ? "Live alert" : `Level ${h.severity}`;
+    const badgeText = h.fixed
+      ? "Cleared"
+      : isAlert
+      ? isVerified
+        ? `Verified · ${h.devices} drivers`
+        : "Unverified · 1 report"
+      : `Level ${h.severity}`;
     const timeLine = formatAlertTime(h.lastSeen || h.firstSeen);
     const subline = isAlert
-      ? `${timeLine} · ${h.devices} confirmed`
+      ? `${timeLine} · ${isVerified ? `Corroborated by ${h.devices} devices` : "Waiting for 2nd driver to confirm"}`
       : `${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"} · ${timeLine}`;
+    const existingVote = hasVotedOn(h.id);
 
     const container = document.createElement("div");
     container.style.cssText =
-      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 225px; color: var(--ink, #1c1a17);";
+      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 235px; color: var(--ink, #1c1a17);";
     container.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
         <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${escapeHtml(h.title)}</strong>
-        <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
+        <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap;">
           ${escapeHtml(badgeText)}
         </span>
       </div>
@@ -652,14 +711,16 @@ export function initWebMap(
         ${escapeHtml(h.locationName)}
       </div>
       <div style="display: flex; gap: 6px; margin-top: 6px;">
-        <button type="button" data-vote="still_there" style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
+        <button type="button" data-vote="still_there" ${existingVote ? "disabled" : ""} style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
           👍 Still there (${h.devices})
         </button>
-        <button type="button" data-vote="cleared" style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
+        <button type="button" data-vote="cleared" ${existingVote ? "disabled" : ""} style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
           ✓ ${isAlert ? "Not there" : "Repaired"}
         </button>
       </div>
-      <div data-vote-status style="font-size: 11px; color: var(--muted, #736d61); margin-top: 5px; display: none;"></div>
+      <div data-vote-status style="font-size: 11px; color: var(--muted, #736d61); margin-top: 5px; display: ${existingVote ? "block" : "none"};">
+        ${existingVote ? "You already voted on this report." : ""}
+      </div>
     `;
 
     const statusNode = container.querySelector("[data-vote-status]") as HTMLElement | null;
@@ -671,7 +732,7 @@ export function initWebMap(
         });
         if (statusNode) {
           statusNode.style.display = "block";
-          statusNode.textContent = "Recording your confirmation…";
+          statusNode.textContent = "Checking your GPS proximity (< 2 km)…";
         }
         try {
           await voteOnHazard(h, vote);
@@ -686,11 +747,16 @@ export function initWebMap(
           if (vote === "still_there") {
             btn.textContent = `👍 Still there (${h.devices})`;
           }
-        } catch (_) {
-          if (statusNode) statusNode.textContent = "Could not send confirmation — try again.";
-          container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((b) => {
-            b.disabled = false;
-          });
+        } catch (err) {
+          if (statusNode) {
+            statusNode.textContent =
+              err instanceof Error ? err.message : "Could not send confirmation — try again.";
+          }
+          if (!hasVotedOn(h.id)) {
+            container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((b) => {
+              b.disabled = false;
+            });
+          }
         }
       });
     });
