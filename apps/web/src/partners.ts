@@ -200,22 +200,36 @@ function renderQuote() {
   const refLabel = document.getElementById("payment-reference-label");
   const refInput = document.getElementById("payment-reference-input") as HTMLInputElement | null;
   const refHelp = document.getElementById("payment-help");
+  const refCodeInput = document.getElementById("referral-code-input") as HTMLInputElement | null;
+  const submitBtn = document.getElementById("placement-submit-btn") as HTMLButtonElement | null;
   const mailHref = buildMailtoHref();
   if (isNepal) {
-    if (refLabel) refLabel.textContent = "Payment reference (not required in Nepal)";
     if (refInput) {
-      refInput.placeholder = "Free launch — leave blank";
       refInput.required = false;
+      const field = refInput.closest(".field") as HTMLElement | null;
+      if (field) field.hidden = true;
     }
-    if (refHelp) {
-      refHelp.innerHTML = `Nepal pins are free initially. Email <a href="${mailHref}">${BILLING_EMAIL}</a> (opens your mail app with your shop details) or submit below to place your free pin.`;
+    if (refCodeInput) {
+      const field = refCodeInput.closest(".field") as HTMLElement | null;
+      if (field) field.hidden = true;
     }
+    if (submitBtn) submitBtn.textContent = "Put my free pin on the map";
   } else {
     if (refLabel) refLabel.textContent = "Payment reference";
-    if (refInput) refInput.placeholder = "Card, Payoneer or PayPal reference";
+    if (refInput) {
+      refInput.placeholder = "UPI / IMPS / Card / Payoneer reference";
+      refInput.required = true;
+      const field = refInput.closest(".field") as HTMLElement | null;
+      if (field) field.hidden = false;
+    }
+    if (refCodeInput) {
+      const field = refCodeInput.closest(".field") as HTMLElement | null;
+      if (field) field.hidden = false;
+    }
     if (refHelp) {
       refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> for payment details, then paste your reference here.`;
     }
+    if (submitBtn) submitBtn.textContent = "Pay and put it on the map";
   }
   const setupLink = document.getElementById("email-setup-link") as HTMLAnchorElement | null;
   if (setupLink) setupLink.href = mailHref;
@@ -503,7 +517,9 @@ function wireForm() {
     const address = String(data.get("address") || "").trim();
     const phone = String(data.get("phone") || "").trim();
     const email = String(data.get("email") || "").trim();
-    const reference = String(data.get("reference") || "").trim();
+    const isNepal = quote?.country === "NP" || browserLocale() === "ne-NP";
+    const rawReference = String(data.get("reference") || "").trim();
+    const reference = isNepal && rawReference.length < 4 ? "FREE-NEPAL-LAUNCH" : rawReference;
 
     if (name.length < 3) return setStatus("Add the shop's real name, as it is on the door.", "error");
     if (offer.length < 8) return setStatus("Describe in one line what the shop offers.", "error");
@@ -517,7 +533,7 @@ function wireForm() {
     if (email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
       return setStatus("That email address doesn't look complete.", "error");
     }
-    if (reference.length < 4) return setStatus("Add the payment reference so we can match your pay-in.", "error");
+    if (!isNepal && reference.length < 4) return setStatus("Add the payment reference so we can match your pay-in.", "error");
     if (!point) return setStatus("Tap the map to place your shop.", "error");
 
     const button = form.querySelector("button[type=submit]") as HTMLButtonElement | null;

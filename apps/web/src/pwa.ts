@@ -262,6 +262,13 @@ window.addEventListener("appinstalled", () => {
 function registerWorker() {
   if (!("serviceWorker" in navigator)) return;
   const swUrl = "/sw.js";
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   void navigator.serviceWorker
     .getRegistrations()
     .then((items) =>
@@ -276,7 +283,12 @@ function registerWorker() {
     .catch(() => {});
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(swUrl, { scope: "/" }).catch(() => {});
+    navigator.serviceWorker
+      .register(swUrl, { scope: "/", updateViaCache: "none" })
+      .then((reg) => {
+        void reg.update();
+      })
+      .catch(() => {});
   });
 }
 

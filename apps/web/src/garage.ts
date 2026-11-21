@@ -46,6 +46,7 @@ const nepalReferralBanner = document.getElementById("nepal-referral-banner");
 
 let country = visitorCountry();
 let isNepal = country === "NP";
+let isIndia = country === "IN";
 
 const CATEGORIES: string[] = [
   "All",
@@ -216,20 +217,33 @@ async function renderNepal() {
   for (const shop of shown) grid.append(shopCard(shop));
 
   if (shops.length === 0) {
-    setStatus("0 paid shop pins live in Nepal right now.");
+    setStatus(isIndia ? "0 paid shop pins live in India right now." : "0 shop pins live in Nepal right now.");
     const empty = document.createElement("div");
     empty.className = "nepal-empty-card";
-    empty.innerHTML = `
-      <span class="garage-eyebrow">Nepal Garage · Pin-powered</span>
-      <h3>Be the first shop on the map in Nepal.</h3>
+    empty.innerHTML = isIndia
+      ? `
+      <span class="garage-eyebrow">India Garage · Pin-powered</span>
+      <h3>Be the first shop on the map in India.</h3>
       <p>
-        In Nepal, the Garage shows only real local shops that placed a pin on the Hodos map —
+        In India, the Garage shows only real local shops that placed a pin on the Hodos map —
         never fake listings. Put your workshop, café, pharmacy or store on the map from
-        <strong>~NPR 26/day</strong>, or introduce a shop and keep <strong>60%</strong> of every payment.
+        <strong>~₹16/day</strong>, or introduce a shop and keep <strong>60%</strong> via UPI or IMPS.
       </p>
       <div class="hero-cta-row">
         <a class="btn btn-primary" href="/partners">Place a shop pin</a>
         <a class="btn btn-ghost" href="/referrals">Refer a shop · earn 60%</a>
+      </div>
+    `
+      : `
+      <span class="garage-eyebrow">Nepal Garage · Free launch</span>
+      <h3>Be the first shop on the map in Nepal — for free.</h3>
+      <p>
+        In Nepal, the Garage shows only real local shops that placed a pin on the Hodos map —
+        never fake listings. Placing a shop pin in Nepal is <strong>completely free initially</strong>.
+        (The Nepal referral programme has been stopped for now while pins are free.)
+      </p>
+      <div class="hero-cta-row">
+        <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
       </div>
     `;
     grid.append(empty);
@@ -317,8 +331,45 @@ async function renderWorld() {
   markChips(activeShelf);
 }
 
+function syncReferralBanner() {
+  if (!nepalReferralBanner) return;
+  if (!isNepal && !isIndia) {
+    nepalReferralBanner.setAttribute("hidden", "");
+    return;
+  }
+  nepalReferralBanner.removeAttribute("hidden");
+  const eyebrow = document.getElementById("nepal-ref-eyebrow");
+  const refTitle = document.getElementById("nepal-ref-title");
+  const refBody = document.getElementById("nepal-ref-body");
+  const refCtas = document.getElementById("nepal-ref-ctas");
+  if (isIndia) {
+    if (eyebrow) eyebrow.textContent = "India · 60 / 40 revenue share";
+    if (refTitle) refTitle.textContent = "Bring any shop onto the map. Keep 60% via UPI or IMPS.";
+    if (refBody) {
+      refBody.innerHTML =
+        "Every business in the India Garage got here by putting a pin on the map. Introduce any shop with your referral link and <strong>60% of every placement payment they make</strong> shows immediately in your referral account and unlocks for cashout to your UPI ID or IMPS bank account after 1 month (30 days).";
+    }
+    if (refCtas) {
+      refCtas.innerHTML = `
+        <a class="btn btn-primary" href="/referrals">Get your referral code</a>
+        <a class="btn btn-ghost" href="/partners">Place a shop pin</a>
+      `;
+    }
+  } else {
+    if (eyebrow) eyebrow.textContent = "Nepal · Free launch";
+    if (refTitle) refTitle.textContent = "Shop pins in Nepal are free initially.";
+    if (refBody) {
+      refBody.innerHTML =
+        "Every business in the Nepal Garage got here by putting a pin on the map. Placing a shop pin in Nepal is <strong>completely free initially</strong> — no payment needed. Because pins are free, the Nepal referral programme has been stopped for now.";
+    }
+    if (refCtas) {
+      refCtas.innerHTML = `<a class="btn btn-primary" href="/partners">Place a free shop pin</a>`;
+    }
+  }
+}
+
 function render() {
-  if (isNepal) {
+  if (isNepal || isIndia) {
     void renderNepal();
   } else {
     void renderWorld();
@@ -327,9 +378,7 @@ function render() {
 
 /* ---- Copy: the two shelves are not the same product ---- */
 
-if (isNepal && nepalReferralBanner) {
-  nepalReferralBanner.removeAttribute("hidden");
-}
+syncReferralBanner();
 
 if (searchInput) {
   searchInput.addEventListener("input", () => {
@@ -341,27 +390,29 @@ if (searchInput) {
 void detectVisitorCountryByIp().then((detected) => {
   country = detected;
   isNepal = country === "NP";
+  isIndia = country === "IN";
+  syncReferralBanner();
 
   if (searchInput) {
-    searchInput.placeholder = isNepal
+    searchInput.placeholder = isNepal || isIndia
       ? "Search shops on the map by name, road or offer…"
       : "Search products across all categories…";
   }
 
   if (title) {
-    title.innerHTML = isNepal
+    title.innerHTML = isNepal || isIndia
       ? "Shops on the map<span class=\"dot\">.</span>"
       : "Kit worth<br />keeping in the car<span class=\"dot\">.</span>";
   }
 
   if (lede) {
-    lede.textContent = isNepal
+    lede.textContent = isNepal || isIndia
       ? "The shops that put a pin on the Hodos map, and the offers they chose to list here. Show the pin in the app at the counter and the discount is yours — these are real businesses on real roads."
       : "The things that actually save a drive — a working inflator, a mount that holds, wipers that clear. Bought straight from the shop that sells them, at the shop's own price.";
   }
 
   if (perks) {
-    perks.textContent = isNepal ? "Riders earn perks, not points." : "Keep the kit, skip the guesswork.";
+    perks.textContent = isNepal || isIndia ? "Riders earn perks, not points." : "Keep the kit, skip the guesswork.";
   }
 
   render();

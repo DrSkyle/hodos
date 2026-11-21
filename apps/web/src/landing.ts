@@ -83,17 +83,26 @@ void detectVisitorCountryByIp().then((country) => {
   document.getElementById("nepal-earn")?.removeAttribute("hidden");
 
   if (country === "NP") {
-    const eyebrow = document.querySelector("#nepal-earn .garage-eyebrow");
+    const eyebrow = document.querySelector("#nepal-earn .eyebrow, #nepal-earn .garage-eyebrow");
     const title = document.querySelector("#nepal-earn h2");
-    const desc = document.querySelector("#nepal-earn p");
+    const desc = document.querySelector("#nepal-earn p.lead, #nepal-earn p");
+    const steps = document.querySelector("#nepal-earn .steps") as HTMLElement | null;
     const calc = document.querySelector("#nepal-earn .nepal-calc") as HTMLElement | null;
+    const ctas = document.querySelector("#nepal-earn .section-cta") as HTMLElement | null;
     if (eyebrow) eyebrow.textContent = "Nepal · Free launch";
     if (title) title.textContent = "Shop pins in Nepal are free initially.";
     if (desc) {
       desc.textContent =
-        "Placing a shop pin on Hodos in Nepal is completely free right now — no payment needed. Because pins are free, the Nepal referral programme has been stopped for now.";
+        "Placing a shop pin on Hodos in Nepal is completely free right now — no payment or wallet transfer needed. Because pins are free, the Nepal referral programme has been stopped for now.";
     }
+    if (steps) steps.hidden = true;
     if (calc) calc.hidden = true;
+    if (ctas) {
+      ctas.innerHTML = `
+        <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
+        <a class="btn btn-ghost" href="/garage">Open the Nepal Garage</a>
+      `;
+    }
 
     const shopsLead = document.querySelector("#shops .lead");
     const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
@@ -109,6 +118,20 @@ void detectVisitorCountryByIp().then((country) => {
     document.getElementById("nav-referrals")?.removeAttribute("hidden");
     document.getElementById("mobile-referrals")?.removeAttribute("hidden");
     wireCountryCalculator(country);
+
+    const step1Title = document.querySelector("#nepal-earn .step-card:first-child h3");
+    const step1Desc = document.querySelector("#nepal-earn .step-card:first-child p");
+    const calcLabel = document.querySelector("#nepal-earn .nepal-calc-result .mono-label");
+    const ctas = document.querySelector("#nepal-earn .section-cta") as HTMLElement | null;
+    if (step1Title) step1Title.textContent = "One code, tied to your UPI or IMPS account";
+    if (step1Desc) step1Desc.textContent = "Confirm your location in India and link your UPI ID or bank account in thirty seconds.";
+    if (calcLabel) calcLabel.textContent = "Your 60% share (UPI / IMPS)";
+    if (ctas) {
+      ctas.innerHTML = `
+        <a class="btn btn-primary" href="/referrals">Get your referral code</a>
+        <a class="btn btn-ghost" href="/garage">Open the India Garage</a>
+      `;
+    }
 
     const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
     if (accessPrice) accessPrice.innerHTML = "₹16<small>a day · India (UPI / IMPS)</small>";
