@@ -94,11 +94,24 @@ void detectVisitorCountryByIp().then((country) => {
         "Placing a shop pin on Hodos in Nepal is completely free right now — no payment needed. Because pins are free, the Nepal referral programme has been stopped for now.";
     }
     if (calc) calc.hidden = true;
+
+    const shopsLead = document.querySelector("#shops .lead");
+    const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
+    const accessCta = document.querySelector("#shops .plan:first-child .plan-cta a");
+    if (shopsLead) {
+      shopsLead.textContent =
+        "Shop pins in Nepal are completely free initially. If your shop sells or offers anything that drivers and riders might need, put a pin on the map at no cost.";
+    }
+    if (accessPrice) accessPrice.innerHTML = "Free<small>initially in Nepal · NPR 0</small>";
+    if (accessCta) accessCta.textContent = "Place a free pin";
   } else {
     document.getElementById("footer-referrals")?.removeAttribute("hidden");
     document.getElementById("nav-referrals")?.removeAttribute("hidden");
     document.getElementById("mobile-referrals")?.removeAttribute("hidden");
     wireCountryCalculator(country);
+
+    const accessPrice = document.querySelector("#shops .plan:first-child .plan-price");
+    if (accessPrice) accessPrice.innerHTML = "₹16<small>a day · India (UPI / IMPS)</small>";
   }
 
   const navCta = document.getElementById("nav-primary-cta") as HTMLAnchorElement | null;
