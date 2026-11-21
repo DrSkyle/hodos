@@ -841,20 +841,16 @@ body.field-guide .theme-toggle {
 }
 
 @media (max-width: 960px) {
-  .hero-layout {
-    grid-template-columns: 1fr;
-  }
-
   .hero-copy {
     max-width: 640px;
   }
 }
 
-/* ---------- signature scroll scene: one continuous road ---------- */
+/* ---------- horizontal scroll section ---------- */
 
 .road-scene-section {
   position: relative;
-  height: 280vh;
+  height: 260vh;
   background: var(--soft);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -868,7 +864,7 @@ body.field-guide .theme-toggle {
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
-  padding: 68px 0 24px;
+  padding: 72px 0 40px;
 }
 
 .road-scene-top {
@@ -877,22 +873,22 @@ body.field-guide .theme-toggle {
   justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
-  margin-bottom: clamp(16px, 2.5vh, 32px);
+  margin-bottom: clamp(32px, 5vh, 56px);
 }
 
 .road-scene-heading {
-  max-width: 640px;
+  max-width: 680px;
 }
 
 .road-scene-heading .eyebrow {
   color: var(--accent-ink);
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .road-scene-heading h2 {
-  font-size: clamp(24px, 3vw, 36px);
-  line-height: 1.08;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.06;
   font-weight: 760;
   letter-spacing: -0.03em;
 }
@@ -902,19 +898,19 @@ body.field-guide .theme-toggle {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  min-width: 210px;
+  min-width: 180px;
 }
 
 .road-scene-stage-readout {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--accent-ink);
 }
 
 .road-scene-bar {
-  width: 210px;
+  width: 180px;
   height: 2px;
   background: var(--line);
   overflow: hidden;
@@ -934,90 +930,57 @@ body.field-guide .theme-toggle {
 }
 
 .road-world {
-  width: 2400px;
+  width: max-content;
   will-change: transform;
 }
 
-.road-canvas {
-  width: 2400px;
-  height: clamp(220px, 34vh, 320px);
-  display: block;
-  color: var(--ink);
-}
-
-.road-tick-text {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  fill: var(--muted);
-  stroke: none;
-}
-
-.scene-svg-tag {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  fill: var(--ink);
-}
-
-.scene-svg-sub {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  fill: var(--accent-ink);
-}
-
 .road-Stops {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 80px;
-  padding: clamp(16px, 2.4vh, 28px) 120px 0;
-  border-top: 1px solid var(--line);
+  display: flex;
+  gap: clamp(64px, 8vw, 128px);
+  padding: 0 max(var(--gutter), calc((100vw - 1080px) / 2 + var(--gutter)));
 }
 
 .road-stop {
-  padding: 14px 20px;
-  border-left: 2px solid var(--line);
-  transition: opacity 0.22s ease, border-color 0.22s ease;
+  flex: 0 0 min(70vw, 660px);
+  padding: 0;
+  transition: opacity 0.24s ease;
 }
 
 .road-world[data-stage="1"] .road-stop[data-stop="1"],
 .road-world[data-stage="2"] .road-stop[data-stop="2"],
 .road-world[data-stage="3"] .road-stop[data-stop="3"] {
-  border-left-color: var(--accent);
   opacity: 1;
 }
 
 .road-world[data-stage="1"] .road-stop:not([data-stop="1"]),
 .road-world[data-stage="2"] .road-stop:not([data-stop="2"]),
 .road-world[data-stage="3"] .road-stop:not([data-stop="3"]) {
-  opacity: 0.48;
+  opacity: 0.36;
 }
 
 .road-stop-num {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   color: var(--accent-ink);
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .road-stop h3 {
-  font-size: 20px;
-  font-weight: 720;
-  letter-spacing: -0.02em;
-  line-height: 1.22;
-  margin-bottom: 8px;
+  font-size: clamp(28px, 3.2vw, 42px);
+  font-weight: 740;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 18px;
 }
 
 .road-stop p {
-  font-size: 15px;
-  line-height: 1.58;
+  font-size: clamp(17px, 1.4vw, 19.5px);
+  line-height: 1.62;
   color: var(--muted);
+  max-width: 44ch;
 }
 
 @media (max-width: 900px) {
@@ -1039,7 +1002,7 @@ body.field-guide .theme-toggle {
   }
 
   .road-camera-viewport {
-    max-width: 1120px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 0 var(--gutter);
     overflow: visible;
@@ -1050,29 +1013,17 @@ body.field-guide .theme-toggle {
     transform: none !important;
   }
 
-  .road-canvas {
-    width: 100%;
-    height: auto;
-    min-height: 140px;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-    margin-bottom: 24px;
-  }
-
   .road-Stops {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    flex-direction: column;
+    gap: 40px;
     padding: 0;
-    border-top: 0;
   }
 
   .road-stop,
   .road-world[data-stage] .road-stop {
+    flex: none;
     opacity: 1 !important;
-    border-left: 2px solid var(--accent);
-    background: var(--paper-raised);
-    padding: 18px 20px;
+    padding: 0;
   }
 }
 
@@ -1095,7 +1046,7 @@ body.field-guide .theme-toggle {
   }
 
   .road-camera-viewport {
-    max-width: 1120px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 0 var(--gutter);
     overflow: visible;
@@ -1106,29 +1057,17 @@ body.field-guide .theme-toggle {
     transform: none !important;
   }
 
-  .road-canvas {
-    width: 100%;
-    height: auto;
-    min-height: 160px;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-    margin-bottom: 28px;
-  }
-
   .road-Stops {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    flex-direction: column;
+    gap: 44px;
     padding: 0;
-    border-top: 0;
   }
 
   .road-stop,
   .road-world[data-stage] .road-stop {
+    flex: none;
     opacity: 1 !important;
-    border-left: 2px solid var(--accent);
-    background: var(--paper-raised);
-    padding: 20px 24px;
+    padding: 0;
   }
 }
 
