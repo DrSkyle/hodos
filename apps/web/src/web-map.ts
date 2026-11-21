@@ -156,21 +156,31 @@ export async function reportLiveAlert(
   };
 }
 
-// 100% open-source, keyless OpenFreeMap vector tiles (Cloudflare-backed).
-// Unlike old 256x256 PNG raster tiles, vector tiles render roads, labels, POIs
-// and 3D buildings natively on the GPU at Retina resolution and never blur or
-// disappear at high zoom levels.
-export const VECTOR_STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty";
-export const VECTOR_STYLE_DARK = "https://tiles.openfreemap.org/styles/dark";
-
-export function activeVectorMapStyle(): string {
-  const rootTheme = document.documentElement.getAttribute("data-theme");
-  if (rootTheme === "dark") return VECTOR_STYLE_DARK;
-  if (rootTheme === "light") return VECTOR_STYLE_LIGHT;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? VECTOR_STYLE_DARK
-    : VECTOR_STYLE_LIGHT;
-}
+// 100% free, keyless OpenStreetMap standard tiles — includes every local shop,
+// temple, hospital, school, chowk and Nepali/Devanagari street name.
+const OSM_CLEAN_STYLE: any = {
+  version: 8,
+  sources: {
+    "osm-tiles": {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      // Cap tile requests at z18 and omit `maxzoom` on the layer below so
+      // MapLibre overzooms z18 tiles cleanly up to z21 without ever hiding
+      // the layer or going blank.
+      maxzoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+    }
+  },
+  layers: [
+    {
+      id: "osm-tiles-layer",
+      type: "raster",
+      source: "osm-tiles",
+      minzoom: 0
+    }
+  ]
+};
 
 /**
  * Popups interpolate backend-supplied strings (partner names, offers, links,
@@ -254,11 +264,11 @@ export function initWebMap(
 
   const map = new Map({
     container,
-    style: activeVectorMapStyle(),
+    style: OSM_CLEAN_STYLE,
     center: [0, 20],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 22,
+    maxZoom: 21,
     // Without this the world repeats sideways forever as you drag.
     renderWorldCopies: false,
     attributionControl: false
@@ -654,66 +664,45 @@ export function initWebMap(
 
   function showPopupForHazard(h: WebHazard) {
     const isAlert = isLiveAlertKind(h.kind);
-    const isVerified = h.devices >= 2;
-    const badgeColor = h.fixed
-      ? "#10b981"
-      : h.kind === "police"
-      ? "#2563eb"
-      : h.kind === "jam"
-      ? "#ea580c"
-      : h.kind === "roadblock"
-      ? "#dc2626"
-      : h.kind === "flood"
-      ? "#0891b2"
-      : h.kind === "pothole"
-      ? "#e11d48"
-      : h.kind === "speed_bump"
-      ? "#7c3aed"
-      : "#d97706";
-
-    const badgeText = h.fixed
-      ? "Cleared"
-      : isAlert
-      ? isVerified
-        ? `Verified · ${h.devices} drivers`
-        : "Unverified · 1 report"
-      : `Level ${h.severity}`;
     const timeLine = formatAlertTime(h.lastSeen || h.firstSeen);
-    const subline = isAlert
-      ? `${timeLine} · ${isVerified ? `Corroborated by ${h.devices} devices` : "Waiting for 2nd driver to confirm"}`
-      : `${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"} · ${timeLine}`;
+    const metaLine = h.fixed
+      ? `Cleared · ${timeLine}`
+      : isAlert
+      ? `${timeLine} · ${h.devices} report${h.devices === 1 ? "" : "s"}`
+      : `Severity ${h.severity} · ${h.passes} pass${h.passes === 1 ? "" : "es"} · ${timeLine}`;
     const existingVote = hasVotedOn(h.id);
 
     const container = document.createElement("div");
     container.style.cssText =
-      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 2px; min-width: 235px; color: var(--ink, #1c1a17);";
+      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.45; padding: 2px 4px; min-width: 195px; color: var(--ink, #1c1a17);";
     container.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;">
-        <strong style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">${escapeHtml(h.title)}</strong>
-        <span style="background: ${badgeColor}; color: #ffffff; font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap;">
-          ${escapeHtml(badgeText)}
-        </span>
+      <div style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 3px;">
+        ${escapeHtml(h.title)}
       </div>
-      <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; letter-spacing: 0.03em; margin-bottom: 3px;">
-        ${escapeHtml(subline)}
+      <div style="font-size: 11.5px; color: var(--muted, #736d61); margin-bottom: 2px;">
+        ${escapeHtml(metaLine)}
       </div>
-      <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace; margin-bottom: 8px;">
+      <div style="font-size: 11px; color: var(--muted, #736d61); font-family: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;">
         ${escapeHtml(h.locationName)}
       </div>
-      <div style="display: flex; gap: 6px; margin-top: 6px;">
-        <button type="button" data-vote="still_there" ${existingVote ? "disabled" : ""} style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
-          👍 Still there (${h.devices})
-        </button>
-        <button type="button" data-vote="cleared" ${existingVote ? "disabled" : ""} style="flex: 1; font: inherit; font-size: 11.5px; font-weight: 650; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line, rgba(128,128,128,0.25)); background: var(--soft, rgba(128,128,128,0.12)); color: var(--ink, inherit); cursor: pointer;">
-          ✓ ${isAlert ? "Not there" : "Repaired"}
-        </button>
-      </div>
-      <div data-vote-status style="font-size: 11px; color: var(--muted, #736d61); margin-top: 5px; display: ${existingVote ? "block" : "none"};">
-        ${existingVote ? "You already voted on this report." : ""}
-      </div>
+      ${
+        existingVote
+          ? `<div style="font-size: 11px; color: var(--muted, #736d61); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line, rgba(128,128,128,0.2));">Feedback recorded</div>`
+          : `<div data-vote-bar style="display: flex; align-items: center; gap: 12px; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line, rgba(128,128,128,0.2)); font-size: 12px;">
+              <button type="button" data-vote="still_there" style="border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink, inherit); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;">
+                Still there
+              </button>
+              <span style="color: var(--muted, #736d61);">·</span>
+              <button type="button" data-vote="cleared" style="border: 0; background: none; padding: 0; font: inherit; font-weight: 500; color: var(--muted, #736d61); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;">
+                ${isAlert ? "Cleared" : "Repaired"}
+              </button>
+            </div>
+            <div data-vote-status style="font-size: 11px; color: var(--muted, #736d61); margin-top: 6px; display: none;"></div>`
+      }
     `;
 
     const statusNode = container.querySelector("[data-vote-status]") as HTMLElement | null;
+    const voteBar = container.querySelector("[data-vote-bar]") as HTMLElement | null;
     container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const vote = btn.dataset.vote as "still_there" | "cleared";
@@ -722,25 +711,23 @@ export function initWebMap(
         });
         if (statusNode) {
           statusNode.style.display = "block";
-          statusNode.textContent = "Checking your GPS proximity (< 2 km)…";
+          statusNode.textContent = "Checking GPS…";
         }
         try {
           await voteOnHazard(h, vote);
+          if (voteBar) voteBar.style.display = "none";
           if (statusNode) {
             statusNode.textContent =
               vote === "still_there"
-                ? `Confirmed (${h.devices} driver${h.devices === 1 ? "" : "s"} reported this)`
+                ? `Confirmed (${h.devices})`
                 : isAlert
-                ? "Marked as cleared — thank you!"
-                : "Marked as repaired — thank you!";
-          }
-          if (vote === "still_there") {
-            btn.textContent = `👍 Still there (${h.devices})`;
+                ? "Marked as cleared"
+                : "Marked as repaired";
           }
         } catch (err) {
           if (statusNode) {
             statusNode.textContent =
-              err instanceof Error ? err.message : "Could not send confirmation — try again.";
+              err instanceof Error ? err.message : "Could not record — try again.";
           }
           if (!hasVotedOn(h.id)) {
             container.querySelectorAll<HTMLButtonElement>("button[data-vote]").forEach((b) => {

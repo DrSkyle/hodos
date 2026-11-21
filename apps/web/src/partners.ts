@@ -285,20 +285,26 @@ function buildMap() {
     : [85.324, 27.7172];
   const initialZoom = isNp ? 11.5 : isIn ? 4.5 : 6.5;
 
-  const isDark =
-    document.documentElement.getAttribute("data-theme") === "dark" ||
-    (document.documentElement.getAttribute("data-theme") !== "light" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-
   const map = new Map({
     container: host,
-    style: isDark
-      ? "https://tiles.openfreemap.org/styles/dark"
-      : "https://tiles.openfreemap.org/styles/liberty",
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: "raster",
+          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          maxzoom: 18,
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+        }
+      },
+      layers: [{ id: "osm", type: "raster", source: "osm" }]
+    },
     center: initialCenter,
     zoom: initialZoom,
     minZoom: 1.5,
-    maxZoom: 22,
+    maxZoom: 21,
     renderWorldCopies: false,
     attributionControl: { compact: true }
   });
