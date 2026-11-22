@@ -115,13 +115,17 @@ document.getElementById("btn-fit-all")?.addEventListener("click", () => {
 });
 
 const toggleShopsBtn = document.getElementById("toggle-shops") as HTMLButtonElement | null;
-let shopsVisible = true;
+const SHOPS_MODES = ["essentials", "all", "off"] as const;
+let shopsModeIdx = 0;
 toggleShopsBtn?.addEventListener("click", () => {
-  shopsVisible = !shopsVisible;
-  toggleShopsBtn.classList.toggle("is-active", shopsVisible);
-  toggleShopsBtn.setAttribute("aria-pressed", String(shopsVisible));
-  toggleShopsBtn.textContent = shopsVisible ? "Shops: On" : "Shops: Off";
-  handle?.setShopsVisible(shopsVisible);
+  shopsModeIdx = (shopsModeIdx + 1) % SHOPS_MODES.length;
+  const mode = SHOPS_MODES[shopsModeIdx] ?? "essentials";
+  const isOn = mode !== "off";
+  toggleShopsBtn.classList.toggle("is-active", isOn);
+  toggleShopsBtn.setAttribute("aria-pressed", String(isOn));
+  toggleShopsBtn.textContent =
+    mode === "essentials" ? "Shops: Essentials" : mode === "all" ? "Shops: All" : "Shops: Off";
+  handle?.setShopsMode(mode);
 });
 
 function resolveReportPosition(): Promise<{ lat: number; lng: number; accuracyM: number }> {

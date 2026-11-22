@@ -43,10 +43,12 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.Typeface
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.circleColor
 import org.maplibre.android.style.layers.PropertyFactory.circleOpacity
 import org.maplibre.android.style.layers.PropertyFactory.circleRadius
@@ -56,9 +58,12 @@ import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
 import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
 import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
 import org.maplibre.android.style.layers.PropertyFactory.iconImage
+import org.maplibre.android.style.layers.PropertyFactory.iconPadding
 import org.maplibre.android.style.layers.PropertyFactory.iconSize
+import org.maplibre.android.style.layers.PropertyFactory.visibility
 import org.maplibre.android.style.layers.PropertyValue
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.sources.GeoJsonOptions
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.json.JSONArray
 import org.json.JSONObject
@@ -119,6 +124,7 @@ private object MapCameraStore {
 fun RoadMap(
     hazards: List<RoadHazard>,
     partners: List<PartnerPoi> = emptyList(),
+    shopsMode: ShopsFilterMode = ShopsFilterMode.ESSENTIALS,
     locateRequest: Int,
     onSelect: (RoadHazard) -> Unit,
     onLocated: (Location) -> Unit,
@@ -128,6 +134,7 @@ fun RoadMap(
     val lifecycle = (context as ComponentActivity).lifecycle
     val latestHazards by rememberUpdatedState(hazards)
     val latestPartners by rememberUpdatedState(partners)
+    val latestShopsMode by rememberUpdatedState(shopsMode)
     val latestOnSelect by rememberUpdatedState(onSelect)
     val latestOnLocated by rememberUpdatedState(onLocated)
     val latestOnLocationError by rememberUpdatedState(onLocationError)
@@ -154,6 +161,7 @@ fun RoadMap(
     var ready by remember { mutableStateOf(false) }
     var userFix by remember { mutableStateOf<Location?>(null) }
     var partnerSelected by remember { mutableStateOf<PartnerPoi?>(null) }
+    var cameraIdleTick by remember { mutableStateOf(0) }
     val savedCamera = remember(context) { MapCameraStore.load(context) }
 
     // OpenFreeMap ships a purpose-built night style. Follow the app theme with
@@ -194,26 +202,43 @@ fun RoadMap(
                 circleStrokeWidth(2.5f)
             )
         )
-        // Sponsored pins sit under the hazard layer so safety data always wins.
-        style.addSource(GeoJsonSource(
-            "hodos-partners", FeatureCollection.fromFeatures(emptyArray<Feature>())
-        ))
-        style.addLayer(
-            CircleLayer("hodos-partner-halo", "hodos-partners").withProperties(
-                circleColor(0x24D97706),
-                circleRadius(16f),
-                circleOpacity(0.14f)
+        // Local shop stops render BELOW road hazards, stay hidden on zoomed-out
+        // city/highway views (minZoom 11.5), and cluster automatically so dense
+        // streets never turn the road map into ad clutter.
+        addPartnerBadgeImages(style)
+        style.addSource(
+            GeoJsonSource(
+                "hodos-partners",
+                FeatureCollection.fromFeatures(emptyArray<Feature>()),
+                GeoJsonOptions()
+                    .withCluster(true)
+                    .withClusterMaxZoom(13)
+                    .withClusterRadius(48)
             )
         )
         style.addLayer(
-            CircleLayer("hodos-partner-dots", "hodos-partners").withProperties(
-                // Inverted against hazard dots (white fill + amber ring vs
-                // colored fill + white ring) so sponsorship reads at a glance.
-                circleColor(0xFFFFFDF7.toInt()),
-                circleRadius(9f),
-                circleStrokeColor(0xFFD97706.toInt()),
-                circleStrokeWidth(4f)
-            )
+            SymbolLayer("hodos-partner-clusters", "hodos-partners").apply {
+                minZoom = 11.5f
+                setFilter(Expression.has("point_count"))
+                withProperties(
+                    iconImage("shop-cluster"),
+                    iconSize(0.76f),
+                    iconAllowOverlap(false),
+                    iconPadding(4f)
+                )
+            }
+        )
+        style.addLayer(
+            SymbolLayer("hodos-partner-icons", "hodos-partners").apply {
+                minZoom = 11.5f
+                setFilter(Expression.not(Expression.has("point_count")))
+                withProperties(
+                    iconImage(Expression.coalesce(Expression.get("icon"), Expression.literal("shop-local"))),
+                    iconSize(0.74f),
+                    iconAllowOverlap(false),
+                    iconPadding(4f)
+                )
+            }
         )
         // The hazard rendering is defined once in the website's
         // public/map/hodos-layers.json, bundled into assets at build
@@ -297,15 +322,32 @@ fun RoadMap(
                         true
                     } else {
                         val partnerHits = runCatching {
-                            result.queryRenderedFeatures(screen, "hodos-partner-dots")
+                            result.queryRenderedFeatures(screen, "hodos-partner-icons")
                         }.getOrDefault(emptyList())
                         val partnerId = partnerHits.firstOrNull()?.getStringProperty("id")
                         val partner = latestPartners.firstOrNull { it.id == partnerId }
                         if (partner != null) {
                             partnerSelected = partner
                             true
-                        } else false
+                        } else {
+                            val clusterHits = runCatching {
+                                result.queryRenderedFeatures(screen, "hodos-partner-clusters")
+                            }.getOrDefault(emptyList())
+                            val clusterGeom = clusterHits.firstOrNull()?.geometry() as? Point
+                            if (clusterGeom != null) {
+                                result.animateCamera(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(clusterGeom.latitude(), clusterGeom.longitude()),
+                                        (result.cameraPosition.zoom + 2.0).coerceAtMost(16.0)
+                                    )
+                                )
+                                true
+                            } else false
+                        }
                     }
+                }
+                result.addOnCameraIdleListener {
+                    cameraIdleTick++
                 }
                 } catch (error: Throwable) {
                     rendererFailed = true
@@ -435,15 +477,36 @@ fun RoadMap(
         }
     }
 
-    LaunchedEffect(partners, ready) {
+    LaunchedEffect(partners, shopsMode, ready, cameraIdleTick) {
         if (ready) {
-            val features = partners.map { partner ->
+            val activeMap = map
+            val style = activeMap?.style
+            val cam = activeMap?.cameraPosition
+            val bounds = runCatching { activeMap?.projection?.visibleRegion?.latLngBounds }.getOrNull()
+            val selectedPartners = PartnerVisuals.selectForViewport(
+                items = partners,
+                mode = shopsMode,
+                zoom = cam?.zoom ?: 12.0,
+                centerLat = cam?.target?.latitude,
+                centerLng = cam?.target?.longitude,
+                south = bounds?.latitudeSouth,
+                north = bounds?.latitudeNorth,
+                west = bounds?.longitudeWest,
+                east = bounds?.longitudeEast
+            )
+            val features = selectedPartners.map { partner ->
+                val vis = PartnerVisuals.classify(partner.category)
                 Feature.fromGeometry(Point.fromLngLat(partner.lng, partner.lat)).apply {
                     addStringProperty("id", partner.id)
+                    addStringProperty("icon", vis.iconId)
+                    addStringProperty("categoryLabel", vis.label)
                 }
             }
-            map?.style?.getSourceAs<GeoJsonSource>("hodos-partners")
+            style?.getSourceAs<GeoJsonSource>("hodos-partners")
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
+            val visValue = if (shopsMode == ShopsFilterMode.OFF) Property.NONE else Property.VISIBLE
+            style?.getLayer("hodos-partner-clusters")?.setProperties(visibility(visValue))
+            style?.getLayer("hodos-partner-icons")?.setProperties(visibility(visValue))
         }
     }
 
@@ -632,6 +695,7 @@ fun RoadMap(
 
     val activePartner = partnerSelected
     if (activePartner != null) {
+        val vis = PartnerVisuals.classify(activePartner.category)
         val localPasses = PartnerPassStore.monthCount(context, activePartner.id)
         val nearby = PartnerStats.nearby(hazards, activePartner.lat, activePartner.lng)
         AlertDialog(
@@ -640,41 +704,51 @@ fun RoadMap(
             text = {
                 Text(
                     buildString {
-                        append(activePartner.sponsorLabel)
-                        append(" placement · ")
-                        append(activePartner.category.replaceFirstChar { it.uppercase() })
+                        append(vis.label)
                         append("\n\n")
                         append(activePartner.offer)
                         val stats = activePartner.passesThisMonth
-                            ?.let { "$it drivers passed this shop this month" }
+                            ?.let { "$it drivers passed this stop this month" }
                             ?: if (localPasses > 0) {
-                                "You passed this shop $localPasses times this month"
+                                "You passed this stop $localPasses× this month"
                             } else if (nearby.hasSignal) {
                                 "${nearby.maxDevices} devices report road conditions within 400 m"
                             } else null
                         if (stats != null) {
                             append("\n\n")
                             append(stats)
-                            append("\nAggregated anonymously from trip data. Drivers are never identified.")
+                            append("\nAggregated anonymously. Drivers are never identified.")
                         }
                     }
                 )
             },
             confirmButton = {
-                TextButton(onClick = { partnerSelected = null }) { Text("Close") }
-            },
-            dismissButton = {
                 TextButton(onClick = {
+                    val lat = activePartner.lat
+                    val lng = activePartner.lng
+                    val label = Uri.encode(activePartner.name)
                     partnerSelected = null
                     runCatching {
                         context.startActivity(
                             Intent(
                                 Intent.ACTION_VIEW,
-                                Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
+                                Uri.parse("geo:$lat,$lng?q=$lat,$lng($label)")
                             )
                         )
+                    }.onFailure {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                                )
+                            )
+                        }
                     }
-                }) { Text("Sponsor") }
+                }) { Text("Directions") }
+            },
+            dismissButton = {
+                TextButton(onClick = { partnerSelected = null }) { Text("Close") }
             }
         )
     }
@@ -812,3 +886,104 @@ private fun drawRadarBadge(fillColor: Int, glyph: String, shape: String): Bitmap
     canvas.drawText(glyph, cx, baseline, textPaint)
     return bmp
 }
+
+private fun addPartnerBadgeImages(style: Style) {
+    runCatching {
+        style.addImage("shop-auto", drawPartnerBadge(0xFF27272A.toInt(), "auto"))
+        style.addImage("shop-ev", drawPartnerBadge(0xFF0F766E.toInt(), "ev"))
+        style.addImage("shop-food", drawPartnerBadge(0xFF6B4423.toInt(), "food"))
+        style.addImage("shop-health", drawPartnerBadge(0xFF9D174D.toInt(), "health"))
+        style.addImage("shop-local", drawPartnerBadge(0xFF3F3F46.toInt(), "local"))
+        style.addImage("shop-cluster", drawPartnerBadge(0xFF18181B.toInt(), "cluster"))
+    }
+}
+
+private fun drawPartnerBadge(bgColor: Int, kind: String): Bitmap {
+    val size = 68
+    val s = size.toFloat()
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+
+    val rect = RectF(7f, 7f, s - 7f, s - 7f)
+    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = bgColor
+        style = Paint.Style.FILL
+    }
+    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 3.8f
+    }
+    canvas.drawRoundRect(rect, 15f, 15f, fillPaint)
+    canvas.drawRoundRect(rect, 15f, 15f, strokePaint)
+
+    val iconStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 3.6f
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    val iconFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+
+    when (kind) {
+        "auto" -> {
+            canvas.drawCircle(s * 0.5f, s * 0.5f, s * 0.16f, iconStroke)
+            canvas.drawCircle(s * 0.5f, s * 0.5f, s * 0.055f, iconFill)
+            for (i in 0 until 6) {
+                val a = i * Math.PI / 3.0
+                canvas.drawLine(
+                    (s * 0.5 + kotlin.math.cos(a) * s * 0.16).toFloat(),
+                    (s * 0.5 + kotlin.math.sin(a) * s * 0.16).toFloat(),
+                    (s * 0.5 + kotlin.math.cos(a) * s * 0.24).toFloat(),
+                    (s * 0.5 + kotlin.math.sin(a) * s * 0.24).toFloat(),
+                    iconStroke
+                )
+            }
+        }
+        "ev" -> {
+            val bolt = Path().apply {
+                moveTo(s * 0.54f, s * 0.24f)
+                lineTo(s * 0.34f, s * 0.53f)
+                lineTo(s * 0.49f, s * 0.53f)
+                lineTo(s * 0.45f, s * 0.76f)
+                lineTo(s * 0.66f, s * 0.47f)
+                lineTo(s * 0.51f, s * 0.47f)
+                close()
+            }
+            canvas.drawPath(bolt, iconFill)
+        }
+        "food" -> {
+            canvas.drawRoundRect(RectF(s * 0.30f, s * 0.38f, s * 0.62f, s * 0.66f), 6f, 6f, iconStroke)
+            canvas.drawArc(RectF(s * 0.56f, s * 0.42f, s * 0.72f, s * 0.58f), -90f, 180f, false, iconStroke)
+            canvas.drawLine(s * 0.28f, s * 0.72f, s * 0.66f, s * 0.72f, iconStroke)
+        }
+        "health" -> {
+            canvas.drawRoundRect(RectF(s * 0.44f, s * 0.28f, s * 0.56f, s * 0.72f), 4f, 4f, iconFill)
+            canvas.drawRoundRect(RectF(s * 0.28f, s * 0.44f, s * 0.72f, s * 0.56f), 4f, 4f, iconFill)
+        }
+        "cluster" -> {
+            canvas.drawRoundRect(RectF(s * 0.26f, s * 0.34f, s * 0.56f, s * 0.64f), 5f, 5f, iconStroke)
+            val topBox = RectF(s * 0.44f, s * 0.24f, s * 0.74f, s * 0.54f)
+            canvas.drawRoundRect(topBox, 5f, 5f, fillPaint)
+            canvas.drawRoundRect(topBox, 5f, 5f, iconStroke)
+            canvas.drawCircle(s * 0.59f, s * 0.39f, 4f, iconFill)
+        }
+        else -> {
+            val awning = Path().apply {
+                moveTo(s * 0.28f, s * 0.42f)
+                lineTo(s * 0.34f, s * 0.30f)
+                lineTo(s * 0.66f, s * 0.30f)
+                lineTo(s * 0.72f, s * 0.42f)
+                close()
+            }
+            canvas.drawPath(awning, iconStroke)
+            canvas.drawRoundRect(RectF(s * 0.32f, s * 0.44f, s * 0.68f, s * 0.70f), 4f, 4f, iconStroke)
+        }
+    }
+    return bmp
+}
+

@@ -96,6 +96,18 @@ function render() {
         // The shared map owns its own hazard rendering; the sheet is ours.
         void refreshHazards();
       });
+      wireLiveAlertButtons(screens.map);
+      const shopsBtn = screens.map.querySelector<HTMLButtonElement>("#app-toggle-shops");
+      const modes = ["essentials", "all", "off"] as const;
+      let modeIdx = 0;
+      shopsBtn?.addEventListener("click", () => {
+        modeIdx = (modeIdx + 1) % modes.length;
+        const mode = modes[modeIdx] ?? "essentials";
+        shopsBtn.setAttribute("aria-selected", String(mode !== "off"));
+        shopsBtn.textContent =
+          mode === "essentials" ? "Shops: Essentials" : mode === "all" ? "Shops: All" : "Shops: Off";
+        appMapHandle?.setShopsMode(mode);
+      });
     }
     renderNearby(screens.map, hazards, (id) => appMapHandle?.flyToHazard(id));
     return;

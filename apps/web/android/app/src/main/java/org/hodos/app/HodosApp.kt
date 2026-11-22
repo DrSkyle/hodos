@@ -190,6 +190,7 @@ fun HodosApp(
         }
     }
     var partners by remember { mutableStateOf<List<PartnerPoi>>(emptyList()) }
+    var shopsMode by remember { mutableStateOf(ShopsFilterMode.ESSENTIALS) }
     LaunchedEffect(internetConnected) {
         if (internetConnected) {
             val loaded = PartnerOffers.load()
@@ -611,6 +612,7 @@ fun HodosApp(
                             RoadMap(
                                 hazards = visibleHazards,
                                 partners = partners,
+                                shopsMode = shopsMode,
                                 locateRequest = locateRequest,
                                 onSelect = { selected = it },
                                 onLocated = {
@@ -831,6 +833,35 @@ fun HodosApp(
                                                     )
                                                 )
                                             }
+                                            val shopsSelected = shopsMode != ShopsFilterMode.OFF
+                                            val shopsLabel = when (shopsMode) {
+                                                ShopsFilterMode.ESSENTIALS -> "Shops: Essentials"
+                                                ShopsFilterMode.ALL -> "Shops: All"
+                                                ShopsFilterMode.OFF -> "Shops: Off"
+                                            }
+                                            FilterChip(
+                                                selected = shopsSelected,
+                                                onClick = {
+                                                    shopsMode = when (shopsMode) {
+                                                        ShopsFilterMode.ESSENTIALS -> ShopsFilterMode.ALL
+                                                        ShopsFilterMode.ALL -> ShopsFilterMode.OFF
+                                                        ShopsFilterMode.OFF -> ShopsFilterMode.ESSENTIALS
+                                                    }
+                                                },
+                                                label = { Text(shopsLabel) },
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    containerColor = PaperRaised,
+                                                    labelColor = Ink,
+                                                    selectedContainerColor = ActionFill,
+                                                    selectedLabelColor = Color.White
+                                                ),
+                                                border = FilterChipDefaults.filterChipBorder(
+                                                    enabled = true,
+                                                    selected = shopsSelected,
+                                                    borderColor = if (shopsSelected) ActionFill else Line
+                                                )
+                                            )
                                         }
                                     }
                                 }
@@ -1750,6 +1781,39 @@ private fun MappingScreen(
                 }
             }
         }
+        val lastTrip = if (!tripActive) trips.firstOrNull() else null
+        val isRoughTrip = lastTrip != null && (lastTrip.impacts >= 3 || (lastTrip.distanceM >= 5000.0 && lastTrip.impacts >= 1))
+        if (isRoughTrip && lastTrip != null) {
+            val essentialShops = partners.filter { PartnerVisuals.classify(it.category).tier == PartnerTier.ESSENTIAL }
+            val perkShops = essentialShops.filter { PartnerVisuals.hasRiderPerk(it.offer) }
+            val noteText = if (perkShops.isNotEmpty()) {
+                "Rough ride on your last trip (${lastTrip.impacts} impacts · ${String.format(Locale.US, "%.1f", lastTrip.distanceM / 1000.0)} km) — ${perkShops.size} roadside ${if (perkShops.size == 1) "shop" else "shops"} nearby offer free pressure or alignment checks."
+            } else {
+                "Rough ride on your last trip (${lastTrip.impacts} impacts · ${String.format(Locale.US, "%.1f", lastTrip.distanceM / 1000.0)} km). Roadside tyre & auto shops on the map can check alignment and pressure."
+            }
+            item {
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Sand
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                        Text(
+                            "Post-trip check",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            noteText,
+                            fontSize = 13.sp,
+                            color = Muted,
+                            lineHeight = 19.sp
+                        )
+                    }
+                }
+            }
+        }
         item {
             RoadkeeperCard(trips)
         }
@@ -1770,7 +1834,7 @@ private fun MappingScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Local garages, tire shops and fuel stops with a pin on the map. From $0.19 a day in much of the world, in your own currency.",
+                        "Local garages, tyre shops, and roadside stops with a free initial pin on the map. 0% commission, zero fake listings.",
                         fontSize = 13.sp,
                         color = Muted,
                         lineHeight = 18.sp

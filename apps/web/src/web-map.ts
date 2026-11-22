@@ -63,10 +63,13 @@ export interface WebPartner {
   link?: string | null;
 }
 
+export type ShopsFilterMode = "essentials" | "all" | "off";
+
 export interface MapInstanceHandle {
   map: Map;
   hazards: WebHazard[];
   filterByKind: (kind: string, query?: string) => void;
+  setShopsMode: (mode: ShopsFilterMode) => void;
   setShopsVisible: (visible: boolean) => void;
   fitAllHazards: () => void;
   flyToHazard: (id: string) => void;
@@ -396,26 +399,68 @@ export function initWebMap(
       }))
   });
 
-  const partnerVisual = (rawCategory: string): { icon: string; label: string; color: string } => {
+  const partnerVisual = (
+    rawCategory: string
+  ): { icon: string; label: string; color: string; tier: "essential" | "pitstop" } => {
     const c = (rawCategory || "").toLowerCase();
     if (/tyre|tire|garage|mechanic|auto|car|moto|bike|wash|tow|workshop|repair|service|parts/.test(c)) {
-      return { icon: "shop-auto", label: "Auto & Tyre", color: "#27272a" };
+      return { icon: "shop-auto", label: "Auto & Tyre", color: "#27272a", tier: "essential" };
     }
     if (/ev|charg|fuel|petrol|gas|battery/.test(c)) {
-      return { icon: "shop-ev", label: "EV & Fuel", color: "#0f766e" };
-    }
-    if (/cafe|coffee|tea|food|restaurant|biryani|bakery|snack|dhaba|eat|dining/.test(c)) {
-      return { icon: "shop-food", label: "Food & Café", color: "#6b4423" };
+      return { icon: "shop-ev", label: "EV & Fuel", color: "#0f766e", tier: "essential" };
     }
     if (/pharm|med|clinic|hospital|health|first/.test(c)) {
-      return { icon: "shop-health", label: "Pharmacy", color: "#9d174d" };
+      return { icon: "shop-health", label: "Pharmacy", color: "#9d174d", tier: "essential" };
     }
-    return { icon: "shop-local", label: "Local stop", color: "#3f3f46" };
+    if (/cafe|coffee|tea|food|restaurant|biryani|bakery|snack|dhaba|eat|dining/.test(c)) {
+      return { icon: "shop-food", label: "Food & Café", color: "#6b4423", tier: "pitstop" };
+    }
+    return { icon: "shop-local", label: "Local stop", color: "#3f3f46", tier: "pitstop" };
+  };
+
+  const hasRiderPerk = (offer: string): boolean =>
+    /free|check|lube|air|pressure|alignment|perk|discount|complimentary/i.test(offer || "");
+
+  let shopsMode: ShopsFilterMode = "essentials";
+  const MAX_VIEWPORT_SHOPS = 12;
+
+  const selectPartnersForViewport = (items: WebPartner[]): WebPartner[] => {
+    if (shopsMode === "off" || items.length === 0) return [];
+    const zoom = map.getZoom();
+    // Keep Roadside Essentials visible from neighborhood zoom (11.5+), while
+    // Pit Stops (food/café/retail) wait until street zoom (14.5+) unless user
+    // explicitly picks "all".
+    const eligible = items.filter((p) => {
+      const vis = partnerVisual(p.category);
+      if (shopsMode === "essentials") return vis.tier === "essential";
+      return vis.tier === "essential" || zoom >= 13.5;
+    });
+    if (eligible.length <= MAX_VIEWPORT_SHOPS) return eligible;
+
+    const bounds = map.getBounds();
+    const center = map.getCenter();
+    const inView: WebPartner[] = [];
+    const outside: WebPartner[] = [];
+    for (const p of eligible) {
+      if (bounds && bounds.contains([p.lng, p.lat])) inView.push(p);
+      else outside.push(p);
+    }
+    const score = (p: WebPartner) => {
+      const vis = partnerVisual(p.category);
+      const tierScore = vis.tier === "essential" ? 200 : 0;
+      const perkScore = hasRiderPerk(p.offer) ? 80 : 0;
+      const dist = Math.hypot(p.lat - center.lat, p.lng - center.lng);
+      return tierScore + perkScore - dist * 120;
+    };
+    inView.sort((a, b) => score(b) - score(a));
+    // Cap unclustered in-view pins to 12 highest-utility stops while keeping
+    // outside stops ready for smooth panning.
+    return [...inView.slice(0, MAX_VIEWPORT_SHOPS), ...outside.slice(0, 60)];
   };
 
   const buildPartnerGeoJSON = (items: WebPartner[]): FeatureCollection => ({
     type: "FeatureCollection",
-    features: items.map((p) => {
+    features: selectPartnersForViewport(items).map((p) => {
       const vis = partnerVisual(p.category);
       return {
         type: "Feature",
@@ -428,6 +473,7 @@ export function initWebMap(
           name: p.name,
           category: p.category,
           categoryLabel: vis.label,
+          tier: vis.tier,
           icon: vis.icon,
           offer: p.offer,
           sponsorLabel: p.sponsorLabel
@@ -435,6 +481,17 @@ export function initWebMap(
       };
     })
   });
+
+  const refreshPartnerSource = () => {
+    const src = map.getSource("hodos-partners") as any;
+    if (src) src.setData(buildPartnerGeoJSON(partners));
+    const vis = shopsMode === "off" ? "none" : "visible";
+    for (const layerId of ["hodos-partner-clusters", "hodos-partner-icons"]) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, "visibility", vis);
+      }
+    }
+  };
 
   const fitBoundsToData = (targetHazards: WebHazard[], force = false) => {
     if ((!force && !shouldAutoFit) || targetHazards.length === 0) return;
@@ -516,13 +573,13 @@ export function initWebMap(
           : `${filtered.length} matching report${filtered.length === 1 ? "" : "s"}`;
       }
     },
+    setShopsMode: (mode: ShopsFilterMode) => {
+      shopsMode = mode;
+      refreshPartnerSource();
+    },
     setShopsVisible: (visible: boolean) => {
-      const vis = visible ? "visible" : "none";
-      for (const layerId of ["hodos-partner-clusters", "hodos-partner-icons"]) {
-        if (map.getLayer(layerId)) {
-          map.setLayoutProperty(layerId, "visibility", vis);
-        }
-      }
+      shopsMode = visible ? "essentials" : "off";
+      refreshPartnerSource();
     },
     fitAllHazards: () => fitBoundsToData(hazards, true),
     flyToHazard: (id: string) => {
@@ -1029,6 +1086,7 @@ export function initWebMap(
         map.getCanvas().style.cursor = "";
       });
     }
+    map.on("moveend", refreshPartnerSource);
 
     const registerRadarBadges = () => {
       const defs: Array<{ id: string; color: string; glyph: string; shape: "shield" | "diamond" | "octagon" | "circle" }> = [

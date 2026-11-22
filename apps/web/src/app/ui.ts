@@ -137,11 +137,12 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
       </div>
       <div class="map-sheet" id="app-map-sheet">
         <h2>Nearby <span class="mono" id="app-map-live-label"></span></h2>
-        <div class="chip-row" aria-label="1-tap live road report" style="margin: 8px 0 6px;">
+        <div class="chip-row" aria-label="1-tap live road report and map stops" style="margin: 8px 0 6px;">
           <button type="button" class="chip" data-live-alert="police">P Police</button>
           <button type="button" class="chip" data-live-alert="jam">! Jam</button>
           <button type="button" class="chip" data-live-alert="roadblock">✕ Blocked</button>
           <button type="button" class="chip" data-live-alert="flood">≈ Flood</button>
+          <button type="button" class="chip" id="app-toggle-shops" aria-selected="true">Shops: Essentials</button>
         </div>
         <p class="mono" id="app-map-count">Reading the map…</p>
         <div class="rows" id="app-map-rows"></div>
@@ -250,9 +251,22 @@ export function renderDriveScreen(host: HTMLElement, stats: LiveStats, pending: 
       </button>`;
   }).join("");
 
+  const lastTrip = !stats.recording ? state.trips[0] : undefined;
+  const roughTripBanner =
+    lastTrip && (lastTrip.impacts >= 3 || (lastTrip.distanceM >= 5000 && lastTrip.impacts >= 1))
+      ? `<div class="panel">
+          <h2>Rough ride on your last trip</h2>
+          <p>${lastTrip.impacts} impact${lastTrip.impacts === 1 ? "" : "s"} over ${(lastTrip.distanceM / 1000).toFixed(1)} km. Roadside tyre &amp; auto shops along your corridor can run a quick pressure or alignment check.</p>
+          <div class="btn-row">
+            <a class="app-btn app-btn-soft" href="/garage">See nearby roadside shops</a>
+          </div>
+        </div>`
+      : "";
+
   host.innerHTML = `
     <div class="screen-pad">
       ${screenHead("Drive", "Hodos reads the road while you drive. Same engine as the Android app, running in this tab.")}
+      ${roughTripBanner}
       <div class="panel">
         <p class="mono" id="drive-state-line">${stats.recording ? "Recording live" : "Idle"} · <span id="drive-queued">${pending} queued</span></p>
         <div class="stat-row">

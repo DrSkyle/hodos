@@ -12,6 +12,80 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
+enum class ShopsFilterMode { ESSENTIALS, ALL, OFF }
+
+enum class PartnerTier { ESSENTIAL, PITSTOP }
+
+data class PartnerVisual(
+    val iconId: String,
+    val label: String,
+    val colorInt: Int,
+    val tier: PartnerTier
+)
+
+object PartnerVisuals {
+    private val AUTO_RE = Regex("tyre|tire|garage|mechanic|auto|car|moto|bike|wash|tow|workshop|repair|service|parts", RegexOption.IGNORE_CASE)
+    private val EV_RE = Regex("ev|charg|fuel|petrol|gas|battery", RegexOption.IGNORE_CASE)
+    private val HEALTH_RE = Regex("pharm|med|clinic|hospital|health|first", RegexOption.IGNORE_CASE)
+    private val FOOD_RE = Regex("cafe|coffee|tea|food|restaurant|biryani|bakery|snack|dhaba|eat|dining", RegexOption.IGNORE_CASE)
+    private val PERK_RE = Regex("free|check|lube|air|pressure|alignment|perk|discount|complimentary", RegexOption.IGNORE_CASE)
+
+    fun classify(category: String): PartnerVisual = when {
+        AUTO_RE.containsMatchIn(category) -> PartnerVisual("shop-auto", "Auto & Tyre", 0xFF27272A.toInt(), PartnerTier.ESSENTIAL)
+        EV_RE.containsMatchIn(category) -> PartnerVisual("shop-ev", "EV & Fuel", 0xFF0F766E.toInt(), PartnerTier.ESSENTIAL)
+        HEALTH_RE.containsMatchIn(category) -> PartnerVisual("shop-health", "Pharmacy", 0xFF9D174D.toInt(), PartnerTier.ESSENTIAL)
+        FOOD_RE.containsMatchIn(category) -> PartnerVisual("shop-food", "Food & Café", 0xFF6B4423.toInt(), PartnerTier.PITSTOP)
+        else -> PartnerVisual("shop-local", "Local stop", 0xFF3F3F46.toInt(), PartnerTier.PITSTOP)
+    }
+
+    fun hasRiderPerk(offer: String): Boolean = PERK_RE.containsMatchIn(offer)
+
+    fun selectForViewport(
+        items: List<PartnerPoi>,
+        mode: ShopsFilterMode,
+        zoom: Double,
+        centerLat: Double?,
+        centerLng: Double?,
+        south: Double? = null,
+        north: Double? = null,
+        west: Double? = null,
+        east: Double? = null,
+        maxInView: Int = 12
+    ): List<PartnerPoi> {
+        if (mode == ShopsFilterMode.OFF || items.isEmpty()) return emptyList()
+        val eligible = items.filter { p ->
+            val vis = classify(p.category)
+            when (mode) {
+                ShopsFilterMode.ESSENTIALS -> vis.tier == PartnerTier.ESSENTIAL
+                ShopsFilterMode.ALL -> vis.tier == PartnerTier.ESSENTIAL || zoom >= 13.5
+                ShopsFilterMode.OFF -> false
+            }
+        }
+        if (eligible.size <= maxInView) return eligible
+
+        val cLat = centerLat ?: eligible.first().lat
+        val cLng = centerLng ?: eligible.first().lng
+        val hasBounds = south != null && north != null && west != null && east != null
+        val inView = mutableListOf<PartnerPoi>()
+        val outside = mutableListOf<PartnerPoi>()
+        for (p in eligible) {
+            if (!hasBounds || (p.lat in south!!..north!! && p.lng in west!!..east!!)) {
+                inView.add(p)
+            } else {
+                outside.add(p)
+            }
+        }
+        val ranked = inView.sortedByDescending { p ->
+            val vis = classify(p.category)
+            val tierScore = if (vis.tier == PartnerTier.ESSENTIAL) 200.0 else 0.0
+            val perkScore = if (hasRiderPerk(p.offer)) 80.0 else 0.0
+            val dist = kotlin.math.hypot(p.lat - cLat, p.lng - cLng)
+            tierScore + perkScore - dist * 120.0
+        }
+        return ranked.take(maxInView) + outside.take(60)
+    }
+}
+
 data class PartnerPoi(
     val id: String,
     val name: String,
