@@ -1340,7 +1340,7 @@ async function partnerPlace(req, body) {
     };
   }
 
-  const isFreeLaunch = quote.country === "NP" || quote.country === "IN";
+  const isFreeLaunch = true;
   const paid = isFreeLaunch || reference.length > 0;
   const effectiveRef = isFreeLaunch && !reference ? "free-launch" : reference;
 

@@ -171,15 +171,11 @@ function renderQuote() {
     priceHost.textContent = "…";
     return;
   }
-  const isIndia = quote.country === "IN" || browserLocale() === "en-IN";
-  const isNepal = quote.country === "NP" || browserLocale() === "ne-NP";
-  const isFreeLaunch = isNepal || isIndia;
+  const isFreeLaunch = true;
   if (isFreeLaunch) {
-    priceHost.textContent = isIndia ? "Free initially (₹0)" : "Free initially (NPR 0)";
+    priceHost.textContent = "Free initially";
     if (priceNote) {
-      priceNote.textContent = isIndia
-        ? "Shop pins in India are completely free initially — no payment or UPI transfer needed."
-        : "Shop pins in Nepal are completely free initially — no payment or wallet transfer needed.";
+      priceNote.textContent = "Shop pins are completely free initially everywhere — no payment or card needed.";
     }
   } else {
     const hasDiscount = Number(quote.discountPct) > 0 && quote.baseLocalPerDay && quote.baseLocalPerDay > quote.localPerDay;

@@ -79,45 +79,32 @@ function wireCountryCalculator(country: "NP" | "IN") {
   renderCalc();
 }
 
-// Country-specific launch & referral personalization for Nepal and India.
+// Country-specific launch & referral personalization.
 void detectVisitorCountryByIp().then((country) => {
-  if (country !== "NP" && country !== "IN") return;
+  if (country !== "IN") return;
 
-  if (country === "NP") {
-    const shopsLead = document.querySelector("#shops .lead");
-    const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
-    if (shopsLead) {
-      shopsLead.textContent =
-        "Shop pins in India and Nepal are completely free initially. If your shop sells or repairs anything drivers and riders need along the road, put a pin on the map at no cost.";
-    }
-    if (accessItem) accessItem.textContent = "Free initially (NPR 0)";
-  } else if (country === "IN") {
-    const ann = document.querySelector("#top-announcement p");
-    if (ann) {
-      ann.innerHTML =
-        'Shop pins in India are free initially · 289 people earned ₹2,00,000+ through Hodos (referrals paused). <a href="/partners">Place a free pin →</a>';
-    }
-    const earnSection = document.getElementById("nepal-earn");
-    earnSection?.removeAttribute("hidden");
-    const eyebrow = earnSection?.querySelector(".v2-kicker");
-    const title = earnSection?.querySelector("h2");
-    const lead = earnSection?.querySelector("p.lead");
-    const ctas = earnSection?.querySelector(".section-cta") as HTMLElement | null;
-    if (eyebrow) eyebrow.textContent = "India · Referrals paused";
-    if (title) title.innerHTML = '289 people earned ₹2,00,000+ through Hodos<span class="v2-dot">.</span>';
-    if (lead) {
-      lead.textContent =
-        "We have helped 289 people earn 2 lakh+ (₹2,00,000+) through Hodos. We are pausing referrals for now and making the entire shop pin system completely free for all shops across India and Nepal. Want to be notified when referrals come back online? Subscribe to our newsletter.";
-    }
-    if (ctas) {
-      ctas.innerHTML = `
-        <a class="v2-pill-btn v2-pill-primary" href="/referrals">Subscribe for referral updates</a>
-        <a class="v2-pill-btn v2-pill-secondary" href="/partners">Place a free shop pin</a>
-      `;
-    }
-
-    const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
-    if (accessItem) accessItem.textContent = "Free initially (₹0)";
+  const ann = document.querySelector("#top-announcement p");
+  if (ann) {
+    ann.innerHTML =
+      'Shop pins are free initially everywhere · 289 people earned ₹2,00,000+ through Hodos (referrals paused). <a href="/partners">Place a free pin →</a>';
+  }
+  const earnSection = document.getElementById("nepal-earn");
+  earnSection?.removeAttribute("hidden");
+  const eyebrow = earnSection?.querySelector(".v2-kicker");
+  const title = earnSection?.querySelector("h2");
+  const lead = earnSection?.querySelector("p.lead");
+  const ctas = earnSection?.querySelector(".section-cta") as HTMLElement | null;
+  if (eyebrow) eyebrow.textContent = "Referrals paused";
+  if (title) title.innerHTML = '289 people earned ₹2,00,000+ through Hodos<span class="v2-dot">.</span>';
+  if (lead) {
+    lead.textContent =
+      "We have helped 289 people earn 2 lakh+ (₹2,00,000+) through Hodos. We are pausing referrals for now and making the entire shop pin system completely free for all shops everywhere. Want to be notified when referrals come back online? Subscribe to our newsletter.";
+  }
+  if (ctas) {
+    ctas.innerHTML = `
+      <a class="v2-pill-btn v2-pill-primary" href="/referrals">Subscribe for referral updates</a>
+      <a class="v2-pill-btn v2-pill-secondary" href="/partners">Place a free shop pin</a>
+    `;
   }
 });
 

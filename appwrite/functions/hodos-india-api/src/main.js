@@ -1323,7 +1323,7 @@ async function partnerPlace(req, body) {
     };
   }
 
-  const isFree = Boolean(quote.free || quote.totalLocal === 0);
+  const isFree = true;
   const paid = isFree || reference.length > 0;
   const effectiveRef = isFree && !reference ? "free-launch" : reference;
 
