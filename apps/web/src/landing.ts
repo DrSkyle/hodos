@@ -88,7 +88,7 @@ void detectVisitorCountryByIp().then((country) => {
     const accessItem = document.querySelector("#shops .v2-ui-item:first-child strong");
     if (shopsLead) {
       shopsLead.textContent =
-        "Shop pins in Nepal are completely free initially. If your shop sells or repairs anything drivers and riders need along the road, put a pin on the map at no cost.";
+        "Shop pins in India and Nepal are completely free initially. If your shop sells or repairs anything drivers and riders need along the road, put a pin on the map at no cost.";
     }
     if (accessItem) accessItem.textContent = "Free initially (NPR 0)";
   } else if (country === "IN") {
