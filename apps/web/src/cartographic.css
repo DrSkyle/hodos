@@ -2105,16 +2105,16 @@ body.hodos-v2 .nav-menu-panel {
   color: var(--v2-ink);
 }
 
-.v2-ui-row span {
+.v2-ui-row > div > span {
   font-size: 14px;
   color: var(--v2-muted);
 }
 
-.v2-ui-state {
+.v2-ui-row .v2-ui-state {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
-  color: var(--v2-ink-2);
+  color: var(--v2-ink);
   white-space: nowrap;
 }
 
@@ -2278,6 +2278,7 @@ body.hodos-v2 .nav-menu-panel {
   gap: 14px;
 }
 
+.v2-quote-author .v2-avatar,
 .v2-avatar {
   display: inline-flex;
   align-items: center;
@@ -2286,9 +2287,10 @@ body.hodos-v2 .nav-menu-panel {
   height: 48px;
   border-radius: var(--v2-r-pill);
   background: var(--v2-action);
-  color: var(--v2-action-label);
+  color: #ffffff;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   flex-shrink: 0;
 }
 
@@ -2298,7 +2300,7 @@ body.hodos-v2 .nav-menu-panel {
   color: var(--v2-ink);
 }
 
-.v2-quote-author span {
+.v2-quote-author > div > span {
   font-size: 14px;
   color: var(--v2-muted);
 }
