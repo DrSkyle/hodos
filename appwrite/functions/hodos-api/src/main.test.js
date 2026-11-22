@@ -323,3 +323,33 @@ test("partnerStatus rejects malformed placement ids before hitting storage", asy
   assert.equal(bad.ok, false);
   assert.equal(bad.error, "unknown placement");
 });
+
+test("shop owner secret keys are placement-bound, verified in constant time, and survive extension tags", async () => {
+  const key = testing.mintOwnerKey();
+  assert.match(key, /^hsk_[a-f0-9]{48}$/);
+
+  const placementId = "p12345abcde";
+  const hash = await testing.hashOwnerKey(placementId, key);
+  const storedRef = testing.encodeReferenceWithOwnerHash("FREE-GLOBAL-LAUNCH", hash);
+
+  assert.equal(testing.extractOwnerKeyHash(storedRef), hash);
+  assert.equal(await testing.verifyOwnerKey(placementId, key, { reference: storedRef }), true);
+  assert.equal(await testing.verifyOwnerKey(placementId, "hsk_" + "0".repeat(48), { reference: storedRef }), false);
+  assert.equal(await testing.verifyOwnerKey("p99999other", key, { reference: storedRef }), false);
+
+  const extendedRef = testing.encodeReferenceWithOwnerHash(storedRef, hash, "+30d@2026-11-21");
+  assert.equal(await testing.verifyOwnerKey(placementId, key, { reference: extendedRef }), true);
+  assert.deepEqual(testing.extractExtensionRequest(extendedRef), {
+    days: 30,
+    requestedAt: "2026-11-21"
+  });
+});
+
+test("partnerPortal, partnerUpdate, and partnerRequestDays reject missing or short keys before hitting storage", async () => {
+  for (const fn of [testing.partnerPortal, testing.partnerUpdate, testing.partnerRequestDays]) {
+    const res = await fn({ placement: "p12345abcde", manageKey: "short" });
+    assert.equal(res.ok, false);
+    assert.equal(res.status, 401);
+  }
+});
+

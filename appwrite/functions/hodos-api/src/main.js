@@ -1319,6 +1319,263 @@ async function partnerExtend(req, body) {
   };
 }
 
+function mintOwnerKey() {
+  return `hsk_${[...crypto.getRandomValues(new Uint8Array(24))]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+async function hashOwnerKey(placementId, manageKey) {
+  return (await sha256Hex(`${String(placementId || "").trim()}:${String(manageKey || "").trim()}`)).slice(0, 40);
+}
+
+function constantTimeEqual(a, b) {
+  const sa = String(a || "");
+  const sb = String(b || "");
+  if (!sa || sa.length !== sb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sa.length; i++) {
+    diff |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function extractOwnerKeyHash(reference) {
+  const m = String(reference || "").match(/(?:^|\|)ok:([a-f0-9]{40})(?:\||$)/i);
+  return m ? m[1].toLowerCase() : "";
+}
+
+function extractExtensionRequest(reference) {
+  const m = String(reference || "").match(/(?:^|\|)ext:\+(\d+)d@([0-9T:\-.Z]+)(?:\||$)/);
+  return m ? { days: Number(m[1]), requestedAt: m[2] } : null;
+}
+
+function encodeReferenceWithOwnerHash(baseRef, ownerHash, extTag = "") {
+  const cleanBase = String(baseRef || "free")
+    .replace(/\|ok:[a-f0-9]+/gi, "")
+    .replace(/\|ext:[^|]+/gi, "")
+    .trim()
+    .slice(0, 28) || "free";
+  const parts = [cleanBase, `ok:${ownerHash}`];
+  if (extTag) parts.push(`ext:${extTag}`);
+  return parts.join("|").slice(0, 120);
+}
+
+async function verifyOwnerKey(placementId, manageKey, order) {
+  const key = String(manageKey || "").trim();
+  if (!key || key.length < 16 || !order) return false;
+  const storedHash = extractOwnerKeyHash(order.reference);
+  if (!storedHash) return false;
+  const candidate = await hashOwnerKey(placementId, key);
+  return constantTimeEqual(storedHash, candidate);
+}
+
+async function partnerPortal(body) {
+  const id = String(body.placement || "").trim();
+  const manageKey = String(body.manageKey || "").trim();
+  if (!/^[a-z0-9_-]{6,36}$/i.test(id) || manageKey.length < 16) {
+    return { ok: false, status: 401, error: "enter both your Pin Reference ID and Owner Secret Key" };
+  }
+
+  let order = null;
+  try {
+    order = await readRow("partnerPlacements", id);
+  } catch (_) {
+    order = null;
+  }
+  if (!order) return { ok: false, status: 404, error: "unknown pin reference ID" };
+
+  if (!(await verifyOwnerKey(id, manageKey, order))) {
+    return { ok: false, status: 401, error: "invalid owner secret key for this pin" };
+  }
+
+  let pin = null;
+  try {
+    pin = await readRow("partners", id);
+  } catch (_) {
+    pin = null;
+  }
+
+  const activeUntil = pin && pin.activeUntil ? String(pin.activeUntil) : null;
+  const untilMs = activeUntil ? Date.parse(activeUntil) : NaN;
+  const now = Date.now();
+  const live = Boolean(pin && (!Number.isFinite(untilMs) || untilMs >= now));
+  const daysRemaining = live && Number.isFinite(untilMs)
+    ? Math.max(0, Math.ceil((untilMs - now) / DAY_MS))
+    : 0;
+
+  const month = new Date().toISOString().slice(0, 7);
+  let passesThisMonth = 0;
+  let monthlyPasses = [];
+  try {
+    const statsRows = await readRows("partnerStats", [
+      { method: "equal", attribute: "partnerId", values: [id] },
+      { method: "limit", values: [12] }
+    ]);
+    monthlyPasses = statsRows
+      .filter((r) => typeof r.month === "string" && /^\d{4}-\d{2}$/.test(r.month))
+      .map((r) => ({ month: String(r.month), passes: Math.max(0, Number(r.passes) || 0) }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6);
+    const current = monthlyPasses.find((m) => m.month === month);
+    if (current) passesThisMonth = current.passes;
+  } catch (_) {
+    // partnerStats is optional until aggregated
+  }
+  if (!monthlyPasses.some((m) => m.month === month)) {
+    monthlyPasses = [...monthlyPasses.slice(-5), { month, passes: passesThisMonth }];
+  }
+
+  const lat = Number(pin?.lat ?? order.lat);
+  const lng = Number(pin?.lng ?? order.lng);
+  let nearbyHazardsCount = 0;
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    try {
+      const degPad = 0.005;
+      const hazardRows = await readRows("hazards", [
+        { method: "greaterThanEqual", attribute: "lat", values: [lat - degPad] },
+        { method: "lessThanEqual", attribute: "lat", values: [lat + degPad] },
+        { method: "limit", values: [100] }
+      ]);
+      nearbyHazardsCount = hazardRows.filter((h) => {
+        if (!h.published) return false;
+        const hLat = Number(h.lat);
+        const hLng = Number(h.lng);
+        if (!Number.isFinite(hLat) || !Number.isFinite(hLng)) return false;
+        return metresBetween({ lat, lng }, { lat: hLat, lng: hLng }) <= 500;
+      }).length;
+    } catch (_) {
+      nearbyHazardsCount = 0;
+    }
+  }
+
+  return {
+    ok: true,
+    placement: id,
+    name: String(pin?.name || order.name || ""),
+    category: String(pin?.category || order.category || "business"),
+    offer: String(pin?.offer || order.offer || ""),
+    link: String(pin?.link || order.link || ""),
+    address: String(pin?.address || ""),
+    phone: String(pin?.phone || ""),
+    lat,
+    lng,
+    live,
+    status: String(order.status || (live ? "active" : "expired")),
+    activeUntil,
+    days: Number(order.days) || 1,
+    daysRemaining,
+    createdAt: String(order.at || ""),
+    month,
+    passesThisMonth,
+    monthlyPasses,
+    nearbyHazardsCount,
+    pendingExtension: extractExtensionRequest(order.reference),
+    apiDiscovery: {
+      enabled: live,
+      endpoints: ["partners", "hazards", "roads"]
+    }
+  };
+}
+
+async function partnerUpdate(body) {
+  const id = String(body.placement || "").trim();
+  const manageKey = String(body.manageKey || "").trim();
+  if (!/^[a-z0-9_-]{6,36}$/i.test(id) || manageKey.length < 16) {
+    return { ok: false, status: 401, error: "missing pin ID or owner secret key" };
+  }
+
+  let order = null;
+  try {
+    order = await readRow("partnerPlacements", id);
+  } catch (_) {
+    order = null;
+  }
+  if (!order) return { ok: false, status: 404, error: "unknown pin reference ID" };
+
+  if (!(await verifyOwnerKey(id, manageKey, order))) {
+    return { ok: false, status: 401, error: "invalid owner secret key for this pin" };
+  }
+
+  const offer = String(body.offer || "").trim().slice(0, 160);
+  if (offer.length < 8) {
+    return { ok: false, status: 400, error: "describe your offer or shop line in at least 8 characters" };
+  }
+  const category = String(body.category || order.category || "business").trim().slice(0, 40) || "business";
+  const rawLink = String(body.link || "").trim().slice(0, 200);
+  let link = "";
+  if (rawLink) {
+    try {
+      const parsed = new URL(rawLink);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { ok: false, status: 400, error: "website link must start with http:// or https://" };
+      }
+      link = parsed.href;
+    } catch (_) {
+      return { ok: false, status: 400, error: "enter a valid website URL" };
+    }
+  }
+  const phone = String(body.phone || "").trim().slice(0, 40);
+  if (phone) {
+    const digits = phone.replace(/[()\s-]/g, "");
+    if (!/^\+?[0-9][0-9\s-]{6,19}$/.test(digits)) {
+      return { ok: false, status: 400, error: "enter a valid phone number" };
+    }
+  }
+
+  await patchRow("partnerPlacements", id, { offer, category, link });
+  try {
+    const pinPatch = { offer, category, link };
+    if (phone) pinPatch.phone = phone;
+    await patchRow("partners", id, pinPatch);
+  } catch (_) {
+    // Pin may have expired; placement record is still updated.
+  }
+
+  return {
+    ok: true,
+    placement: id,
+    updated: { offer, category, link, phone }
+  };
+}
+
+async function partnerRequestDays(body) {
+  const id = String(body.placement || "").trim();
+  const manageKey = String(body.manageKey || "").trim();
+  if (!/^[a-z0-9_-]{6,36}$/i.test(id) || manageKey.length < 16) {
+    return { ok: false, status: 401, error: "missing pin ID or owner secret key" };
+  }
+
+  let order = null;
+  try {
+    order = await readRow("partnerPlacements", id);
+  } catch (_) {
+    order = null;
+  }
+  if (!order) return { ok: false, status: 404, error: "unknown pin reference ID" };
+
+  if (!(await verifyOwnerKey(id, manageKey, order))) {
+    return { ok: false, status: 401, error: "invalid owner secret key for this pin" };
+  }
+
+  const days = clampDays(body.days || 30);
+  const ownerHash = extractOwnerKeyHash(order.reference);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const nextRef = encodeReferenceWithOwnerHash(order.reference, ownerHash, `+${days}d@${stamp}`);
+
+  await patchRow("partnerPlacements", id, {
+    reference: nextRef
+  });
+
+  return {
+    ok: true,
+    placement: id,
+    requestedDays: days,
+    requestedAt: stamp,
+    message: `Extension request for +${days} days recorded. We'll review and apply it to your pin.`
+  };
+}
+
 async function partnerPlace(req, body) {
   const validation = validPartner(body);
   if (!validation.shop) {
@@ -1343,6 +1600,9 @@ async function partnerPlace(req, body) {
   const isFreeLaunch = true;
   const paid = isFreeLaunch || reference.length > 0;
   const effectiveRef = isFreeLaunch && !reference ? "free-launch" : reference;
+  const manageKey = mintOwnerKey();
+  const ownerHash = await hashOwnerKey(id, manageKey);
+  const storedReference = encodeReferenceWithOwnerHash(effectiveRef, ownerHash);
 
   // A shop is referred exactly once, by the first person who brings it. A
   // later submission inherits the original referrer and never re-attributes.
@@ -1369,7 +1629,7 @@ async function partnerPlace(req, body) {
     localTotal: isFreeLaunch ? 0 : Number(quote.totalLocal) || 0,
     tier: quote.tier,
     country: quote.country || "",
-    reference: effectiveRef,
+    reference: storedReference,
     status: paid ? (isFreeLaunch ? "active" : "pending") : "awaiting-payment",
     referredBy,
     paidAt: paid ? nowIso() : "",
@@ -1409,23 +1669,25 @@ async function partnerPlace(req, body) {
     return {
       ok: true,
       placement: id,
-      status: "pending",
+      manageKey,
+      status: isFreeLaunch ? "active" : "pending",
       live: true,
       activeUntil,
       ...quote,
       referral: referral ? { code: referral.code, earnedUsd: Number((referral.earnedMicro / 1_000_000).toFixed(4)) } : null,
-      next: `Payment reference recorded. Your pin is live until ${activeUntil}.`
+      next: `Your pin is live until ${activeUntil}. Save your Pin ID and Owner Secret Key to manage offers and request extra days.`
     };
   }
 
   return {
     ok: true,
     placement: id,
+    manageKey,
     status: "awaiting-payment",
     live: false,
     activeUntil: null,
     ...quote,
-    next: "Pay with the reference above and the pin goes live for the days you bought."
+    next: "Save your Pin ID and Owner Secret Key to manage this placement."
   };
 }
 
@@ -1563,6 +1825,21 @@ module.exports = async function main(context) {
     } catch (error) {
       log(`partnerStatus: ${error}`);
       return res.json({ ok: false, error: "could not read placement" }, 502, CORS);
+    }
+  }
+
+  if (action === "partnerPortal" || action === "partnerUpdate" || action === "partnerRequestDays") {
+    try {
+      const result = action === "partnerPortal"
+        ? await partnerPortal(body)
+        : action === "partnerUpdate"
+        ? await partnerUpdate(body)
+        : await partnerRequestDays(body);
+      const code = result.ok ? 200 : (result.status || 400);
+      return res.json(result, code, CORS);
+    } catch (error) {
+      log(`${action}: ${error}`);
+      return res.json({ ok: false, error: "shop portal is temporarily unavailable" }, 502, CORS);
     }
   }
 
@@ -1732,6 +2009,15 @@ module.exports.testing = {
   PARTNER_TIERS,
   partnerQuote,
   partnerStatus,
+  partnerPortal,
+  partnerUpdate,
+  partnerRequestDays,
+  mintOwnerKey,
+  hashOwnerKey,
+  encodeReferenceWithOwnerHash,
+  extractOwnerKeyHash,
+  extractExtensionRequest,
+  verifyOwnerKey,
   durationFactor,
   countryFor,
   tierFor,

@@ -134,6 +134,7 @@ export default defineConfig({
         map: resolve(__dirname, "map/index.html"),
         garage: resolve(__dirname, "garage/index.html"),
         partners: resolve(__dirname, "partners/index.html"),
+        partnerManage: resolve(__dirname, "partners/manage/index.html"),
         referrals: resolve(__dirname, "referrals/index.html"),
         app: resolve(__dirname, "app/index.html"),
         privacy: resolve(__dirname, "privacy.html"),

@@ -435,6 +435,7 @@ function showResult(order: {
   live: boolean;
   activeUntil: string | null;
   placement: string;
+  manageKey?: string;
   amount: string;
   days: number;
   next: string;
@@ -457,6 +458,11 @@ function showResult(order: {
       ? `/map/?shop=${encodeURIComponent(order.placement)}#16/${Number(order.lat).toFixed(5)}/${Number(order.lng).toFixed(5)}`
       : "/map/";
 
+  const manageHref =
+    order.placement && order.manageKey
+      ? `/partners/manage/#id=${encodeURIComponent(order.placement)}&key=${encodeURIComponent(order.manageKey)}`
+      : "/partners/manage/";
+
   host.innerHTML = `
     <div class="result-card${order.live ? " is-live" : ""}">
       <span class="result-tag">${order.live ? "Live now · Free pin" : "Pending"}</span>
@@ -470,18 +476,36 @@ function showResult(order: {
         order.placement
           ? `<div class="result-pin-box">
               <div class="result-pin-meta">
-                <span class="result-pin-label">Your Pin Reference ID · Save this</span>
+                <span class="result-pin-label">1. Your Pin Reference ID · Save this</span>
                 <code class="result-pin-id" id="result-pin-code">${esc(order.placement)}</code>
-                <span class="result-pin-hint">Use this ID anytime to check how many riders passed your shop.</span>
               </div>
+              ${
+                order.manageKey
+                  ? `<div class="result-pin-meta">
+                      <span class="result-pin-label">2. Private Owner Secret Key · Shown once</span>
+                      <code class="result-pin-id result-secret-code" id="result-owner-key" data-revealed="false">••••••••••••••••••••••••</code>
+                      <span class="result-pin-hint">Keep this secret safe. Only someone with your Pin ID + Owner Key can edit your live offers, view rider stats, or request more days.</span>
+                    </div>`
+                  : `<span class="result-pin-hint">Use this ID anytime to check how many riders passed your shop.</span>`
+              }
               <div class="result-pin-btns">
-                <button class="result-btn result-btn-accent" type="button" id="copy-pin-id">Copy Reference ID</button>
-                <button class="result-btn result-btn-ghost" type="button" id="track-pin-id">Check stats</button>
+                <button class="result-btn result-btn-accent" type="button" id="copy-pin-id">Copy Pin ID</button>
+                ${
+                  order.manageKey
+                    ? `<button class="result-btn result-btn-primary" type="button" id="copy-owner-key">Copy Owner Key</button>
+                       <button class="result-btn result-btn-ghost" type="button" id="reveal-owner-key">Reveal key</button>`
+                    : `<button class="result-btn result-btn-ghost" type="button" id="track-pin-id">Check stats</button>`
+                }
               </div>
             </div>`
           : ""
       }
       <div class="result-actions">
+        ${
+          order.manageKey
+            ? `<a class="result-btn result-btn-accent" href="${esc(manageHref)}">Open my Shop Dashboard →</a>`
+            : ""
+        }
         <a class="result-btn result-btn-primary" href="${esc(mapHref)}">See it on the map</a>
         <button class="result-btn result-btn-ghost" type="button" id="place-another-pin">Place another pin</button>
       </div>
@@ -494,21 +518,42 @@ function showResult(order: {
   copyBtn?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(order.placement);
-      copyBtn.textContent = "Copied ✓";
+      copyBtn.textContent = "Pin ID copied ✓";
       window.setTimeout(() => {
-        copyBtn.textContent = "Copy Reference ID";
+        copyBtn.textContent = "Copy Pin ID";
       }, 2200);
     } catch {
-      const codeEl = host.querySelector("#result-pin-code");
-      if (codeEl) {
-        const range = document.createRange();
-        range.selectNodeContents(codeEl);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-      copyBtn.textContent = "Selected — press Copy";
+      copyBtn.textContent = order.placement;
     }
+  });
+
+  const copyKeyBtn = host.querySelector<HTMLButtonElement>("#copy-owner-key");
+  copyKeyBtn?.addEventListener("click", async () => {
+    if (!order.manageKey) return;
+    try {
+      await navigator.clipboard.writeText(order.manageKey);
+      copyKeyBtn.textContent = "Owner Key copied ✓";
+      window.setTimeout(() => {
+        copyKeyBtn.textContent = "Copy Owner Key";
+      }, 2200);
+    } catch {
+      const el = host.querySelector<HTMLElement>("#result-owner-key");
+      if (el) {
+        el.textContent = order.manageKey;
+        el.dataset.revealed = "true";
+      }
+      copyKeyBtn.textContent = "Revealed above — copy it";
+    }
+  });
+
+  const revealKeyBtn = host.querySelector<HTMLButtonElement>("#reveal-owner-key");
+  revealKeyBtn?.addEventListener("click", () => {
+    const el = host.querySelector<HTMLElement>("#result-owner-key");
+    if (!el || !order.manageKey) return;
+    const isShown = el.dataset.revealed === "true";
+    el.textContent = isShown ? "••••••••••••••••••••••••" : order.manageKey;
+    el.dataset.revealed = isShown ? "false" : "true";
+    revealKeyBtn.textContent = isShown ? "Reveal key" : "Hide key";
   });
 
   host.querySelector<HTMLButtonElement>("#track-pin-id")?.addEventListener("click", () => {
@@ -669,6 +714,7 @@ function wireForm() {
         live: Boolean(result.live),
         activeUntil: result.activeUntil as string | null,
         placement: String(result.placement || ""),
+        manageKey: typeof result.manageKey === "string" ? result.manageKey : undefined,
         amount: money(result.totalLocal, result.currency),
         days: Number(result.days) || days,
         next: String(result.next || ""),

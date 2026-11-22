@@ -678,3 +678,231 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Private Shop Owner Portal (/partners/manage/) ---------- */
+
+.portal-card,
+.portal-hero-card {
+  margin-top: var(--s5);
+  padding: 28px 30px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-1);
+}
+
+.portal-subcopy {
+  margin: 6px 0 18px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.portal-section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.secret-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.secret-input-row input {
+  flex: 1;
+}
+
+.portal-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 8px 0 4px;
+  cursor: pointer;
+}
+
+.portal-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.portal-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.portal-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--r-full);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.portal-shop-name {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.portal-meta-line {
+  margin: 6px 0 0;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.portal-id-strip {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.portal-id-strip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.portal-metrics-grid {
+  margin-top: var(--s5);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.portal-metric-card {
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-metric-label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.portal-metric-value {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.portal-metric-sub {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.portal-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-bar-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-bar-month {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.portal-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--soft);
+  overflow: hidden;
+}
+
+.portal-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.portal-bar-val {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.portal-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.portal-notice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.result-secret-code {
+  word-break: break-all;
+  font-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .portal-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portal-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .portal-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
