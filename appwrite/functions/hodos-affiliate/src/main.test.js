@@ -34,3 +34,20 @@ test("only the newsletter action exists now that the catalogue is gone", async (
   assert.equal(res.status, 400);
   assert.deepEqual(res.body.actions, ["subscribe"]);
 });
+
+test("builds distinct welcome emails for referral waitlist vs general newsletter", () => {
+  const refMail = testing.buildWelcomeEmail("referral-waitlist");
+  assert.match(refMail.subject, /referral waitlist/i);
+  assert.match(refMail.text, /289 people/);
+  assert.match(refMail.html, /hodos\.devilabs\.dev\/partners/);
+
+  const notesMail = testing.buildWelcomeEmail("footer");
+  assert.match(notesMail.subject, /Welcome to Hodos/i);
+  assert.match(notesMail.html, /hodos\.devilabs\.dev\/map/);
+});
+
+test("sendWelcomeEmail safely returns false without calling network when RESEND_API_KEY is unset", async () => {
+  delete process.env.RESEND_API_KEY;
+  assert.equal(await testing.sendWelcomeEmail("driver@example.com", "footer"), false);
+});
+

@@ -38,9 +38,32 @@ if ! appwrite functions get --function-id hodos-affiliate >/dev/null 2>&1; then
     --scopes tables.read --scopes rows.read --scopes rows.write
 fi
 
+set_func_var() {
+  local key="$1"
+  local val="$2"
+  local existing_id
+  existing_id="$(appwrite functions list-variables --function-id hodos-affiliate -j 2>/dev/null \
+    | node -e 'const d = JSON.parse(require("fs").readFileSync(0,"utf8")); const v = (d.variables||[]).find(x=>x.key===process.argv[1]); if(v) console.log(v.$id);' "$key" || true)"
+  if [[ -n "$existing_id" ]]; then
+    appwrite functions update-variable --function-id hodos-affiliate --variable-id "$existing_id" --key "$key" --value "$val" >/dev/null
+  else
+    appwrite functions create-variable --function-id hodos-affiliate --key "$key" --value "$val" >/dev/null
+  fi
+}
+
+if [[ -n "${RESEND_API_KEY:-}" ]]; then
+  set_func_var "RESEND_API_KEY" "$RESEND_API_KEY"
+  echo "Configured RESEND_API_KEY on hodos-affiliate."
+fi
+
+if [[ -n "${RESEND_FROM:-}" ]]; then
+  set_func_var "RESEND_FROM" "$RESEND_FROM"
+  echo "Configured RESEND_FROM on hodos-affiliate."
+fi
+
 appwrite functions create-deployment \
   --function-id hodos-affiliate \
   --code appwrite/functions/hodos-affiliate \
   --entrypoint src/main.js --activate
 
-echo "Garage backend deployed."
+echo "Garage & newsletter backend deployed."
