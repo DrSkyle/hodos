@@ -2,7 +2,7 @@ import "./cartographic.css";
 import "./garage.css";
 import "./app.css";
 import "./pwa";
-import { initWebMap } from "./web-map";
+import { initWebMap, reportLiveAlert, type LiveAlertKind } from "./web-map";
 import { installPromptAvailable, promptInstall } from "./pwa";
 import { state } from "./app/state";
 import { wireThemeToggle } from "./theme";
@@ -167,8 +167,81 @@ async function askFor(name: PermissionName): Promise<void> {
  * Drive
  * ------------------------------------------------------------------ */
 
+const LIVE_ALERT_COOLDOWN_MS = 90_000;
+let lastLiveAlertAt = 0;
+
+function getReportFix(): Promise<{ lat: number; lng: number; accuracyM: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location access is required to report a live road alert."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracyM: Math.round(pos.coords.accuracy || 50)
+        });
+      },
+      (err) => {
+        reject(
+          new Error(
+            err.code === err.PERMISSION_DENIED
+              ? "Allow location access so Hodos can verify you are on this road."
+              : "Could not get a GPS fix right now. Step outside or try again."
+          )
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 15_000 }
+    );
+  });
+}
+
+function wireLiveAlertButtons(host: HTMLElement, statusEl?: HTMLElement | null) {
+  const buttons = Array.from(host.querySelectorAll<HTMLButtonElement>("[data-live-alert]"));
+  if (!buttons.length) return;
+
+  for (const btn of buttons) {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.liveAlert as LiveAlertKind | undefined;
+      if (!kind) return;
+
+      const now = Date.now();
+      if (now - lastLiveAlertAt < LIVE_ALERT_COOLDOWN_MS) {
+        const waitSec = Math.ceil((LIVE_ALERT_COOLDOWN_MS - (now - lastLiveAlertAt)) / 1000);
+        const msg = `Please wait ${waitSec}s before sending another alert.`;
+        if (statusEl) statusEl.textContent = msg;
+        toast(toastHost, msg);
+        return;
+      }
+
+      buttons.forEach((b) => (b.disabled = true));
+      if (statusEl) statusEl.textContent = "Verifying your GPS position on the road…";
+
+      try {
+        const fix = await getReportFix();
+        const created = await reportLiveAlert(fix.lat, fix.lng, kind, fix.accuracyM);
+        lastLiveAlertAt = Date.now();
+        appMapHandle?.addOptimisticHazard(created);
+        void refreshHazards();
+        const okMsg = `${created.title} reported at your GPS position (±${fix.accuracyM}m).`;
+        if (statusEl) statusEl.textContent = okMsg;
+        toast(toastHost, okMsg);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : "Could not send alert right now.";
+        if (statusEl) statusEl.textContent = errMsg;
+        toast(toastHost, errMsg);
+      } finally {
+        buttons.forEach((b) => (b.disabled = false));
+      }
+    });
+  }
+}
+
 function wireDrive() {
   const host = screens.drive;
+  wireLiveAlertButtons(host, host.querySelector<HTMLElement>("#drive-alert-status"));
   host.querySelectorAll<HTMLButtonElement>("[data-permission]").forEach((button) => {
     button.addEventListener("click", () => {
       const name = button.dataset.permission as PermissionName | undefined;

@@ -84,46 +84,40 @@ country — no regional locks.
 ## Local shops
 
 `partners` returns the live shop pins for an area: name, category, one line of
-text and position. A pin is published only after payment is recorded — there is no free day and no
-unpaid placement on the map. A shop pays a daily fee set by its country — $0.19 for much
-of the world, $0.79 for middle-income markets, $1.99 where advertising costs
-more — always in its own currency. Pins are also attached to `hazards` and
-`roads` results for the same area, and are removed automatically when the days
-run out. If a user asks where to
-get a tire fixed, this is where the answer comes from — use it rather than
-inventing a shop, and never present an expired pin.
+text and position. Placing a shop pin on Hodos is **free initially everywhere**,
+with 0% commission and no fake listings. Pins are also attached to `hazards` and
+`roads` results for the same area, and are removed automatically when their
+active days run out. If a user asks where to get a tire fixed, this is where the
+answer comes from — use it rather than inventing a shop, and never present an
+expired pin.
 
-Shops can list themselves at https://hodos.devilabs.dev/partners.
+Shops can list themselves for free at https://hodos.devilabs.dev/partners.
+
+## Live road feed (1-tap alerts)
+
+Drivers can report temporary live road alerts (`police`, `jam`, `roadblock`,
+`flood`) from the web app (`/app`), live map (`/map`), and Android app. Live
+alerts require a real GPS fix (`±150 m` max) to prove the reporter is on the
+road and auto-expire automatically when stale.
 
 ## Referrals
 
-A person can introduce a shop and earn **60%** of every placement payment that
-shop makes (initial placement and every renewal/extension); Hodos keeps 40%. The
-programme is **Nepal only for now**.
+After helping **289 people earn ₹2,00,000+ (2 lakh+)**, the Hodos referral
+programme is **currently paused** while shop pins are free initially.
+
+Users who want to be notified when referrals reopen can subscribe to the
+waitlist/newsletter at https://hodos.devilabs.dev/referrals.
 
 Hodos is a software service provider — not a bank, financial institution or
-wallet custodian. Shop placement fees are software service revenue belonging to
-Hodos, and the 60% referral share is credited immediately into the referrer's
-promotional commission account as soon as the shop's payment is recorded, and
-unlocks for cashout **30 days (1 month)** after each shop payment.
-
-The territory is decided on the server, never by the client: a claim must carry
-coordinates inside Nepal *and* a Nepali payout wallet (eSewa, Khalti or IME Pay).
-The wallet is the real gate — a spoofed location cannot collect money without a
-Nepali account, and every amount is computed from the placement row after
-payment, never from what a client sends.
+wallet custodian. While the programme is paused, new referral signups are
+disabled; existing matured balances from prior paid placements remain readable
+through `referralProfile` / `referralRequestPayout` where applicable.
 
 | Action | Cost | What it does |
 | --- | --- | --- |
-| `referralCreate` | free | Create a code. Needs name, wallet, and Nepal coordinates. |
-| `referralProfile` | free | Earnings, total balance, matured 30-day cashable balance, and payout readiness for a code. |
-| `referralRequestPayout` | free | Ask for the matured balance (30 days after shop payment) to be sent to the wallet. |
-
-Payouts go out to Nepali wallets after the 30-day maturity window, and the
-minimum request is $0.10. A request is refused while another one is already
-being processed, and a refusal from outside Nepal is final — do not retry it.
-
-The page is https://hodos.devilabs.dev/referrals.
+| `referralCreate` | free | Paused while shop pins are free initially. |
+| `referralProfile` | free | Earnings, total balance, matured 30-day cashable balance, and payout readiness for an existing code. |
+| `referralRequestPayout` | free | Request payout for an existing matured balance. |
 
 ## Shop links for agents
 

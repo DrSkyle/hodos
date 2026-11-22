@@ -137,6 +137,12 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
       </div>
       <div class="map-sheet" id="app-map-sheet">
         <h2>Nearby <span class="mono" id="app-map-live-label"></span></h2>
+        <div class="chip-row" aria-label="1-tap live road report" style="margin: 8px 0 6px;">
+          <button type="button" class="chip" data-live-alert="police">P Police</button>
+          <button type="button" class="chip" data-live-alert="jam">! Jam</button>
+          <button type="button" class="chip" data-live-alert="roadblock">✕ Blocked</button>
+          <button type="button" class="chip" data-live-alert="flood">≈ Flood</button>
+        </div>
         <p class="mono" id="app-map-count">Reading the map…</p>
         <div class="rows" id="app-map-rows"></div>
       </div>
@@ -263,6 +269,17 @@ export function renderDriveScreen(host: HTMLElement, stats: LiveStats, pending: 
         <p class="note" id="drive-note"></p>
       </div>
 
+      <div class="panel">
+        <h2>Live road feed · 1-tap report</h2>
+        <p>Tap to warn drivers on this road. Alerts verify your GPS position and auto-expire when stale.</p>
+        <div class="btn-row" role="group" aria-label="1-tap live road report">
+          <button type="button" class="app-btn app-btn-soft" data-live-alert="police">P Police</button>
+          <button type="button" class="app-btn app-btn-soft" data-live-alert="jam">! Jam</button>
+          <button type="button" class="app-btn app-btn-soft" data-live-alert="roadblock">✕ Blocked</button>
+          <button type="button" class="app-btn app-btn-soft" data-live-alert="flood">≈ Flood</button>
+        </div>
+        <p class="note" id="drive-alert-status">Uses your live GPS fix (±150 m max).</p>
+      </div>
       <div class="panel">
         <h2>Permissions</h2>
         <p>Hodos asks for each one in the open. Nothing is enabled before you tap it.</p>
@@ -615,21 +632,13 @@ export function renderYouScreen(host: HTMLElement, options: { shops: string[]; i
     <div class="screen-pad">
       ${screenHead("You", "Everything here lives in this browser. No account, no email, no identifier that follows you.")}
       ${
-        isIndia
-          ? `<div class="panel">
-              <h2>Refer any shop · earn 60%</h2>
-              <p>If a shop sells or offers anything our drivers might need, introduce them to Hodos. Whenever they buy or extend a pin on the map, 60% of their payment shows immediately in your referral account and unlocks for cashout to your UPI ID or IMPS bank account after 1 month.</p>
-              <div class="btn-row">
-                <a class="app-btn" href="/referrals">Open referral dashboard</a>
-                <a class="app-btn app-btn-soft" href="/partners">Place a shop pin</a>
-              </div>
-            </div>`
-          : isNepal
+        isIndia || isNepal
           ? `<div class="panel">
               <h2>Free shop pins · Referrals paused</h2>
-              <p>Placing a shop pin in Nepal is completely free initially. Because pins are free, the Nepal referral programme has been stopped for now.</p>
+              <p>Placing a shop pin is completely free initially — no payment needed. The referral programme is paused for now after helping 289 people earn ₹2,00,000+ (2 lakh+).</p>
               <div class="btn-row">
                 <a class="app-btn" href="/partners">Place a free shop pin</a>
+                <a class="app-btn app-btn-soft" href="/referrals">Referral waitlist</a>
               </div>
             </div>`
           : ""
