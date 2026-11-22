@@ -35,11 +35,14 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-private val Cream = Color(0xFFF6F3EA)
-private val CreamMuted = Color(0xFFB5AFA2)
-private val CreamAccent = Color(0xFFD97706)
-private val SandMuted = Color(0xFF736D61)
-private val SandAccent = Color(0xFFB45309)
+private val BlushBg = Color(0xFFFDF1F3)
+private val BlushAlt = Color(0xFFF4E8EA)
+private val BlushMuted = Color(0xFF50504F)
+private val BlushAccent = Color(0xFF8A5300)
+private val NightBg = Color(0xFF141314)
+private val NightFg = Color(0xFFFCFCFD)
+private val NightMuted = Color(0xFFA6A0A4)
+private val NightAccent = Color(0xFFF59E0B)
 
 private data class IntroStep(
     val index: String,
@@ -58,37 +61,37 @@ private val steps = listOf(
     IntroStep(
         index = "01",
         eyebrow = "LIVE ROAD MAP",
-        title = "Every pothole,\nmapped.",
-        description = "Potholes show up crimson, rough stretches amber, speed bumps violet — the same live map in the app and on the web.",
-        footnote = "Built for anyone with a phone and a road.",
-        background = Forest,
-        foreground = Cream,
-        muted = CreamMuted,
-        accent = CreamAccent,
-        onDark = true
+        title = "The road\nmaps itself.",
+        description = "Your phone detects road hazards as you drive, and independent trips confirm them before they appear on the public map.",
+        footnote = "Free for everyone. No account required.",
+        background = BlushBg,
+        foreground = LightInk,
+        muted = BlushMuted,
+        accent = BlushAccent,
+        onDark = false
     ),
     IntroStep(
         index = "02",
-        eyebrow = "HANDS-FREE MAPPING",
+        eyebrow = "HANDS-FREE SENSING",
         title = "Turn it on.\nKeep going.",
-        description = "Hodos runs in the background and pauses when you stop. No buttons to press, no reporting, no new habit to learn.",
-        footnote = "Motion is filtered on-device; only compact hazard records sync.",
-        background = Paper,
-        foreground = Ink,
-        muted = SandMuted,
-        accent = SandAccent,
+        description = "Hodos runs quietly in the background and pauses when you stop. Routes stay on your phone; first and last 250 m are trimmed.",
+        footnote = "Same @hodos/core engine in Android and web.",
+        background = BlushAlt,
+        foreground = LightInk,
+        muted = BlushMuted,
+        accent = BlushAccent,
         onDark = false
     ),
     IntroStep(
         index = "03",
         eyebrow = "ONE-TIME SETUP",
         title = "Three grants,\none minute.",
-        description = "Android needs location, background access, and unrestricted battery so mapping keeps running while you use other apps.",
+        description = "Android needs location, background access, and unrestricted battery so mapping keeps running alongside navigation.",
         footnote = "Raw motion traces stay in RAM and are never uploaded.",
-        background = Ink,
-        foreground = Cream,
-        muted = CreamMuted,
-        accent = CreamAccent,
+        background = NightBg,
+        foreground = NightFg,
+        muted = NightMuted,
+        accent = NightAccent,
         onDark = true
     )
 )
@@ -115,10 +118,10 @@ fun HodosOnboarding(
     val mutedColor by animateColorAsState(steps[page].muted, tween(320), label = "onboarding muted")
     val accentColor by animateColorAsState(steps[page].accent, tween(320), label = "onboarding accent")
     val onDark = steps[page].onDark
-    val buttonBackground = if (onDark) Cream else LightInk
-    val buttonForeground = if (onDark) LightInk else Color.White
+    val buttonBackground = if (onDark) BerryDark else Berry
+    val buttonForeground = OnBerry
 
-    HodosTheme {
+    HodosTheme(darkTheme = onDark) {
         Surface(Modifier.fillMaxSize(), color = bgColor) {
             Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Column(Modifier.fillMaxSize().padding(bottom = 124.dp)) {
@@ -130,15 +133,21 @@ fun HodosOnboarding(
                             painter = painterResource(R.drawable.hodos_brand_icon),
                             contentDescription = "Hodos",
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                            modifier = Modifier.size(34.dp).clip(RoundedCornerShape(10.dp))
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
                             "hodos",
                             fontSize = 23.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             letterSpacing = (-1.0).sp,
                             color = fgColor
+                        )
+                        Text(
+                            ".",
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Amber
                         )
                         Spacer(Modifier.weight(1f))
                         if (page < steps.lastIndex) {
@@ -336,7 +345,7 @@ fun HodosOnboarding(
                             else scope.launch { pagerState.animateScrollToPage(page + 1) }
                         },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(999.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = buttonBackground,
                             contentColor = buttonForeground
