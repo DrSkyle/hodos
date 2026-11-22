@@ -7,18 +7,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700;800&display=swap" />
-  <meta name="description" content="Private Hodos Shop Owner Dashboard — manage your live offers, view anonymous monthly rider passes, check nearby road context, and request extra days." />
+  <meta name="description" content="Hodos Partner Console — manage live offers, preview your map & AI-agent listing, inspect anonymous rider pass analytics, and request extra days." />
   <meta name="robots" content="noindex" />
   <link rel="canonical" href="__HODOS_SITE__/partners/manage/" />
   <!--HODOS-ICONS-->
-  <title>Shop Owner Dashboard · Hodos</title>
+  <title>Partner Console · Hodos</title>
 </head>
-<body>
+<body class="console-body">
   <header class="site-nav">
     <div class="nav-inner">
       <a class="nav-brand" href="/" aria-label="Hodos home">
         <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="26" height="26" />
-        <span>hodos<span class="dot">.</span></span>
+        <span>hodos<span class="dot">.</span> <small style="font-size:12px;font-weight:600;color:var(--muted);margin-left:4px;">Partner Console</small></span>
       </a>
       <nav class="nav-links" aria-label="Primary">
         <a href="/map">Live map</a>
@@ -28,31 +28,36 @@
       </nav>
       <div class="nav-actions">
         <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">☾</button>
-        <a class="nav-cta" href="/partners">Place a pin</a>
+        <a class="nav-cta" href="/partners">New shop pin</a>
       </div>
     </div>
   </header>
 
-  <main class="container partners-main">
-    <section class="partners-hero" aria-labelledby="portal-title">
-      <p class="eyebrow">Private shop owner portal</p>
-      <h1 id="portal-title">Your shop on Hodos<span class="dot">.</span></h1>
-      <p class="lead">
-        Only you can unlock this page with your Pin Reference ID and Owner Secret Key. Update live offers,
-        track anonymous monthly rider passes, see road conditions outside your door, and request extra days.
+  <!-- LOCKED AUTH SCREEN -->
+  <main id="portal-lock-section" class="console-auth-shell">
+    <div class="console-auth-pitch">
+      <p class="eyebrow">Private Partner Console</p>
+      <h1>Run your road presence from one place<span class="dot">.</span></h1>
+      <p>
+        Zero accounts, zero password resets, zero ad auctions. Unlock your private console with your
+        Pin Reference ID and Owner Secret Key to control how riders and AI assistants discover your shop.
       </p>
-    </section>
+      <ul class="console-pitch-list">
+        <li><span class="console-pitch-dot"></span><span><strong>Live Creative &amp; AI Preview:</strong> Edit your offer and preview your exact map popup and AI-agent API response in real time.</span></li>
+        <li><span class="console-pitch-dot"></span><span><strong>Anonymous Rider Traffic:</strong> Track 6-month distinct device passes and nearby road hazards within 500 m.</span></li>
+        <li><span class="console-pitch-dot"></span><span><strong>1-Click Renewals &amp; Key Vault:</strong> Request extra days directly and download a backup of your private shop credentials.</span></li>
+      </ul>
+    </div>
 
-    <section id="portal-lock-section" class="portal-card" aria-labelledby="unlock-title">
-      <h2 id="unlock-title" class="partners-sub">Unlock your shop dashboard</h2>
-      <p class="portal-subcopy">
-        Hodos never creates accounts or stores your raw key — only its SHA-256 hash lives on our server.
-        Keep your Owner Secret Key private.
+    <div class="console-auth-card">
+      <h2>Unlock Shop Console</h2>
+      <p class="portal-subcopy" style="margin-bottom:20px;">
+        Hodos stores only a SHA-256 hash of your key. Only you can unlock edits and analytics.
       </p>
       <form id="portal-unlock-form" class="placement-form" novalidate>
         <label class="field">
           <span class="field-label">Pin Reference ID</span>
-          <input id="portal-pin-id" name="placement" type="text" required autocomplete="off" spellcheck="false" placeholder="e.g. pmwra8f1zvogecs" />
+          <input id="portal-pin-id" name="placement" type="text" required autocomplete="off" spellcheck="false" placeholder="e.g. pmwrbhpcybje5oq" />
         </label>
 
         <label class="field">
@@ -61,148 +66,346 @@
             <input id="portal-manage-key" name="manageKey" type="password" required autocomplete="off" spellcheck="false" placeholder="hsk_..." />
             <button type="button" class="result-btn result-btn-ghost" id="toggle-key-visibility">Show</button>
           </div>
-          <span class="field-help">Shown once when you placed your pin. Never shared in public URLs or logs.</span>
+          <span class="field-help">Downloaded automatically in your <code>hodos-shop-key-*.txt</code> file when you placed your pin.</span>
         </label>
 
         <label class="portal-remember">
           <input id="portal-remember-box" type="checkbox" />
-          <span>Remember my Pin ID and Owner Key on this device only</span>
+          <span>Keep unlocked on this device</span>
         </label>
 
         <p id="portal-unlock-status" class="form-status" role="status" aria-live="polite"></p>
         <div class="result-actions">
-          <button type="submit" class="submit-btn" id="portal-unlock-btn">Unlock Shop Dashboard</button>
-          <a class="result-btn result-btn-ghost" href="/partners">Need to place a new pin?</a>
+          <button type="submit" class="submit-btn" id="portal-unlock-btn" style="flex:1;">Unlock Partner Console</button>
         </div>
+        <p class="fine-print" style="margin-top:14px;">
+          Don’t have a pin yet? <a href="/partners">Place a free shop pin →</a>
+        </p>
       </form>
-    </section>
-
-    <section id="portal-dashboard" hidden aria-live="polite">
-      <div class="portal-hero-card">
-        <div class="portal-hero-top">
-          <div>
-            <div class="portal-pills">
-              <span class="result-tag" id="dash-live-pill">Live now</span>
-              <span class="portal-cat-pill" id="dash-category-pill">Shop</span>
-            </div>
-            <h2 class="portal-shop-name" id="dash-shop-name">Your shop</h2>
-            <p class="portal-meta-line" id="dash-expiry-line"></p>
-          </div>
-          <div class="result-actions">
-            <a class="result-btn result-btn-primary" id="dash-map-link" href="/map/">View pin on map ↗</a>
-            <button type="button" class="result-btn result-btn-ghost" id="portal-lock-btn">Lock &amp; sign out</button>
-          </div>
-        </div>
-        <div class="portal-id-strip">
-          <span>Pin Reference ID: <code id="dash-pin-id"></code></span>
-          <span id="dash-address-line"></span>
-        </div>
-      </div>
-
-      <div class="portal-metrics-grid">
-        <div class="portal-metric-card">
-          <span class="portal-metric-label">Riders passed this month</span>
-          <strong class="portal-metric-value" id="dash-passes-month">0</strong>
-          <span class="portal-metric-sub" id="dash-passes-sub">Distinct devices · 100% anonymous</span>
-        </div>
-        <div class="portal-metric-card">
-          <span class="portal-metric-label">Days remaining</span>
-          <strong class="portal-metric-value" id="dash-days-left">0</strong>
-          <span class="portal-metric-sub" id="dash-days-sub">Initial pin free · 0% commission</span>
-        </div>
-        <div class="portal-metric-card">
-          <span class="portal-metric-label">Road hazards within 500 m</span>
-          <strong class="portal-metric-value" id="dash-nearby-hazards">0</strong>
-          <span class="portal-metric-sub" id="dash-hazards-tip">Corroborated defects near your road</span>
-        </div>
-        <div class="portal-metric-card">
-          <span class="portal-metric-label">AI-Agent API discovery</span>
-          <strong class="portal-metric-value" id="dash-api-status">Active</strong>
-          <span class="portal-metric-sub">Included in partners, hazards &amp; roads API</span>
-        </div>
-      </div>
-
-      <div class="portal-card">
-        <h3 class="portal-section-title">Monthly rider passes (anonymous)</h3>
-        <p class="portal-subcopy">Distinct devices physically driving past your shop each month. Individual drivers are never identified.</p>
-        <div id="dash-monthly-bars" class="portal-bars"></div>
-      </div>
-
-      <div class="portal-two-col">
-        <div class="portal-card">
-          <h3 class="portal-section-title">Update your live offer &amp; details</h3>
-          <p class="portal-subcopy">Changes publish immediately to the live map, the Garage directory, and the AI-agent API.</p>
-          <form id="portal-update-form" class="placement-form" novalidate>
-            <label class="field">
-              <span class="field-label">Live offer / rider perk line</span>
-              <input id="edit-offer" name="offer" type="text" required maxlength="160" placeholder="e.g. Free tyre pressure check · Puncture repair · Open 7 AM – 9 PM" />
-              <span class="field-help">Tip: Mentioning free checks, lube, or alignment boosts priority in busy streets.</span>
-            </label>
-
-            <label class="field">
-              <span class="field-label">Category</span>
-              <select id="edit-category" name="category">
-                <option value="garage">Garage / workshop / mechanic</option>
-                <option value="tyre">Tyre / puncture / alignment</option>
-                <option value="ev">EV charger / fuel</option>
-                <option value="pharmacy">Pharmacy / medical</option>
-                <option value="cafe">Café / food / pit stop</option>
-                <option value="business">Other local shop</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span class="field-label">Phone number</span>
-              <input id="edit-phone" name="phone" type="tel" maxlength="40" placeholder="+977 98... or +91 ..." />
-            </label>
-
-            <label class="field">
-              <span class="field-label">Website, Instagram, or menu link (optional)</span>
-              <input id="edit-link" name="link" type="url" maxlength="200" placeholder="https://..." />
-            </label>
-
-            <p id="portal-update-status" class="form-status" role="status" aria-live="polite"></p>
-            <button type="submit" class="submit-btn" id="portal-update-btn">Save live changes</button>
-          </form>
-        </div>
-
-        <div class="portal-card">
-          <h3 class="portal-section-title">Request more days</h3>
-          <p class="portal-subcopy">
-            Want to keep your shop pin live longer? Submit an authenticated extension request right from your dashboard.
-          </p>
-          <div id="dash-pending-ext" class="portal-notice" hidden></div>
-          <form id="portal-extend-form" class="placement-form" novalidate>
-            <div class="day-row" id="portal-ext-days" role="radiogroup" aria-label="Additional days to request">
-              <button type="button" class="day-chip" data-req-days="7" aria-selected="false">+7 days</button>
-              <button type="button" class="day-chip" data-req-days="30" aria-selected="true">+30 days</button>
-              <button type="button" class="day-chip" data-req-days="90" aria-selected="false">+90 days</button>
-            </div>
-            <p id="portal-extend-status" class="form-status" role="status" aria-live="polite"></p>
-            <button type="submit" class="submit-btn" id="portal-extend-btn">Request +30 more days</button>
-          </form>
-          <p class="fine-print">
-            Need help recovering a lost Owner Secret Key? Email <a href="mailto:__HODOS_CONTACT__">__HODOS_CONTACT__</a> from the phone/email you registered with your Pin Reference ID.
-          </p>
-        </div>
-      </div>
-    </section>
+    </div>
   </main>
 
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <div class="footer-brand">
-        <img src="/hodos-icon.png?v=__HODOS_VERSION__" alt="" width="20" height="20" />
-        <span>hodos<span class="dot">.</span></span>
+  <!-- MULTI-VIEW PARTNER CONSOLE -->
+  <div id="portal-dashboard" class="console-shell" hidden aria-live="polite">
+    <aside class="console-sidebar" aria-label="Partner Console navigation">
+      <div class="console-shop-chip">
+        <span class="console-shop-status">
+          <span class="console-live-dot" id="side-live-dot"></span>
+          <span id="side-live-label">Live on map</span>
+        </span>
+        <strong id="side-shop-name">Your shop</strong>
+        <code id="side-pin-id">—</code>
       </div>
-      <div class="footer-links">
-        <a href="/partners">Place a pin</a>
-        <a href="/map">Live map</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/legal/partner-agreement.html">Partner terms</a>
+
+      <nav class="console-nav" role="tablist">
+        <button type="button" class="console-nav-btn" data-view="overview" aria-current="page">
+          <span class="console-nav-icon" aria-hidden="true">◉</span>Overview
+        </button>
+        <button type="button" class="console-nav-btn" data-view="creative">
+          <span class="console-nav-icon" aria-hidden="true">✦</span>Live Offer &amp; Preview
+        </button>
+        <button type="button" class="console-nav-btn" data-view="analytics">
+          <span class="console-nav-icon" aria-hidden="true">▤</span>Rider Traffic &amp; Roads
+        </button>
+        <button type="button" class="console-nav-btn" data-view="plan">
+          <span class="console-nav-icon" aria-hidden="true">◷</span>Plan &amp; Extra Days
+        </button>
+        <button type="button" class="console-nav-btn" data-view="security">
+          <span class="console-nav-icon" aria-hidden="true">⚿</span>Keys &amp; Backup
+        </button>
+      </nav>
+
+      <div class="console-sidebar-footer">
+        <a class="result-btn result-btn-primary" id="side-map-link" href="/map/" style="width:100%;">View pin on map ↗</a>
+        <button type="button" class="result-btn result-btn-ghost" id="side-download-key" style="width:100%;">Download key (.txt)</button>
+        <button type="button" class="result-btn result-btn-ghost" id="portal-lock-btn" style="width:100%;">Lock console</button>
       </div>
-    </div>
-  </footer>
+    </aside>
+
+    <main class="console-main">
+      <div id="console-fresh-banner" class="console-fresh-banner" hidden>
+        <div>
+          <strong>Your shop pin is live on Hodos!</strong>
+          <span>Your private Pin ID &amp; Owner Secret Key file was downloaded automatically — keep it somewhere safe so only you can access this console.</span>
+        </div>
+        <div class="result-actions" style="margin:0;">
+          <button type="button" class="result-btn result-btn-accent" id="banner-download-key">Download key file again</button>
+          <a class="result-btn result-btn-primary" id="banner-map-link" href="/map/">See live pin ↗</a>
+        </div>
+      </div>
+
+      <header class="console-topbar">
+        <div>
+          <h1 id="topbar-title">Overview</h1>
+          <p id="topbar-subtitle">Live performance, road context, and visibility for your shop pin.</p>
+        </div>
+        <div class="result-actions" style="margin:0;">
+          <button type="button" class="result-btn result-btn-ghost" data-jump-view="creative">Edit live offer</button>
+          <button type="button" class="result-btn result-btn-accent" data-jump-view="plan">Request more days</button>
+        </div>
+      </header>
+
+      <!-- VIEW 1: OVERVIEW -->
+      <section class="console-view" data-view-panel="overview">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">Riders passed</span>
+              <span class="kpi-pill" id="kpi-month-pill">This month</span>
+            </div>
+            <strong class="kpi-value" id="dash-passes-month">0</strong>
+            <span class="kpi-sub">Distinct devices · 100% anonymous</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">Days remaining</span>
+              <span class="kpi-pill" id="kpi-status-pill">Live</span>
+            </div>
+            <strong class="kpi-value" id="dash-days-left">0</strong>
+            <div class="kpi-progress"><i id="dash-days-bar" style="width:100%"></i></div>
+            <span class="kpi-sub" id="dash-expiry-line">Active now</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">Hazards within 500 m</span>
+              <span class="kpi-pill">Road context</span>
+            </div>
+            <strong class="kpi-value" id="dash-nearby-hazards">0</strong>
+            <span class="kpi-sub" id="dash-hazards-tip">Corroborated road defects nearby</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">AI-Agent API</span>
+              <span class="kpi-pill">0% fee</span>
+            </div>
+            <strong class="kpi-value" id="dash-api-status">Active</strong>
+            <span class="kpi-sub">Served via partners, hazards &amp; roads</span>
+          </div>
+        </div>
+
+        <div class="console-grid-2">
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Monthly rider traffic</h2>
+              <span>Last 6 months · distinct devices</span>
+            </div>
+            <div class="chart-wrap" id="overview-chart"></div>
+          </div>
+
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Your pin location</h2>
+              <a id="overview-map-link" href="/map/" style="font-size:13px;font-weight:700;color:var(--accent-ink);">Open full map ↗</a>
+            </div>
+            <div id="console-minimap" class="console-minimap" aria-label="Mini map of your shop pin"></div>
+            <div style="font-size:13px;color:var(--muted);" id="overview-address-line"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: LIVE OFFER & CREATIVE -->
+      <section class="console-view" data-view-panel="creative" hidden>
+        <div class="console-grid-2">
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Edit live offer &amp; details</h2>
+              <span>Publishes instantly to map, Garage &amp; AI API</span>
+            </div>
+            <form id="portal-update-form" class="placement-form" novalidate>
+              <label class="field">
+                <span class="field-label">Live offer / rider perk headline</span>
+                <input id="edit-offer" name="offer" type="text" required maxlength="160" placeholder="e.g. Free tyre pressure check · Puncture repair · Open 7 AM – 9 PM" />
+                <span class="field-help">Mentioning free air/pressure check, chain lube, or alignment prioritizes your pin in busy streets.</span>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Category</span>
+                <select id="edit-category" name="category">
+                  <option value="tyre">Tyre / puncture / alignment</option>
+                  <option value="garage">Garage / workshop / mechanic</option>
+                  <option value="ev">EV charger / fuel</option>
+                  <option value="pharmacy">Pharmacy / medical</option>
+                  <option value="cafe">Café / food / pit stop</option>
+                  <option value="business">Other local shop</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Phone number</span>
+                <input id="edit-phone" name="phone" type="tel" maxlength="40" placeholder="+977 98... or +91 ..." />
+              </label>
+
+              <label class="field">
+                <span class="field-label">Website, Instagram, or menu link (optional)</span>
+                <input id="edit-link" name="link" type="url" maxlength="200" placeholder="https://..." />
+              </label>
+
+              <p id="portal-update-status" class="form-status" role="status" aria-live="polite"></p>
+              <button type="submit" class="submit-btn" id="portal-update-btn">Publish live changes</button>
+            </form>
+          </div>
+
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Live preview</h2>
+              <span>Updates as you type</span>
+            </div>
+            <div class="preview-stage">
+              <div>
+                <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;">Driver map popup</div>
+                <div class="preview-map-card">
+                  <span class="preview-cat-badge" id="prev-cat">Local stop</span>
+                  <strong id="prev-name">Your shop</strong>
+                  <p id="prev-offer">Your live offer appears here.</p>
+                  <div style="display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--line);">
+                    <span style="font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--ink);color:var(--paper);">Directions ↗</span>
+                    <span id="prev-link-pill" style="font-size:11.5px;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--soft);color:var(--ink);" hidden>Website →</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;">AI-Agent API response (AGENTS.md)</div>
+                <pre class="preview-agent-json" id="prev-agent-json">{}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: RIDER TRAFFIC & ROADS -->
+      <section class="console-view" data-view-panel="analytics" hidden>
+        <div class="console-grid-equal">
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Monthly pass breakdown</h2>
+              <span>Distinct anonymous devices</span>
+            </div>
+            <table class="console-table">
+              <thead>
+                <tr><th>Month</th><th>Distinct devices passed</th></tr>
+              </thead>
+              <tbody id="analytics-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Why your corridor matters</h2>
+              <span>Roadside intelligence</span>
+            </div>
+            <p class="portal-subcopy" style="margin:0;">
+              Hodos counts anonymous devices physically passing your pin each month without ever tracking driver identities.
+            </p>
+            <div class="key-row">
+              <div class="key-row-meta">
+                <span>Corroborated hazards within 500 m</span>
+                <code id="analytics-hazards-val">0</code>
+              </div>
+              <span class="kpi-pill" id="analytics-tier-pill">Standard</span>
+            </div>
+            <p class="portal-subcopy" style="margin:0;" id="analytics-advice">
+              Tip: Keep your one-line offer specific (opening hours, free tyre pressure check, quick service) so both drivers and AI assistants pick your shop first.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: PLAN & EXTRA DAYS -->
+      <section class="console-view" data-view-panel="plan" hidden>
+        <div class="console-grid-equal">
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Current placement plan</h2>
+              <span class="kpi-pill">Free initial launch</span>
+            </div>
+            <div class="key-row">
+              <div class="key-row-meta">
+                <span>Plan cost</span>
+                <code>Free initially · 0% commission</code>
+              </div>
+            </div>
+            <div class="key-row">
+              <div class="key-row-meta">
+                <span>Active until</span>
+                <code id="plan-expiry-val">—</code>
+              </div>
+            </div>
+            <div class="key-row">
+              <div class="key-row-meta">
+                <span>Days remaining</span>
+                <code id="plan-days-val">—</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="console-panel">
+            <div class="console-panel-head">
+              <h2>Request more days</h2>
+              <span>Emails Hodos directly</span>
+            </div>
+            <p class="portal-subcopy" style="margin:0;">
+              Pick how many extra days you’d like to add. Your authenticated request goes straight to our team via email and updates your record immediately.
+            </p>
+            <div id="dash-pending-ext" class="portal-notice" hidden></div>
+            <form id="portal-extend-form" class="placement-form" novalidate>
+              <div class="day-row" id="portal-ext-days" role="radiogroup" aria-label="Additional days to request">
+                <button type="button" class="day-chip" data-req-days="7" aria-selected="false">+7 days</button>
+                <button type="button" class="day-chip" data-req-days="30" aria-selected="true">+30 days</button>
+                <button type="button" class="day-chip" data-req-days="90" aria-selected="false">+90 days</button>
+              </div>
+              <p id="portal-extend-status" class="form-status" role="status" aria-live="polite"></p>
+              <button type="submit" class="submit-btn" id="portal-extend-btn">Request +30 more days</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: KEYS & BACKUP -->
+      <section class="console-view" data-view-panel="security" hidden>
+        <div class="console-panel">
+          <div class="console-panel-head">
+            <h2>Private credentials &amp; backup</h2>
+            <span>Keep your Owner Secret Key private</span>
+          </div>
+          <p class="portal-subcopy" style="margin:0;">
+            Hodos never creates shop accounts or stores your raw key. Download a local `.txt` backup file so you never lose access to your shop console.
+          </p>
+
+          <div class="key-row">
+            <div class="key-row-meta">
+              <span>Pin Reference ID</span>
+              <code id="sec-pin-id">—</code>
+            </div>
+            <button type="button" class="result-btn result-btn-ghost" id="sec-copy-id">Copy Pin ID</button>
+          </div>
+
+          <div class="key-row">
+            <div class="key-row-meta">
+              <span>Owner Secret Key</span>
+              <code id="sec-owner-key" data-revealed="false">••••••••••••••••••••••••••••••••</code>
+            </div>
+            <div class="result-actions" style="margin:0;">
+              <button type="button" class="result-btn result-btn-ghost" id="sec-reveal-key">Reveal</button>
+              <button type="button" class="result-btn result-btn-ghost" id="sec-copy-key">Copy Key</button>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button type="button" class="result-btn result-btn-accent" id="sec-download-key">Download credentials file (.txt)</button>
+            <button type="button" class="result-btn result-btn-ghost" id="sec-lock-btn">Lock &amp; clear this browser</button>
+          </div>
+
+          <p class="fine-print" style="margin-top:4px;">
+            Lost your key? Email <a href="mailto:__HODOS_CONTACT__">__HODOS_CONTACT__</a> from the email or phone number registered on your pin along with your Pin Reference ID.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="/src/partner-manage.ts"></script>
 </body>

@@ -709,19 +709,84 @@ function wireForm() {
       if (!result.ok) throw new Error(result.error || "failed");
       const placedLat = point.lat;
       const placedLng = point.lng;
+      const placementId = String(result.placement || "");
+      const manageKey = typeof result.manageKey === "string" ? result.manageKey : "";
+      const category = String(data.get("category") || "").trim() || "business";
+      const activeUntil = (result.activeUntil as string | null) || "";
+
+      // Auto-download private shop credentials + info file to the user's device.
+      if (placementId && manageKey) {
+        const slug = name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 28) || "shop";
+        const mapUrl = `https://hodos.devilabs.dev/map/?shop=${encodeURIComponent(placementId)}#16/${placedLat.toFixed(5)}/${placedLng.toFixed(5)}`;
+        const keyLines = [
+          "================================================================",
+          "HODOS PRIVATE SHOP CREDENTIALS — KEEP THIS FILE SAFE & PRIVATE",
+          "================================================================",
+          "",
+          `Shop Name:        ${name}`,
+          `Category:         ${category}`,
+          `Live Offer:       ${offer}`,
+          `Address:          ${address}`,
+          `Phone:            ${phone}`,
+          `Email:            ${email || "—"}`,
+          `Coordinates:      ${placedLat.toFixed(5)}, ${placedLng.toFixed(5)}`,
+          `Active Until:     ${activeUntil || "—"}`,
+          "",
+          "--- PRIVATE ACCESS CREDENTIALS ---",
+          `Pin Reference ID: ${placementId}`,
+          `Owner Secret Key: ${manageKey}`,
+          "",
+          "--- DIRECT LINKS ---",
+          "Partner Console:  https://hodos.devilabs.dev/partners/manage/",
+          `Your Live Pin:    ${mapUrl}`,
+          "",
+          "SECURITY NOTE:",
+          "Hodos stores only a SHA-256 hash of your Owner Secret Key.",
+          "Keep this file safe — only someone with both your Pin Reference ID",
+          "and Owner Secret Key can edit your offers or request extra days.",
+          ""
+        ];
+        try {
+          const blob = new Blob([keyLines.join("\n")], { type: "text/plain;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `hodos-shop-key-${slug}-${placementId}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+        } catch {
+          // Download may be blocked in restricted webviews; key is also shown in console.
+        }
+      }
+
       form.reset();
-      setStatus("");
       showResult({
         live: Boolean(result.live),
         activeUntil: result.activeUntil as string | null,
-        placement: String(result.placement || ""),
-        manageKey: typeof result.manageKey === "string" ? result.manageKey : undefined,
+        placement: placementId,
+        manageKey: manageKey || undefined,
         amount: money(result.totalLocal, result.currency),
         days: Number(result.days) || days,
         next: String(result.next || ""),
         lat: placedLat,
         lng: placedLng
       });
+
+      if (placementId && manageKey) {
+        setStatus("Pin live! Downloading your key file and opening your Partner Console…", "ok");
+        const target = `/partners/manage/#id=${encodeURIComponent(placementId)}&key=${encodeURIComponent(manageKey)}&fresh=1`;
+        window.setTimeout(() => {
+          window.location.href = target;
+        }, 650);
+      } else {
+        setStatus("");
+      }
     } catch (error) {
       setStatus(`Couldn't record that — ${String(error).replace("Error: ", "")}`, "error");
     } finally {
