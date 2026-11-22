@@ -67,6 +67,7 @@ export interface MapInstanceHandle {
   map: Map;
   hazards: WebHazard[];
   filterByKind: (kind: string, query?: string) => void;
+  setShopsVisible: (visible: boolean) => void;
   fitAllHazards: () => void;
   flyToHazard: (id: string) => void;
   addOptimisticHazard: (hazard: WebHazard) => void;
@@ -395,22 +396,44 @@ export function initWebMap(
       }))
   });
 
+  const partnerVisual = (rawCategory: string): { icon: string; label: string; color: string } => {
+    const c = (rawCategory || "").toLowerCase();
+    if (/tyre|tire|garage|mechanic|auto|car|moto|bike|wash|tow|workshop|repair|service|parts/.test(c)) {
+      return { icon: "shop-auto", label: "Auto & Tyre", color: "#27272a" };
+    }
+    if (/ev|charg|fuel|petrol|gas|battery/.test(c)) {
+      return { icon: "shop-ev", label: "EV & Fuel", color: "#0f766e" };
+    }
+    if (/cafe|coffee|tea|food|restaurant|biryani|bakery|snack|dhaba|eat|dining/.test(c)) {
+      return { icon: "shop-food", label: "Food & Café", color: "#6b4423" };
+    }
+    if (/pharm|med|clinic|hospital|health|first/.test(c)) {
+      return { icon: "shop-health", label: "Pharmacy", color: "#9d174d" };
+    }
+    return { icon: "shop-local", label: "Local stop", color: "#3f3f46" };
+  };
+
   const buildPartnerGeoJSON = (items: WebPartner[]): FeatureCollection => ({
     type: "FeatureCollection",
-    features: items.map((p) => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [p.lng, p.lat]
-      },
-      properties: {
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        offer: p.offer,
-        sponsorLabel: p.sponsorLabel
-      }
-    }))
+    features: items.map((p) => {
+      const vis = partnerVisual(p.category);
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [p.lng, p.lat]
+        },
+        properties: {
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          categoryLabel: vis.label,
+          icon: vis.icon,
+          offer: p.offer,
+          sponsorLabel: p.sponsorLabel
+        }
+      };
+    })
   });
 
   const fitBoundsToData = (targetHazards: WebHazard[], force = false) => {
@@ -491,6 +514,14 @@ export function initWebMap(
         statusEl.textContent = filtered.length === 0
           ? "No road observations match this filter"
           : `${filtered.length} matching report${filtered.length === 1 ? "" : "s"}`;
+      }
+    },
+    setShopsVisible: (visible: boolean) => {
+      const vis = visible ? "visible" : "none";
+      for (const layerId of ["hodos-partner-clusters", "hodos-partner-icons"]) {
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, "visibility", vis);
+        }
       }
     },
     fitAllHazards: () => fitBoundsToData(hazards, true),
@@ -746,21 +777,25 @@ export function initWebMap(
 
   function showPopupForPartner(p: WebPartner) {
     const href = safeHttpUrl(p.link);
+    const vis = partnerVisual(p.category);
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.lat},${p.lng}`)}`;
     const html = `
-      <div style="font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; padding: 4px; min-width: 200px; color: var(--ink, #1c1a17);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-          <strong style="font-size: 14px; font-weight: 700;">${escapeHtml(p.name)}</strong>
-          <span style="background: #d97706; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">
-            Local shop
+      <div style="font-family: 'Host Grotesk', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13.5px; line-height: 1.5; padding: 4px 2px; min-width: 220px; max-width: 270px; color: var(--ink, #1c1a17); display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 4px; padding-right: 18px;">
+          <span style="align-self: flex-start; background: ${vis.color}; color: #ffffff; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px;">
+            ${escapeHtml(vis.label)}
           </span>
+          <strong style="font-size: 15.5px; font-weight: 750; line-height: 1.25; letter-spacing: -0.015em; color: var(--ink, #1c1a17);">${escapeHtml(p.name)}</strong>
         </div>
-        ${p.offer ? `<div style="font-size: 12.5px; color: var(--muted, #57534e); margin-bottom: 6px;">${escapeHtml(p.offer)}</div>` : ""}
-        ${href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" style="font-size: 12px; font-weight: 600; color: var(--accent, #b45309); text-decoration: none; display:block; margin-bottom:6px;">Visit →</a>` : ""}
-        <a href="/partners" style="font-size: 12px; font-weight: 600; color: var(--accent, #b45309); text-decoration: none;">Put your shop here →</a>
+        ${p.offer ? `<div style="font-size: 13px; line-height: 1.5; color: var(--muted, #57534e);">${escapeHtml(p.offer)}</div>` : ""}
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line, rgba(28,26,23,0.1));">
+          <a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 999px; background: var(--ink, #1c1a17); color: var(--paper, #ffffff); text-decoration: none;">Directions ↗</a>
+          ${href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" style="display: inline-flex; align-items: center; font-size: 12px; font-weight: 650; padding: 6px 11px; border-radius: 999px; background: var(--soft, #f4e8ea); color: var(--ink, #1c1a17); text-decoration: none;">Website →</a>` : ""}
+        </div>
       </div>
     `;
 
-    new Popup({ offset: 12, closeButton: true })
+    new Popup({ offset: 14, closeButton: true })
       .setLngLat([p.lng, p.lat])
       .setHTML(html)
       .addTo(map);
@@ -775,60 +810,225 @@ export function initWebMap(
     // blank with zero tile requests.
     applyHashCamera();
 
-    // Sponsored pins first (so hazard layers render on top — safety data always
-    // wins), then the hazard layers.
+    const registerPartnerBadges = () => {
+      const specs: Array<{ id: string; bg: string; draw: (ctx: CanvasRenderingContext2D, s: number) => void }> = [
+        {
+          id: "shop-auto",
+          bg: "#27272a",
+          draw: (ctx, s) => {
+            // Minimal wrench / wheel-nut glyph
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3.2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.arc(s * 0.5, s * 0.5, s * 0.16, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(s * 0.5, s * 0.5, s * 0.055, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            for (let i = 0; i < 6; i++) {
+              const a = (i * Math.PI) / 3;
+              ctx.beginPath();
+              ctx.moveTo(s * 0.5 + Math.cos(a) * s * 0.16, s * 0.5 + Math.sin(a) * s * 0.16);
+              ctx.lineTo(s * 0.5 + Math.cos(a) * s * 0.24, s * 0.5 + Math.sin(a) * s * 0.24);
+              ctx.stroke();
+            }
+          }
+        },
+        {
+          id: "shop-ev",
+          bg: "#0f766e",
+          draw: (ctx, s) => {
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.moveTo(s * 0.54, s * 0.24);
+            ctx.lineTo(s * 0.34, s * 0.53);
+            ctx.lineTo(s * 0.49, s * 0.53);
+            ctx.lineTo(s * 0.45, s * 0.76);
+            ctx.lineTo(s * 0.66, s * 0.47);
+            ctx.lineTo(s * 0.51, s * 0.47);
+            ctx.closePath();
+            ctx.fill();
+          }
+        },
+        {
+          id: "shop-food",
+          bg: "#6b4423",
+          draw: (ctx, s) => {
+            // Minimal café cup glyph
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3.2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.roundRect(s * 0.3, s * 0.38, s * 0.32, s * 0.28, 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(s * 0.64, s * 0.5, s * 0.08, -Math.PI * 0.5, Math.PI * 0.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(s * 0.28, s * 0.72);
+            ctx.lineTo(s * 0.66, s * 0.72);
+            ctx.stroke();
+          }
+        },
+        {
+          id: "shop-health",
+          bg: "#9d174d",
+          draw: (ctx, s) => {
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.roundRect(s * 0.44, s * 0.28, s * 0.12, s * 0.44, 3);
+            ctx.roundRect(s * 0.28, s * 0.44, s * 0.44, s * 0.12, 3);
+            ctx.fill();
+          }
+        },
+        {
+          id: "shop-local",
+          bg: "#3f3f46",
+          draw: (ctx, s) => {
+            // Minimal storefront glyph
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3.2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(s * 0.28, s * 0.42);
+            ctx.lineTo(s * 0.34, s * 0.3);
+            ctx.lineTo(s * 0.66, s * 0.3);
+            ctx.lineTo(s * 0.72, s * 0.42);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.roundRect(s * 0.32, s * 0.44, s * 0.36, s * 0.26, 3);
+            ctx.stroke();
+          }
+        },
+        {
+          id: "shop-cluster",
+          bg: "#18181b",
+          draw: (ctx, s) => {
+            // Minimal stacked-stops cluster glyph (zero external glyph fonts needed)
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.roundRect(s * 0.26, s * 0.34, s * 0.3, s * 0.3, 4);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.roundRect(s * 0.44, s * 0.24, s * 0.3, s * 0.3, 4);
+            ctx.fillStyle = "#18181b";
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(s * 0.59, s * 0.39, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      ];
+
+      for (const spec of specs) {
+        if (map.hasImage(spec.id)) continue;
+        const size = 56;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+
+        ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = spec.bg;
+        ctx.beginPath();
+        ctx.roundRect(6, 6, size - 12, size - 12, 13);
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+
+        spec.draw(ctx, size);
+        const img = ctx.getImageData(0, 0, size, size);
+        map.addImage(spec.id, { width: size, height: size, data: img.data }, { pixelRatio: 2 });
+      }
+    };
+
+    registerPartnerBadges();
+
+    // Local shop stops render BELOW road hazards, stay hidden on zoomed-out
+    // highway/city views (minzoom 11.5), and automatically cluster so dense
+    // neighbourhoods never turn the road map into ad clutter.
     map.addSource("hodos-partners", {
       type: "geojson",
-      data: buildPartnerGeoJSON(partners)
+      data: buildPartnerGeoJSON(partners),
+      cluster: true,
+      clusterMaxZoom: 13,
+      clusterRadius: 48
     });
+
     map.addLayer({
-      id: "partner-halo",
-      type: "circle",
+      id: "hodos-partner-clusters",
+      type: "symbol",
       source: "hodos-partners",
-      paint: {
-        "circle-radius": 16,
-        "circle-color": "#d97706",
-        "circle-opacity": 0.14
+      minzoom: 11.5,
+      filter: ["has", "point_count"],
+      layout: {
+        "icon-image": "shop-cluster",
+        "icon-size": ["step", ["get", "point_count"], 0.85, 10, 0.96, 30, 1.06],
+        "icon-allow-overlap": false,
+        "icon-padding": 4
       }
     });
-    // MapLibre circle layers have no dashed stroke, so the partner pin reads as
-    // a white dot inside an amber ring: an outer translucent ring plus the dot.
+
     map.addLayer({
-      id: "hodos-partner-ring",
-      type: "circle",
+      id: "hodos-partner-icons",
+      type: "symbol",
       source: "hodos-partners",
-      paint: {
-        "circle-radius": 11.5,
-        "circle-color": "#d97706",
-        "circle-opacity": 0.18,
-        "circle-stroke-color": "#d97706",
-        "circle-stroke-width": 1.5,
-        "circle-stroke-opacity": 0.55
+      minzoom: 11.5,
+      filter: ["!", ["has", "point_count"]],
+      layout: {
+        "icon-image": ["coalesce", ["get", "icon"], "shop-local"],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 11.5, 0.72, 15, 0.92],
+        "icon-allow-overlap": false,
+        "icon-padding": 4
       }
     });
-    map.addLayer({
-      id: "hodos-partner-dots",
-      type: "circle",
-      source: "hodos-partners",
-      paint: {
-        "circle-radius": 7.5,
-        "circle-color": "#fffdf7",
-        "circle-stroke-color": "#d97706",
-        "circle-stroke-width": 2.5
-      }
+
+    map.on("click", "hodos-partner-clusters", (e: MapLayerMouseEvent) => {
+      const feat = e.features?.[0];
+      const clusterId = feat?.properties?.cluster_id;
+      const src = map.getSource("hodos-partners") as any;
+      if (clusterId == null || !src?.getClusterExpansionZoom) return;
+      src.getClusterExpansionZoom(clusterId, (err: unknown, zoom: number) => {
+        if (err || !feat?.geometry || feat.geometry.type !== "Point") return;
+        map.easeTo({
+          center: feat.geometry.coordinates as [number, number],
+          zoom: Math.min(16, (zoom || 14) + 0.5),
+          duration: 450
+        });
+      });
     });
-    map.on("click", "hodos-partner-dots", (e: MapLayerMouseEvent) => {
+
+    map.on("click", "hodos-partner-icons", (e: MapLayerMouseEvent) => {
       const feat = e.features?.[0];
       if (!feat || !feat.properties) return;
       const target = partners.find((p) => p.id === feat.properties?.id);
       if (target) showPopupForPartner(target);
     });
-    map.on("mouseenter", "hodos-partner-dots", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "hodos-partner-dots", () => {
-      map.getCanvas().style.cursor = "";
-    });
+    for (const layerId of ["hodos-partner-icons", "hodos-partner-clusters"]) {
+      map.on("mouseenter", layerId, () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", layerId, () => {
+        map.getCanvas().style.cursor = "";
+      });
+    }
 
     const registerRadarBadges = () => {
       const defs: Array<{ id: string; color: string; glyph: string; shape: "shield" | "diamond" | "octagon" | "circle" }> = [

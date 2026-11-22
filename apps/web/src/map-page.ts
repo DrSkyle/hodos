@@ -114,6 +114,16 @@ document.getElementById("btn-fit-all")?.addEventListener("click", () => {
   handle?.fitAllHazards();
 });
 
+const toggleShopsBtn = document.getElementById("toggle-shops") as HTMLButtonElement | null;
+let shopsVisible = true;
+toggleShopsBtn?.addEventListener("click", () => {
+  shopsVisible = !shopsVisible;
+  toggleShopsBtn.classList.toggle("is-active", shopsVisible);
+  toggleShopsBtn.setAttribute("aria-pressed", String(shopsVisible));
+  toggleShopsBtn.textContent = shopsVisible ? "Shops: On" : "Shops: Off";
+  handle?.setShopsVisible(shopsVisible);
+});
+
 function resolveReportPosition(): Promise<{ lat: number; lng: number; accuracyM: number }> {
   return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) {

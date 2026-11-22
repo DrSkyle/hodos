@@ -290,6 +290,67 @@
   background: var(--soft-2);
 }
 
+.result-btn-accent {
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+}
+
+.result-btn-accent:hover {
+  opacity: 0.9;
+}
+
+.result-pin-box {
+  margin-top: 4px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1.5px dashed var(--accent);
+  background: var(--soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-pin-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.result-pin-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.result-pin-id {
+  align-self: flex-start;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  user-select: all;
+}
+
+.result-pin-hint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.result-pin-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .result-ref {
   margin-top: 4px;
   padding-top: 14px;

@@ -459,15 +459,60 @@ function showResult(order: {
           ? `Visible to riders and AI assistants until ${esc(untilText)}. Initial shop pins are completely free with 0% commission — it comes down on its own when the days run out.`
           : esc(order.next || "Please check your shop details and try again.")
       }</p>
+      ${
+        order.placement
+          ? `<div class="result-pin-box">
+              <div class="result-pin-meta">
+                <span class="result-pin-label">Your Pin Reference ID · Save this</span>
+                <code class="result-pin-id" id="result-pin-code">${esc(order.placement)}</code>
+                <span class="result-pin-hint">Use this ID anytime to check how many riders passed your shop.</span>
+              </div>
+              <div class="result-pin-btns">
+                <button class="result-btn result-btn-accent" type="button" id="copy-pin-id">Copy Reference ID</button>
+                <button class="result-btn result-btn-ghost" type="button" id="track-pin-id">Check stats</button>
+              </div>
+            </div>`
+          : ""
+      }
       <div class="result-actions">
         <a class="result-btn result-btn-primary" href="/map/">See it on the map</a>
         <button class="result-btn result-btn-ghost" type="button" id="place-another-pin">Place another pin</button>
       </div>
-      <p class="result-ref">Pin ID: <code>${esc(order.placement)}</code> · Save this ID to check monthly rider pass counts below.</p>
     </div>
   `;
   host.hidden = false;
   host.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const copyBtn = host.querySelector<HTMLButtonElement>("#copy-pin-id");
+  copyBtn?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(order.placement);
+      copyBtn.textContent = "Copied ✓";
+      window.setTimeout(() => {
+        copyBtn.textContent = "Copy Reference ID";
+      }, 2200);
+    } catch {
+      const codeEl = host.querySelector("#result-pin-code");
+      if (codeEl) {
+        const range = document.createRange();
+        range.selectNodeContents(codeEl);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      copyBtn.textContent = "Selected — press Copy";
+    }
+  });
+
+  host.querySelector<HTMLButtonElement>("#track-pin-id")?.addEventListener("click", () => {
+    const lookupInput = document.getElementById("lookup-placement-id") as HTMLInputElement | null;
+    const lookupForm = document.getElementById("lookup-placement-form") as HTMLFormElement | null;
+    if (lookupInput && lookupForm) {
+      lookupInput.value = order.placement;
+      lookupForm.scrollIntoView({ behavior: "smooth", block: "center" });
+      lookupForm.requestSubmit();
+    }
+  });
 
   host.querySelector<HTMLButtonElement>("#place-another-pin")?.addEventListener("click", () => {
     host.hidden = true;
