@@ -220,7 +220,16 @@ async function renderNepal() {
   if (nepalShops === null) {
     // Real local shops that placed a pin on the map, with their live dashboard offers.
     nepalShops = await loadLiveShops();
-    const categories = ["All", ...Array.from(new Set(nepalShops.map((shop) => shop.category)))];
+    const order = ["Tyres", "Garage", "EV & Fuel", "Pharmacy", "Food & Café", "Parking", "Local Shop"];
+    const uniqueCats = Array.from(new Set(nepalShops.map((shop) => shop.category))).sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    const categories = ["All", ...uniqueCats];
     buildChips(categories, (label) => {
       activeCategory = label;
       void renderNepal();
@@ -234,7 +243,7 @@ async function renderNepal() {
   const shown = !q
     ? byCategory
     : byCategory.filter((shop) =>
-        [shop.name, shop.category, shop.offer, shop.address]
+        [shop.name, shop.category, shop.rawCategory, shop.offer, shop.address]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(q))
       );

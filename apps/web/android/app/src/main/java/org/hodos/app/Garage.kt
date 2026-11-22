@@ -173,7 +173,7 @@ object Garage {
                         GarageOffer(
                             id = row.optString("\$id", "shop-$i"),
                             title = name,
-                            brand = row.optString("category", "Shop").ifBlank { "Shop" },
+                            brand = PartnerVisuals.normalizeCategory(row.optString("category")),
                             image = null,
                             price = null,
                             compareAt = null,

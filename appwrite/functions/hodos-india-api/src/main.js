@@ -980,7 +980,7 @@ async function partnerQuote(body) {
     settlement: isFree
       ? "Shop pins in India are completely free initially — no payment or UPI transfer needed."
       : country === "NP"
-      ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
+      ? "Email support@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
       : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
     settlementOptions: isFree
       ? ["free"]

@@ -3,7 +3,7 @@
 export const SITE_VERSION = "3.0.19";
 export const DOWNLOAD_URL = "https://github.com/DrSkyle/hodos/releases/download/v3.0.4/Hodos-3.0.4.apk";
 export const REPO_URL = "https://github.com/DrSkyle/hodos";
-export const CONTACT_EMAIL = "hodos@devilabs.dev";
+export const CONTACT_EMAIL = "support@devilabs.dev";
 export const SITE_URL = "https://hodos.devilabs.dev";
 export const INSTAGRAM_URL = "https://www.instagram.com/minerva__corporation/";
 
@@ -98,7 +98,7 @@ export type AffiliateProgram = keyof typeof AFFILIATE_LINKS;
  * afterwards — Payoneer invoice today, Paddle once there is a fixed-price item
  * to sell. This is the address those invoices point at.
  */
-export const BILLING_EMAIL = "hodos@devilabs.dev";
+export const BILLING_EMAIL = "support@devilabs.dev";
 
 /**
  * Authorised-seller lines for /ads.txt, one per line, e.g.

@@ -14,7 +14,7 @@ const PROJECT = process.env.HODOS_PROJECT_ID || process.env.APPWRITE_FUNCTION_PR
 const KEY = process.env.HODOS_API_KEY || process.env.APPWRITE_FUNCTION_API_KEY;
 const DATABASE_ID = process.env.HODOS_DATABASE_ID || "hodos";
 const UPSTREAM_TIMEOUT_MS = 12_000;
-const RESEND_FROM = process.env.RESEND_FROM || "Hodos <hodos@devilabs.dev>";
+const RESEND_FROM = process.env.RESEND_FROM || "Hodos Support <support@devilabs.dev>";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

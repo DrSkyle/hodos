@@ -35,7 +35,25 @@ object PartnerVisuals {
         EV_RE.containsMatchIn(category) -> PartnerVisual("shop-ev", "EV & Fuel", 0xFF0F766E.toInt(), PartnerTier.ESSENTIAL)
         HEALTH_RE.containsMatchIn(category) -> PartnerVisual("shop-health", "Pharmacy", 0xFF9D174D.toInt(), PartnerTier.ESSENTIAL)
         FOOD_RE.containsMatchIn(category) -> PartnerVisual("shop-food", "Food & Café", 0xFF6B4423.toInt(), PartnerTier.PITSTOP)
-        else -> PartnerVisual("shop-local", "Local stop", 0xFF3F3F46.toInt(), PartnerTier.PITSTOP)
+        else -> PartnerVisual("shop-local", "Local Shop", 0xFF3F3F46.toInt(), PartnerTier.PITSTOP)
+    }
+
+    private val TYRE_RE = Regex("tyre|tire|puncture|alignment|wheel", RegexOption.IGNORE_CASE)
+
+    fun normalizeCategory(raw: String): String {
+        val clean = raw.trim()
+        if (clean.isEmpty()) return "Local Shop"
+        val lower = clean.lowercase(Locale.US)
+        return when {
+            TYRE_RE.containsMatchIn(lower) -> "Tyres"
+            AUTO_RE.containsMatchIn(lower) -> "Garage"
+            EV_RE.containsMatchIn(lower) -> "EV & Fuel"
+            HEALTH_RE.containsMatchIn(lower) -> "Pharmacy"
+            FOOD_RE.containsMatchIn(lower) -> "Food & Café"
+            lower.contains("parking") -> "Parking"
+            lower in setOf("business", "shop", "store", "local", "local stop", "local shop", "other") -> "Local Shop"
+            else -> clean.replaceFirstChar { it.uppercase(Locale.US) }
+        }
     }
 
     private val DEAL_BADGE_RE = Regex("^\\[([^\\]]{1,16})]\\s*(.+)$")

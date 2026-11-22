@@ -77,7 +77,7 @@ const TEMPLATES = {
 
         <p style="font-size: 12px; color: #9CA3AF; margin: 0;">
           Sent by Devilabs · Makers of Hodos<br/>
-          hodos@devilabs.dev
+          support@devilabs.dev
         </p>
       </div>
     `
@@ -115,14 +115,14 @@ const TEMPLATES = {
         </div>
 
         <p style="font-size: 14px; color: #374151;">
-          We would welcome a 15-minute conversation to demonstrate how our live hazard telemetry integrates with your dispatch or GIS systems. Reply directly to this email at <a href="mailto:hodos@devilabs.dev" style="color:#257B65; font-weight:600;">hodos@devilabs.dev</a> to arrange a pilot.
+          We would welcome a 15-minute conversation to demonstrate how our live hazard telemetry integrates with your dispatch or GIS systems. Reply directly to this email at <a href="mailto:support@devilabs.dev" style="color:#257B65; font-weight:600;">support@devilabs.dev</a> to arrange a pilot.
         </p>
 
         <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 32px 0 20px;" />
 
         <p style="font-size: 12px; color: #9CA3AF; margin: 0;">
           Devilabs · Hodos Infrastructure & Mobility<br/>
-          hodos@devilabs.dev · https://hodos.devilabs.dev
+          support@devilabs.dev · https://hodos.devilabs.dev
         </p>
       </div>
     `
@@ -164,7 +164,7 @@ const TEMPLATES = {
 
         <p style="font-size: 13px; color: #6B7280;">
           Sign, date, and reply to this email with your name and payout wallet filled in. Questions:
-          <a href="mailto:hodos@devilabs.dev" style="color: #257B65;">hodos@devilabs.dev</a>.
+          <a href="mailto:support@devilabs.dev" style="color: #257B65;">support@devilabs.dev</a>.
         </p>
       </div>
     `
@@ -202,7 +202,7 @@ const TEMPLATES = {
 
         <p style="font-size: 13px; color: #6B7280;">
           Sign, stamp, and reply to this email with the signed copy. Questions:
-          <a href="mailto:hodos@devilabs.dev" style="color: #257B65;">hodos@devilabs.dev</a>.
+          <a href="mailto:support@devilabs.dev" style="color: #257B65;">support@devilabs.dev</a>.
         </p>
       </div>
     `
@@ -231,7 +231,7 @@ function agreementAttachment() {
 
 async function sendEmail(recipient) {
   const payload = {
-    from: "Hodos <hodos@devilabs.dev>",
+    from: "Hodos <support@devilabs.dev>",
     to: recipient,
     subject: template.subject,
     html: template.html
@@ -263,7 +263,7 @@ async function sendEmail(recipient) {
 }
 
 async function main() {
-  console.log(`Dispatching ${TEMPLATE_ARG} email via Resend (from: hodos@devilabs.dev)...`);
+  console.log(`Dispatching ${TEMPLATE_ARG} email via Resend (from: support@devilabs.dev)...`);
   console.log(`Recipients (${recipients.length}):`, recipients.join(", "));
 
   for (const email of recipients) {

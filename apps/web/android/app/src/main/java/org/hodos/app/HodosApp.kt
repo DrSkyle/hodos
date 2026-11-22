@@ -2475,7 +2475,7 @@ private fun YouScreen(
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
+                                        Uri.parse("mailto:support@devilabs.dev?subject=Hodos%20Partner%20Placement")
                                     )
                                 )
                             },
@@ -2490,7 +2490,7 @@ private fun YouScreen(
                                 context.startActivity(
                                     Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Commercial%20Data%20API")
+                                        Uri.parse("mailto:support@devilabs.dev?subject=Hodos%20Commercial%20Data%20API")
                                     )
                                 )
                             },
@@ -2592,7 +2592,7 @@ private fun YouScreen(
         }
         item {
             Text(
-                "Hodos v$currentVer · hodos@devilabs.dev",
+                "Hodos v$currentVer · support@devilabs.dev",
                 color = Muted,
                 fontSize = 10.5.sp,
                 fontFamily = OverpassMono,
@@ -2649,7 +2649,7 @@ private fun PartnerOfferBanner(
             context.startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("mailto:hodos@devilabs.dev?subject=Hodos%20Partner%20Placement")
+                    Uri.parse("mailto:support@devilabs.dev?subject=Hodos%20Partner%20Placement")
                 )
             )
         }

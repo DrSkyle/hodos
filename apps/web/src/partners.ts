@@ -10,6 +10,7 @@ import {
 import { setWorkerUrl, Map, Marker, NavigationControl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { wireThemeToggle } from "./theme";
+import { normalizeShopCategory } from "./live-shops";
 
 // Same self-hosted worker as the live map, so Vite's asset hashing cannot
 // break the placement map.
@@ -689,6 +690,8 @@ function wireForm() {
     if (button) button.disabled = true;
     setStatus("Recording your placement…");
 
+    const normalizedCategory = normalizeShopCategory(String(data.get("category") || ""));
+
     try {
       const result = await callApi({
         action: "partnerPlace",
@@ -697,7 +700,7 @@ function wireForm() {
         address,
         phone,
         email,
-        category: String(data.get("category") || "").trim() || "business",
+        category: normalizedCategory,
         link: String(data.get("link") || "").trim(),
         lat: point.lat,
         lng: point.lng,
@@ -711,7 +714,7 @@ function wireForm() {
       const placedLng = point.lng;
       const placementId = String(result.placement || "");
       const manageKey = typeof result.manageKey === "string" ? result.manageKey : "";
-      const category = String(data.get("category") || "").trim() || "business";
+      const category = normalizedCategory;
       const activeUntil = (result.activeUntil as string | null) || "";
 
       // Auto-download private shop credentials + info file to the user's device.

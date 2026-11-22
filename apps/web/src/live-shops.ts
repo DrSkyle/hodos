@@ -20,7 +20,10 @@ export type ShopDeal = {
 export type LiveShop = {
   id: string;
   name: string;
+  /** Clean canonical display category (e.g. "Tyres", "Garage", "Food & Café"). */
   category: string;
+  /** Original category stored on the pin row (retained for search). */
+  rawCategory: string;
   offer: string;
   summary: string;
   deals: ShopDeal[];
@@ -33,6 +36,38 @@ export type LiveShop = {
   /** ISO expiry of the placement. */
   activeUntil: string;
 };
+
+/**
+ * Unifies messy / singular / lowercase category strings ("tyre", "Tyres",
+ * "Restaurant", "cafe", "business") into crisp, deduplicated display tags.
+ */
+export function normalizeShopCategory(raw: string): string {
+  const clean = String(raw || "").trim();
+  if (!clean) return "Local Shop";
+  const c = clean.toLowerCase();
+  if (/^(tyre|tyres|tire|tires|puncture|alignment|wheels?)$/.test(c) || /tyre|tire|puncture/.test(c)) {
+    return "Tyres";
+  }
+  if (/garage|workshop|mechanic|auto|moto|bike|repair|service|parts|tow|wash/.test(c)) {
+    return "Garage";
+  }
+  if (/ev|charg|fuel|petrol|diesel|gas|battery/.test(c)) {
+    return "EV & Fuel";
+  }
+  if (/pharm|med|clinic|hospital|health|chemist/.test(c)) {
+    return "Pharmacy";
+  }
+  if (/restaurant|cafe|café|coffee|tea|food|biryani|bakery|snack|dhaba|eat|dining|hotel/.test(c)) {
+    return "Food & Café";
+  }
+  if (/parking/.test(c)) {
+    return "Parking";
+  }
+  if (/^(business|shop|store|local|local stop|local shop|other)$/.test(c)) {
+    return "Local Shop";
+  }
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
 
 export function parseShopOffer(raw: string): { summary: string; deals: ShopDeal[] } {
   const text = String(raw || "").trim();
@@ -104,10 +139,12 @@ export async function loadLiveShops(): Promise<LiveShop[]> {
     if (!name) continue;
     const offer = String(row.offer ?? "");
     const parsed = parseShopOffer(offer);
+    const rawCategory = String(row.category ?? "Local Shop").trim() || "Local Shop";
     shops.push({
       id: String(row.$id ?? row.id ?? `shop-${index}`),
       name,
-      category: String(row.category ?? "business"),
+      category: normalizeShopCategory(rawCategory),
+      rawCategory,
       offer,
       summary: parsed.summary,
       deals: parsed.deals,

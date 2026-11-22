@@ -322,7 +322,7 @@ internal fun GarageScreen(onBack: () -> Unit) {
         }
         item {
             Text(
-                "Hodos · Devilabs · hodos@devilabs.dev",
+                "Hodos · Devilabs · support@devilabs.dev",
                 color = Muted,
                 fontSize = 10.5.sp,
                 fontFamily = OverpassMono,

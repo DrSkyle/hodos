@@ -5,7 +5,7 @@ import "./pwa";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as MapLibreMap, Marker } from "maplibre-gl";
 import { wireThemeToggle } from "./theme";
-import { encodeShopOffer, parseShopOffer, type ShopDeal } from "./live-shops";
+import { encodeShopOffer, normalizeShopCategory, parseShopOffer, type ShopDeal } from "./live-shops";
 
 wireThemeToggle("theme-toggle");
 
@@ -561,15 +561,15 @@ function renderDashboard(data: PortalData) {
   draftDeals = parsedOffer.deals.map((d) => ({ ...d }));
   renderDealsEditor();
   if (editCategory) {
-    const rawCat = (data.category || "business").trim();
-    const exists = Array.from(editCategory.options).some((o) => o.value === rawCat);
-    if (!exists && rawCat) {
+    const normalizedCat = normalizeShopCategory(data.category || "Local Shop");
+    const exists = Array.from(editCategory.options).some((o) => o.value === normalizedCat);
+    if (!exists && normalizedCat) {
       const opt = document.createElement("option");
-      opt.value = rawCat;
-      opt.textContent = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
+      opt.value = normalizedCat;
+      opt.textContent = normalizedCat;
       editCategory.appendChild(opt);
     }
-    editCategory.value = rawCat || "business";
+    editCategory.value = normalizedCat || "Local Shop";
   }
   if (editPhone) editPhone.value = data.phone || "";
   if (editLink) editLink.value = data.link || "";

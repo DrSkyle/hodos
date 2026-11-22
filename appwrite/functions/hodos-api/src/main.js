@@ -1002,7 +1002,7 @@ async function partnerQuote(body) {
     // public page: the shop emails us for the eSewa, Khalti or IME Pay details,
     // sends the payment, and submits the transaction reference here.
     settlement: country === "NP"
-      ? "Email hodos@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
+      ? "Email support@devilabs.dev for our eSewa, Khalti, IME Pay or bank transfer details, then enter your transaction ID through partnerPlace so the pin goes live immediately."
       : "Pay by Payoneer, card or PayPal. Send the reference through partnerPlace; the pin goes live once it clears.",
     settlementOptions: country === "NP"
       ? ["esewa", "khalti", "imepay", "bank"]
@@ -1545,7 +1545,7 @@ async function partnerUpdate(body) {
 async function sendResendEmail({ to, subject, text, html, replyTo }) {
   const apiKey = (process.env.RESEND_API_KEY || "").trim();
   if (!apiKey || !to) return false;
-  const from = process.env.RESEND_FROM || "Hodos <hodos@devilabs.dev>";
+  const from = process.env.RESEND_FROM || "Hodos <support@devilabs.dev>";
   try {
     const payload = {
       from,
@@ -1610,7 +1610,7 @@ async function partnerRequestDays(body) {
     reference: nextRef
   });
 
-  const adminEmail = (process.env.HODOS_ADMIN_EMAIL || "hodos@devilabs.dev").trim();
+  const adminEmail = (process.env.HODOS_ADMIN_EMAIL || "support@devilabs.dev").trim();
   const shopName = String(pin?.name || order.name || "Unknown shop");
   const shopEmail = String(pin?.email || "").trim();
   const shopPhone = String(pin?.phone || order.contact || "").trim();
