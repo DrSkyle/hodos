@@ -345,7 +345,10 @@ test("shop owner secret keys are placement-bound, verified in constant time, and
   });
 });
 
-test("partnerPortal, partnerUpdate, and partnerRequestDays reject missing or short keys before hitting storage", async () => {
+test("partnerPortal, partnerUpdate, and partnerRequestDays are registered in ACTIONS and reject missing or short keys before hitting storage", async () => {
+  assert.ok("partnerPortal" in testing.ACTIONS);
+  assert.ok("partnerUpdate" in testing.ACTIONS);
+  assert.ok("partnerRequestDays" in testing.ACTIONS);
   for (const fn of [testing.partnerPortal, testing.partnerUpdate, testing.partnerRequestDays]) {
     const res = await fn({ placement: "p12345abcde", manageKey: "short" });
     assert.equal(res.ok, false);

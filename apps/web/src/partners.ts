@@ -710,6 +710,7 @@ function wireForm() {
       const placedLat = point.lat;
       const placedLng = point.lng;
       form.reset();
+      setStatus("");
       showResult({
         live: Boolean(result.live),
         activeUntil: result.activeUntil as string | null,

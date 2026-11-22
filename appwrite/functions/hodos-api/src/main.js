@@ -99,10 +99,13 @@ const ACTIONS = {
   provision: "Create a key with trial credit after the user approves setup.",
   topup: "Register a payment reference for manual credit settlement.",
   partnerQuote: "Price a shop placement in the caller's own currency. Free.",
-  partnerPlace: "Order a shop placement for N days. It goes live when a payment reference is recorded. Free.",
-  partnerExtend: "Add paid days to a placement. Free.",
+  partnerPlace: "Place a free initial local shop pin on the live map and mint its one-time Owner Secret Key.",
+  partnerExtend: "Add days to a placement.",
   partnerStatus: "Read a placement's live status, expiry, and anonymous monthly pass count. Free.",
-  referralCreate: "Create a referral code to earn 60% of shop placement payments you bring. Nepal only.",
+  partnerPortal: "Read private Shop Owner Dashboard analytics (passes, nearby hazards, expiry) with Pin ID + Owner Secret Key.",
+  partnerUpdate: "Update a shop's live offer, category, phone, and website link with Pin ID + Owner Secret Key.",
+  partnerRequestDays: "Request additional live days for a shop pin with Pin ID + Owner Secret Key.",
+  referralCreate: "Paused while initial shop pins are free globally.",
   referralProfile: "Read a referral's earnings, balance and payout readiness. Nepal only.",
   referralRequestPayout: "Ask for the earnable balance to be paid to a Nepali wallet. Nepal only."
 };
