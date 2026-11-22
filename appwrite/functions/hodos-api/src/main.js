@@ -1542,6 +1542,39 @@ async function partnerUpdate(body) {
   };
 }
 
+async function sendResendEmail({ to, subject, text, html, replyTo }) {
+  const apiKey = (process.env.RESEND_API_KEY || "").trim();
+  if (!apiKey || !to) return false;
+  const from = process.env.RESEND_FROM || "Hodos <hodos@devilabs.dev>";
+  try {
+    const payload = {
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html
+    };
+    if (replyTo) payload.reply_to = replyTo;
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8_000)
+    });
+    if (!response.ok) {
+      log(`resend ${response.status}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    log(`resend failed: ${error}`);
+    return false;
+  }
+}
+
 async function partnerRequestDays(body) {
   const id = String(body.placement || "").trim();
   const manageKey = String(body.manageKey || "").trim();
@@ -1561,6 +1594,13 @@ async function partnerRequestDays(body) {
     return { ok: false, status: 401, error: "invalid owner secret key for this pin" };
   }
 
+  let pin = null;
+  try {
+    pin = await readRow("partners", id);
+  } catch (_) {
+    pin = null;
+  }
+
   const days = clampDays(body.days || 30);
   const ownerHash = extractOwnerKeyHash(order.reference);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -1570,12 +1610,69 @@ async function partnerRequestDays(body) {
     reference: nextRef
   });
 
+  const adminEmail = (process.env.HODOS_ADMIN_EMAIL || "hodos@devilabs.dev").trim();
+  const shopName = String(pin?.name || order.name || "Unknown shop");
+  const shopEmail = String(pin?.email || "").trim();
+  const shopPhone = String(pin?.phone || order.contact || "").trim();
+  const lat = Number(pin?.lat ?? order.lat);
+  const lng = Number(pin?.lng ?? order.lng);
+  const mapUrl = Number.isFinite(lat) && Number.isFinite(lng)
+    ? `https://hodos.devilabs.dev/map/?shop=${encodeURIComponent(id)}#16/${lat.toFixed(5)}/${lng.toFixed(5)}`
+    : "https://hodos.devilabs.dev/map/";
+
+  const adminNotified = await sendResendEmail({
+    to: adminEmail,
+    replyTo: shopEmail || undefined,
+    subject: `[Hodos Pin Extension] +${days}d requested — ${shopName} (${id})`,
+    text: [
+      `Shop extension request received via private Shop Owner Dashboard:`,
+      ``,
+      `Shop: ${shopName}`,
+      `Category: ${pin?.category || order.category || "business"}`,
+      `Pin ID: ${id}`,
+      `Requested days: +${days} days`,
+      `Current expiry: ${pin?.activeUntil || "expired/none"}`,
+      `Contact / Phone: ${shopPhone || "—"}`,
+      `Email: ${shopEmail || "—"}`,
+      `Map: ${mapUrl}`,
+      ``,
+      `Stored on partnerPlacements/${id} as reference tag ext:+${days}d@${stamp}.`
+    ].join("\n"),
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:22px;background:#fdf1f3;color:#141314;border-radius:16px;">
+        <h2 style="margin:0 0 12px;font-size:19px;">Pin Extension Request: +${days} days</h2>
+        <p style="margin:0 0 14px;font-size:14px;color:#373737;">A verified shop owner requested more days from their private Hodos dashboard.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;background:#ffffff;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:8px 12px;color:#50504f;">Shop</td><td style="padding:8px 12px;font-weight:700;">${shopName}</td></tr>
+          <tr><td style="padding:8px 12px;color:#50504f;">Pin ID</td><td style="padding:8px 12px;font-family:monospace;">${id}</td></tr>
+          <tr><td style="padding:8px 12px;color:#50504f;">Requested</td><td style="padding:8px 12px;font-weight:700;color:#be185d;">+${days} days</td></tr>
+          <tr><td style="padding:8px 12px;color:#50504f;">Current expiry</td><td style="padding:8px 12px;">${pin?.activeUntil || "—"}</td></tr>
+          <tr><td style="padding:8px 12px;color:#50504f;">Phone / Contact</td><td style="padding:8px 12px;">${shopPhone || "—"}</td></tr>
+          <tr><td style="padding:8px 12px;color:#50504f;">Email</td><td style="padding:8px 12px;">${shopEmail || "—"}</td></tr>
+        </table>
+        <p style="margin:16px 0 0;"><a href="${mapUrl}" style="display:inline-block;background:#141314;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:999px;">View shop on map ↗</a></p>
+      </div>
+    `
+  });
+
+  if (shopEmail && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(shopEmail)) {
+    await sendResendEmail({
+      to: shopEmail,
+      subject: `Hodos received your +${days} day pin request for ${shopName}`,
+      text: `Hi ${shopName},\n\nWe received your request to add +${days} days to your Hodos map pin (${id}). Our team will review and apply it shortly.\n\nView your pin: ${mapUrl}\n\n— Hodos (Devilabs)`,
+      html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:540px;margin:0 auto;padding:24px;background:#fdf1f3;color:#141314;border-radius:16px;"><strong>hodos<span style="color:#d58400;">.</span></strong><h2 style="margin:12px 0 8px;">Extension request received</h2><p style="font-size:14.5px;color:#373737;line-height:1.6;">We received your request to add <strong>+${days} days</strong> to <strong>${shopName}</strong> (<code>${id}</code>). We’ll review and apply it shortly.</p><p><a href="${mapUrl}" style="display:inline-block;background:#be185d;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:999px;">View your pin on Hodos ↗</a></p></div>`
+    });
+  }
+
   return {
     ok: true,
     placement: id,
     requestedDays: days,
     requestedAt: stamp,
-    message: `Extension request for +${days} days recorded. We'll review and apply it to your pin.`
+    notified: adminNotified,
+    message: adminNotified
+      ? `Extension request for +${days} days sent to Hodos (${adminEmail}). We'll review and apply it shortly.`
+      : `Extension request for +${days} days recorded. We'll review and apply it to your pin.`
   };
 }
 

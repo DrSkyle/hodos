@@ -79,6 +79,34 @@ if ! appwrite functions get --function-id hodos-api >/dev/null 2>&1; then
     --scopes executions.read --scopes executions.write
 fi
 
+set_func_var() {
+  local key="$1"
+  local val="$2"
+  local existing_id
+  existing_id="$(appwrite functions list-variables --function-id hodos-api -j 2>/dev/null \
+    | node -e 'const d = JSON.parse(require("fs").readFileSync(0,"utf8")); const v = (d.variables||[]).find(x=>x.key===process.argv[1]); if(v) console.log(v.$id);' "$key" || true)"
+  if [[ -n "$existing_id" ]]; then
+    appwrite functions update-variable --function-id hodos-api --variable-id "$existing_id" --key "$key" --value "$val" >/dev/null
+  else
+    appwrite functions create-variable --function-id hodos-api --key "$key" --value "$val" >/dev/null
+  fi
+}
+
+if [[ -n "${RESEND_API_KEY:-}" ]]; then
+  set_func_var "RESEND_API_KEY" "$RESEND_API_KEY"
+  echo "Configured RESEND_API_KEY on hodos-api."
+fi
+
+if [[ -n "${RESEND_FROM:-}" ]]; then
+  set_func_var "RESEND_FROM" "$RESEND_FROM"
+  echo "Configured RESEND_FROM on hodos-api."
+fi
+
+if [[ -n "${HODOS_ADMIN_EMAIL:-}" ]]; then
+  set_func_var "HODOS_ADMIN_EMAIL" "$HODOS_ADMIN_EMAIL"
+  echo "Configured HODOS_ADMIN_EMAIL on hodos-api."
+fi
+
 appwrite functions create-deployment \
   --function-id hodos-api \
   --code appwrite/functions/hodos-api \
