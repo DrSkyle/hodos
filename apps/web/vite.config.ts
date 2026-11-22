@@ -138,6 +138,8 @@ export default defineConfig({
         referrals: resolve(__dirname, "referrals/index.html"),
         app: resolve(__dirname, "app/index.html"),
         privacy: resolve(__dirname, "privacy.html"),
+        partnerAgreement: resolve(__dirname, "legal/partner-agreement.html"),
+        referrerAgreement: resolve(__dirname, "legal/referrer-agreement.html"),
       },
     },
   },
