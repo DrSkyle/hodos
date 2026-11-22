@@ -115,16 +115,16 @@ document.getElementById("btn-fit-all")?.addEventListener("click", () => {
 });
 
 const toggleShopsBtn = document.getElementById("toggle-shops") as HTMLButtonElement | null;
-const SHOPS_MODES = ["essentials", "all", "off"] as const;
+const SHOPS_MODES = ["all", "essentials", "off"] as const;
 let shopsModeIdx = 0;
 toggleShopsBtn?.addEventListener("click", () => {
   shopsModeIdx = (shopsModeIdx + 1) % SHOPS_MODES.length;
-  const mode = SHOPS_MODES[shopsModeIdx] ?? "essentials";
+  const mode = SHOPS_MODES[shopsModeIdx] ?? "all";
   const isOn = mode !== "off";
   toggleShopsBtn.classList.toggle("is-active", isOn);
   toggleShopsBtn.setAttribute("aria-pressed", String(isOn));
   toggleShopsBtn.textContent =
-    mode === "essentials" ? "Shops: Essentials" : mode === "all" ? "Shops: All" : "Shops: Off";
+    mode === "all" ? "Shops: All" : mode === "essentials" ? "Shops: Essentials" : "Shops: Off";
   handle?.setShopsMode(mode);
 });
 

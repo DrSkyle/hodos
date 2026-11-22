@@ -218,7 +218,7 @@ fun RoadMap(
         )
         style.addLayer(
             SymbolLayer("hodos-partner-clusters", "hodos-partners").apply {
-                minZoom = 11.5f
+                minZoom = 10f
                 setFilter(Expression.has("point_count"))
                 withProperties(
                     iconImage("shop-cluster"),
@@ -230,7 +230,7 @@ fun RoadMap(
         )
         style.addLayer(
             SymbolLayer("hodos-partner-icons", "hodos-partners").apply {
-                minZoom = 11.5f
+                minZoom = 10f
                 setFilter(Expression.not(Expression.has("point_count")))
                 withProperties(
                     iconImage(Expression.coalesce(Expression.get("icon"), Expression.literal("shop-local"))),

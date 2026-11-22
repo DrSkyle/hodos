@@ -54,10 +54,9 @@ object PartnerVisuals {
     ): List<PartnerPoi> {
         if (mode == ShopsFilterMode.OFF || items.isEmpty()) return emptyList()
         val eligible = items.filter { p ->
-            val vis = classify(p.category)
             when (mode) {
-                ShopsFilterMode.ESSENTIALS -> vis.tier == PartnerTier.ESSENTIAL
-                ShopsFilterMode.ALL -> vis.tier == PartnerTier.ESSENTIAL || zoom >= 13.5
+                ShopsFilterMode.ESSENTIALS -> classify(p.category).tier == PartnerTier.ESSENTIAL
+                ShopsFilterMode.ALL -> true
                 ShopsFilterMode.OFF -> false
             }
         }
@@ -75,6 +74,7 @@ object PartnerVisuals {
                 outside.add(p)
             }
         }
+        if (inView.size <= maxInView) return inView + outside.take(80)
         val ranked = inView.sortedByDescending { p ->
             val vis = classify(p.category)
             val tierScore = if (vis.tier == PartnerTier.ESSENTIAL) 200.0 else 0.0
@@ -148,15 +148,18 @@ object PartnerOffers {
                 val lng = entry.optDouble("lng", Double.NaN)
                 val name = entry.optString("name")
                 if (!lat.isFinite() || !lng.isFinite() || name.isBlank()) continue
+                val resolvedId = entry.optString("\$id").ifBlank {
+                    entry.optString("id", "partner-$i")
+                }
                 add(
                     PartnerPoi(
-                        id = entry.optString("id", "partner-$i"),
+                        id = resolvedId,
                         name = name,
                         category = entry.optString("category", "pit-stop"),
                         lat = lat,
                         lng = lng,
                         offer = entry.optString("offer"),
-                        sponsorLabel = entry.optString("sponsorLabel", "Sponsored"),
+                        sponsorLabel = entry.optString("sponsorLabel", "Local shop"),
                         passesThisMonth = if (entry.has("passesThisMonth")) {
                             entry.optInt("passesThisMonth").coerceAtLeast(0)
                         } else null

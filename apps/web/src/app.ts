@@ -98,14 +98,14 @@ function render() {
       });
       wireLiveAlertButtons(screens.map);
       const shopsBtn = screens.map.querySelector<HTMLButtonElement>("#app-toggle-shops");
-      const modes = ["essentials", "all", "off"] as const;
+      const modes = ["all", "essentials", "off"] as const;
       let modeIdx = 0;
       shopsBtn?.addEventListener("click", () => {
         modeIdx = (modeIdx + 1) % modes.length;
-        const mode = modes[modeIdx] ?? "essentials";
+        const mode = modes[modeIdx] ?? "all";
         shopsBtn.setAttribute("aria-selected", String(mode !== "off"));
         shopsBtn.textContent =
-          mode === "essentials" ? "Shops: Essentials" : mode === "all" ? "Shops: All" : "Shops: Off";
+          mode === "all" ? "Shops: All" : mode === "essentials" ? "Shops: Essentials" : "Shops: Off";
         appMapHandle?.setShopsMode(mode);
       });
     }

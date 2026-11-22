@@ -438,6 +438,8 @@ function showResult(order: {
   amount: string;
   days: number;
   next: string;
+  lat?: number;
+  lng?: number;
 }) {
   const host = document.getElementById("placement-result");
   if (!host) return;
@@ -449,6 +451,11 @@ function showResult(order: {
     String(s ?? "").replace(/[&<>"']/g, (c) =>
       c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;"
     );
+
+  const mapHref =
+    order.placement && Number.isFinite(order.lat) && Number.isFinite(order.lng)
+      ? `/map/?shop=${encodeURIComponent(order.placement)}#16/${Number(order.lat).toFixed(5)}/${Number(order.lng).toFixed(5)}`
+      : "/map/";
 
   host.innerHTML = `
     <div class="result-card${order.live ? " is-live" : ""}">
@@ -475,7 +482,7 @@ function showResult(order: {
           : ""
       }
       <div class="result-actions">
-        <a class="result-btn result-btn-primary" href="/map/">See it on the map</a>
+        <a class="result-btn result-btn-primary" href="${esc(mapHref)}">See it on the map</a>
         <button class="result-btn result-btn-ghost" type="button" id="place-another-pin">Place another pin</button>
       </div>
     </div>
@@ -655,6 +662,8 @@ function wireForm() {
         locale: browserLocale()
       });
       if (!result.ok) throw new Error(result.error || "failed");
+      const placedLat = point.lat;
+      const placedLng = point.lng;
       form.reset();
       showResult({
         live: Boolean(result.live),
@@ -662,7 +671,9 @@ function wireForm() {
         placement: String(result.placement || ""),
         amount: money(result.totalLocal, result.currency),
         days: Number(result.days) || days,
-        next: String(result.next || "")
+        next: String(result.next || ""),
+        lat: placedLat,
+        lng: placedLng
       });
     } catch (error) {
       setStatus(`Couldn't record that — ${String(error).replace("Error: ", "")}`, "error");

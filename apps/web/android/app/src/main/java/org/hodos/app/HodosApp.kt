@@ -190,7 +190,7 @@ fun HodosApp(
         }
     }
     var partners by remember { mutableStateOf<List<PartnerPoi>>(emptyList()) }
-    var shopsMode by remember { mutableStateOf(ShopsFilterMode.ESSENTIALS) }
+    var shopsMode by remember { mutableStateOf(ShopsFilterMode.ALL) }
     LaunchedEffect(internetConnected) {
         if (internetConnected) {
             val loaded = PartnerOffers.load()
@@ -843,9 +843,9 @@ fun HodosApp(
                                                 selected = shopsSelected,
                                                 onClick = {
                                                     shopsMode = when (shopsMode) {
-                                                        ShopsFilterMode.ESSENTIALS -> ShopsFilterMode.ALL
-                                                        ShopsFilterMode.ALL -> ShopsFilterMode.OFF
-                                                        ShopsFilterMode.OFF -> ShopsFilterMode.ESSENTIALS
+                                                        ShopsFilterMode.ALL -> ShopsFilterMode.ESSENTIALS
+                                                        ShopsFilterMode.ESSENTIALS -> ShopsFilterMode.OFF
+                                                        ShopsFilterMode.OFF -> ShopsFilterMode.ALL
                                                     }
                                                 },
                                                 label = { Text(shopsLabel) },

@@ -142,7 +142,7 @@ export function renderMapScreen(host: HTMLElement, stats: LiveStats) {
           <button type="button" class="chip" data-live-alert="jam">! Jam</button>
           <button type="button" class="chip" data-live-alert="roadblock">✕ Blocked</button>
           <button type="button" class="chip" data-live-alert="flood">≈ Flood</button>
-          <button type="button" class="chip" id="app-toggle-shops" aria-selected="true">Shops: Essentials</button>
+          <button type="button" class="chip" id="app-toggle-shops" aria-selected="true">Shops: All</button>
         </div>
         <p class="mono" id="app-map-count">Reading the map…</p>
         <div class="rows" id="app-map-rows"></div>

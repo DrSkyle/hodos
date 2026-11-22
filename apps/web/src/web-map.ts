@@ -45,6 +45,8 @@ export interface WebHazard {
   devices: number;
   published: boolean;
   fixed: boolean;
+  fixedVotes?: number;
+  clearPasses?: number;
   title: string;
   locationName: string;
   confidence?: number;
@@ -228,7 +230,9 @@ function parseAppwriteRow(r: any): WebHazard | null {
   const devices = Number(r.deviceCount ?? r.devices ?? 1);
   const published = Boolean(r.published);
   if (!published) return null;
-  const fixed = Boolean(r.fixed || (r.fixedVotes && r.fixedVotes > 1) || (r.clearPasses && r.clearPasses >= 3));
+  const fixedVotes = Number(r.fixedVotes ?? 0) || 0;
+  const clearPasses = Number(r.clearPasses ?? 0) || 0;
+  const fixed = Boolean(r.fixed || fixedVotes >= 2 || clearPasses >= 3);
   const title = hazardTitle(kind);
 
   return {
@@ -241,6 +245,8 @@ function parseAppwriteRow(r: any): WebHazard | null {
     devices,
     published,
     fixed,
+    fixedVotes,
+    clearPasses,
     title,
     locationName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
     confidence: Number(r.confidence) || 0.8,
@@ -421,20 +427,26 @@ export function initWebMap(
   const hasRiderPerk = (offer: string): boolean =>
     /free|check|lube|air|pressure|alignment|perk|discount|complimentary/i.test(offer || "");
 
-  let shopsMode: ShopsFilterMode = "essentials";
+  const focusedShopId = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get("shop")?.trim() || null;
+    } catch {
+      return null;
+    }
+  })();
+
+  let shopsMode: ShopsFilterMode = "all";
   const MAX_VIEWPORT_SHOPS = 12;
 
   const selectPartnersForViewport = (items: WebPartner[]): WebPartner[] => {
     if (shopsMode === "off" || items.length === 0) return [];
-    const zoom = map.getZoom();
-    // Keep Roadside Essentials visible from neighborhood zoom (11.5+), while
-    // Pit Stops (food/café/retail) wait until street zoom (14.5+) unless user
-    // explicitly picks "all".
     const eligible = items.filter((p) => {
-      const vis = partnerVisual(p.category);
-      if (shopsMode === "essentials") return vis.tier === "essential";
-      return vis.tier === "essential" || zoom >= 13.5;
+      if (focusedShopId && p.id === focusedShopId) return true;
+      if (shopsMode === "essentials") return partnerVisual(p.category).tier === "essential";
+      return true;
     });
+    // When an area is not crowded, show every shop transparently. Only engage
+    // the 12-pin prioritization cap + clustering when density exceeds 12.
     if (eligible.length <= MAX_VIEWPORT_SHOPS) return eligible;
 
     const bounds = map.getBounds();
@@ -445,7 +457,11 @@ export function initWebMap(
       if (bounds && bounds.contains([p.lng, p.lat])) inView.push(p);
       else outside.push(p);
     }
+    if (inView.length <= MAX_VIEWPORT_SHOPS) {
+      return [...inView, ...outside.slice(0, 80)];
+    }
     const score = (p: WebPartner) => {
+      if (focusedShopId && p.id === focusedShopId) return 10_000;
       const vis = partnerVisual(p.category);
       const tierScore = vis.tier === "essential" ? 200 : 0;
       const perkScore = hasRiderPerk(p.offer) ? 80 : 0;
@@ -453,8 +469,6 @@ export function initWebMap(
       return tierScore + perkScore - dist * 120;
     };
     inView.sort((a, b) => score(b) - score(a));
-    // Cap unclustered in-view pins to 12 highest-utility stops while keeping
-    // outside stops ready for smooth panning.
     return [...inView.slice(0, MAX_VIEWPORT_SHOPS), ...outside.slice(0, 60)];
   };
 
@@ -642,7 +656,11 @@ export function initWebMap(
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
   }
 
-  async function verifyVoterNearby(targetLat: number, targetLng: number): Promise<void> {
+  async function verifyVoterNearby(
+    targetLat: number,
+    targetLng: number,
+    isAlert: boolean
+  ): Promise<{ lat: number; lng: number; accuracyM: number }> {
     if (!("geolocation" in navigator)) {
       throw new Error("Location access is required to confirm road alerts.");
     }
@@ -650,24 +668,31 @@ export function initWebMap(
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true,
         timeout: 7000,
-        maximumAge: 60_000
+        maximumAge: 30_000
       });
     }).catch(() => {
       throw new Error("Allow GPS location to confirm — only drivers near this spot can vote.");
     });
-    const dist = distanceKm(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
-    if (dist > 2.0) {
-      throw new Error(`You are ${dist.toFixed(1)} km away. Only drivers within 2 km can confirm or clear this alert.`);
+    const accuracyM = Math.round(pos.coords.accuracy || 50);
+    if (accuracyM > 250) {
+      throw new Error(`GPS accuracy is too low (±${accuracyM} m). Step outside with GPS on to vote.`);
     }
+    const maxKm = isAlert ? 1.5 : 0.5;
+    const dist = distanceKm(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
+    if (dist > maxKm) {
+      const limitLabel = isAlert ? "1.5 km" : "500 m";
+      throw new Error(`You are ${dist.toFixed(1)} km away. Only drivers within ${limitLabel} can confirm or clear this.`);
+    }
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM };
   }
 
-  async function voteOnHazard(h: WebHazard, vote: "still_there" | "cleared"): Promise<void> {
+  async function voteOnHazard(h: WebHazard, vote: "still_there" | "cleared"): Promise<{ statusText: string }> {
     if (hasVotedOn(h.id)) {
       throw new Error("You have already voted on this report from this device.");
     }
-    await verifyVoterNearby(h.lat, h.lng);
-
     const isAlert = isLiveAlertKind(h.kind);
+    const fix = await verifyVoterNearby(h.lat, h.lng, isAlert);
+
     const nowIso = new Date().toISOString();
     const rowId = `vt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const payload: Record<string, unknown> =
@@ -679,7 +704,7 @@ export function initWebMap(
               recordedAt: nowIso,
               lat: Number(h.lat.toFixed(6)),
               lng: Number(h.lng.toFixed(6)),
-              accuracy: 25,
+              accuracy: fix.accuracyM,
               speedKph: 0,
               magnitude: 0,
               severity: h.severity || 2,
@@ -694,7 +719,7 @@ export function initWebMap(
               recordedAt: nowIso,
               lat: Number(h.lat.toFixed(6)),
               lng: Number(h.lng.toFixed(6)),
-              accuracy: 100,
+              accuracy: fix.accuracyM,
               speedKph: 0,
               magnitude: 0,
               severity: h.severity || 1,
@@ -710,7 +735,7 @@ export function initWebMap(
             recordedAt: nowIso,
             lat: Number(h.lat.toFixed(6)),
             lng: Number(h.lng.toFixed(6)),
-            accuracy: 25,
+            accuracy: fix.accuracyM,
             speedKph: 0,
             magnitude: 0,
             severity: h.severity || 1,
@@ -740,14 +765,34 @@ export function initWebMap(
     }).catch(() => {});
 
     recordVotedOn(h.id, vote);
+    let statusText: string;
     if (vote === "still_there") {
       h.devices = (h.devices || 1) + 1;
       h.passes = (h.passes || 1) + 1;
       h.lastSeen = nowIso;
+      statusText = `Confirmed (${h.devices} device${h.devices === 1 ? "" : "s"})`;
     } else {
-      h.fixed = true;
+      // Multi-device quorum: a single user NEVER deletes a corroborated surface
+      // defect or a verified (>=2 devices) live alert. Only an unverified
+      // 1-device live alert can be cleared by 1 independent nearby driver.
+      const nextVotes = (h.fixedVotes || 0) + 1;
+      h.fixedVotes = nextVotes;
+      const needed = isAlert ? (h.devices >= 2 ? 2 : 1) : 2;
+      if (nextVotes >= needed) {
+        h.fixed = true;
+        statusText = isAlert
+          ? needed === 1
+            ? "Cleared (unverified alert removed)"
+            : "Cleared by 2+ independent drivers"
+          : "Marked as repaired (2+ independent drivers)";
+      } else {
+        statusText = isAlert
+          ? `Clear vote recorded (${nextVotes}/${needed}) — needs 1 more driver to clear`
+          : `Repair vote recorded (${nextVotes}/${needed}) — needs 1 more driver or 3 smooth passes`;
+      }
     }
     updateSourceData();
+    return { statusText };
   }
 
   function showPopupForHazard(h: WebHazard) {
@@ -756,13 +801,13 @@ export function initWebMap(
     const metaLine = h.fixed
       ? `Cleared · ${timeLine}`
       : isAlert
-      ? `${timeLine} · ${h.devices} report${h.devices === 1 ? "" : "s"}`
-      : `Severity ${h.severity} · ${h.passes} pass${h.passes === 1 ? "" : "es"} · ${timeLine}`;
+      ? `${timeLine} · ${h.devices} report${h.devices === 1 ? "" : "s"}${h.devices >= 2 ? " · Verified" : " · Unverified"}`
+      : `Severity ${h.severity} · ${h.passes} pass${h.passes === 1 ? "" : "es"} · ${h.devices} device${h.devices === 1 ? "" : "s"} · ${timeLine}`;
     const existingVote = hasVotedOn(h.id);
 
     const container = document.createElement("div");
     container.style.cssText =
-      "font-family: 'Overpass Variable', 'Overpass', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.45; padding: 2px 4px; min-width: 195px; color: var(--ink, #1c1a17);";
+      "font-family: 'Host Grotesk', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.45; padding: 2px 4px; min-width: 210px; color: var(--ink, #1c1a17);";
     container.innerHTML = `
       <div style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 3px;">
         ${escapeHtml(h.title)}
@@ -802,15 +847,10 @@ export function initWebMap(
           statusNode.textContent = "Checking GPS…";
         }
         try {
-          await voteOnHazard(h, vote);
+          const outcome = await voteOnHazard(h, vote);
           if (voteBar) voteBar.style.display = "none";
           if (statusNode) {
-            statusNode.textContent =
-              vote === "still_there"
-                ? `Confirmed (${h.devices})`
-                : isAlert
-                ? "Marked as cleared"
-                : "Marked as repaired";
+            statusNode.textContent = outcome.statusText;
           }
         } catch (err) {
           if (statusNode) {
@@ -1033,7 +1073,7 @@ export function initWebMap(
       id: "hodos-partner-clusters",
       type: "symbol",
       source: "hodos-partners",
-      minzoom: 11.5,
+      minzoom: 10,
       filter: ["has", "point_count"],
       layout: {
         "icon-image": "shop-cluster",
@@ -1047,11 +1087,11 @@ export function initWebMap(
       id: "hodos-partner-icons",
       type: "symbol",
       source: "hodos-partners",
-      minzoom: 11.5,
+      minzoom: 10,
       filter: ["!", ["has", "point_count"]],
       layout: {
         "icon-image": ["coalesce", ["get", "icon"], "shop-local"],
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 11.5, 0.72, 15, 0.92],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.74, 15, 0.94],
         "icon-allow-overlap": false,
         "icon-padding": 4
       }
@@ -1300,20 +1340,27 @@ export function initWebMap(
         const until = Date.parse(String(raw.activeUntil ?? ""));
         if (Number.isFinite(until) && until < now) return;
         parsed.push({
-          id: String(raw.id ?? `partner-${i}`),
+          id: String(raw.$id ?? raw.id ?? `partner-${i}`),
           name: String(raw.name),
           category: String(raw.category ?? "pit-stop"),
           lat,
           lng,
           offer: String(raw.offer ?? ""),
-          sponsorLabel: String(raw.sponsorLabel ?? "Sponsored"),
+          sponsorLabel: String(raw.sponsorLabel ?? "Local shop"),
           link: typeof raw.link === "string" && raw.link ? raw.link : null
         });
       });
       if (parsed.length === 0) return;
       partners = parsed;
-      const src = map.getSource("hodos-partners") as any;
-      if (src) src.setData(buildPartnerGeoJSON(parsed));
+      refreshPartnerSource();
+      if (focusedShopId) {
+        const target = parsed.find((p) => p.id === focusedShopId);
+        if (target) {
+          shouldAutoFit = false;
+          map.flyTo({ center: [target.lng, target.lat], zoom: 16, duration: 700 });
+          showPopupForPartner(target);
+        }
+      }
     })
     .catch(() => {});
 

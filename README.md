@@ -1,130 +1,143 @@
 # Hodos
 
 <p align="center">
-  <img src="brand/icon.svg" alt="Hodos icon" width="120" height="120" />
+  <img src="brand/icon.svg" alt="Hodos icon" width="112" height="112" />
 </p>
 
 <p align="center">
   <strong>The road maps itself.</strong><br />
-  Passive, crowdsourced road-hazard mapping for your neighborhood.
+  Passive road-condition intelligence, GPS-verified live road alerts, and zero-commission local shop pins — with zero user accounts, zero ad SDKs, and zero route uploads.
 </p>
 
 <p align="center">
   <a href="https://hodos.devilabs.dev">Website</a> •
-  <a href="https://github.com/DrSkyle/hodos/releases">Android Releases</a> •
-  <a href="docs/PRIVACY.md">Privacy Policy</a> •
-  <a href="docs/MAP.md">The Map</a> •
-  <a href="docs/ROAD-INTELLIGENCE.md">Road Intelligence</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#development">Development</a>
+  <a href="https://hodos.devilabs.dev/map">Live Map</a> •
+  <a href="https://hodos.devilabs.dev/app">Web App</a> •
+  <a href="https://github.com/DrSkyle/hodos/releases/latest">Android APK</a> •
+  <a href="https://hodos.devilabs.dev/partners">List a Shop (Free)</a> •
+  <a href="AGENTS.md">AGENTS.md</a> •
+  <a href="https://hodos.devilabs.dev/privacy.html">Privacy</a>
 </p>
 
 ---
 
-## What is Hodos?
+## Why Hodos Exists
 
-**Hodos** is an open-source Android app that reads the road through your phone as you drive, then turns what it learns into a shared, live map of road conditions.
+Conventional maps tell you where a road *is* — not whether it will bend your rim, shred your tyres, flood in the rain, or hide an unmarked speed bump. Legacy platforms also harvest driver identities, run pay-to-rank ad auctions over local businesses, and inject sponsored popups over navigation.
 
-Turn on automatic mapping, keep your phone with you, and drive as you normally would. Hodos detects road surface impacts using your phone's accelerometer and gyroscope, and queues compact observations for a shared community map. Repeated observations from independent trips corroborate hazards and distinguish real defects from one-off bumps.
+**Hodos** takes a different approach:
 
-Beyond the shared map, Hodos turns your own journeys into road knowledge: which roads are asphalt, gravel or cobbles, how smooth each corridor is, how much wear they put into your vehicle, which hazards are getting worse, and which few repairs would improve the most rides.
-
-- **Zero Manual Effort:** Runs quietly in the background; no tapping or reporting while driving.
-- **Privacy by Design:** Raw motion traces stay in device RAM. No continuous GPS routes or breadcrumbs are logged. Everything derived from your journeys stays on your phone.
-- **Multi-Device Corroboration:** Hazards are only published when multiple independent trips corroborate the defect.
-- **Offline Resilience:** Downloads 20 km Wi-Fi cached vector basemaps (OpenFreeMap) and maintains a local SQLite hazard cache.
+- **Passive sensing on ordinary phones:** Turn on mapping and drive normally. A single deterministic signal-processing engine (`@hodos/core`) runs identically on **Android (Kotlin + Jetpack Compose)** and the **Web App (`/app`)**, isolating vertical road impacts, grading severity, and inferring surface quality locally on-device.
+- **No seeded or fake data:** An empty database renders an empty map. Every published pothole, rough stretch, live alert, and local shop pin comes from real backend records.
+- **Private by architecture:** Zero user accounts, zero login walls, zero advertising IDs, zero third-party analytics SDKs. Raw accelerometer traces and full GPS routes never leave your device, and Android automatically trims the first and last **250 m** of every journey before saving locally.
 
 ---
 
-## Features
+## Trust, Corroboration & Anti-Spam Rules (Zero Magic)
 
-- **Automatic Motion Detection:** Uses Android Activity Recognition to arm sensor sampling only during vehicular transit.
-- **Five destinations:** *Map* (live hazards), *Drive* (mapping status and trips), *Roads* (surface mix, corridor quality, vehicle wear), *Insights* (deterioration, repair value, smooth-route ceiling) and *You* (saved roads, perks, privacy).
-- **Interactive Vector Map:** MapLibre-powered Android map with nearby hazards, severity classifications, and pass corroboration counts.
-- **Road Quality Analysis:** On-device cells (~150 m) infer surface type, score corridor quality 0–100, and estimate vehicle wear from roughness × distance.
-- **The Garage:** A real catalogue of kit worth keeping in the car (inflators, mounts, dash cams, wipers, tires), priced by the shop that sells it. Offers are fetched at open time through our own backend, and buying through a Garage link funds the map at no extra cost to the driver.
-- **Community Verifications:** Confirm active hazards or mark repaired road segments.
-- **Offline Maps:** Wi-Fi-only automated tile pack caching (20 km radius, zoom levels 8–13) with quota caps (45 MiB / 2,400 tiles) to respect open basemap infrastructure.
-- **Privacy First:** Pseudonymous installation identifiers, quantized location coordinates, and no third-party tracking or advertising SDKs.
+We do **not** blindly trust a single tap or a single phone. Every state transition on the public map follows explicit quorum and GPS-verification rules:
 
-## Documentation
-
-- [The public map](docs/MAP.md) — what the markers mean and why nothing is seeded.
-- [Road intelligence](docs/ROAD-INTELLIGENCE.md) — quality, surface, wear, deterioration and repair value, with their limits.
-- [Privacy policy](docs/PRIVACY.md) — what leaves your phone and what never does.
-- [Security policy](SECURITY.md) — reporting and release integrity.
-
+| Signal | Publishing Rule | Repair / Clear Rule | Anti-Spoof / Privacy Gate |
+| --- | --- | --- | --- |
+| **Pothole / Rough Road / Speed Bump** | **≥ 3 passes** across **≥ 2 distinct devices** (`hodos-aggregate`). One phone can never publish a defect alone. | **≥ 2 independent GPS-verified repair votes** (within 500 m, GPS ≤ 250 m) **OR ≥ 3 distinct silent smooth passes** after the last impact. A single click never deletes a corroborated pothole. | Coordinates quantized into H3 spatial cells; raw traces never uploaded; 250 m start/end route trim on Android. |
+| **1-Tap Live Road Alert** (`Police`, `Jam`, `Blocked`, `Flood`) | Published immediately with **live GPS fix (accuracy ≤ 150 m)** proof-of-presence; labeled **Unverified** until a 2nd independent driver confirms (**Verified**). | **Unverified (1 reporter):** 1 independent nearby driver (within 1.5 km) clears it (1v1 anti-fake tie-breaker). **Verified (≥ 2 reporters):** requires **≥ 2 independent nearby drivers** to clear before automatic TTL expiration. | 90-second per-device cooldown; auto-expires cleanly when stale; no personal identifier attached. |
+| **Local Shop Pin** | Real local shops only (name, one-line offer, street address, answerable phone, map coordinates). Minimum 8 m physical separation prevents stacking. | Expires automatically when active days end; removable if fake, unlawful, or misleading. | Anonymous monthly distinct-device pass counter only; zero driver identities or routes ever exposed to shops. |
 
 ---
 
-## Architecture
+## Why Local Shops List on Hodos (Not Just Google Maps)
 
-The project is organized as a monorepo:
+Placing an initial shop pin on Hodos is **free everywhere**, with **0% commission** and **zero pay-to-rank ad auctions**.
 
-- **`apps/web/android`**: Native Android app written in Kotlin and Jetpack Compose, featuring MapLibre Android SDK, background service lifecycle (`HodosService`), SQLite outbox, and on-device road-quality analysis (`RoadQuality`).
-- **`apps/web`**: The website and live hazard map, built with Vite and TypeScript. The map consumes live published hazards from the backend; there is no static snapshot.
-- **`apps/web/public/map/hodos-layers.json`**: The single shared marker and heat-layer specification. Both the website and the Android app render hazards from this one file, so the map reads identically on both.
-- **`packages/core`**: Shared detection library. A fused motion-state estimator decides what the device is doing (`still`, `walking`, `cycling`, `in_hand`, `vehicle`, `unknown`) from agreeing evidence — motion energy, gait/pedal cadence, grip stability, engine-band vibration and GPS — and only a vehicle, cycling or walking state may emit an impact. Impacts are found by band-passing the vertical residual, thresholding against a rolling median-absolute-deviation noise floor that adapts per journey, then characterising and classifying each pulse. Shared parity fixtures keep the TypeScript and native implementations identical. See `packages/core/ENGINE-CHANGES.md`.
-- **`appwrite/functions`**: Server-side aggregation functions (`hodos-aggregate`) that ingest anonymous observations and produce the public hazard map layer, anonymous partner footfall counting, and `hodos-affiliate` — the Garage proxy that serves catalogue offers and stores the road-notes email list.
+- **Direct AI-Agent API visibility:** Every active shop pin is returned by the Hodos Agent API (`partners`, and attached to `hazards` and `roads` corridor queries). When a driver asks an AI assistant for a nearby tyre shop, garage, EV charger, pharmacy, or food stop, your real listing is returned directly via [`AGENTS.md`](AGENTS.md).
+- **Transparent map display (Road-First, Never Ad Clutter):**
+  - Your pin goes live immediately on `/map`, `/app`, Android APK, and `/garage` — clicking **See it on the map** jumps directly to your pin and opens its card.
+  - In uncrowded areas (≤ 12 shops in view), every live shop renders cleanly with a quiet architectural **squircle category badge** (never competing with circular red/amber hazard dots or warning-shaped live radar badges).
+  - In dense streets (> 12 shops in one viewport), nearby pins automatically cluster and prioritize **Roadside Essentials** (Tyre/Auto, EV/Fuel, Pharmacy) and **Free Rider Perks** so road hazards always remain readable. Drivers can also toggle **`Shops: All` / `Shops: Essentials` / `Shops: Off`** in 1 tap.
+- **Post-trip driver utility:** After a rough trip (never while moving), the app quietly surfaces nearby tyre & alignment shops offering free pressure/alignment checks.
+- **Real anonymous footfall:** Save your **Pin Reference ID** after placing a pin to check how many distinct devices drove past your door each month.
 
----
-
-## Data you will actually see
-
-The public map renders **live corroborated hazards only**. Nothing is seeded, sampled, or mocked: an empty backend renders an empty map. Individual devices never write hazard rows — the aggregation function promotes an observation only after independent trips corroborate it, so the map cannot be padded by one phone.
+> **Referrals status:** After helping **289 people earn ₹2,00,000+ (2 lakh+)**, the referral programme is currently paused while initial shop pins are free globally. Join the reopening waitlist at [hodos.devilabs.dev/referrals](https://hodos.devilabs.dev/referrals).
 
 ---
 
-## Development & Building
+## Visual Grammar (Identical Across Web & Android APK)
+
+| Shape | Meaning | Layer Priority |
+| --- | --- | --- |
+| **Circles** | Pavement defects (`Pothole`, `Rough road`, `Speed bump`, `Repaired`) | Top safety layer |
+| **Warning Geometry** (Shield / Diamond / Octagon / Ripple) | Live 1-tap road radar (`Police`, `Jam`, `Blocked`, `Flood`) | Top alert layer |
+| **Quiet Rounded Squares (Squircles)** | Local shops (`Auto & Tyre`, `EV & Fuel`, `Pharmacy`, `Food & Café`, `Local stop`) + stacked cluster badge | Beneath hazards (`minzoom 10`, auto-clustered) |
+
+---
+
+## For AI Agents (`AGENTS.md` & Metered API)
+
+Hodos ships a raw, machine-native specification at [`AGENTS.md`](AGENTS.md) (served live at `https://hodos.devilabs.dev/AGENTS.md`, summary at [`llms.txt`](apps/web/public/llms.txt)):
+
+- **Zero subscriptions, prepaid micro-USD metering** (`1,000,000 micro-USD = $1.00`): `manifest`, `provision`, `credits`, `report` are free; `garage` and `partners` are `$0.00008`; `hazards` is `$0.00010`; `roads` is `$0.00030`; `graph` is `$0.00120`.
+- **Mandatory user consent gate** and verbatim permission disclosure before provisioning or spending credit.
+- **Android APK install & test playbook** included for coding/device agents when users ask them to install or evaluate Hodos on Android.
+
+---
+
+## Architecture (Monorepo)
+
+| Path | Role |
+| --- | --- |
+| `packages/core` | Shared deterministic road-impact detector, fused motion-state estimator (`still`, `walking`, `cycling`, `in_hand`, `vehicle`), rolling MAD adaptive threshold, ASTM E1926 IRI proxy, and cross-platform parity fixtures. |
+| `apps/web` | Main website, live hazard map (`/map`), browser PWA (`/app`), Garage (`/garage`), free shop pin placement (`/partners`), referral waitlist (`/referrals`), and legal docs (`/privacy.html`, `/legal/partner-agreement.html`). |
+| `apps/web/android` | Native Android app (Kotlin + Jetpack Compose + MapLibre Android SDK), foreground/background sensing (`HodosService`), 250 m start/end privacy trim, offline 20 km OpenFreeMap basemap cache, and SQLite outbox. |
+| `apps/india` | Regional web build aligned with global free initial shop pins and paused referrals. |
+| `appwrite/functions/hodos-aggregate` | Multi-device H3 spatial corroboration, decay, live alert TTL, and anonymous partner pass-count aggregation. |
+| `appwrite/functions/hodos-api` | Metered AI-agent API, free global shop pin placement/status, and live road data endpoints. |
+| `appwrite/functions/hodos-affiliate` | Garage catalogue proxy and isolated newsletter waitlist handler. |
+| `appwrite/functions/hodos-teleport` | Consent-gated server-side affiliate resolver. |
+
+---
+
+## Development & Verification
 
 ### Prerequisites
 
-- **Node.js** v20+ and **pnpm** v10+
-- **JDK 17 or 21**
-- **Android SDK** (API Platform 35, Build-Tools 34.0.0+)
+- **Node.js** 20+ and **pnpm** 10+
+- **JDK 17 or 21** and **Android SDK** (compileSdk 35, Build-Tools 34.0.0+)
 
-### Android App
-
-To build and run tests for the Android application:
+### Commands
 
 ```sh
+# Install dependencies
+pnpm install
+
+# Build web apps
+pnpm --filter @hodos/web build
+pnpm --filter @hodos/india build
+
+# Run shared core & workspace tests (225+ parity/signal tests)
+pnpm -r test
+
+# Run all Appwrite backend function tests (100 tests)
+node --test appwrite/functions/*/src/main.test.js
+
+# Run Android unit tests & assemble debug APK
 cd apps/web/android
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-The compiled debug APK will be available in `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`.
-
-### Web & Shared Packages
-
-To build and run tests for the web application and core signal algorithms:
-
-```sh
-# Install workspace dependencies
-pnpm install
-
-# Typecheck and run unit tests
-pnpm -r typecheck
-pnpm -r test
-
-# Run backend aggregation tests
-node --test appwrite/functions/hodos-aggregate/src/main.test.js
-node --test appwrite/functions/hodos-affiliate/src/main.test.js
-
-# Build web static bundle
-pnpm --filter @hodos/web build
-```
+Debug APK output: `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`.
+Signed production releases are published via GitHub Releases (`v*` tags) at [github.com/DrSkyle/hodos/releases/latest](https://github.com/DrSkyle/hodos/releases/latest).
 
 ---
 
 ## Disclaimer
 
-Hodos identifies potential road hazards. Results depend on device hardware, vehicle suspension, mounting position, and road conditions; they are not a substitute for driver vigilance or municipal road engineering inspections.
+Hodos identifies potential road defects and driver-reported alerts. Results depend on phone sensors, mounting position, vehicle suspension, and road conditions; Hodos is never a substitute for driver attention or official road-safety inspections.
 
 ---
 
 ## Licensing
 
-Hodos operates under a strict **Source-Available Proprietary & Non-Compete License (HSAL-1.0)** so anyone can audit our privacy claims while protecting Hodos against unauthorized commercial exploitation or competing clones:
+Hodos operates under a strict **Source-Available Proprietary & Non-Compete License ([HSAL-1.0](LICENSE))** so anyone can inspect and audit our privacy guarantees while protecting Hodos from unauthorized commercial clones:
 
-- **Software Code:** [HSAL-1.0](LICENSE) — Publicly readable for security/privacy auditing, personal non-commercial use, and upstream contributions. Commercial use, redistribution, app-store republishing, scraping, AI/ML training for competing systems, and competing services are strictly prohibited without a written commercial license from [Devilabs](https://hodos.devilabs.dev).
-- **Road Condition Dataset:** [CC BY-NC-SA 4.0 + Non-Compete](LICENSE) — Aggregated defect coordinates, road roughness layers, and telemetry are viewable for personal, civic, and non-commercial research use only. Commercial use (fleet routing, logistics, ride-hailing, insurance, or contractor dispatch) requires an enterprise commercial license from [Devilabs](https://hodos.devilabs.dev).
+- **Software Code ([HSAL-1.0](LICENSE)):** Publicly viewable for security/privacy auditing, personal non-commercial use, and upstream PRs to `github.com/DrSkyle/hodos`. Commercial use, redistribution, app-store republishing, scraping, competing road-mapping/shop-pin services, and AI/ML model training on Hodos code or data are strictly prohibited without a signed written commercial license from **Devilabs (Minerva Corporation)**.
+- **Road Condition Dataset ([CC BY-NC-SA 4.0 + Non-Compete](LICENSE)):** Free for personal, academic, and civic non-commercial viewing. Commercial fleet, routing, logistics, ride-hailing, or insurance licensing: **contact@devilabs.dev**.
