@@ -112,47 +112,26 @@ function buildMailtoHref(): string {
   const category = String(data?.get("category") || "").trim();
   const address = String(data?.get("address") || "").trim();
   const phone = String(data?.get("phone") || "").trim();
-  const referralCode = String(data?.get("referralCode") || "").trim();
-  const isNepal = quote?.country === "NP" || browserLocale() === "ne-NP";
   const spanLabel = days === 365 ? "1 year" : `${days} day${days === 1 ? "" : "s"}`;
-  const totalText = quote ? money(quote.totalLocal, quote.currency) : "";
-  const planLine = totalText ? `${spanLabel} (${totalText})` : spanLabel;
   const coordsLine = point ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}` : "(not pinned on map yet)";
 
   const subject = shopName
     ? `Hodos shop pin — ${shopName}`
-    : isNepal
-    ? "Hodos Nepal shop pin — payment details"
-    : "Hodos shop pin — payment details";
+    : "Hodos shop pin — free setup";
 
-  const bodyLines = isNepal
-    ? [
-        "Namaste Hodos team,",
-        "",
-        "Please place our shop pin on the Hodos Nepal map (free initial launch).",
-        "",
-        `Shop name: ${shopName || ""}`,
-        `One line / offer: ${offer || ""}`,
-        `Category: ${category || ""}`,
-        `Address: ${address || ""}`,
-        `Phone: ${phone || ""}`,
-        `Plan: ${spanLabel} (Free — NPR 0)`,
-        `Map location: ${coordsLine}`
-      ]
-    : [
-        "Hi Hodos team,",
-        "",
-        "Please send us payment details to place our shop pin on the Hodos map.",
-        "",
-        `Shop name: ${shopName || ""}`,
-        `One line / offer: ${offer || ""}`,
-        `Category: ${category || ""}`,
-        `Address: ${address || ""}`,
-        `Phone: ${phone || ""}`,
-        `Plan: ${planLine}`,
-        `Map location: ${coordsLine}`,
-        `Referred by (code): ${referralCode || "none"}`
-      ];
+  const bodyLines = [
+    "Hi Hodos team,",
+    "",
+    "Please help us place our free initial shop pin on the Hodos map.",
+    "",
+    `Shop name: ${shopName || ""}`,
+    `One line / offer: ${offer || ""}`,
+    `Category: ${category || ""}`,
+    `Address: ${address || ""}`,
+    `Phone: ${phone || ""}`,
+    `Duration: ${spanLabel} (Free initially)`,
+    `Map location: ${coordsLine}`
+  ];
 
   return `mailto:${BILLING_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
 }
@@ -227,9 +206,9 @@ function renderQuote() {
       if (field) field.hidden = false;
     }
     if (refHelp) {
-      refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> for payment details, then paste your reference here.`;
+      refHelp.innerHTML = `Email <a href="${mailHref}">${BILLING_EMAIL}</a> for setup help.`;
     }
-    if (submitBtn) submitBtn.textContent = "Pay and put it on the map";
+    if (submitBtn) submitBtn.textContent = "Put my pin on the map";
   }
   const setupLink = document.getElementById("email-setup-link") as HTMLAnchorElement | null;
   if (setupLink) setupLink.href = mailHref;
@@ -250,8 +229,8 @@ async function refreshQuote() {
     quote = next;
     renderQuote();
   } catch (_) {
-    if (priceHost) priceHost.textContent = "$0.99 a day";
-    if (priceNote) priceNote.textContent = "Quoted in your local currency at checkout.";
+    if (priceHost) priceHost.textContent = "Free initially";
+    if (priceNote) priceNote.textContent = "Shop pins are completely free initially everywhere — no payment or card needed.";
   }
 }
 
@@ -466,65 +445,34 @@ function showResult(order: {
   const untilText = until
     ? until.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
     : "";
+  const esc = (s: unknown) =>
+    String(s ?? "").replace(/[&<>"']/g, (c) =>
+      c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;"
+    );
+
   host.innerHTML = `
     <div class="result-card${order.live ? " is-live" : ""}">
-      <span class="result-tag">${order.live ? "Live now" : "Payment needed"}</span>
-      <strong>${order.live ? "Your pin is on the map" : "Your pin is not on the map yet"}</strong>
-      <p>${
+      <span class="result-tag">${order.live ? "Live now · Free pin" : "Pending"}</span>
+      <strong class="result-title">${order.live ? "Your pin is on the map" : "Your pin could not be published yet"}</strong>
+      <p class="result-copy">${
         order.live
-          ? `Visible to riders and to AI assistants until ${untilText}. It comes down on its own when the days run out.`
-          : `${order.amount} for ${order.days}. ${order.next}`
+          ? `Visible to riders and AI assistants until ${esc(untilText)}. Initial shop pins are completely free with 0% commission — it comes down on its own when the days run out.`
+          : esc(order.next || "Please check your shop details and try again.")
       }</p>
-      <div class="field" style="margin-top: 14px;">
-        <span class="field-label">Extend your pin · payment reference</span>
-        <input id="extend-reference" type="text" maxlength="120" placeholder="Transaction reference for the added days" />
+      <div class="result-actions">
+        <a class="result-btn result-btn-primary" href="/map/">See it on the map</a>
+        <button class="result-btn result-btn-ghost" type="button" id="place-another-pin">Place another pin</button>
       </div>
-      <div class="btn-row">
-        <a class="btn btn-primary" href="/map/">See it on the map</a>
-        <button class="btn btn-ghost" type="button" data-extend="7">Add 7 paid days</button>
-        <button class="btn btn-ghost" type="button" data-extend="30">Add 30 paid days</button>
-      </div>
-      <p class="result-ref">Reference: ${order.placement} · billing: ${BILLING_EMAIL}</p>
+      <p class="result-ref">Pin ID: <code>${esc(order.placement)}</code> · Save this ID to check monthly rider pass counts below.</p>
     </div>
   `;
   host.hidden = false;
   host.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  host.querySelectorAll<HTMLButtonElement>("[data-extend]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const days = Number(button.dataset.extend) || 7;
-      const refInput = host.querySelector<HTMLInputElement>("#extend-reference");
-      const reference = String(refInput?.value || "").trim();
-      if (reference.length < 4) {
-        setStatus("Enter the payment reference for the added days so we can extend the pin and credit your referrer.", "error");
-        refInput?.focus();
-        return;
-      }
-      button.disabled = true;
-      try {
-        const result = await callApi({
-          action: "partnerExtend",
-          placement: order.placement,
-          days,
-          reference,
-          locale: browserLocale()
-        });
-        if (!result.ok) throw new Error(result.error || "failed");
-        setStatus("Pin extended and referral share credited.", "ok");
-        showResult({
-          live: Boolean(result.live),
-          activeUntil: String(result.activeUntil || ""),
-          placement: order.placement,
-          amount: money(Number(result.owedLocal) || 0, String(result.currency)),
-          days: Number(result.days) || days,
-          next: String(result.next || "")
-        });
-      } catch (error) {
-        setStatus(`Couldn't extend that — ${String(error).replace("Error: ", "")}`, "error");
-      } finally {
-        button.disabled = false;
-      }
-    });
+  host.querySelector<HTMLButtonElement>("#place-another-pin")?.addEventListener("click", () => {
+    host.hidden = true;
+    setStatus("");
+    form?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
@@ -576,16 +524,16 @@ function wireLookup() {
       lookupResult.innerHTML = `
         <div class="result-card${res.live ? " is-live" : ""}">
           <span class="result-tag">${res.live ? "Live on the map" : esc(res.status || "Not live")}</span>
-          <strong>${esc(res.name || "Your shop")} · ${esc(res.category || "Shop")}</strong>
-          <p>${
+          <strong class="result-title">${esc(res.name || "Your shop")} · ${esc(res.category || "Shop")}</strong>
+          <p class="result-copy">${
             res.live
               ? `Visible to riders and AI assistants until ${esc(untilText)}.`
               : "This placement is not currently live on the map."
           }</p>
-          <p style="margin-top:8px;color:var(--ink);font-weight:700;">
+          <p class="result-metric">
             ${passes} distinct device${passes === 1 ? "" : "s"} passed your shop in ${esc(res.month || "this month")}
           </p>
-          <p class="result-ref">Placement ID: ${esc(res.placement)}</p>
+          <p class="result-ref">Pin ID: <code>${esc(res.placement)}</code></p>
         </div>
       `;
       lookupResult.hidden = false;
@@ -623,9 +571,8 @@ function wireForm() {
     const address = String(data.get("address") || "").trim();
     const phone = String(data.get("phone") || "").trim();
     const email = String(data.get("email") || "").trim();
-    const isNepal = quote?.country === "NP" || browserLocale() === "ne-NP";
     const rawReference = String(data.get("reference") || "").trim();
-    const reference = isNepal && rawReference.length < 4 ? "FREE-NEPAL-LAUNCH" : rawReference;
+    const reference = rawReference.length >= 4 ? rawReference : "FREE-GLOBAL-LAUNCH";
 
     if (name.length < 3) return setStatus("Add the shop's real name, as it is on the door.", "error");
     if (offer.length < 8) return setStatus("Describe in one line what the shop offers.", "error");
@@ -639,7 +586,6 @@ function wireForm() {
     if (email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
       return setStatus("That email address doesn't look complete.", "error");
     }
-    if (!isNepal && reference.length < 4) return setStatus("Add the payment reference so we can match your pay-in.", "error");
     if (!point) return setStatus("Tap the map to place your shop.", "error");
 
     const button = form.querySelector("button[type=submit]") as HTMLButtonElement | null;

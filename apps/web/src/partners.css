@@ -192,10 +192,14 @@
 }
 
 .result-card {
-  margin-top: var(--s4);
-  padding: var(--s5);
-  border-radius: var(--r-md);
+  margin-top: var(--s5);
+  padding: 24px 26px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
   background: var(--soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .result-card.is-live {
@@ -204,31 +208,104 @@
 }
 
 .result-tag {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--r-full);
+  background: var(--soft);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent-ink);
 }
 
+.result-card .result-title,
 .result-card strong {
   display: block;
-  margin-top: var(--s2);
-  font-size: 18px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
   font-weight: 750;
   letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
+.result-card .result-copy,
 .result-card p {
-  margin-top: var(--s2);
-  font-size: 14px;
-  line-height: 1.6;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
   color: var(--muted);
+}
+
+.result-card .result-metric {
+  margin: 2px 0 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.result-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  padding: 12px 20px;
+  border-radius: var(--r-full);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.14s ease, background 0.14s ease;
+}
+
+.result-btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+}
+
+.result-btn-primary:hover {
+  opacity: 0.86;
+}
+
+.result-btn-ghost {
+  background: var(--soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.result-btn-ghost:hover {
+  background: var(--soft-2);
 }
 
 .result-ref {
-  font-size: 11.5px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--muted);
+}
+
+.result-ref code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--ink);
 }
 
 .fine-print {

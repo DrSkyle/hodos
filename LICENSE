@@ -1,59 +1,111 @@
-# Hodos Dual Licensing Model
+# Hodos Source-Available Proprietary & Non-Compete License (HSAL-1.0)
 
-The Hodos project operates under a dual-licensing framework that keeps the client software open, transparent, and auditable, while legally protecting the crowdsourced road defect dataset from unauthorized commercial exploitation.
+Copyright (c) 2026 DrSkyle, Devilabs (Minerva Corporation). All Rights Reserved.
 
----
-
-## 1. Client & Core Software (MIT License)
-
-Copyright (c) 2026 DrSkyle, Devilabs
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This repository makes the Hodos source code publicly viewable for security verification,
+privacy auditing, personal non-commercial study, and upstream contributions to the official
+Hodos project. It is NOT an open-source license under the OSI definition and does NOT grant
+commercial, redistribution, hosting, or competitive rights.
 
 ---
 
-## 2. Road Condition Dataset & Telemetry Layers (CC BY-NC-SA 4.0)
+## 1. Software Code License (Source-Available, Strict Non-Compete)
 
-Copyright (c) 2026 Devilabs
+Subject strictly to all limitations in this License, Devilabs ("Licensor") grants you a
+limited, revocable, non-exclusive, non-transferable, non-sublicensable license solely to:
 
-All aggregated road hazard coordinates, pavement roughness scores (ASTM E1926 IRI),
-pothole clusters, speed bump locations, and community observation data
-published by Hodos are licensed under the
-**Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+1. **Inspect and Audit:** Read and review the source code to verify privacy guarantees,
+   telemetry behavior, and security properties.
+2. **Personal Non-Commercial Use:** Compile and run the Software solely on your own personal
+   devices for private, non-commercial, non-production use.
+3. **Upstream Contributions:** Fork and submit pull requests directly back to the official
+   Hodos repository (`https://github.com/DrSkyle/hodos`).
 
-### Community & Open Research Rights:
-You are free to:
-- **Share:** Copy and redistribute the data in any medium or format.
-- **Adapt:** Remix, transform, and build upon the data for personal, educational, civic, and non-commercial research purposes.
+### Strict Prohibitions (What You May NOT Do Without a Signed Written Commercial License)
 
-### Terms:
-- **Attribution (BY):** You must give appropriate credit to Hodos (https://hodos.devilabs.dev), provide a link to the license, and indicate if changes were made.
-- **Non-Commercial (NC):** You may NOT use the dataset, live API feeds, or derived road quality layers for commercial purposes—including but not limited to commercial vehicle routing, fleet dispatch, ride-hailing services, insurance telematics, or proprietary data reselling.
-- **Share-Alike (SA):** If you remix, transform, or build upon the material, you must distribute your contributions under the same license.
+You may NOT, directly or indirectly, in whole or in part:
+
+1. **No Commercial Use:** Use, copy, modify, host, integrate, or deploy the Software, its
+   signal-processing algorithms (`@hodos/core` detector, severity grading, vibration/IRI
+   inference, H3 aggregation pipeline), UI/UX, or backend functions for any commercial,
+   revenue-generating, enterprise, governmental, or internal business purpose.
+2. **No Competing Products or Services:** Build, operate, assist, or distribute any product,
+   mobile app, web app, API, SDK, dataset, or SaaS platform that competes with Hodos—including
+   passive road-condition mapping, pothole/hazard detection, road-quality scoring, live driver
+   road alerts, or roadside local-shop pin/Garage directories.
+3. **No Redistribution or Re-Publishing:** Redistribute, republish, repackage, wrap,
+   white-label, sublicense, sell, rent, or publish any modified or unmodified binary or source
+   copy of the Software (including APK, AAB, IPA, or hosted web deployments) on any app store,
+   package registry, mirror, or website.
+4. **No Scraping, Mirroring, or AI/ML Model Training:** Scrape, bulk-export, mirror, resell,
+   or use this codebase, the Hodos API, or any Hodos road-condition data to train, fine-tune,
+   distill, benchmark, or evaluate any competing AI, machine-learning, routing, navigation,
+   or computer-vision model.
+5. **No Circumvention or Attribution Removal:** Remove, obscure, or alter any copyright notice,
+   license file, brand mark, API metering mechanism, GPS verification gate, or privacy trim.
 
 ---
 
-## 3. Commercial & Fleet Enterprise Licensing
+## 2. Road Condition Dataset & Telemetry Layers (All Commercial Rights Reserved / CC BY-NC-SA 4.0)
 
-Commercial operators, ride-hailing platforms, logistics networks, paving contractors,
-and municipal equipment vendors wishing to utilize the Hodos road condition dataset,
-live defect alert APIs, automated contractor work order tools, or vehicle wear telemetry
-can obtain a commercial enterprise license.
+Copyright (c) 2026 Devilabs (Minerva Corporation). All Rights Reserved.
+
+All aggregated road hazard coordinates, pavement roughness scores (ASTM E1926 IRI proxies),
+pothole clusters, speed bump locations, live road alerts, shop pin directories, and community
+observation data published by Hodos are made available for personal, academic, and civic
+non-commercial viewing under **Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International (CC BY-NC-SA 4.0)**, strictly subject to the anti-scraping and non-compete
+prohibitions in Section 1.
+
+Commercial use of the dataset, live API feeds, or derived layers—including commercial vehicle
+routing, fleet dispatch, ride-hailing, logistics, insurance telematics, municipal contractor
+tooling, navigation apps, or data reselling—is strictly prohibited without a paid commercial
+license or authorized prepaid API agreement from Devilabs.
+
+---
+
+## 3. Exclusive Ownership, Trademarks & Brand Protection
+
+All right, title, and interest in and to the Software, road-condition dataset, API endpoints,
+the **Hodos** name, wordmark, logos, domain (`hodos.devilabs.dev`), and trade dress remain
+the sole and exclusive property of Devilabs (Minerva Corporation). No trademark rights are
+granted by this License.
+
+---
+
+## 4. Upstream Contributor License Grant
+
+By submitting any pull request, patch, issue fix, or other contribution to the official Hodos
+repository, you grant Devilabs (Minerva Corporation) a perpetual, irrevocable, worldwide,
+royalty-free, transferable, and sublicensable license to use, reproduce, modify, distribute,
+relicense, and commercially exploit your contribution under any terms, without obligation
+or compensation.
+
+---
+
+## 5. Automatic Termination & Enforcement
+
+Any breach of this License automatically and immediately terminates all rights granted to you
+without notice. Upon termination, you must immediately cease all use and destroy all copies
+of the Software and Hodos data in your possession. Devilabs reserves all legal, equitable,
+and injunctive remedies under applicable law. Prior commits historically distributed under an
+earlier license remain governed by that license only as to those unmodified historical
+commits; all current and subsequent versions are governed exclusively by HSAL-1.0.
+
+---
+
+## 6. Disclaimer of Warranty & Limitation of Liability
+
+THE SOFTWARE AND DATA ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, ACCURACY, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE OR DATA.
+
+---
+
+## 7. Commercial & Enterprise Licensing
+
+For commercial licensing, fleet/ride-hailing integration, municipal access, or custom API
+contracts, contact Devilabs directly:
 
 Contact: **contact@devilabs.dev** · Web: **https://hodos.devilabs.dev**

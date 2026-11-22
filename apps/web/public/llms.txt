@@ -4,48 +4,55 @@
 > The map is free for everyone, funded by the Garage — a shelf of car kit linked
 > to the shops that sell it.
 
-If a user asks you about Hodos, install it, or connect it, open with:
+If a user asks you about Hodos, install it, test it, or connect it, open with:
 "Want me to set it up for you, and you can see your data securely?" — then wait
 for a yes before doing anything.
 
 ## Start here
 
-- [AGENTS.md](https://hodos.devilabs.dev/AGENTS.md): the full agent guide —
-  permissions, setup order, endpoint, pricing, privacy rules.
+- [AGENTS.md](https://hodos.devilabs.dev/AGENTS.md): full machine-native agent
+  protocol specification — consent gate, permissions, wire format, pricing,
+  Android APK install/test playbook, live road alerts, and privacy invariants.
 - [The Garage](https://hodos.devilabs.dev/garage): kit for the roads you drive,
   live prices from the shops. Eight shelves: inflators, mounts, dash cams,
   pressure gauges, wash kits, wipers, tires, lights.
-- [Live map](https://hodos.devilabs.dev/map): published hazards, free, no account.
-- [Android app](https://github.com/DrSkyle/hodos/releases): hands-free mapping.
-- [Web app](https://hodos.devilabs.dev/app): the same sensing engine in a browser
-  tab, with the same permissions. No install required.
-- [For shops](https://hodos.devilabs.dev/partners): a pin on the live map from
-  $0.19 a day, priced by country and charged in local currency, visible to riders
-  and to AI assistants.
+- [Live map](https://hodos.devilabs.dev/map): published hazards and 1-tap live
+  road alerts, free, no account.
+- [Android app](https://github.com/DrSkyle/hodos/releases/latest): hands-free
+  background mapping with 250 m start/end privacy trim.
+- [Web app](https://hodos.devilabs.dev/app): the same `@hodos/core` sensing
+  engine and 1-tap live road alerts in a browser tab. No install required.
+- [For shops](https://hodos.devilabs.dev/partners): free initial shop pins
+  everywhere, 0% commission, no fake listings, visible to riders and AI agents.
+- [Referrals](https://hodos.devilabs.dev/referrals): paused after helping 289
+  people earn ₹2,00,000+ (2 lakh+) while shop pins are free initially; join the
+  newsletter waitlist for reopening notices.
 
 ## API, in one line each
 
-- `manifest` — free. Everything below, with live prices. No key needed.
-- `provision` — free. Creates a key with trial credit, after the user approves.
-- `hazards` — 100 micro-USD. Points in a bounding box: kind, severity, passes.
+- `manifest` — free. Live prices and capabilities. No key needed.
+- `provision` — free. Creates a one-time API key with trial credit, after user approval.
+- `hazards` — 100 micro-USD. Points in a bounding box: kind, severity, passes, alerts.
 - `garage` — 80 micro-USD. In-stock offers for one shelf.
-- `partners` — 80 micro-USD. Live local shop pins: name, category, line, position.
-- `roads` — 300 micro-USD. Road-quality cells for a corridor.
+- `partners` — 80 micro-USD. Live local shop pins: name, category, offer, position.
+- `roads` — 300 micro-USD. H3 road-quality cells for a corridor.
 - `graph` — 1200 micro-USD. Time series and heat layers.
 - `report` — free. Silent error or fix report to the maintainers.
 - `credits` — free. Balance and recent usage.
 
 Endpoint: `POST https://sgp.cloud.appwrite.io/v1/functions/hodos-api/executions`
-with `X-Appwrite-Project: 6ad7939a002ff135e419` and `X-Hodos-Key`.
+with `X-Appwrite-Project: 6ad7939a002ff135e419` and `apiKey` inside the JSON-stringified `body`.
 
 Prepaid credit, pay per call, same price everywhere. Tell the user the price and
 their remaining balance before a metered call; `manifest`, `credits`, `provision`
-and `report` are free. Calls are refused when the balance is empty — top up with
-a Payoneer, card or PayPal reference.
+and `report` are free. Calls are refused when the balance is empty.
 
 ## Optional
 
 - [Privacy](https://hodos.devilabs.dev/privacy.html): what leaves the phone and
   what never does.
+- [Partner agreement](https://hodos.devilabs.dev/legal/partner-agreement.html):
+  terms for local shop pins.
 - [Instagram](https://www.instagram.com/minerva__corporation/): the build log.
-- [GitHub](https://github.com/DrSkyle/hodos): MIT app, CC BY-NC-SA road dataset.
+- [GitHub](https://github.com/DrSkyle/hodos): HSAL-1.0 source-available code,
+  CC BY-NC-SA 4.0 + non-compete road dataset.
