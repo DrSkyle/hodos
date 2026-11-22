@@ -5,6 +5,7 @@ import "./pwa";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as MapLibreMap, Marker } from "maplibre-gl";
 import { wireThemeToggle } from "./theme";
+import { encodeShopOffer, parseShopOffer, type ShopDeal } from "./live-shops";
 
 wireThemeToggle("theme-toggle");
 
@@ -219,6 +220,11 @@ let currentData: PortalData | null = null;
 let miniMap: MapLibreMap | null = null;
 let requestedDays = 30;
 let isFreshRedirect = false;
+let draftDeals: ShopDeal[] = [];
+
+const dealsListEl = document.getElementById("deals-editor-list") as HTMLElement | null;
+const addDealBtn = document.getElementById("add-deal-btn") as HTMLButtonElement | null;
+const charBudgetEl = document.getElementById("offer-char-count") as HTMLElement | null;
 
 function setToneStatus(el: HTMLElement | null, text: string, tone: "idle" | "ok" | "error" = "idle") {
   if (!el) return;
@@ -265,13 +271,137 @@ toggleKeyBtn?.addEventListener("click", () => {
   toggleKeyBtn.textContent = showing ? "Show" : "Hide";
 });
 
+function buildOfferDraft(): { summary: string; activeDeals: ShopDeal[]; unclipped: string; encoded: string } {
+  const summary = (document.getElementById("edit-offer") as HTMLInputElement | null)?.value.trim() || "";
+  const activeDeals = draftDeals
+    .map((d) => ({
+      badge: d.badge.replace(/[\[\]|]/g, "").trim().slice(0, 14),
+      title: d.title.replace(/\|/g, " ").replace(/\s+/g, " ").trim().slice(0, 60)
+    }))
+    .filter((d) => d.title.length > 0)
+    .slice(0, 3);
+  const unclipped = encodeShopOffer(summary, activeDeals, 999);
+  const encoded = encodeShopOffer(summary, activeDeals, 160);
+  return { summary, activeDeals, unclipped, encoded };
+}
+
+function renderDealsEditor() {
+  if (!dealsListEl) return;
+  dealsListEl.innerHTML = "";
+  draftDeals.forEach((deal, index) => {
+    const row = document.createElement("div");
+    row.className = "deal-row";
+
+    const badgeInput = document.createElement("input");
+    badgeInput.type = "text";
+    badgeInput.className = "deal-badge-input";
+    badgeInput.maxLength = 14;
+    badgeInput.placeholder = "FREE / 20%";
+    badgeInput.value = deal.badge;
+    badgeInput.setAttribute("aria-label", `Offer ${index + 1} tag`);
+    badgeInput.addEventListener("input", () => {
+      draftDeals[index]!.badge = badgeInput.value;
+      syncLivePreview();
+    });
+
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.maxLength = 56;
+    titleInput.placeholder = "e.g. Free tyre air check or 10% off biryani";
+    titleInput.value = deal.title;
+    titleInput.setAttribute("aria-label", `Offer ${index + 1} text`);
+    titleInput.addEventListener("input", () => {
+      draftDeals[index]!.title = titleInput.value;
+      syncLivePreview();
+    });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "deal-remove-btn";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Remove offer";
+    removeBtn.setAttribute("aria-label", `Remove offer ${index + 1}`);
+    removeBtn.addEventListener("click", () => {
+      draftDeals.splice(index, 1);
+      renderDealsEditor();
+      syncLivePreview();
+    });
+
+    row.append(badgeInput, titleInput, removeBtn);
+    dealsListEl.appendChild(row);
+  });
+
+  if (addDealBtn) {
+    addDealBtn.disabled = draftDeals.length >= 3;
+    addDealBtn.textContent = draftDeals.length >= 3 ? "Max 3 offers added" : "+ Add offer badge";
+  }
+}
+
+addDealBtn?.addEventListener("click", () => {
+  if (draftDeals.length >= 3) return;
+  draftDeals.push({ badge: "OFFER", title: "" });
+  renderDealsEditor();
+  syncLivePreview();
+  const inputs = dealsListEl?.querySelectorAll<HTMLInputElement>("input:not(.deal-badge-input)");
+  inputs?.[inputs.length - 1]?.focus();
+});
+
+document.querySelectorAll<HTMLButtonElement>(".deal-preset-chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    if (draftDeals.length >= 3) return;
+    draftDeals.push({
+      badge: chip.dataset.presetBadge || "OFFER",
+      title: chip.dataset.presetTitle || ""
+    });
+    renderDealsEditor();
+    syncLivePreview();
+  });
+});
+
+function renderPreviewDeals(host: HTMLElement | null, deals: ShopDeal[]) {
+  if (!host) return;
+  if (!deals.length) {
+    host.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+  host.hidden = false;
+  host.innerHTML = deals
+    .map(
+      (d) =>
+        `<li class="preview-deal-pill"><span class="preview-deal-badge">${esc(d.badge || "OFFER")}</span><span class="preview-deal-title">${esc(d.title)}</span></li>`
+    )
+    .join("");
+}
+
 function syncLivePreview() {
   if (!currentData) return;
-  const offer = (document.getElementById("edit-offer") as HTMLInputElement | null)?.value.trim() || currentData.offer;
+  const { summary, activeDeals, unclipped, encoded } = buildOfferDraft();
   const category = (document.getElementById("edit-category") as HTMLSelectElement | null)?.value || currentData.category;
   const link = (document.getElementById("edit-link") as HTMLInputElement | null)?.value.trim() || "";
+  const phone = (document.getElementById("edit-phone") as HTMLInputElement | null)?.value.trim() || "";
   const cat = categoryMeta(category);
 
+  if (charBudgetEl) {
+    charBudgetEl.textContent = `${unclipped.length} / 160`;
+    charBudgetEl.classList.toggle("is-over", unclipped.length > 160);
+  }
+
+  // Garage card preview
+  const prevGarageCat = document.getElementById("prev-garage-cat");
+  const prevGarageName = document.getElementById("prev-garage-name");
+  const prevGarageSummary = document.getElementById("prev-garage-summary");
+  const prevGarageCta = document.getElementById("prev-garage-cta");
+  if (prevGarageCat) prevGarageCat.textContent = category.toUpperCase();
+  if (prevGarageName) prevGarageName.textContent = currentData.name;
+  if (prevGarageSummary) {
+    prevGarageSummary.textContent = summary || (activeDeals.length ? "" : "Add your shop intro line…");
+    prevGarageSummary.hidden = !summary && activeDeals.length > 0;
+  }
+  if (prevGarageCta) prevGarageCta.textContent = link ? "Visit ↗" : phone ? "Call ↗" : "Details ↗";
+  renderPreviewDeals(document.getElementById("prev-garage-deals"), activeDeals);
+
+  // Map popup preview
   const prevCat = document.getElementById("prev-cat");
   const prevName = document.getElementById("prev-name");
   const prevOffer = document.getElementById("prev-offer");
@@ -283,7 +413,11 @@ function syncLivePreview() {
     prevCat.style.background = cat.color;
   }
   if (prevName) prevName.textContent = currentData.name;
-  if (prevOffer) prevOffer.textContent = offer || "Add your live offer line…";
+  if (prevOffer) {
+    prevOffer.textContent = summary || (activeDeals.length ? "" : "Add your live offer line…");
+    prevOffer.hidden = !summary && activeDeals.length > 0;
+  }
+  renderPreviewDeals(document.getElementById("prev-map-deals"), activeDeals);
   if (prevLinkPill) prevLinkPill.hidden = !link;
   if (prevJson) {
     prevJson.textContent = JSON.stringify(
@@ -291,7 +425,8 @@ function syncLivePreview() {
         id: currentData.placement,
         name: currentData.name,
         category,
-        offer,
+        offer: encoded,
+        deals: activeDeals,
         lat: Number(currentData.lat.toFixed(5)),
         lng: Number(currentData.lng.toFixed(5)),
         link: link || null,
@@ -421,10 +556,20 @@ function renderDashboard(data: PortalData) {
   const editCategory = document.getElementById("edit-category") as HTMLSelectElement | null;
   const editPhone = document.getElementById("edit-phone") as HTMLInputElement | null;
   const editLink = document.getElementById("edit-link") as HTMLInputElement | null;
-  if (editOffer) editOffer.value = data.offer || "";
+  const parsedOffer = parseShopOffer(data.offer || "");
+  if (editOffer) editOffer.value = parsedOffer.summary;
+  draftDeals = parsedOffer.deals.map((d) => ({ ...d }));
+  renderDealsEditor();
   if (editCategory) {
-    const exists = Array.from(editCategory.options).some((o) => o.value === data.category);
-    editCategory.value = exists ? data.category : "business";
+    const rawCat = (data.category || "business").trim();
+    const exists = Array.from(editCategory.options).some((o) => o.value === rawCat);
+    if (!exists && rawCat) {
+      const opt = document.createElement("option");
+      opt.value = rawCat;
+      opt.textContent = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
+      editCategory.appendChild(opt);
+    }
+    editCategory.value = rawCat || "business";
   }
   if (editPhone) editPhone.value = data.phone || "";
   if (editLink) editLink.value = data.link || "";
@@ -441,7 +586,7 @@ function renderDashboard(data: PortalData) {
   }
 }
 
-for (const id of ["edit-offer", "edit-category", "edit-link"]) {
+for (const id of ["edit-offer", "edit-category", "edit-phone", "edit-link"]) {
   document.getElementById(id)?.addEventListener("input", syncLivePreview);
   document.getElementById(id)?.addEventListener("change", syncLivePreview);
 }
@@ -549,26 +694,34 @@ document.getElementById("sec-reveal-key")?.addEventListener("click", (e) => {
 updateForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!activeCreds) return;
-  const offer = (document.getElementById("edit-offer") as HTMLInputElement | null)?.value.trim() || "";
+  const { unclipped, encoded } = buildOfferDraft();
   const category = (document.getElementById("edit-category") as HTMLSelectElement | null)?.value || "business";
   const phone = (document.getElementById("edit-phone") as HTMLInputElement | null)?.value.trim() || "";
   const link = (document.getElementById("edit-link") as HTMLInputElement | null)?.value.trim() || "";
 
-  if (offer.length < 8) {
-    setToneStatus(updateStatus, "Describe your offer or shop line in at least 8 characters.", "error");
+  if (encoded.length < 8) {
+    setToneStatus(updateStatus, "Add a shop intro line or at least one offer (minimum 8 characters).", "error");
+    return;
+  }
+  if (unclipped.length > 160) {
+    setToneStatus(
+      updateStatus,
+      `Your intro line + offers are ${unclipped.length} characters (limit is 160). Shorten a few words so nothing gets cut off.`,
+      "error"
+    );
     return;
   }
 
   const btn = document.getElementById("portal-update-btn") as HTMLButtonElement | null;
   if (btn) btn.disabled = true;
-  setToneStatus(updateStatus, "Publishing live changes…", "idle");
+  setToneStatus(updateStatus, "Publishing live offers…", "idle");
 
   try {
     const res = await callApi({
       action: "partnerUpdate",
       placement: activeCreds.placement,
       manageKey: activeCreds.manageKey,
-      offer,
+      offer: encoded,
       category,
       phone,
       link
@@ -578,13 +731,13 @@ updateForm?.addEventListener("submit", async (event) => {
       return;
     }
     if (currentData) {
-      currentData.offer = offer;
+      currentData.offer = encoded;
       currentData.category = category;
       currentData.phone = phone;
       currentData.link = link;
     }
     syncLivePreview();
-    setToneStatus(updateStatus, "Published! Your updated offer is live on the map, Garage, and AI API.", "ok");
+    setToneStatus(updateStatus, "Published! Your live offers now appear on /garage, the map, and the AI API.", "ok");
   } catch {
     setToneStatus(updateStatus, "Network error — please try saving again.", "error");
   } finally {

@@ -461,11 +461,68 @@
   color: var(--muted);
 }
 
+.partner-deals {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.partner-deal-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+}
+
+.partner-deal-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.partner-deal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.partner-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
 .partner-card-go {
-  margin-top: var(--s2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.partner-card-map {
   font-size: 12.5px;
   font-weight: 650;
-  color: var(--ink);
+  color: var(--accent-ink);
+  text-decoration: none;
+}
+
+.partner-card-go:hover,
+.partner-card-map:hover {
+  text-decoration: underline;
 }
 
 .nepal-empty-card {

@@ -2,6 +2,7 @@ import { setWorkerUrl, Map, NavigationControl, AttributionControl, GeolocateCont
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection } from "geojson";
 import { CONTACT_EMAIL } from "./site-constants";
+import { parseShopOffer } from "./live-shops";
 
 // Explicitly point MapLibre to our self-hosted worker bundle so Vite's asset hashing
 // never triggers "Worker failed to load. Check that the worker URL is correct."
@@ -875,6 +876,18 @@ export function initWebMap(
   function showPopupForPartner(p: WebPartner) {
     const href = safeHttpUrl(p.link);
     const vis = partnerVisual(p.category);
+    const parsedOffer = parseShopOffer(p.offer);
+    const dealsHtml = parsedOffer.deals.length
+      ? `<div style="display: flex; flex-direction: column; gap: 5px; margin-top: 2px;">${parsedOffer.deals
+          .map(
+            (d) =>
+              `<div style="display: flex; align-items: baseline; gap: 6px; padding: 5px 8px; border-radius: 9px; background: var(--soft, #f4e8ea); border: 1px solid var(--line, rgba(28,26,23,0.1)); font-size: 12px; line-height: 1.35;">` +
+              `<span style="flex-shrink: 0; padding: 1px 6px; border-radius: 999px; background: var(--accent, #be185d); color: #ffffff; font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">${escapeHtml(d.badge || "OFFER")}</span>` +
+              `<span style="color: var(--ink, #1c1a17); font-weight: 600;">${escapeHtml(d.title)}</span>` +
+              `</div>`
+          )
+          .join("")}</div>`
+      : "";
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.lat},${p.lng}`)}`;
     const html = `
       <div style="font-family: 'Host Grotesk', -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 13.5px; line-height: 1.5; padding: 4px 2px; min-width: 220px; max-width: 270px; color: var(--ink, #1c1a17); display: flex; flex-direction: column; gap: 8px;">
@@ -884,7 +897,8 @@ export function initWebMap(
           </span>
           <strong style="font-size: 15.5px; font-weight: 750; line-height: 1.25; letter-spacing: -0.015em; color: var(--ink, #1c1a17);">${escapeHtml(p.name)}</strong>
         </div>
-        ${p.offer ? `<div style="font-size: 13px; line-height: 1.5; color: var(--muted, #57534e);">${escapeHtml(p.offer)}</div>` : ""}
+        ${parsedOffer.summary ? `<div style="font-size: 13px; line-height: 1.5; color: var(--muted, #57534e);">${escapeHtml(parsedOffer.summary)}</div>` : ""}
+        ${dealsHtml}
         <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line, rgba(28,26,23,0.1));">
           <a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 999px; background: var(--ink, #1c1a17); color: var(--paper, #ffffff); text-decoration: none;">Directions ↗</a>
           ${href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" style="display: inline-flex; align-items: center; font-size: 12px; font-weight: 650; padding: 6px 11px; border-radius: 999px; background: var(--soft, #f4e8ea); color: var(--ink, #1c1a17); text-decoration: none;">Website →</a>` : ""}

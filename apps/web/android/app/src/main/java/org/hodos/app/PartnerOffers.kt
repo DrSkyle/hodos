@@ -38,6 +38,37 @@ object PartnerVisuals {
         else -> PartnerVisual("shop-local", "Local stop", 0xFF3F3F46.toInt(), PartnerTier.PITSTOP)
     }
 
+    private val DEAL_BADGE_RE = Regex("^\\[([^\\]]{1,16})]\\s*(.+)$")
+
+    data class ShopDeal(val badge: String, val title: String)
+    data class ParsedShopOffer(val summary: String, val deals: List<ShopDeal>)
+
+    fun parseOffer(raw: String): ParsedShopOffer {
+        val text = raw.trim()
+        if (text.isEmpty()) return ParsedShopOffer("", emptyList())
+        val sep = text.indexOf("||")
+        if (sep == -1) return ParsedShopOffer(text, emptyList())
+        val summary = text.substring(0, sep).trim()
+        val rest = text.substring(sep + 2).trim()
+        val deals = rest.split("|").mapNotNull { part ->
+            val clean = part.trim()
+            if (clean.isEmpty()) return@mapNotNull null
+            val m = DEAL_BADGE_RE.matchEntire(clean)
+            if (m != null) ShopDeal(m.groupValues[1].trim(), m.groupValues[2].trim())
+            else ShopDeal("OFFER", clean)
+        }
+        return ParsedShopOffer(summary, deals)
+    }
+
+    fun formatOffer(raw: String): String {
+        val parsed = parseOffer(raw)
+        if (parsed.deals.isEmpty()) return parsed.summary
+        val dealLines = parsed.deals.joinToString("\n") { d ->
+            "• [${d.badge.ifBlank { "OFFER" }}] ${d.title}"
+        }
+        return if (parsed.summary.isNotEmpty()) "${parsed.summary}\n$dealLines" else dealLines
+    }
+
     fun hasRiderPerk(offer: String): Boolean = PERK_RE.containsMatchIn(offer)
 
     fun selectForViewport(

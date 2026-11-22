@@ -455,12 +455,16 @@ function nepalShopRow(shop: LiveShop): HTMLElement {
     ? `tel:${shop.phone}`
     : shop.email
     ? `mailto:${shop.email}`
-    : "/map/";
+    : `/map/?shop=${encodeURIComponent(shop.id)}#16/${shop.lat.toFixed(5)}/${shop.lng.toFixed(5)}`;
   const actionLabel = shop.link ? "Visit ↗" : shop.phone ? "Call ↗" : shop.email ? "Email ↗" : "Map ↗";
+  const dealsLine = shop.deals.length
+    ? shop.deals.map((d) => `[${d.badge}] ${d.title}`).join(" · ")
+    : "";
   row.innerHTML = `
     <span class="grow">
       <strong>${escapeHtml(shop.name)}</strong>
-      <small>${escapeHtml([shop.category, shop.offer || shop.address || ""].filter(Boolean).join(" · "))}</small>
+      <small>${escapeHtml([shop.category, shop.summary || shop.address || ""].filter(Boolean).join(" · "))}</small>
+      ${dealsLine ? `<small style="color:var(--accent-ink);font-weight:650;display:block;margin-top:3px;">${escapeHtml(dealsLine)}</small>` : ""}
     </span>
     <a href="${escapeHtml(actionHref)}" ${shop.link ? 'target="_blank" rel="sponsored noopener noreferrer"' : ""}>${actionLabel}</a>
   `;

@@ -178,7 +178,8 @@ object Garage {
                             price = null,
                             compareAt = null,
                             currency = "NPR",
-                            merchant = row.optString("offer").ifBlank { row.optString("address").ifBlank { null } },
+                            merchant = PartnerVisuals.formatOffer(row.optString("offer"))
+                                .ifBlank { row.optString("address").ifBlank { null } },
                             url = url
                         )
                     )

@@ -211,15 +211,36 @@
         <div class="console-grid-2">
           <div class="console-panel">
             <div class="console-panel-head">
-              <h2>Edit live offer &amp; details</h2>
-              <span>Publishes instantly to map, Garage &amp; AI API</span>
+              <h2>Edit live offers &amp; shop details</h2>
+              <span>Publishes instantly to /garage, map &amp; AI API</span>
             </div>
             <form id="portal-update-form" class="placement-form" novalidate>
               <label class="field">
-                <span class="field-label">Live offer / rider perk headline</span>
-                <input id="edit-offer" name="offer" type="text" required maxlength="160" placeholder="e.g. Free tyre pressure check · Puncture repair · Open 7 AM – 9 PM" />
-                <span class="field-help">Mentioning free air/pressure check, chain lube, or alignment prioritizes your pin in busy streets.</span>
+                <span class="field-label">Shop intro line</span>
+                <input id="edit-offer" name="offer" type="text" required maxlength="120" placeholder="e.g. Tyre puncture repair &amp; balancing · Open 7 AM – 9 PM" />
+                <span class="field-help">Short one-line summary shown under your shop name on the map and in Garage.</span>
               </label>
+
+              <div class="deals-builder">
+                <div class="deals-builder-head">
+                  <div>
+                    <span class="field-label">Live offers &amp; deals (shown in Garage &amp; map)</span>
+                    <span class="field-help">Add up to 3 highlighted deal badges riders see right on your Garage card.</span>
+                  </div>
+                  <span class="char-budget" id="offer-char-count">0 / 160</span>
+                </div>
+
+                <div class="deals-editor-list" id="deals-editor-list"></div>
+
+                <div class="deals-builder-actions">
+                  <button type="button" class="portal-secondary-btn" id="add-deal-btn">+ Add offer badge</button>
+                  <div class="deal-presets" aria-label="Quick offer presets">
+                    <button type="button" class="deal-preset-chip" data-preset-badge="FREE" data-preset-title="Tyre air &amp; pressure check">+ Free air check</button>
+                    <button type="button" class="deal-preset-chip" data-preset-badge="10% OFF" data-preset-title="First service for Hodos riders">+ 10% off</button>
+                    <button type="button" class="deal-preset-chip" data-preset-badge="DEAL" data-preset-title="Combo meal or oil + wash">+ Combo deal</button>
+                  </div>
+                </div>
+              </div>
 
               <label class="field">
                 <span class="field-label">Category</span>
@@ -228,7 +249,7 @@
                   <option value="garage">Garage / workshop / mechanic</option>
                   <option value="ev">EV charger / fuel</option>
                   <option value="pharmacy">Pharmacy / medical</option>
-                  <option value="cafe">Café / food / pit stop</option>
+                  <option value="cafe">Café / food / restaurant</option>
                   <option value="business">Other local shop</option>
                 </select>
               </label>
@@ -244,7 +265,7 @@
               </label>
 
               <p id="portal-update-status" class="form-status" role="status" aria-live="polite"></p>
-              <button type="submit" class="submit-btn" id="portal-update-btn">Publish live changes</button>
+              <button type="submit" class="submit-btn" id="portal-update-btn">Publish live offers</button>
             </form>
           </div>
 
@@ -255,11 +276,26 @@
             </div>
             <div class="preview-stage">
               <div>
-                <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;">Driver map popup</div>
+                <div class="preview-label">Hodos Garage card (/garage)</div>
+                <div class="preview-garage-card">
+                  <span class="preview-garage-eyebrow" id="prev-garage-cat">LOCAL STOP</span>
+                  <strong class="preview-garage-name" id="prev-garage-name">Your shop</strong>
+                  <p class="preview-garage-summary" id="prev-garage-summary">Your shop intro line appears here.</p>
+                  <ul class="preview-deals-list" id="prev-garage-deals" hidden></ul>
+                  <div class="preview-garage-actions">
+                    <span class="preview-garage-cta" id="prev-garage-cta">Call ↗</span>
+                    <span class="preview-garage-map">See on map ↗</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="preview-label">Driver map popup (/map)</div>
                 <div class="preview-map-card">
                   <span class="preview-cat-badge" id="prev-cat">Local stop</span>
                   <strong id="prev-name">Your shop</strong>
                   <p id="prev-offer">Your live offer appears here.</p>
+                  <ul class="preview-deals-list" id="prev-map-deals" hidden></ul>
                   <div style="display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--line);">
                     <span style="font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--ink);color:var(--paper);">Directions ↗</span>
                     <span id="prev-link-pill" style="font-size:11.5px;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--soft);color:var(--ink);" hidden>Website →</span>
@@ -268,7 +304,7 @@
               </div>
 
               <div>
-                <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;">AI-Agent API response (AGENTS.md)</div>
+                <div class="preview-label">AI-Agent API response (AGENTS.md)</div>
                 <pre class="preview-agent-json" id="prev-agent-json">{}</pre>
               </div>
             </div>

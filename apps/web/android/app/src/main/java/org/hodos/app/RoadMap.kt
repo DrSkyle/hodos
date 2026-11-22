@@ -706,7 +706,7 @@ fun RoadMap(
                     buildString {
                         append(vis.label)
                         append("\n\n")
-                        append(activePartner.offer)
+                        append(PartnerVisuals.formatOffer(activePartner.offer))
                         val stats = activePartner.passesThisMonth
                             ?.let { "$it drivers passed this stop this month" }
                             ?: if (localPasses > 0) {

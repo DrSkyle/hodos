@@ -12,20 +12,66 @@ import { APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID } from "./site-constants";
  * shelf, which is the honest thing to show.
  */
 
+export type ShopDeal = {
+  badge: string;
+  title: string;
+};
+
 export type LiveShop = {
   id: string;
   name: string;
   category: string;
   offer: string;
+  summary: string;
+  deals: ShopDeal[];
   address: string | null;
   phone: string | null;
   email: string | null;
   link: string | null;
   lat: number;
   lng: number;
-  /** ISO expiry of the paid placement. */
+  /** ISO expiry of the placement. */
   activeUntil: string;
 };
+
+export function parseShopOffer(raw: string): { summary: string; deals: ShopDeal[] } {
+  const text = String(raw || "").trim();
+  if (!text) return { summary: "", deals: [] };
+  const sepIdx = text.indexOf("||");
+  if (sepIdx === -1) return { summary: text, deals: [] };
+  const summary = text.slice(0, sepIdx).trim();
+  const rest = text.slice(sepIdx + 2).trim();
+  const deals: ShopDeal[] = [];
+  for (const part of rest.split("|")) {
+    const clean = part.trim();
+    if (!clean) continue;
+    const match = clean.match(/^\[([^\]]{1,16})\]\s*(.+)$/);
+    if (match) {
+      deals.push({ badge: match[1]!.trim(), title: match[2]!.trim() });
+    } else {
+      deals.push({ badge: "OFFER", title: clean });
+    }
+  }
+  return { summary, deals };
+}
+
+export function encodeShopOffer(summary: string, deals: ShopDeal[], maxLen = 160): string {
+  const cleanSummary = summary.replace(/\|/g, " ").replace(/\s+/g, " ").trim();
+  const cleanDeals = deals
+    .map((d) => ({
+      badge: d.badge.replace(/[\[\]|]/g, "").trim().slice(0, 14),
+      title: d.title.replace(/\|/g, " ").replace(/\s+/g, " ").trim().slice(0, 60)
+    }))
+    .filter((d) => d.title.length > 0)
+    .slice(0, 3);
+
+  if (cleanDeals.length === 0) return cleanSummary.slice(0, maxLen);
+  const encodedDeals = cleanDeals
+    .map((d) => (d.badge ? `[${d.badge}] ${d.title}` : d.title))
+    .join(" | ");
+  const joined = cleanSummary ? `${cleanSummary} || ${encodedDeals}` : `|| ${encodedDeals}`;
+  return joined.slice(0, maxLen);
+}
 
 const QUERY = encodeURIComponent(JSON.stringify({ method: "limit", values: [500] }));
 
@@ -56,11 +102,15 @@ export async function loadLiveShops(): Promise<LiveShop[]> {
     if (Number.isFinite(until) && until < now) continue;
     const name = String(row.name ?? "").trim();
     if (!name) continue;
+    const offer = String(row.offer ?? "");
+    const parsed = parseShopOffer(offer);
     shops.push({
-      id: String(row.id ?? row.$id ?? `shop-${index}`),
+      id: String(row.$id ?? row.id ?? `shop-${index}`),
       name,
       category: String(row.category ?? "business"),
-      offer: String(row.offer ?? ""),
+      offer,
+      summary: parsed.summary,
+      deals: parsed.deals,
       address: row.address ? String(row.address) : null,
       phone: row.phone ? String(row.phone) : null,
       email: row.email ? String(row.email) : null,

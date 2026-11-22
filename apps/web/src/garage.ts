@@ -118,16 +118,8 @@ function productCard(product: Product, currency: string): HTMLElement {
 /* ---- Nepal: the shops that paid for a pin, and their own products ---- */
 
 function shopCard(shop: LiveShop): HTMLElement {
-  // A shop with its own link goes there. Otherwise the card is not clickable:
-  // the reason to visit is the counter, not a website.
-  const card: HTMLElement = shop.link ? document.createElement("a") : document.createElement("div");
+  const card = document.createElement("article");
   card.className = "partner-card";
-
-  if (shop.link) {
-    (card as HTMLAnchorElement).href = shop.link;
-    (card as HTMLAnchorElement).rel = "sponsored noopener noreferrer";
-    (card as HTMLAnchorElement).target = "_blank";
-  }
 
   const category = document.createElement("span");
   category.className = "partner-card-cat";
@@ -138,25 +130,61 @@ function shopCard(shop: LiveShop): HTMLElement {
 
   const blurb = document.createElement("span");
   blurb.className = "partner-card-blurb";
-  blurb.textContent = shop.offer || shop.address || "";
+  blurb.textContent = shop.summary || shop.address || "";
 
-  // Only the shop's own published details: a rider redeeming a perk needs to
-  // reach the shop, and nothing else about them is shown.
-  const go = document.createElement(shop.link ? "span" : "a");
-  go.className = "partner-card-go";
-  if (shop.link) {
-    go.textContent = "Visit ↗";
-  } else if (shop.phone) {
-    (go as HTMLAnchorElement).href = `tel:${shop.phone}`;
-    go.textContent = "Call ↗";
-  } else if (shop.email) {
-    (go as HTMLAnchorElement).href = `mailto:${shop.email}`;
-    go.textContent = "Email ↗";
-  } else {
-    go.textContent = "On the map ↗";
+  card.append(category, name);
+  if (blurb.textContent) card.append(blurb);
+
+  if (shop.deals.length > 0) {
+    const dealsList = document.createElement("div");
+    dealsList.className = "partner-deals";
+    for (const deal of shop.deals) {
+      const pill = document.createElement("div");
+      pill.className = "partner-deal-pill";
+      const badge = document.createElement("span");
+      badge.className = "partner-deal-badge";
+      badge.textContent = deal.badge || "OFFER";
+      const text = document.createElement("span");
+      text.className = "partner-deal-title";
+      text.textContent = deal.title;
+      pill.append(badge, text);
+      dealsList.append(pill);
+    }
+    card.append(dealsList);
   }
 
-  card.append(category, name, blurb, go);
+  const actions = document.createElement("div");
+  actions.className = "partner-card-actions";
+
+  if (shop.link) {
+    const visit = document.createElement("a");
+    visit.className = "partner-card-go";
+    visit.href = shop.link;
+    visit.rel = "sponsored noopener noreferrer";
+    visit.target = "_blank";
+    visit.textContent = "Visit ↗";
+    actions.append(visit);
+  } else if (shop.phone) {
+    const call = document.createElement("a");
+    call.className = "partner-card-go";
+    call.href = `tel:${shop.phone}`;
+    call.textContent = "Call ↗";
+    actions.append(call);
+  } else if (shop.email) {
+    const email = document.createElement("a");
+    email.className = "partner-card-go";
+    email.href = `mailto:${shop.email}`;
+    email.textContent = "Email ↗";
+    actions.append(email);
+  }
+
+  const onMap = document.createElement("a");
+  onMap.className = "partner-card-map";
+  onMap.href = `/map/?shop=${encodeURIComponent(shop.id)}#16/${shop.lat.toFixed(5)}/${shop.lng.toFixed(5)}`;
+  onMap.textContent = "See on map ↗";
+  actions.append(onMap);
+
+  card.append(actions);
   return card;
 }
 
@@ -190,10 +218,8 @@ async function renderNepal() {
   grid.classList.remove("is-shelves");
 
   if (nepalShops === null) {
-    // The shops that actually paid for a pin on the map. Not an affiliate
-    // programme, not a partner logo wall: local businesses a rider can walk into.
+    // Real local shops that placed a pin on the map, with their live dashboard offers.
     nepalShops = await loadLiveShops();
-    // Chips reflect what is actually on the map right now, not a fixed list.
     const categories = ["All", ...Array.from(new Set(nepalShops.map((shop) => shop.category)))];
     buildChips(categories, (label) => {
       activeCategory = label;
@@ -217,7 +243,7 @@ async function renderNepal() {
   for (const shop of shown) grid.append(shopCard(shop));
 
   if (shops.length === 0) {
-    setStatus(isIndia ? "0 paid shop pins live in India right now." : "0 shop pins live in Nepal right now.");
+    setStatus("0 shop pins live right now.");
     const empty = document.createElement("div");
     empty.className = "nepal-empty-card";
     empty.innerHTML = `
