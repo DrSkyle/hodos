@@ -329,6 +329,8 @@ export async function detectVisitorCountryByIp(): Promise<string> {
   if (override) return override;
 
   try {
+    const param = new URLSearchParams(window.location.search).get("country")?.trim().toUpperCase();
+    if (param && /^[A-Z]{2}$/.test(param)) return param;
     const cached = window.sessionStorage.getItem(IP_COUNTRY_CACHE_KEY);
     if (cached && /^[A-Z]{2}$/.test(cached)) return cached;
   } catch (_) {

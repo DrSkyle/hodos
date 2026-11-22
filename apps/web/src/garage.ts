@@ -220,30 +220,17 @@ async function renderNepal() {
     setStatus(isIndia ? "0 paid shop pins live in India right now." : "0 shop pins live in Nepal right now.");
     const empty = document.createElement("div");
     empty.className = "nepal-empty-card";
-    empty.innerHTML = isIndia
-      ? `
-      <span class="garage-eyebrow">India Garage · Pin-powered</span>
-      <h3>Be the first shop on the map in India.</h3>
+    empty.innerHTML = `
+      <span class="garage-eyebrow">Free global launch</span>
+      <h3>Be the first shop on the map — for free.</h3>
       <p>
-        In India, the Garage shows only real local shops that placed a pin on the Hodos map —
-        never fake listings. Put your workshop, café, pharmacy or store on the map from
-        <strong>~₹16/day</strong>, or introduce a shop and keep <strong>60%</strong> via UPI or IMPS.
-      </p>
-      <div class="hero-cta-row">
-        <a class="btn btn-primary" href="/partners">Place a shop pin</a>
-        <a class="btn btn-ghost" href="/referrals">Refer a shop · earn 60%</a>
-      </div>
-    `
-      : `
-      <span class="garage-eyebrow">Nepal Garage · Free launch</span>
-      <h3>Be the first shop on the map in Nepal — for free.</h3>
-      <p>
-        In Nepal, the Garage shows only real local shops that placed a pin on the Hodos map —
-        never fake listings. Placing a shop pin in Nepal is <strong>completely free initially</strong>.
-        (The Nepal referral programme has been stopped for now while pins are free.)
+        The Garage shows only real local shops that placed a pin on the Hodos map —
+        never fake listings. Placing a shop pin is <strong>completely free initially everywhere</strong>.
+        (289 people earned ₹2,00,000+ through Hodos — referrals are paused while pins are free for all shops.)
       </p>
       <div class="hero-cta-row">
         <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
+        <a class="btn btn-ghost" href="/referrals">Referral updates &amp; newsletter</a>
       </div>
     `;
     grid.append(empty);
@@ -342,29 +329,17 @@ function syncReferralBanner() {
   const refTitle = document.getElementById("nepal-ref-title");
   const refBody = document.getElementById("nepal-ref-body");
   const refCtas = document.getElementById("nepal-ref-ctas");
-  if (isIndia) {
-    if (eyebrow) eyebrow.textContent = "India · 60 / 40 revenue share";
-    if (refTitle) refTitle.textContent = "Bring any shop onto the map. Keep 60% via UPI or IMPS.";
-    if (refBody) {
-      refBody.innerHTML =
-        "Every business in the India Garage got here by putting a pin on the map. Introduce any shop with your referral link and <strong>60% of every placement payment they make</strong> shows immediately in your referral account and unlocks for cashout to your UPI ID or IMPS bank account after 1 month (30 days).";
-    }
-    if (refCtas) {
-      refCtas.innerHTML = `
-        <a class="btn btn-primary" href="/referrals">Get your referral code</a>
-        <a class="btn btn-ghost" href="/partners">Place a shop pin</a>
-      `;
-    }
-  } else {
-    if (eyebrow) eyebrow.textContent = "Nepal · Free launch";
-    if (refTitle) refTitle.textContent = "Shop pins in Nepal are free initially.";
-    if (refBody) {
-      refBody.innerHTML =
-        "Every business in the Nepal Garage got here by putting a pin on the map. Placing a shop pin in Nepal is <strong>completely free initially</strong> — no payment needed. Because pins are free, the Nepal referral programme has been stopped for now.";
-    }
-    if (refCtas) {
-      refCtas.innerHTML = `<a class="btn btn-primary" href="/partners">Place a free shop pin</a>`;
-    }
+  if (eyebrow) eyebrow.textContent = "Free global launch";
+  if (refTitle) refTitle.textContent = "Shop pins are free initially everywhere.";
+  if (refBody) {
+    refBody.innerHTML =
+      "Every local business in the Garage got here by putting a pin on the map. Placing a shop pin is <strong>completely free initially everywhere</strong> — no payment needed. (289 people earned ₹2,00,000+ through Hodos; referrals are paused while pins are free for all shops.)";
+  }
+  if (refCtas) {
+    refCtas.innerHTML = `
+      <a class="btn btn-primary" href="/partners">Place a free shop pin</a>
+      <a class="btn btn-ghost" href="/referrals">Referral updates &amp; newsletter</a>
+    `;
   }
 }
 
